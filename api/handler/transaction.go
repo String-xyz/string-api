@@ -22,7 +22,11 @@ func NewTransactionHandler(route *echo.Echo, service service.Transaction) Transa
 }
 
 func (t transactionHandler) Transact(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
+	res, err := t.Service.Execute()
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, res)
 }
 
 func (t transactionHandler) RegisterRoutes() error {

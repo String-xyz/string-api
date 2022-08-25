@@ -15,10 +15,5 @@ func main() {
 	transactHandler := handler.NewTransactionHandler(e, transactService)
 	transactHandler.RegisterRoutes()
 
-	// e.GET("/", func(c echo.Context) error {
-	// 	return transactHandler.Transact(c)
-	// })
-
 	e.Logger.Fatal(e.Start(":8080"))
-
 }
