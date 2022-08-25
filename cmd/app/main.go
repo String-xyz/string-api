@@ -1,9 +1,6 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/repository"
 	"github.com/String-xyz/string-api/service"
@@ -22,8 +19,6 @@ func main() {
 	// 	return transactHandler.Transact(c)
 	// })
 
-	if err := e.Start(":8080"); err != http.ErrServerClosed {
-		log.Fatal(err)
-	}
+	e.Logger.Fatal(e.Start(":8080"))
 
 }
