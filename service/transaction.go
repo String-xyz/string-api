@@ -2,25 +2,25 @@ package service
 
 import "github.com/String-xyz/string-api/repository"
 
-type Transactor interface {
+type Transaction interface {
 	Quote() (int, error)
 	Execute() (int, error)
 }
 
-type transactor struct {
+type transaction struct {
 	repository repository.Transaction
 }
 
-func NewTransactor(repo repository.Transaction) Transactor {
-	return &transactor{repository: repo}
+func NewTransactor(repo repository.Transaction) Transaction {
+	return &transaction{repository: repo}
 }
 
-func (t transactor) Quote() (int, error) {
+func (t transaction) Quote() (int, error) {
 	// create quote struct and return that
 	return 0, nil
 }
 
-func (t transactor) Execute() (int, error) {
+func (t transaction) Execute() (int, error) {
 	// create execution response struct and return that
 	return 0, nil
 }
