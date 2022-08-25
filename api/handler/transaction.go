@@ -9,6 +9,7 @@ import (
 
 type TransactionHandler interface {
 	Transact(c echo.Context) error
+	Quote(c echo.Context) error
 	RegisterRoutes() error
 }
 
@@ -29,7 +30,16 @@ func (t transactionHandler) Transact(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+func (t transactionHandler) Quote(c echo.Context) error {
+	res, err := t.Service.Quote()
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
 func (t transactionHandler) RegisterRoutes() error {
-	t.Router.GET("/", t.Transact)
+	t.Router.POST("/transact", t.Transact)
+	t.Router.POST("/transact/quote", t.Quote)
 	return nil
 }

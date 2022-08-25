@@ -11,7 +11,7 @@ func main() {
 	e := echo.New()
 
 	transactRepo := repository.NewTransaction()
-	transactService := service.NewTransactor(transactRepo)
+	transactService := service.NewTransaction(transactRepo)
 	transactHandler := handler.NewTransactionHandler(e, transactService)
 	transactHandler.RegisterRoutes()
 
