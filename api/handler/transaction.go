@@ -10,16 +10,16 @@ import (
 type TransactionHandler interface {
 	Transact(c echo.Context) error
 	Quote(c echo.Context) error
-	RegisterRoutes() error
+	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
 type transactionHandler struct {
-	Router  *echo.Echo
 	Service service.Transaction
+	Group   *echo.Group
 }
 
 func NewTransactionHandler(route *echo.Echo, service service.Transaction) TransactionHandler {
-	return &transactionHandler{route, service}
+	return &transactionHandler{service, nil}
 }
 
 func (t transactionHandler) Transact(c echo.Context) error {
@@ -38,8 +38,12 @@ func (t transactionHandler) Quote(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (t transactionHandler) RegisterRoutes() error {
-	t.Router.POST("/transact", t.Transact)
-	t.Router.POST("/transact/quote", t.Quote)
-	return nil
+func (t transactionHandler) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
+	if g == nil {
+		panic("No group attached to TransactionHandler")
+	}
+	t.Group = g
+	g.Use(ms...)
+	g.POST("/", t.Transact)
+	g.POST("/quote", t.Quote)
 }

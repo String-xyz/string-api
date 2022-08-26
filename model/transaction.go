@@ -1,11 +1,11 @@
 package model
 
-type TransactionType int8
+type TransactionType string
 
 const (
-	Unknown TransactionType = iota
-	Raw
-	MintERC721
+	Unknown    TransactionType = "Unknown"
+	Raw        TransactionType = "Raw"
+	MintERC721 TransactionType = "MintERC721"
 )
 
 type CostEstimate struct {
