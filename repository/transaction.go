@@ -6,6 +6,6 @@ type Transaction interface {
 type transaction struct {
 }
 
-func NewTransaction() Transaction {
+func NewTransaction(db any) Transaction {
 	return &transaction{}
 }
