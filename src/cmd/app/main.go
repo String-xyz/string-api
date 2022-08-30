@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/src/api"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

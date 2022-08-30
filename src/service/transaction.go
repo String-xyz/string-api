@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/String-xyz/string-api/model"
-	"github.com/String-xyz/string-api/repository"
+	"github.com/String-xyz/string-api/src/model"
+	"github.com/String-xyz/string-api/src/repository"
 )
 
 type Transaction interface {
