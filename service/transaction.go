@@ -8,10 +8,15 @@ import (
 type Transaction interface {
 	Quote() (model.SignedQuote, error)
 	Execute() (model.TransactionResponse, error)
+	New(repo repository.Transaction) Transaction
 }
 
 type transaction struct {
 	repository repository.Transaction
+}
+
+func (t transaction) New(repo repository.Transaction) Transaction {
+	return &transaction{repository: repo}
 }
 
 func NewTransaction(repo repository.Transaction) Transaction {

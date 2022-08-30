@@ -37,12 +37,12 @@ func Start(config APIConfig) error {
 	////////////////////////
 	// HANDLERS
 	////////////////////////
-	transactHandler := handler.NewTransactionHandler(e, transactService)
+	transactHandler := handler.NewTransaction(e, transactService)
 
 	////////////////////////
 	// MIDDLEWARE
 	////////////////////////
-	// e.Use(middleware.StringMiddleware(middleware.MiddlewareConfig{any: 0}))
+	// cors := middleware.StringMiddleware(middleware.MiddlewareConfig{any: 0})
 
 	var transactMiddleware []echo.MiddlewareFunc
 

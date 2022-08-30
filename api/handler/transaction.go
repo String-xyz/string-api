@@ -7,22 +7,22 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type TransactionHandler interface {
+type Transaction interface {
 	Transact(c echo.Context) error
 	Quote(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
-type transactionHandler struct {
+type transaction struct {
 	Service service.Transaction
 	Group   *echo.Group
 }
 
-func NewTransactionHandler(route *echo.Echo, service service.Transaction) TransactionHandler {
-	return &transactionHandler{service, nil}
+func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
+	return &transaction{service, nil}
 }
 
-func (t transactionHandler) Transact(c echo.Context) error {
+func (t transaction) Transact(c echo.Context) error {
 	res, err := t.Service.Execute()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (t transactionHandler) Transact(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (t transactionHandler) Quote(c echo.Context) error {
+func (t transaction) Quote(c echo.Context) error {
 	res, err := t.Service.Quote()
 	if err != nil {
 		return err
@@ -38,9 +38,9 @@ func (t transactionHandler) Quote(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (t transactionHandler) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
+func (t transaction) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
-		panic("No group attached to TransactionHandler")
+		panic("No group attached to the Transaction Handler")
 	}
 	t.Group = g
 	g.Use(ms...)
