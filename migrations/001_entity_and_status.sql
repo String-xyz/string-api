@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE entity_type ( --naming convention?
-    id int NOT NULL,
-    created date NOT NULL,
+    id int NOT NULL, -- use bigserial instead of int?
+    created date NOT NULL, --timestamp(0) with time zone not null default now(),
     entity text, -- would prefer "name" but reserved word
     description text, -- reserved word
     PRIMARY KEY(id)
