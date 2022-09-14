@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/String-xyz/string-api/src/service"
+	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
 

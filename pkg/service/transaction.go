@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/String-xyz/string-api/src/model"
-	"github.com/String-xyz/string-api/src/repository"
+	"github.com/String-xyz/string-api/pkg/internal/db"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/repository"
 )
 
 type Transaction interface {
@@ -16,6 +17,7 @@ type transaction struct {
 }
 
 func (t transaction) New(repo repository.Transaction) Transaction {
+	db.Start()
 	return &transaction{repository: repo}
 }
 
