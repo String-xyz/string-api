@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -31,7 +32,12 @@ func (t transaction) Transact(c echo.Context) error {
 }
 
 func (t transaction) Quote(c echo.Context) error {
-	res, err := t.Service.Quote()
+	var body model.TransactionData
+	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Bad request")
+	}
+	res, err := t.Service.Quote(body)
 	if err != nil {
 		return err
 	}

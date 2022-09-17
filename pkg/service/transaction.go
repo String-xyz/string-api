@@ -6,7 +6,7 @@ import (
 )
 
 type Transaction interface {
-	Quote() (model.SignedQuote, error)
+	Quote(d model.TransactionData) (model.TransactionRequest, error)
 	Execute() (model.Transaction, error)
 	New(repo repository.Transaction) Transaction
 }
@@ -23,9 +23,10 @@ func NewTransaction(repo repository.Transaction) Transaction {
 	return &transaction{repository: repo}
 }
 
-func (t transaction) Quote() (model.SignedQuote, error) {
+func (t transaction) Quote(d model.TransactionData) (model.TransactionRequest, error) {
 	// create quote struct and return that
-	return model.SignedQuote{}, nil
+	//return model.SignedQuote{}, nil
+	return model.TransactionRequest{}, nil
 }
 
 func (t transaction) Execute() (model.Transaction, error) {
