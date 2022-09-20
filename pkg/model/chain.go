@@ -3,11 +3,11 @@ package model
 import "errors"
 
 type Chain struct {
-	ChainID       uint32  `json:"chainID" db:"chainID"`
+	ChainID       uint64  `json:"chainID" db:"chainID"`
 	RPC           string  `json:"RPC" db:"RPC"`
 	CoingeckoName string  `json:"coingeckoName" db:"coingeckoName"`
 	OwlracleName  string  `json:"owlracleName" db:"owlracleName"`
-	StringFee     float32 `json:"stringFee" db:"stringFee"`
+	StringFee     float64 `json:"stringFee" db:"stringFee"`
 }
 
 var chains = []Chain{
@@ -55,7 +55,7 @@ var chains = []Chain{
 	},
 }
 
-func ChainInfo(chainID uint32) (Chain, error) {
+func ChainInfo(chainID uint64) (Chain, error) {
 	for _, c := range chains {
 		if c.ChainID == chainID {
 			return c, nil

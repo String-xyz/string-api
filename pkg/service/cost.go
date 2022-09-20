@@ -1,6 +1,11 @@
 package service
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -9,21 +14,21 @@ import (
 )
 
 type EstimationParams struct {
-	ChainID     uint32  `json:"chainID"`
-	CostETH     float32 `json:"costETH"`
+	ChainID     uint64  `json:"chainID"`
+	CostETH     float64 `json:"costETH"`
 	UseBuffer   bool    `json:"useBuffer"`
-	GasUsedGwei uint32  `json:"gasUsedGwei"`
-	CostToken   float32 `json:"costToken"`
+	GasUsedGwei uint64  `json:"gasUsedGwei"`
+	CostToken   float64 `json:"costToken"`
 	TokenName   string  `json:"tokenName"`
 }
 
 type CostEstimate struct {
 	Timestamp  int64   `json:"timeStamp"`
-	BaseUSD    float32 `json:"baseUSD"`
-	GasUSD     float32 `json:"gasUSD"`
-	TokenUSD   float32 `json:"tokenUSD"`
-	ServiceUSD float32 `json:"serviceUSD"`
-	TotalUSD   float32 `json:"totalUSD"`
+	BaseUSD    float64 `json:"baseUSD"`
+	GasUSD     float64 `json:"gasUSD"`
+	TokenUSD   float64 `json:"tokenUSD"`
+	ServiceUSD float64 `json:"serviceUSD"`
+	TotalUSD   float64 `json:"totalUSD"`
 }
 
 type SignedQuote struct {
@@ -31,27 +36,56 @@ type SignedQuote struct {
 	Signature string `json:"signature"`
 }
 
-// type coingeckoJSON struct {
-// 	prices []string {
-// 		currency [] string : float32
-// 	}
-// }
+type OwlracleJSON struct {
+	Timestamp string  `json:"timestamp"`
+	LastBlock uint64  `json:"lastBlock"`
+	AvgTime   float64 `json:"avgTime"`
+	AvgTx     float64 `json:"avgTx"`
+	AvgGas    float64 `json:"avgGas"`
+	Speeds    []struct {
+		Acceptance           float64 `json:"acceptance"`
+		MaxFeePerGas         float64 `json:"maxFeePerGas"`
+		MaxPriorityFeePerGas float64 `json:"maxPriorityFeePerGas"`
+		BaseFee              float64 `json:"baseFee"`
+		EstimatedFee         float64 `json:"estimatedFee"`
+	} `json:"speeds"`
+}
 
 type Cost interface {
 	EstimateTransaction(p EstimationParams) (CostEstimate, error)
 	New(repo repository.Cost) Cost
+	QueryOwlracle(chainId uint64) (float64, error)
 }
 
 type cost struct {
 	repository repository.Cost // cached token and gas costs
+	client     *http.Client
 }
 
 func (c cost) New(repo repository.Cost) Cost {
-	return &cost{repository: repo}
+	return &cost{
+		repository: repo,
+		client:     &http.Client{Timeout: 10 * time.Second},
+	}
 }
 
 func NewCost(repo repository.Cost) Cost {
-	return &cost{repository: repo}
+	return &cost{
+		repository: repo,
+		client:     &http.Client{Timeout: 10 * time.Second},
+	}
+}
+
+func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
+	blockChain, err := model.ChainInfo(chainId)
+	if err != nil {
+		return 0, err
+	}
+	gwei, err := c.owlracle(blockChain.OwlracleName)
+	if err != nil {
+		return 0, err
+	}
+	return gwei, nil
 }
 
 func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
@@ -62,21 +96,30 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 		return CostEstimate{}, err
 	}
 	// Query cost of native token in USD
-	nativeCost := c.getUSDFromDB(blockChain.CoingeckoName)
+	nativeCost, err := c.getUSDFromDB(blockChain.CoingeckoName, 1)
+	if err != nil {
+		return CostEstimate{}, err
+	}
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
 		nativeCost *= 1.0 + common.NativeTokenBuffer(blockChain.ChainID)
 	}
 	transactionCost := p.CostETH * nativeCost
 	// Query owlracle for gas
-	ethGasFee := c.getGasFromDB(blockChain.OwlracleName)
-	// Convert it from gwei to eth and apply buffer
-	gasInUSD := ethGasFee * float32(p.GasUsedGwei) * nativeCost / 1e9
+	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
+	if err != nil {
+		return CostEstimate{}, err
+	}
+	// Convert it from gwei to eth to USD and apply buffer
+	gasInUSD := ethGasFee * float64(p.GasUsedGwei) * nativeCost / 1e9
 	if p.UseBuffer {
 		gasInUSD *= 1.0 + common.GasBuffer(blockChain.ChainID)
 	}
 	// Query cost of token in USD if used and apply buffer
-	tokenCost := c.getUSDFromDB(p.TokenName) * p.CostToken
+	tokenCost, err := c.getUSDFromDB(p.TokenName, p.CostToken)
+	if err != nil {
+		return CostEstimate{}, err
+	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
 	}
@@ -98,28 +141,73 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float32, uniqueEntri
 	return (float32(uniqueEntries*60000) / rateLimitPerMinute)
 }
 
-func (c cost) getUSDFromDB(coin string) float32 {
-	return 0
+func (c cost) getUSDFromDB(coin string, quantity float64) (float64, error) {
+	// DB under construction
+	res, err := c.coingeckoUSD(coin, 1)
+	if err != nil {
+		return 0, err
+	}
+	return res * quantity, nil
 }
 
-func (c cost) getGasFromDB(network string) float32 {
-	return 0
+func (c cost) getGasFromDB(network string) (float64, error) {
+	// DB under construction
+	res, err := c.owlracle(network)
+	if err != nil {
+		return 0, err
+	}
+	return res, nil
 }
 
-func coingeckoUSD(coin string, quantity float32) (float32, error) {
-	// requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
-	// response, err := http.Get(requestURL)
-	// if err != nil {
-	// 	return 0, err
-	// }
-	// body, err := ioutil.ReadAll(response.Body)
-	// if err != nil {
-	// 	return 0, err
-	// }
-	// body
+// Maybe place this in internal/util
+func (c cost) getJson(url string, target interface{}) error {
+	response, err := c.client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	jsonData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal([]byte(jsonData), target)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
+	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
+	var res map[string]interface{}
+	err := c.getJson(requestURL, &res)
+	if err != nil {
+		return 0, err
+	}
+	prices, found := res[coin]
+	if found {
+		priceMap := prices.(map[string]interface{})
+		usd, found := priceMap["usd"]
+		if found {
+			return usd.(float64), nil
+		}
+	}
 	return 0, nil
 }
 
-func owlracle(network string) float32 {
-	return 0
+func (c cost) owlracle(network string) (float64, error) {
+	requestURL := os.Getenv("OWLRACLE_API_URL") +
+		network +
+		"/gas?apikey=" +
+		os.Getenv("OWLRACLE_API_KEY") +
+		"&accept=100"
+	var res OwlracleJSON
+	err := c.getJson(requestURL, &res)
+	if err != nil {
+		return 0, err
+	}
+	if len(res.Speeds) > 0 {
+		return res.Speeds[0].MaxFeePerGas, nil
+	}
+	return 0, errors.New("owlracle: malformed response")
 }
