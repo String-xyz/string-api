@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE devices (
+CREATE TABLE device (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -8,10 +8,10 @@ CREATE TABLE devices (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   device_type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   device_description TEXT DEFAULT '',
-  user_id UUID NOT NULL REFERENCES users (id)
+  user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
-CREATE TABLE contacts (
+CREATE TABLE contact (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -19,10 +19,10 @@ CREATE TABLE contacts (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   contact_type TEXT NOT NULL, -- enum: [phone, email, etc...] to be defined at struct level in Go
   contact_status TEXT DEFAULT '', -- enum: [primary, inactive] to be defined at struct level in Go
-  user_id UUID NOT NULL REFERENCES users (id)
+  user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
-CREATE TABLE instruments (
+CREATE TABLE instrument (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +33,7 @@ CREATE TABLE instruments (
   public_key TEXT DEFAULT '',
   last_4 TEXT DEFAULT '',
   tags JSONB DEFAULT '[]'::JSONB,
-  user_id UUID NOT NULL REFERENCES users (id),
+  user_id UUID NOT NULL REFERENCES string_user (id),
   location_type TEXT DEFAULT '',
   address_number TEXT DEFAULT '',
   unit_number TEXT DEFAULT '',
@@ -45,6 +45,6 @@ CREATE TABLE instruments (
 );
 
 -- +goose Down
-DROP TABLE devices;
-DROP TABLE contacts;
-DROP TABLE instruments;
+DROP TABLE device;
+DROP TABLE contact;
+DROP TABLE instrument;

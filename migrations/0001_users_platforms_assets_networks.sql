@@ -3,7 +3,7 @@
 -- create extension for UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE users (
+CREATE TABLE string_user (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,17 +16,17 @@ CREATE TABLE users (
   last_name TEXT DEFAULT ''
 );
 
-CREATE TABLE platforms (
+CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   platform_type TEXT DEFAULT '', -- enum:
   api_key TEXT DEFAULT '',
   authentication_type TEXT DEFAULT '', --enum
-  tags TEXT[]
+  tags JSONB DEFAULT '[]'::JSONB
 );
 
-CREATE TABLE networks (
+CREATE TABLE network (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,21 +36,22 @@ CREATE TABLE networks (
   gas_token_id UUID DEFAULT NULL -- CREATE REFERENCE IN SEPARATE MIGRATION
 );
 
-CREATE TABLE assets (
+CREATE TABLE asset (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
   is_crypto BOOLEAN NOT NULL,
-  network_id UUID REFERENCES networks (id),
+  network_id UUID REFERENCES network (id),
   value_oracle TEXT DEFAULT ''
 );
 
-CREATE INDEX network_gas_token_id_fk ON networks (gas_token_id);
+CREATE INDEX network_gas_token_id_fk ON network (gas_token_id);
 
 -- +goose Down
-DROP TABLE users;
-DROP TABLE platforms;
-DROP TABLE assets;
-DROP TABLE networks;
+DROP TABLE user;
+DROP TABLE platform;
+DROP TABLE asset;
+DROP TABLE network;
+DROP INDEX network_gas_token_id_fk;
