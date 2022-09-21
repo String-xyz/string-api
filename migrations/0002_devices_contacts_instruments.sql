@@ -12,6 +12,7 @@ CREATE TABLE device (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   description TEXT DEFAULT '',
+  ip_addresses JSONB DEFAULT '[]'::JSONB,
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
