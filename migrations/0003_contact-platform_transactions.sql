@@ -22,9 +22,9 @@ EXECUTE PROCEDURE update_updated_at_column();
 -- TRANSACTION ----------------------------------------------------------
 CREATE TABLE transaction (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
-  txn_type TEXT DEFAULT '', -- enum
-  txn_timestamp TIMESTAMP WITH TIME ZONE,
-  txn_status TEXT DEFAULT '', --enum
+  type TEXT DEFAULT '', -- enum
+  timestamp TIMESTAMP WITH TIME ZONE,
+  status TEXT DEFAULT '', --enum
   tags JSONB DEFAULT '[]'::JSONB,
   smart_contract_params JSONB DEFAULT '{}'::JSONB,
   platform_id UUID REFERENCES platform (id),

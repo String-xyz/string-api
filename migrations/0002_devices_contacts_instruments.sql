@@ -10,8 +10,8 @@ CREATE TABLE device (
   last_used_at TIMESTAMP WITH TIME ZONE NOT NULL,
   validated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  device_type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
-  device_description TEXT DEFAULT '',
+  type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
+  description TEXT DEFAULT '',
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
@@ -29,8 +29,8 @@ CREATE TABLE contact (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_authenticated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  contact_type TEXT NOT NULL, -- enum: [phone, email, etc...] to be defined at struct level in Go
-  contact_status TEXT DEFAULT '', -- enum: [primary, inactive] to be defined at struct level in Go
+  type TEXT NOT NULL, -- enum: [phone, email, etc...] to be defined at struct level in Go
+  status TEXT DEFAULT '', -- enum: [primary, inactive] to be defined at struct level in Go
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
@@ -47,14 +47,14 @@ CREATE TABLE instrument (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  instrument_type TEXT NOT NULL, -- enum:  includes crypto wallet
-  instrument_status TEXT NOT NULL, -- enum: 
-  instrument_network TEXT NOT NULL, -- enum: 
+  type TEXT NOT NULL, -- enum:  includes crypto wallet
+  status TEXT NOT NULL, -- enum: 
+  network TEXT NOT NULL, -- enum: 
   public_key TEXT DEFAULT '',
   last_4 TEXT DEFAULT '',
   tags JSONB DEFAULT '[]'::JSONB,
   user_id UUID NOT NULL REFERENCES string_user (id),
-  location_type TEXT DEFAULT '',
+  location_type TEXT DEFAULT '', -- location it's own table?
   address_number TEXT DEFAULT '',
   unit_number TEXT DEFAULT '',
   street_name TEXT DEFAULT '',

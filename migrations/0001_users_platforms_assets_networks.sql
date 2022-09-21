@@ -27,8 +27,8 @@ CREATE TABLE string_user (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  user_type TEXT NOT NULL, -- enum: to be defined at struct level in Go
-  user_status TEXT NOT NULL, -- enum: to be defined at struct level in Go
+  type TEXT NOT NULL, -- enum: to be defined at struct level in Go
+  status TEXT NOT NULL, -- enum: to be defined at struct level in Go
   tags JSONB DEFAULT '{}'::JSONB,
   first_name TEXT DEFAULT '', -- name in separate table?
   middle_name TEXT DEFAULT '',
@@ -47,9 +47,9 @@ CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  platform_type TEXT DEFAULT '', -- enum:
+  type TEXT DEFAULT '', -- enum:
   api_key TEXT DEFAULT '',
-  authentication_type TEXT DEFAULT '', --enum
+  authentication TEXT DEFAULT '', --enum [email, phone, wallet]
   tags JSONB DEFAULT '[]'::JSONB
 );
 CREATE TRIGGER update_platform_updated_at
