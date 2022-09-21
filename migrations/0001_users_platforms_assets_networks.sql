@@ -50,7 +50,7 @@ CREATE TABLE asset (
 CREATE INDEX network_gas_token_id_fk ON network (gas_token_id);
 
 -- +goose Down
-DROP TABLE user;
+DROP TABLE string_user;
 DROP TABLE platform;
 DROP TABLE asset;
 DROP TABLE network;
