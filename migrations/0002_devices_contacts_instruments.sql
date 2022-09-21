@@ -31,6 +31,7 @@ CREATE TABLE contact (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- enum: [phone, email, etc...] to be defined at struct level in Go
   status TEXT DEFAULT '', -- enum: [primary, inactive] to be defined at struct level in Go
+  data TEXT DEFAULT '', -- the contact information
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
