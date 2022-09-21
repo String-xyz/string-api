@@ -1,8 +1,27 @@
+-------------------------------------------------------------------------
 -- +goose Up
 
--- create extension for UUID
+-------------------------------------------------------------------------
+-- create extension for UUID --------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-------------------------------------------------------------------------
+-- UPDATE_UPDATED_AT_COLUMN() -------------------------------------------
+-------------------------------------------------------------------------
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    NEW.update_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+-- +goose StatementEnd
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- STRING_USER ----------------------------------------------------------
 CREATE TABLE string_user (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,6 +35,14 @@ CREATE TABLE string_user (
   last_name TEXT DEFAULT ''
 );
 
+CREATE TRIGGER update_string_user_updated_at
+    BEFORE UPDATE
+    ON string_user
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-------------------------------------------------------------------------
+-- PLATFORM -------------------------------------------------------------
 CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -25,7 +52,14 @@ CREATE TABLE platform (
   authentication_type TEXT DEFAULT '', --enum
   tags JSONB DEFAULT '[]'::JSONB
 );
+CREATE TRIGGER update_platform_updated_at
+    BEFORE UPDATE
+    ON platform
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
 
+-------------------------------------------------------------------------
+-- NETWORK --------------------------------------------------------------
 CREATE TABLE network (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -35,7 +69,14 @@ CREATE TABLE network (
   chain_id INT NOT NULL,
   gas_token_id UUID DEFAULT NULL -- CREATE REFERENCE IN SEPARATE MIGRATION
 );
+CREATE TRIGGER update_network_updated_at
+    BEFORE UPDATE
+    ON network
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
 
+-------------------------------------------------------------------------
+-- ASSET ----------------------------------------------------------------
 CREATE TABLE asset (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,10 +88,43 @@ CREATE TABLE asset (
   value_oracle TEXT DEFAULT ''
 );
 
+CREATE TRIGGER update_asset_updated_at
+    BEFORE UPDATE
+    ON asset
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
 CREATE INDEX network_gas_token_id_fk ON network (gas_token_id);
 
+
+-------------------------------------------------------------------------
 -- +goose Down
-DROP TABLE string_user;
-DROP TABLE platform;
+
+-------------------------------------------------------------------------
+-- ASSET ----------------------------------------------------------------
+DROP TRIGGER IF EXISTS update_asset_updated_at ON asset;
+DROP INDEX IF EXISTS network_gas_token_id_fk;
 DROP TABLE asset;
+
+-------------------------------------------------------------------------
+-- NETWORK --------------------------------------------------------------
+DROP TRIGGER IF EXISTS update_network_updated_at ON network;
 DROP TABLE network;
+
+-------------------------------------------------------------------------
+-- PLATFORM -------------------------------------------------------------
+DROP TRIGGER IF EXISTS update_platform_updated_at ON platfom;
+DROP TABLE platform;
+
+-------------------------------------------------------------------------
+-- STRING_USER ----------------------------------------------------------
+DROP TRIGGER IF EXISTS update_string_user_updated_at ON string_user;
+DROP TABLE string_user;
+
+-------------------------------------------------------------------------
+-- UPDATE_UPDATED_AT_COLUMN() -------------------------------------------
+DROP FUNCTION update_updated_at_column;
+
+-------------------------------------------------------------------------
+-- UUID EXTENSION -------------------------------------------------------
+DROP EXTENSION IF EXISTS "uuid-ossp";

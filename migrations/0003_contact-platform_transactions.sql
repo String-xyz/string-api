@@ -1,4 +1,8 @@
+-------------------------------------------------------------------------
 -- +goose Up
+
+-------------------------------------------------------------------------
+-- CONTACT_PLATFORM -----------------------------------------------------
 CREATE TABLE contact_platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -8,6 +12,14 @@ CREATE TABLE contact_platform (
   platform_id UUID REFERENCES platform (id)
 );
 
+CREATE TRIGGER update_contact_platform_updated_at
+    BEFORE UPDATE
+    ON contact_platform
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-------------------------------------------------------------------------
+-- TRANSACTION ----------------------------------------------------------
 CREATE TABLE transaction (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   txn_type TEXT DEFAULT '', -- enum
@@ -36,6 +48,21 @@ CREATE TABLE transaction (
   string_fee BIGINT DEFAULT 0 -- // always USD?
 );
 
+CREATE TRIGGER update_transaction_updated_at
+    BEFORE UPDATE
+    ON transaction
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-------------------------------------------------------------------------
 -- +goose Down
-DROP TABLE contact_platform;
+
+-------------------------------------------------------------------------
+-- TRANSACTION ----------------------------------------------------------
+DROP TRIGGER IF EXISTS update_device_updated_at ON device;
 DROP TABLE transaction;
+
+-------------------------------------------------------------------------
+-- CONTACT_PLATFORM -----------------------------------------------------
+DROP TRIGGER IF EXISTS update_device_updated_at ON device;
+DROP TABLE contact_platform;
