@@ -54,4 +54,3 @@ DROP TABLE string_user;
 DROP TABLE platform;
 DROP TABLE asset;
 DROP TABLE network;
-DROP INDEX network_gas_token_id_fk;
