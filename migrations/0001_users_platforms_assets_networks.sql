@@ -67,7 +67,7 @@ CREATE TABLE network (
   name TEXT NOT NULL,
   network_id INT DEFAULT 0,
   chain_id INT NOT NULL,
-  gas_token_id UUID DEFAULT NULL -- CREATE REFERENCE IN SEPARATE MIGRATION
+  gas_token_id UUID DEFAULT NULL -- INDEX CREATED BELOW
 );
 CREATE TRIGGER update_network_updated_at
     BEFORE UPDATE
