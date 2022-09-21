@@ -16,24 +16,24 @@ CREATE TABLE transactions (
   tags JSONB DEFAULT '[]'::JSONB,
   smart_contract_params JSONB DEFAULT '{}'::JSONB,
   platform_id UUID REFERENCES platforms (id),
-  origin_amount FLOAT, -- // string? should support both crypto and fiat
+  origin_amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
   origin_asset UUID REFERENCES assets (id),
-  origin_value FLOAT,
+  origin_value BIGINT DEFAULT 0,
   origin_user_id UUID NOT NULL REFERENCES users (id),
   origin_instrument_id UUID NOT NULL REFERENCES instruments (id),
-  origin_user_location TEXT, 
-  destination_amount FLOAT, -- // string? should support both crypto and fiat
+  origin_user_location TEXT DEFAULT '', 
+  destination_amount BIGINT DEFAULT 0, -- // string? should support both crypto and fiat
   destination_asset UUID NOT NULL REFERENCES assets (id),
-  destination_value FLOAT,
+  destination_value BIGINT DEFAULT 0,
   destination_user_id UUID NOT NULL REFERENCES users (id),
   destination_instrument_id UUID NOT NULL REFERENCES instruments (id),
   transaction_hash TEXT DEFAULT '',
   network_id UUID NOT NULL REFERENCES networks (id),
-  network_fee INT,
+  network_fee BIGINT DEFAULT 0,
   network_fee_asset TEXT DEFAULT '',
-  processing_fee FLOAT,
+  processing_fee BIGINT DEFAULT 0,
   processing_asset UUID REFERENCES assets (id),
-  string_fee FLOAT -- // always USD?
+  string_fee BIGINT DEFAULT 0 -- // always USD?
 );
 
 -- +goose Down
