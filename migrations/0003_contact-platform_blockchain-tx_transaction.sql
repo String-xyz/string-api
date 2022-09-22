@@ -31,7 +31,7 @@ CREATE TABLE blockchain_tx (
   network_id UUID NOT NULL REFERENCES network (id),
   network_fee BIGINT DEFAULT 0,
   parameters JSONB DEFAULT '{}'::JSONB,
-  network_abi JSONB DEFAULT '{}'::JSONB,
+  contract_abi JSONB DEFAULT '{}'::JSONB,
   sender_amount BIGINT DEFAULT 0,
   sender_asset UUID REFERENCES asset (id),
   sender_value BIGINT DEFAULT 0,
@@ -56,11 +56,11 @@ CREATE TABLE transaction (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  type TEXT DEFAULT '', -- enum [fiat-to-crypto, crypto-to-fiat]
   timestamp TIMESTAMP WITH TIME ZONE,
+  type TEXT DEFAULT '', -- enum [fiat-to-crypto, crypto-to-fiat]
   status TEXT DEFAULT '', --enum
   tags JSONB DEFAULT '[]'::JSONB,
-  smart_contract_params JSONB DEFAULT '{}'::JSONB,
+  device_id UUID REFERENCES device (id),
   platform_id UUID REFERENCES platform (id),
   sender_amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
   sender_asset UUID REFERENCES asset (id),
