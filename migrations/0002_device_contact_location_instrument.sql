@@ -43,6 +43,28 @@ CREATE TRIGGER update_contact_updated_at
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
+-- LOCATION ---------------------------------------------------------------
+CREATE TABLE location (
+  id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  location_type TEXT DEFAULT '',
+  building_number TEXT DEFAULT '',
+  unit_number TEXT DEFAULT '',
+  street_name TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  state TEXT DEFAULT '',
+  postal_code TEXT DEFAULT '',
+  country TEXT DEFAULT '' -- ISO 3166-1 standard
+);
+
+CREATE TRIGGER update_location_updated_at
+    BEFORE UPDATE
+    ON location
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-------------------------------------------------------------------------
 -- INSTRUMENT ---------------------------------------------------------------
 CREATE TABLE instrument (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
@@ -56,14 +78,7 @@ CREATE TABLE instrument (
   last_4 TEXT DEFAULT '',
   tags JSONB DEFAULT '[]'::JSONB,
   user_id UUID NOT NULL REFERENCES string_user (id),
-  location_type TEXT DEFAULT '', -- location it's own table?
-  building_number TEXT DEFAULT '',
-  unit_number TEXT DEFAULT '',
-  street_name TEXT DEFAULT '',
-  city TEXT DEFAULT '',
-  state TEXT DEFAULT '',
-  postal_code TEXT DEFAULT '',
-  country TEXT DEFAULT '' -- ISO 3166-1 standard
+  location_id UUID REFERENCES location (id)
 );
 
 CREATE TRIGGER update_instrument_updated_at
@@ -79,6 +94,11 @@ EXECUTE PROCEDURE update_updated_at_column();
 -- INSTRUMENT -----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_instrument_updated_at ON instrument;
 DROP TABLE instrument;
+
+-------------------------------------------------------------------------
+-- LOCATION -----------------------------------------------------------
+DROP TRIGGER IF EXISTS update_location_updated_at ON location;
+DROP TABLE location;
 
 -------------------------------------------------------------------------
 -- CONTACT --------------------------------------------------------------
