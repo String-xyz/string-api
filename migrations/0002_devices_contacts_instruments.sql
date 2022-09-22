@@ -57,7 +57,7 @@ CREATE TABLE instrument (
   tags JSONB DEFAULT '[]'::JSONB,
   user_id UUID NOT NULL REFERENCES string_user (id),
   location_type TEXT DEFAULT '', -- location it's own table?
-  address_number TEXT DEFAULT '',
+  building_number TEXT DEFAULT '',
   unit_number TEXT DEFAULT '',
   street_name TEXT DEFAULT '',
   city TEXT DEFAULT '',
