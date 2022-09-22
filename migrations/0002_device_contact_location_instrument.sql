@@ -48,7 +48,9 @@ CREATE TABLE location (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  location_type TEXT DEFAULT '',
+  type TEXT DEFAULT '',
+  status TEXT NOT NULL, -- enum: 
+  tags JSONB DEFAULT '[]'::JSONB,
   building_number TEXT DEFAULT '',
   unit_number TEXT DEFAULT '',
   street_name TEXT DEFAULT '',
@@ -73,10 +75,10 @@ CREATE TABLE instrument (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- enum:  includes crypto wallet
   status TEXT NOT NULL, -- enum: 
+  tags JSONB DEFAULT '[]'::JSONB,
   network TEXT NOT NULL, -- enum: 
   public_key TEXT DEFAULT '',
   last_4 TEXT DEFAULT '',
-  tags JSONB DEFAULT '[]'::JSONB,
   user_id UUID NOT NULL REFERENCES string_user (id),
   location_id UUID REFERENCES location (id)
 );
