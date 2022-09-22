@@ -37,11 +37,11 @@ CREATE TABLE blockchain_tx (
   sender_value BIGINT DEFAULT 0,
   sender_user_id UUID NOT NULL REFERENCES string_user (id),
   sender_instrument_id UUID NOT NULL REFERENCES instrument (id),
-  recipient_amount BIGINT DEFAULT 0,
-  recipient_asset UUID NOT NULL REFERENCES asset (id),
-  recipient_value BIGINT DEFAULT 0,
-  recipient_user_id UUID NOT NULL REFERENCES string_user (id),
-  recipient_instrument_id UUID NOT NULL REFERENCES instrument (id)
+  reciever_amount BIGINT DEFAULT 0,
+  reciever_asset UUID NOT NULL REFERENCES asset (id),
+  reciever_value BIGINT DEFAULT 0,
+  reciever_user_id UUID NOT NULL REFERENCES string_user (id),
+  reciever_instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
 
 CREATE TRIGGER update_blockchain_tx_updated_at
@@ -67,11 +67,11 @@ CREATE TABLE transaction (
   sender_value BIGINT DEFAULT 0, -- the relative quantity in USD at the time of the transaction
   sender_user_id UUID NOT NULL REFERENCES string_user (id),
   sender_instrument_id UUID NOT NULL REFERENCES instrument (id),
-  recipient_amount BIGINT DEFAULT 0,
-  recipient_asset UUID NOT NULL REFERENCES asset (id),
-  recipient_value BIGINT DEFAULT 0,
-  recipient_user_id UUID NOT NULL REFERENCES string_user (id),
-  recipient_instrument_id UUID NOT NULL REFERENCES instrument (id),
+  reciever_amount BIGINT DEFAULT 0,
+  reciever_asset UUID NOT NULL REFERENCES asset (id),
+  reciever_value BIGINT DEFAULT 0,
+  reciever_user_id UUID NOT NULL REFERENCES string_user (id),
+  reciever_instrument_id UUID NOT NULL REFERENCES instrument (id),
   blockchain_tx_id UUID NOT NULL REFERENCES blockchain_tx (id),
   processing_fee BIGINT DEFAULT 0,
   processing_fee_asset UUID REFERENCES asset (id),
