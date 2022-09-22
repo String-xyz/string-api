@@ -83,7 +83,7 @@ CREATE TABLE asset (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
-  decimals INT DEFAULT 1,
+  decimals INT DEFAULT 0,
   is_crypto BOOLEAN NOT NULL,
   network_id UUID REFERENCES network (id),
   value_oracle TEXT DEFAULT ''
