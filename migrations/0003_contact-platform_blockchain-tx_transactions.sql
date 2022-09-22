@@ -22,6 +22,8 @@ EXECUTE PROCEDURE update_updated_at_column();
 -- BLOCKCHAIN_TX ----------------------------------------------------------
 CREATE TABLE blockchain_tx (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   timestamp TIMESTAMP WITH TIME ZONE,
   status TEXT DEFAULT '', --enum
   tags JSONB DEFAULT '[]'::JSONB,
@@ -39,8 +41,8 @@ CREATE TABLE blockchain_tx (
   recipient_asset UUID NOT NULL REFERENCES asset (id),
   recipient_value BIGINT DEFAULT 0,
   recipient_user_id UUID NOT NULL REFERENCES string_user (id),
-  recipient_instrument_id UUID NOT NULL REFERENCES instrument (id),
-)
+  recipient_instrument_id UUID NOT NULL REFERENCES instrument (id)
+);
 
 CREATE TRIGGER update_blockchain_tx_updated_at
     BEFORE UPDATE
@@ -52,6 +54,8 @@ EXECUTE PROCEDURE update_updated_at_column();
 -- TRANSACTION ----------------------------------------------------------
 CREATE TABLE transaction (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   type TEXT DEFAULT '', -- enum [fiat-to-crypto, crypto-to-fiat]
   timestamp TIMESTAMP WITH TIME ZONE,
   status TEXT DEFAULT '', --enum
