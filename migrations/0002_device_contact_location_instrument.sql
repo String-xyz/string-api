@@ -17,7 +17,7 @@ CREATE TABLE device (
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
-CREATE TRIGGER update_device_updated_at
+CREATE OR REPLACE TRIGGER update_device_updated_at
     BEFORE UPDATE
     ON device
     FOR EACH ROW
@@ -37,7 +37,7 @@ CREATE TABLE contact (
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
-CREATE TRIGGER update_contact_updated_at
+CREATE OR REPLACE TRIGGER update_contact_updated_at
     BEFORE UPDATE
     ON contact
     FOR EACH ROW
@@ -61,7 +61,7 @@ CREATE TABLE location (
   country TEXT DEFAULT '' -- ISO 3166-1 standard
 );
 
-CREATE TRIGGER update_location_updated_at
+CREATE OR REPLACE TRIGGER update_location_updated_at
     BEFORE UPDATE
     ON location
     FOR EACH ROW
@@ -84,7 +84,7 @@ CREATE TABLE instrument (
   location_id UUID REFERENCES location (id)
 );
 
-CREATE TRIGGER update_instrument_updated_at
+CREATE OR REPLACE TRIGGER update_instrument_updated_at
     BEFORE UPDATE
     ON instrument
     FOR EACH ROW

@@ -12,14 +12,31 @@ CREATE TABLE contact_platform (
   platform_id UUID REFERENCES platform (id)
 );
 
-CREATE TRIGGER update_contact_platform_updated_at
+CREATE OR REPLACE TRIGGER update_contact_platform_updated_at
     BEFORE UPDATE
     ON contact_platform
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
--- BLOCKCHAIN_TX ----------------------------------------------------------
+-- DEVICE_INSTRUMENT ----------------------------------------------------
+CREATE TABLE device_instrument (
+  id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  device_id UUID REFERENCES device (id),
+  instrument_id UUID REFERENCES insrument (id)
+);
+
+CREATE OR REPLACE TRIGGER update_device_instrument_updated_at
+    BEFORE UPDATE
+    ON device_instrument
+    FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-------------------------------------------------------------------------
+-- BLOCKCHAIN_TX --------------------------------------------------------
 CREATE TABLE blockchain_tx (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -44,7 +61,7 @@ CREATE TABLE blockchain_tx (
   reciever_instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
 
-CREATE TRIGGER update_blockchain_tx_updated_at
+CREATE OR REPLACE TRIGGER update_blockchain_tx_updated_at
     BEFORE UPDATE
     ON blockchain_tx
     FOR EACH ROW
@@ -79,7 +96,7 @@ CREATE TABLE transaction (
   string_fee BIGINT DEFAULT 0 -- // always USD?
 );
 
-CREATE TRIGGER update_transaction_updated_at
+CREATE OR REPLACE TRIGGER update_transaction_updated_at
     BEFORE UPDATE
     ON transaction
     FOR EACH ROW
@@ -90,15 +107,20 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
 -- TRANSACTION ----------------------------------------------------------
-DROP TRIGGER IF EXISTS update_transaction_updated_at ON device;
+DROP TRIGGER IF EXISTS update_transaction_updated_at ON transaction;
 DROP TABLE transaction;
 
 -------------------------------------------------------------------------
--- TRANSACTION ----------------------------------------------------------
-DROP TRIGGER IF EXISTS update_blockchain_tx_updated_at ON device;
+-- BLOCKCHAIN_TX --------------------------------------------------------
+DROP TRIGGER IF EXISTS update_blockchain_tx_updated_at ON blockchain_tx;
 DROP TABLE blockchain_tx;
 
 -------------------------------------------------------------------------
+-- DEVICE_INSTRUMENT ----------------------------------------------------
+DROP TRIGGER IF EXISTS update_device_instrument_updated_at ON device_instrument;
+DROP TABLE device_instrument;
+
+-------------------------------------------------------------------------
 -- CONTACT_PLATFORM -----------------------------------------------------
-DROP TRIGGER IF EXISTS update_contact_platform_updated_at ON device;
+DROP TRIGGER IF EXISTS update_contact_platform_updated_at ON contact_platform;
 DROP TABLE contact_platform;

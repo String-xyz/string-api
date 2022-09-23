@@ -35,7 +35,7 @@ CREATE TABLE string_user (
   last_name TEXT DEFAULT ''
 );
 
-CREATE TRIGGER update_string_user_updated_at
+CREATE OR REPLACE TRIGGER update_string_user_updated_at
     BEFORE UPDATE
     ON string_user
     FOR EACH ROW
@@ -52,7 +52,7 @@ CREATE TABLE platform (
   authentication TEXT DEFAULT '', --enum [email, phone, wallet]
   tags JSONB DEFAULT '[]'::JSONB
 );
-CREATE TRIGGER update_platform_updated_at
+CREATE OR REPLACE TRIGGER update_platform_updated_at
     BEFORE UPDATE
     ON platform
     FOR EACH ROW
@@ -69,7 +69,7 @@ CREATE TABLE network (
   chain_id INT NOT NULL,
   gas_token_id UUID DEFAULT NULL -- INDEX CREATED BELOW
 );
-CREATE TRIGGER update_network_updated_at
+CREATE OR REPLACE TRIGGER update_network_updated_at
     BEFORE UPDATE
     ON network
     FOR EACH ROW
@@ -89,7 +89,7 @@ CREATE TABLE asset (
   value_oracle TEXT DEFAULT ''
 );
 
-CREATE TRIGGER update_asset_updated_at
+CREATE OR REPLACE TRIGGER update_asset_updated_at
     BEFORE UPDATE
     ON asset
     FOR EACH ROW
