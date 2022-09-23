@@ -61,6 +61,7 @@ CREATE TABLE transaction (
   status TEXT DEFAULT '', --enum
   tags JSONB DEFAULT '[]'::JSONB,
   device_id UUID REFERENCES device (id),
+  ip_address TEXT DEFAULT '',
   platform_id UUID REFERENCES platform (id),
   sender_amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
   sender_asset UUID REFERENCES asset (id),
