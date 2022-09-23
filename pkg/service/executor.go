@@ -71,8 +71,8 @@ func (e executor) Initialize(RPC string) (*w3.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	e.client = cl
-	e.geth = cl2
+	*e.client = *cl
+	*e.geth = *cl2
 	return cl, nil
 }
 
