@@ -26,7 +26,7 @@ CREATE TABLE device_instrument (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   device_id UUID REFERENCES device (id),
-  instrument_id UUID REFERENCES insrument (id)
+  instrument_id UUID REFERENCES instrument (id)
 );
 
 CREATE OR REPLACE TRIGGER update_device_instrument_updated_at
