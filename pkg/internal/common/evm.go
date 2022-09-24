@@ -56,7 +56,7 @@ func ParseParams(function *w3.Func, signature string, params []string) ([]byte, 
 			return nil, errors.New("executor: parseParams: unsupported type")
 		}
 	}
-	result, err := function.EncodeArgs(args)
+	result, err := function.EncodeArgs(args...)
 	if err != nil {
 		return nil, err
 	}

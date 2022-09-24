@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"os"
 	"time"
@@ -11,14 +12,15 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type EstimationParams struct {
 	ChainID     uint64  `json:"chainID"`
-	CostETH     float64 `json:"costETH"`
+	CostETH     big.Int `json:"costETH"`
 	UseBuffer   bool    `json:"useBuffer"`
 	GasUsedGwei uint64  `json:"gasUsedGwei"`
-	CostToken   float64 `json:"costToken"`
+	CostToken   big.Int `json:"costToken"`
 	TokenName   string  `json:"tokenName"`
 }
 
@@ -88,6 +90,18 @@ func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
 	return gwei, nil
 }
 
+func weiToEther(wei *big.Int) float64 {
+	f := new(big.Float)
+	f.SetPrec(236)
+	f.SetMode(big.ToNearestEven)
+	fWei := new(big.Float)
+	fWei.SetPrec(236)
+	fWei.SetMode(big.ToNearestEven)
+	ethBig := f.Quo(fWei.SetInt(wei), big.NewFloat(params.Ether))
+	eth64, _ := ethBig.Float64() // OK to reduce precision?
+	return eth64
+}
+
 func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 	// Get Unix Timestamp
 	date := time.Now().Unix()
@@ -104,7 +118,8 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 	if p.UseBuffer {
 		nativeCost *= 1.0 + common.NativeTokenBuffer(blockChain.ChainID)
 	}
-	transactionCost := p.CostETH * nativeCost
+	costEth := weiToEther(&p.CostETH)
+	transactionCost := costEth * nativeCost
 	// Query owlracle for gas
 	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
 	if err != nil {
@@ -116,7 +131,8 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 		gasInUSD *= 1.0 + common.GasBuffer(blockChain.ChainID)
 	}
 	// Query cost of token in USD if used and apply buffer
-	tokenCost, err := c.getUSDFromDB(p.TokenName, p.CostToken)
+	costToken := weiToEther(&p.CostToken)
+	tokenCost, err := c.getUSDFromDB(p.TokenName, costToken)
 	if err != nil {
 		return CostEstimate{}, err
 	}

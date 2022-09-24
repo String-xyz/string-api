@@ -17,35 +17,27 @@ import (
 	"github.com/lmittmann/w3/w3types"
 )
 
-// type ContractCall struct {
-// 	CxAddr     string
-// 	CxABI      []string
-// 	CxFunc     string
-// 	CxParams   []string
-// 	TxValue    int64
-// 	TxGasLimit uint64
-// }
-
-// New format
 type ContractCall struct {
+	RPC        string
 	CxAddr     string   // Address of contract ie "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 	CxFunc     string   // Function declaration ie "mintTo(address) payable"
 	CxReturn   string   // Function return type ie "uint256"
 	CxParams   []string // Function parameters ie ["0x000000000000000000BEEF", "32"]
 	TxValue    string   // Amount of native token to send ie "0.08 ether"
-	TxGasLimit uint64   // Gwei gas limit ie 210000
+	TxGasLimit string   // Gwei gas limit ie "210000 gwei"
 }
 
 type CallEstimate struct {
-	Value   int64
+	Value   big.Int
 	Gas     uint64
 	Success bool
 }
 
 type Executor interface {
 	New() Executor
-	Initialize(RPC string) (*w3.Client, error)
+	Initialize(RPC string) error
 	Estimate(call ContractCall) (CallEstimate, error)
+	Close() error
 }
 
 type executor struct {
@@ -61,23 +53,34 @@ func NewExecutor() Executor {
 	return &executor{}
 }
 
-func (e executor) Initialize(RPC string) (*w3.Client, error) {
-	cl, err := w3.Dial(RPC)
+func (e *executor) Initialize(RPC string) error {
+	var err error
+	e.client, err = w3.Dial(RPC)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Do it again for our low-level client
-	cl2, err := ethclient.Dial(RPC)
+	e.geth, err = ethclient.Dial(RPC)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	*e.client = *cl
-	*e.geth = *cl2
-	return cl, nil
+	return nil
+}
+
+func (e *executor) Close() error {
+	err := e.client.Close()
+	if err != nil {
+		return err
+	}
+	e.geth.Close()
+	return nil
 }
 
 func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
-	sk := crypto.ToECDSAUnsafe(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	if err != nil {
+		return CallEstimate{}, err
+	}
 	to := w3.A(call.CxAddr)
 	value := w3.I(call.TxValue)
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
@@ -85,14 +88,13 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 		return CallEstimate{}, errors.New("Estimate: Error casting public key to ECDSA")
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
-	gasLimit := call.TxGasLimit
+	gasLimit := w3.I(call.TxGasLimit)
 
 	var chainId64 uint64
-	err := e.client.Call(eth.ChainID().Returns(&chainId64))
+	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
 		return CallEstimate{}, err
 	}
-	// chainId := new(big.Int).SetUint64(chainId64)
 
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
@@ -110,7 +112,11 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	}
 	gasGwei := new(big.Int).SetUint64(uint64(gasGwei64)) // THIS IS ROUNDING DOWN OUR FLOAT
 
-	var funcEVM = w3.MustNewFunc(call.CxFunc, call.CxReturn)
+	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
+	if err != nil {
+		return CallEstimate{}, err
+	}
+
 	data, err := str.ParseParams(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
 		return CallEstimate{}, err
@@ -119,7 +125,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	msg := w3types.Message{
 		From:      sender,
 		To:        &to,
-		Gas:       gasLimit,
+		Gas:       gasLimit.Uint64(),
 		GasPrice:  gasGwei,
 		GasFeeCap: feeCap,
 		GasTipCap: tipCap,
@@ -130,12 +136,8 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	var estimatedGas uint64
 	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
 	if err != nil {
-		return CallEstimate{}, err
+		// Execution Will Revert!
+		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, nil
 	}
-
-	success := true // maybe EstimateGas will return an error upon evm revert?
-
-	// signedTx, _ := types.SignTx(tx, types.NewLondonSigner(chainId), sk)
-	//return e.eth.SendTransaction(context.Background(), signedTx)
-	return CallEstimate{Value: value.Int64(), Gas: estimatedGas, Success: success}, nil
+	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
 }

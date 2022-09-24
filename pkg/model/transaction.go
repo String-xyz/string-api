@@ -33,11 +33,11 @@ type TransactionData struct {
 	TransactionRequest
 	UserAddress        string   `json:"userAddress"`        // users wallet
 	ContractAddress    string   `json:"contractAddress"`    // 0x0000 or ENS name for contract
-	ContractABI        []string `json:"contractABI"`        // relevant declarations of contract ABI
-	ContractFunction   string   `json:"contractFunction"`   // function name, i.e. 'transfer' or 'mint'
+	ContractFunction   string   `json:"contractFunction"`   // function declaration, ie "mintTo(address) payable"
+	ContractReturn     string   `json:"contractReturn"`     // function return, ie "(uint256)"
 	ContractParameters []string `json:"contractParameters"` // All parameters which will be passed into the contractFunction
-	TxValue            string   `json:"txValue"`            // gwei cost of transaction
-	GasLimit           string   `json:"gasLimit"`           // maximum gas to be used for transaction
+	TxValue            string   `json:"txValue"`            // cost of transaction ie "0.08 eth"
+	GasLimit           string   `json:"gasLimit"`           // maximum gas to be used for transaction ie "21000 gwei"
 	Forward            bool     `json:"forward"`            // Forward resulting asset?
 }
 
