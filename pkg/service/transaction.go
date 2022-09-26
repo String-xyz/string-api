@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -10,8 +9,8 @@ import (
 )
 
 type Transaction interface {
-	Quote(d model.TransactionData) (model.TransactionRequest, error)
-	Execute() (model.Transaction, error)
+	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
+	Execute(e model.ExecutionRequest) (model.Transaction, error)
 	New(repo repository.Transaction) Transaction
 }
 
@@ -27,60 +26,64 @@ func NewTransaction(repo repository.Transaction) Transaction {
 	return &transaction{repository: repo}
 }
 
-func (t transaction) Quote(d model.TransactionData) (model.TransactionRequest, error) {
+func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
+	// TODO: use prefab service to parse d and fill out known params
+	res := model.ExecutionRequest{TransactionRequest: d}
+
 	executor := NewExecutor()
+	// Verify Chain is supported and get RPC for chain
 	chain, err := model.ChainInfo(uint64(d.ChainID))
 	if err != nil {
-		return model.TransactionRequest{}, err
+		return res, err
 	}
+
 	executor.Initialize(chain.RPC)
 	call := ContractCall{
 		RPC:        chain.RPC,
-		CxAddr:     d.ContractAddress,
-		CxFunc:     d.ContractFunction,
-		CxReturn:   d.ContractReturn,
-		CxParams:   d.ContractParameters,
+		CxAddr:     d.CxAddr,
+		CxFunc:     d.CxFunc,
+		CxReturn:   d.CxReturn,
+		CxParams:   d.CxParams,
 		TxValue:    d.TxValue,
-		TxGasLimit: d.GasLimit,
+		TxGasLimit: d.TxGasLimit,
 	}
-	estimate, err := executor.Estimate(call)
-	fmt.Printf("ESTIMATE=%+v\n\n", estimate)
-	fmt.Printf("ERR=%+v", err)
+	// Estimate value and gas of TX request
+	callEstimate, err := executor.Estimate(call)
+	if err != nil {
+		return res, err
+	}
 
 	executor.Close()
 
 	cost := NewCost(repository.NewCost(nil))
 	estimationParams := EstimationParams{
 		ChainID:     chain.ChainID,
-		CostETH:     estimate.Value,
+		CostETH:     callEstimate.Value,
 		UseBuffer:   true,
-		GasUsedGwei: estimate.Gas,
+		GasUsedGwei: callEstimate.Gas,
 		CostToken:   *big.NewInt(0),
 		TokenName:   "",
 	}
-	res, err := cost.EstimateTransaction(estimationParams)
+	// Estimate Cost in USD to execute TX request
+	costEstimate, err := cost.EstimateTransaction(estimationParams)
 	if err != nil {
-		return model.TransactionRequest{}, err
+		return res, err
 	}
-	fmt.Println("ETH=", res)
+	res.Quote = costEstimate
 
-	//TEST
-	signed, err := common.Sign("this is a test")
+	// Sign entire payload
+	signature, err := common.Sign(res)
 	if err != nil {
-		return model.TransactionRequest{}, err
+		return res, err
 	}
-	fmt.Printf("\nSIGNED=%+v", signed)
-	valid, err := common.ValidateSignature(signed, "this is a test2")
-	if err != nil {
-		fmt.Printf("\nERROR=%+v", err)
-		return model.TransactionRequest{}, err
-	}
-	fmt.Printf("\nVALID=%+v", valid)
+	res.Signature = signature
 
-	return model.TransactionRequest{}, nil
+	return res, nil
 }
 
-func (t transaction) Execute() (model.Transaction, error) {
+func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error) {
+	// TODO: Create entry of E in TX DB
+
 	// create execution response struct and return that
 	return model.Transaction{}, nil
 }
