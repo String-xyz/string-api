@@ -24,7 +24,12 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
-	res, err := t.Service.Execute()
+	var body model.ExecutionRequest
+	err := c.Bind(&body)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Bad Request")
+	}
+	res, err := t.Service.Execute(body)
 	if err != nil {
 		return err
 	}
@@ -32,7 +37,7 @@ func (t transaction) Transact(c echo.Context) error {
 }
 
 func (t transaction) Quote(c echo.Context) error {
-	var body model.TransactionData
+	var body model.TransactionRequest
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad request")

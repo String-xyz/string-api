@@ -24,20 +24,6 @@ type EstimationParams struct {
 	TokenName   string  `json:"tokenName"`
 }
 
-type CostEstimate struct {
-	Timestamp  int64   `json:"timeStamp"`
-	BaseUSD    float64 `json:"baseUSD"`
-	GasUSD     float64 `json:"gasUSD"`
-	TokenUSD   float64 `json:"tokenUSD"`
-	ServiceUSD float64 `json:"serviceUSD"`
-	TotalUSD   float64 `json:"totalUSD"`
-}
-
-type SignedQuote struct {
-	Estimate  CostEstimate
-	Signature string `json:"signature"`
-}
-
 type OwlracleJSON struct {
 	Timestamp string  `json:"timestamp"`
 	LastBlock uint64  `json:"lastBlock"`
@@ -54,7 +40,7 @@ type OwlracleJSON struct {
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams) (CostEstimate, error)
+	EstimateTransaction(p EstimationParams) (model.Quote, error)
 	New(repo repository.Cost) Cost
 	QueryOwlracle(chainId uint64) (float64, error)
 }
@@ -102,17 +88,17 @@ func weiToEther(wei *big.Int) float64 {
 	return eth64
 }
 
-func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
+func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	// Get Unix Timestamp
 	date := time.Now().Unix()
 	blockChain, err := model.ChainInfo(p.ChainID)
 	if err != nil {
-		return CostEstimate{}, err
+		return model.Quote{}, err
 	}
 	// Query cost of native token in USD
 	nativeCost, err := c.getUSDFromDB(blockChain.CoingeckoName, 1)
 	if err != nil {
-		return CostEstimate{}, err
+		return model.Quote{}, err
 	}
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
@@ -123,7 +109,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 	// Query owlracle for gas
 	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
 	if err != nil {
-		return CostEstimate{}, err
+		return model.Quote{}, err
 	}
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedGwei) * nativeCost / 1e9
@@ -134,7 +120,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 	costToken := weiToEther(&p.CostToken)
 	tokenCost, err := c.getUSDFromDB(p.TokenName, costToken)
 	if err != nil {
-		return CostEstimate{}, err
+		return model.Quote{}, err
 	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
@@ -143,7 +129,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (CostEstimate, error) {
 	upcharge := blockChain.StringFee
 	serviceFee := (transactionCost + gasInUSD + tokenCost) * upcharge
 	// Fill out CostEstimate and return
-	return CostEstimate{
+	return model.Quote{
 		Timestamp:  date,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,
