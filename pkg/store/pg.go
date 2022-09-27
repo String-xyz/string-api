@@ -2,19 +2,20 @@ package store
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-const (
-	DBUser     = "root"
-	DBPassword = "root"
-	DBName     = "root"
-	DBHost     = "0.0.0.0"
-	DBPort     = "5432"
+var (
+	DBUser     = os.Getenv("DB_USERNAME")
+	DBPassword = os.Getenv("DB_PASSWORD")
+	DBName     = os.Getenv("DB_NAME")
+	DBHost     = os.Getenv("DB_HOST")
+	DBPort     = os.Getenv("DB_PORT")
 	DBDriver   = "postgres"
-	SSLMode    = "disable"
+	SSLMode    = "disable" // require
 )
 
 var pgDB *sqlx.DB

@@ -37,7 +37,7 @@ func NewUser(db *sqlx.DB) User {
 }
 
 func (u user) Create(m model.User) error {
-	_, err := u.store.Exec(`
+	_, err := u.store.NamedExec(`
 		INSERT INTO string-user (first_name, last_name, type, status) 
 		VALUES(:first_name,:last_name, :type, :status)`, m)
 	return err
@@ -45,7 +45,7 @@ func (u user) Create(m model.User) error {
 
 func (u user) GetID(ID string) (model.User, error) {
 	m := model.User{}
-	err := u.store.Get(&m, "SELECT FROM string-user WHERE id = $1", ID)
+	err := u.store.Get(&m, "SELECT FROM string-user WHERE id = $1 deactivated_at = NULL", ID)
 	return m, err
 }
 
@@ -54,7 +54,7 @@ func (u user) List(limit int, offset int) ([]model.User, error) {
 	if limit == 0 {
 		limit = 20
 	}
-	err := u.store.Select(&list, "SELECT * FROM string-user LIMIT $1 OFFSET $1", limit, offset)
+	err := u.store.Select(&list, "SELECT * FROM string-user LIMIT $1 OFFSET $2", limit, offset)
 	if err == sql.ErrNoRows {
 		return list, nil
 	}

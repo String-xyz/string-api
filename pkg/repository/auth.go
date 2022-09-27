@@ -7,13 +7,12 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/google/uuid"
 )
 
 type Auth interface {
 	CreateStrategy(model.AuthStrategy) error
-	CreateAPIKey(apiKey string) error
-	CreateJWTRefresh(token string) error
+	CreateAPIKey(ID string, apiKey string) error
+	CreateJWTRefresh(ID string, token string) error
 	GetStrategy(string) (model.AuthStrategy, error)
 }
 
@@ -29,11 +28,12 @@ func (a auth) CreateStrategy(m model.AuthStrategy) error {
 	return a.redis.Set(m.Token, m)
 }
 
-func (a auth) CreateAPIKey(key string) error {
+// CreateAPIKey creates and persists an API Key for a platform
+func (a auth) CreateAPIKey(ID string, key string) error {
 	bs := sha256.Sum256([]byte(key))
 	hash := string(bs[:])
 	m := model.AuthStrategy{
-		ID:         uuid.NewString(),
+		ID:         ID,
 		CreatedAt:  time.Now(),
 		AuthType:   "API_KEY",
 		EntityType: "PLATFORM",
@@ -43,12 +43,12 @@ func (a auth) CreateAPIKey(key string) error {
 	return a.redis.Set(m.Token, m)
 }
 
-// CreateJWTRefresh creates a refresh jwt token
-func (a auth) CreateJWTRefresh(token string) error {
+// CreateJWTRefresh creates and persists a refresh jwt token
+func (a auth) CreateJWTRefresh(ID string, token string) error {
 	bs := sha256.Sum256([]byte(token))
 	hash := string(bs[:])
 	m := model.AuthStrategy{
-		ID:         uuid.NewString(),
+		ID:         ID,
 		CreatedAt:  time.Now(),
 		AuthType:   "JWT_REFRESH",
 		EntityType: "USER",
@@ -58,7 +58,7 @@ func (a auth) CreateJWTRefresh(token string) error {
 	return a.redis.Set(m.Token, m)
 }
 
-// GetStrategy will hash the key and attemp a look up on redis
+// GetStrategy will hash the key and attemp a look up on redis using the key(JWT refresh token | API key)
 func (a auth) GetStrategy(key string) (model.AuthStrategy, error) {
 	bs := sha256.Sum256([]byte(key))
 	m, err := a.redis.Get(string(bs[:]))

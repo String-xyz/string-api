@@ -16,7 +16,7 @@ type AuthType string
 var TOKEN_SECRET = os.Getenv("JWT_SECRET_KEY")
 
 const (
-	Customer   = EntityType("CUSTOMER")
+	Platform   = EntityType("PLATFORM")
 	User       = EntityType("USER")
 	JWTAuth    = AuthType("JWT")
 	APIKeyAuth = AuthType("API_KEY")

@@ -35,14 +35,14 @@ func NewPlatform(db *sqlx.DB) Platform {
 
 func (p platform) Create(m model.Platform) error {
 	_, err := p.store.Exec(`
-		INSERT INTO platform (first_name, last_name, type, status) 
-		VALUES(:first_name,:last_name, :type, :status)`, m)
+		INSERT INTO platform (type, authentication) 
+		VALUES(:type,:authentication)`, m)
 	return err
 }
 
 func (p platform) GetID(ID string) (model.Platform, error) {
 	m := model.Platform{}
-	err := p.store.Get(&m, "SELECT FROM platform WHERE id = $1", ID)
+	err := p.store.Get(&m, "SELECT FROM platform WHERE id = $1 AND deactivated_at = NULL", ID)
 	return m, err
 }
 
@@ -51,7 +51,7 @@ func (p platform) List(limit int, offset int) ([]model.Platform, error) {
 	if limit == 0 {
 		limit = 20
 	}
-	err := p.store.Select(&list, "SELECT * FROM platform LIMIT $1 OFFSET $1", limit, offset)
+	err := p.store.Select(&list, "SELECT * FROM platform LIMIT $1 OFFSET $2", limit, offset)
 	if err == sql.ErrNoRows {
 		return list, nil
 	}
