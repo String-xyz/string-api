@@ -8,7 +8,7 @@ import (
 	"github.com/lmittmann/w3"
 )
 
-func ParseParams(function *w3.Func, signature string, params []string) ([]byte, error) {
+func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte, error) {
 	signatureArgs := strings.Split(strings.Split(strings.Split(signature, "(")[1], ")")[0], ",")
 	if len(signatureArgs) != len(params) {
 		return nil, errors.New("executor parseParams: mismatched arguments")
