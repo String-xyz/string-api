@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func Sign(data interface{}) (string, error) {
+func EVMSign(data interface{}) (string, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
 		return "", err
