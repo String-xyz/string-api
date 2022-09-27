@@ -28,7 +28,7 @@ func EVMSign(data interface{}) (string, error) {
 	return hexutil.Encode(signature), nil
 }
 
-func ValidateSignature(signature string, data interface{}) (bool, error) {
+func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
 		return false, err
