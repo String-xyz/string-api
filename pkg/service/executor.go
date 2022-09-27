@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"math/big"
 	"os"
 
 	str "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lmittmann/w3"
@@ -36,6 +38,7 @@ type CallEstimate struct {
 type Executor interface {
 	New() Executor
 	Initialize(RPC string) error
+	Initiate(call ContractCall) (string, error)
 	Estimate(call ContractCall) (CallEstimate, error)
 	Close() error
 }
@@ -140,4 +143,84 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, nil
 	}
 	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
+}
+
+func (e executor) Initiate(call ContractCall) (string, error) {
+	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	if err != nil {
+		return "", err
+	}
+	to := w3.A(call.CxAddr)
+	value := w3.I(call.TxValue)
+	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
+	if !ok {
+		return "", errors.New("Estimate: Error casting public key to ECDSA")
+	}
+	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
+	gasLimit := w3.I(call.TxGasLimit)
+
+	var chainId64 uint64
+	err = e.client.Call(eth.ChainID().Returns(&chainId64))
+	if err != nil {
+		return "", err
+	}
+
+	var nonce uint64
+	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
+	if err != nil {
+		return "", err
+	}
+
+	tipCap, _ := e.geth.SuggestGasTipCap(context.Background())
+	feeCap, _ := e.geth.SuggestGasPrice(context.Background())
+
+	fmt.Printf("GOT GAS TIP PRICE")
+
+	// cost := NewCost(repository.NewCost(nil)) // temporary
+	// gasGwei64, err := cost.QueryOwlracle(chainId64)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// gasGwei := new(big.Int).SetUint64(uint64(gasGwei64)) // THIS IS ROUNDING DOWN OUR FLOAT
+
+	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("SCOPED EVM FUNC")
+
+	data, err := str.ParseParams(funcEVM, call.CxFunc, call.CxParams)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("PARSED PARAMS")
+
+	chainIdBig := new(big.Int).SetUint64(chainId64)
+	fmt.Printf("GOT CHAIN ID")
+	signer := types.LatestSignerForChainID(chainIdBig)
+	fmt.Printf("GOT SIGNER=%+v", signer)
+	dynamicFeeTx := types.DynamicFeeTx{
+		ChainID:   chainIdBig,
+		Nonce:     nonce,
+		GasTipCap: tipCap,
+		GasFeeCap: feeCap,
+		Gas:       gasLimit.Uint64(),
+		To:        &to,
+		Value:     value,
+		Data:      data,
+	}
+	tx := types.MustSignNewTx(sk, signer, &dynamicFeeTx)
+	fmt.Printf("\n\nGOT TX=%+v", dynamicFeeTx)
+
+	var hash common.Hash
+	err = e.client.Call(eth.SendTx(tx).Returns(&hash))
+	fmt.Printf("CALLED TX= %+v", hash)
+	if err != nil {
+		// Execution failed!
+		fmt.Printf("\n\nERR=%+v", err)
+		return "", err
+	}
+	return hash.String(), nil
 }
