@@ -24,8 +24,10 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) error {
 	e := echo.New()
+	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
+	// e.Use(middleware.Auth()) // add these middleware to other groups
 	e.GET("/heartbeat", heartbeat)
 	// Allow all CORS
 
