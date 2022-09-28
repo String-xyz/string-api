@@ -64,7 +64,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	// model.status = quoteVerified, update db
 
 	//Authorize quoted cost on end-user CC
-	charge, err := authcard(e.UserAddress, e.CardToken, uint64(e.TotalUSD))
+	_, err = authcard(e.UserAddress, e.CardToken, uint64(e.TotalUSD))
 	if err != nil {
 		return res, err
 	}
