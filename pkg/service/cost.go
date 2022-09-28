@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -77,37 +76,38 @@ func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
 }
 
 func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
-	fmt.Printf("\nESTIMATIONPARAMS=%+v", p)
-
-	// Get Unix Timestamp
+	// Get Unix Timestamp and chain info
 	date := time.Now().Unix()
 	blockChain, err := model.ChainInfo(p.ChainID)
 	if err != nil {
 		return model.Quote{}, err
 	}
+
 	// Query cost of native token in USD
 	nativeCost, err := c.getUSDFromDB(blockChain.CoingeckoName, 1)
 	if err != nil {
 		return model.Quote{}, err
 	}
+
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
 		nativeCost *= 1.0 + common.NativeTokenBuffer(blockChain.ChainID)
 	}
 	costEth := common.WeiToEther(&p.CostETH)
 	transactionCost := costEth * nativeCost
+
 	// Query owlracle for gas
 	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
-	fmt.Printf("\n\nETHGASFEE=%+v", ethGasFee)
 	if err != nil {
 		return model.Quote{}, err
 	}
+
 	// Convert it from gwei to eth to USD and apply buffer
-	fmt.Printf("\ngasInUsd = %+v * %+v * %+v / %+v", ethGasFee, float64(p.GasUsedWei), nativeCost, float64(1e9))
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
 		gasInUSD *= 1.0 + common.GasBuffer(blockChain.ChainID)
 	}
+
 	// Query cost of token in USD if used and apply buffer
 	costToken := common.WeiToEther(&p.CostToken)
 	tokenCost, err := c.getUSDFromDB(p.TokenName, costToken)
@@ -117,9 +117,11 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
 	}
+
 	// Compute service fee
 	upcharge := blockChain.StringFee
 	serviceFee := (transactionCost + gasInUSD + tokenCost) * upcharge
+
 	// Fill out CostEstimate and return
 	return model.Quote{
 		Timestamp:  date,
@@ -197,7 +199,6 @@ func (c cost) owlracle(network string) (float64, error) {
 		"&accept=100"
 	var res OwlracleJSON
 	err := c.getJson(requestURL, &res)
-	fmt.Printf("\n\nOWLRACLE=%+v", res)
 	if err != nil {
 		return 0, err
 	}

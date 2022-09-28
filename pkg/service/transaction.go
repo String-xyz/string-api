@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -57,7 +56,6 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 		return res, err
 	}
 	// model.status = tested, update db
-	fmt.Printf("\nestimateUSD=%+v", estimateUSD)
 
 	_, err = verifyQuote(e, estimateUSD)
 	if err != nil {
@@ -66,18 +64,20 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	// model.status = quoteVerified, update db
 
 	//Authorize quoted cost on end-user CC
-
-	// TEST TX
-	txID, err := initiateTransaction(e)
+	charge, err := authcard(e.UserAddress, e.CardToken, uint64(e.TotalUSD))
 	if err != nil {
-		fmt.Printf("ERR=%+v", err)
 		return res, err
 	}
-	fmt.Printf("TXID=%+v", txID)
+	// model.status = ccAuthorized, update db
+
+	txID, err := initiateTransaction(e)
+	if err != nil {
+		return res, err
+	}
+	// model.status = txInitiated, update db
 
 	defer postProcess(txID, e)
 
-	// create execution response struct and return that
 	return model.Transaction{TxID: txID}, nil
 }
 
@@ -127,6 +127,7 @@ func testTransaction(t model.TransactionRequest, useBuffer bool) (model.Quote, e
 }
 
 func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error) {
+	// Null out values which have changed since payload was signed
 	dataToValidate := e
 	dataToValidate.Signature = ""
 	dataToValidate.CardToken = ""
@@ -146,9 +147,9 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func authcard(userWallet string, cardToken string, usd uint64) error {
+func authcard(userWallet string, cardToken string, usd uint64) (string, error) {
 	// auth their card
-	return nil
+	return "chargeresponse", nil
 }
 
 func initiateTransaction(e model.ExecutionRequest) (string, error) {
