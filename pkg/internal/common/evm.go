@@ -2,9 +2,11 @@ package common
 
 import (
 	"errors"
+	"math/big"
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/lmittmann/w3"
 )
 
@@ -61,4 +63,16 @@ func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte
 		return nil, err
 	}
 	return result, nil
+}
+
+func WeiToEther(wei *big.Int) float64 {
+	f := new(big.Float)
+	f.SetPrec(236)
+	f.SetMode(big.ToNearestEven)
+	fWei := new(big.Float)
+	fWei.SetPrec(236)
+	fWei.SetMode(big.ToNearestEven)
+	ethBig := f.Quo(fWei.SetInt(wei), big.NewFloat(params.Ether))
+	eth64, _ := ethBig.Float64() // OK to reduce precision?
+	return eth64
 }

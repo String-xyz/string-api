@@ -9,7 +9,6 @@ import (
 	"os"
 
 	str "github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -91,7 +90,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 		return CallEstimate{}, errors.New("Estimate: Error casting public key to ECDSA")
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
-	gasLimit := w3.I(call.TxGasLimit)
+	// gasLimit := w3.I(call.TxGasLimit)
 
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
@@ -108,19 +107,12 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	tipCap, _ := e.geth.SuggestGasTipCap(context.Background())
 	feeCap, _ := e.geth.SuggestGasPrice(context.Background())
 
-	cost := NewCost(repository.NewCost(nil)) // temporary
-	gasGwei64, err := cost.QueryOwlracle(chainId64)
-	if err != nil {
-		return CallEstimate{}, err
-	}
-	gasGwei := new(big.Int).SetUint64(uint64(gasGwei64)) // THIS IS ROUNDING DOWN OUR FLOAT
-
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
 		return CallEstimate{}, err
 	}
 
-	data, err := str.ParseParams(funcEVM, call.CxFunc, call.CxParams)
+	data, err := str.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
 		return CallEstimate{}, err
 	}
@@ -128,8 +120,6 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	msg := w3types.Message{
 		From:      sender,
 		To:        &to,
-		Gas:       gasLimit.Uint64(),
-		GasPrice:  gasGwei,
 		GasFeeCap: feeCap,
 		GasTipCap: tipCap,
 		Value:     value,
@@ -190,7 +180,7 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 
 	fmt.Printf("SCOPED EVM FUNC")
 
-	data, err := str.ParseParams(funcEVM, call.CxFunc, call.CxParams)
+	data, err := str.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
 		return "", err
 	}

@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -12,16 +13,15 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 type EstimationParams struct {
-	ChainID     uint64  `json:"chainID"`
-	CostETH     big.Int `json:"costETH"`
-	UseBuffer   bool    `json:"useBuffer"`
-	GasUsedGwei uint64  `json:"gasUsedGwei"`
-	CostToken   big.Int `json:"costToken"`
-	TokenName   string  `json:"tokenName"`
+	ChainID    uint64  `json:"chainID"`
+	CostETH    big.Int `json:"costETH"`
+	UseBuffer  bool    `json:"useBuffer"`
+	GasUsedWei uint64  `json:"gasUsedWei"`
+	CostToken  big.Int `json:"costToken"`
+	TokenName  string  `json:"tokenName"`
 }
 
 type OwlracleJSON struct {
@@ -76,19 +76,9 @@ func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
 	return gwei, nil
 }
 
-func weiToEther(wei *big.Int) float64 {
-	f := new(big.Float)
-	f.SetPrec(236)
-	f.SetMode(big.ToNearestEven)
-	fWei := new(big.Float)
-	fWei.SetPrec(236)
-	fWei.SetMode(big.ToNearestEven)
-	ethBig := f.Quo(fWei.SetInt(wei), big.NewFloat(params.Ether))
-	eth64, _ := ethBig.Float64() // OK to reduce precision?
-	return eth64
-}
-
 func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
+	fmt.Printf("\nESTIMATIONPARAMS=%+v", p)
+
 	// Get Unix Timestamp
 	date := time.Now().Unix()
 	blockChain, err := model.ChainInfo(p.ChainID)
@@ -104,20 +94,22 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	if p.UseBuffer {
 		nativeCost *= 1.0 + common.NativeTokenBuffer(blockChain.ChainID)
 	}
-	costEth := weiToEther(&p.CostETH)
+	costEth := common.WeiToEther(&p.CostETH)
 	transactionCost := costEth * nativeCost
 	// Query owlracle for gas
 	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
+	fmt.Printf("\n\nETHGASFEE=%+v", ethGasFee)
 	if err != nil {
 		return model.Quote{}, err
 	}
 	// Convert it from gwei to eth to USD and apply buffer
-	gasInUSD := ethGasFee * float64(p.GasUsedGwei) * nativeCost / 1e9
+	fmt.Printf("\ngasInUsd = %+v * %+v * %+v / %+v", ethGasFee, float64(p.GasUsedWei), nativeCost, float64(1e9))
+	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
 		gasInUSD *= 1.0 + common.GasBuffer(blockChain.ChainID)
 	}
 	// Query cost of token in USD if used and apply buffer
-	costToken := weiToEther(&p.CostToken)
+	costToken := common.WeiToEther(&p.CostToken)
 	tokenCost, err := c.getUSDFromDB(p.TokenName, costToken)
 	if err != nil {
 		return model.Quote{}, err
@@ -205,6 +197,7 @@ func (c cost) owlracle(network string) (float64, error) {
 		"&accept=100"
 	var res OwlracleJSON
 	err := c.getJson(requestURL, &res)
+	fmt.Printf("\n\nOWLRACLE=%+v", res)
 	if err != nil {
 		return 0, err
 	}

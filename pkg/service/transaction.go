@@ -39,7 +39,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	res.Quote = estimateUSD
 
 	// Sign entire payload
-	signature, err := common.Sign(res)
+	signature, err := common.EVMSign(res)
 	if err != nil {
 		return res, err
 	}
@@ -110,12 +110,12 @@ func testTransaction(t model.TransactionRequest, useBuffer bool) (model.Quote, e
 
 	cost := NewCost(repository.NewCost(nil))
 	estimationParams := EstimationParams{
-		ChainID:     chain.ChainID,
-		CostETH:     estimateEVM.Value,
-		UseBuffer:   useBuffer,
-		GasUsedGwei: estimateEVM.Gas,
-		CostToken:   *big.NewInt(0),
-		TokenName:   "",
+		ChainID:    chain.ChainID,
+		CostETH:    estimateEVM.Value,
+		UseBuffer:  useBuffer,
+		GasUsedWei: estimateEVM.Gas,
+		CostToken:  *big.NewInt(0),
+		TokenName:  "",
 	}
 	// Estimate Cost in USD to execute TX request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams)
@@ -130,7 +130,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	dataToValidate := e
 	dataToValidate.Signature = ""
 	dataToValidate.CardToken = ""
-	valid, err := common.ValidateSignature(e.Signature, dataToValidate)
+	valid, err := common.ValidateEVMSignature(e.Signature, dataToValidate)
 	if err != nil {
 		return false, err
 	}
