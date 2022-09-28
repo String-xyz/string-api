@@ -83,6 +83,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	if err != nil {
 		return CallEstimate{}, err
 	}
+	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
 	value := w3.I(call.TxValue)
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
