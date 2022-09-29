@@ -1,11 +1,8 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"math/big"
-	"net/http"
 	"os"
 	"time"
 
@@ -46,20 +43,17 @@ type Cost interface {
 
 type cost struct {
 	repository repository.Cost // cached token and gas costs
-	client     *http.Client
 }
 
 func (c cost) New(repo repository.Cost) Cost {
 	return &cost{
 		repository: repo,
-		client:     &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
 func NewCost(repo repository.Cost) Cost {
 	return &cost{
 		repository: repo,
-		client:     &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -77,14 +71,14 @@ func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
 
 func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	// Get Unix Timestamp and chain info
-	date := time.Now().Unix()
+	timestamp := time.Now().Unix()
 	blockChain, err := model.ChainInfo(p.ChainID)
 	if err != nil {
 		return model.Quote{}, err
 	}
 
 	// Query cost of native token in USD
-	nativeCost, err := c.getUSDFromDB(blockChain.CoingeckoName, 1)
+	nativeCost, err := c.lookupUSD(blockChain.CoingeckoName, 1)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -97,7 +91,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	transactionCost := costEth * nativeCost
 
 	// Query owlracle for gas
-	ethGasFee, err := c.getGasFromDB(blockChain.OwlracleName)
+	ethGasFee, err := c.lookupGas(blockChain.OwlracleName)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -110,7 +104,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 
 	// Query cost of token in USD if used and apply buffer
 	costToken := common.WeiToEther(&p.CostToken)
-	tokenCost, err := c.getUSDFromDB(p.TokenName, costToken)
+	tokenCost, err := c.lookupUSD(p.TokenName, costToken)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -124,7 +118,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 
 	// Fill out CostEstimate and return
 	return model.Quote{
-		Timestamp:  date,
+		Timestamp:  timestamp,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,
 		TokenUSD:   tokenCost,
@@ -137,7 +131,7 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float32, uniqueEntri
 	return (float32(uniqueEntries*60000) / rateLimitPerMinute)
 }
 
-func (c cost) getUSDFromDB(coin string, quantity float64) (float64, error) {
+func (c cost) lookupUSD(coin string, quantity float64) (float64, error) {
 	// DB under construction
 	res, err := c.coingeckoUSD(coin, 1)
 	if err != nil {
@@ -146,7 +140,7 @@ func (c cost) getUSDFromDB(coin string, quantity float64) (float64, error) {
 	return res * quantity, nil
 }
 
-func (c cost) getGasFromDB(network string) (float64, error) {
+func (c cost) lookupGas(network string) (float64, error) {
 	// DB under construction
 	res, err := c.owlracle(network)
 	if err != nil {
@@ -155,28 +149,10 @@ func (c cost) getGasFromDB(network string) (float64, error) {
 	return res, nil
 }
 
-// Maybe place this in internal/util
-func (c cost) getJson(url string, target interface{}) error {
-	response, err := c.client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	jsonData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal([]byte(jsonData), target)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := c.getJson(requestURL, &res)
+	err := common.GetJson(requestURL, &res)
 	if err != nil {
 		return 0, err
 	}
@@ -198,7 +174,7 @@ func (c cost) owlracle(network string) (float64, error) {
 		os.Getenv("OWLRACLE_API_KEY") +
 		"&accept=100"
 	var res OwlracleJSON
-	err := c.getJson(requestURL, &res)
+	err := common.GetJson(requestURL, &res)
 	if err != nil {
 		return 0, err
 	}

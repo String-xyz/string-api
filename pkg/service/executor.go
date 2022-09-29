@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"os"
 
-	str "github.com/String-xyz/string-api/pkg/internal/common"
+	stringCommon "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -118,7 +118,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	}
 
 	// Encode function parameters
-	data, err := str.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
+	data, err := stringCommon.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
 		return CallEstimate{}, err
 	}
@@ -187,7 +187,7 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	}
 
 	// Encode function parameters
-	data, err := str.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
+	data, err := stringCommon.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
 		return "", err
 	}

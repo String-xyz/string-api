@@ -31,7 +31,7 @@ func (t transaction) Transact(c echo.Context) error {
 	}
 	res, err := t.Service.Execute(body)
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.String(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -44,7 +44,7 @@ func (t transaction) Quote(c echo.Context) error {
 	}
 	res, err := t.Service.Quote(body)
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.String(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, res)
 }

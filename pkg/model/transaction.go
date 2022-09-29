@@ -9,12 +9,12 @@ const (
 )
 
 type Quote struct {
-	Timestamp  int64   `json:"timestamp" db:"timestamp"`
-	BaseUSD    float64 `json:"baseUSD" db:"baseUSD"`
-	GasUSD     float64 `json:"gasUSD" db:"gasUSD"`
-	TokenUSD   float64 `json:"tokenUSD" db:"tokenUSD"`
-	ServiceUSD float64 `json:"serviceUSD" db:"serviceUSD"`
-	TotalUSD   float64 `json:"totalUSD" db:"totalUSD"`
+	Timestamp  int64   `json:"timestamp"`
+	BaseUSD    float64 `json:"baseUSD"`
+	GasUSD     float64 `json:"gasUSD"`
+	TokenUSD   float64 `json:"tokenUSD"`
+	ServiceUSD float64 `json:"serviceUSD"`
+	TotalUSD   float64 `json:"totalUSD"`
 }
 
 type ExecutionRequest struct {
