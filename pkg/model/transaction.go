@@ -9,7 +9,7 @@ const (
 )
 
 type CostEstimate struct {
-	Timestamp  int
+	Timestamp  int `json:"timestamp" db:"timestamp"`
 	BaseUSD    int
 	GasUSD     int
 	TokenUSD   int
@@ -41,6 +41,6 @@ type TransactionData struct {
 	Forward            bool // Forward resulting asset?
 }
 
-type TransactionResponse struct {
+type Transaction struct {
 	TxID string `json:"txID"`
 }

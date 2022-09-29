@@ -2,22 +2,33 @@ package api
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/String-xyz/string-api/api/handler"
+	"github.com/String-xyz/string-api/api/middleware"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 )
 
 type APIConfig struct {
-	DB   any
+	DB   *sqlx.DB
 	Port string
 	// redis
 }
 
+func heartbeat(c echo.Context) error {
+	return c.JSON(http.StatusOK, "healthy")
+}
+
 func Start(config APIConfig) error {
 	e := echo.New()
-
+	e.Use(middleware.RequestID())
+	e.Use(middleware.Recover())
+	e.Use(middleware.Logger())
+	// e.Use(middleware.Auth()) // add these middleware to other groups
+	e.GET("/heartbeat", heartbeat)
 	// Allow all CORS
 
 	// Todo: Add Logger

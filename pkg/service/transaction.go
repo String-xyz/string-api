@@ -1,14 +1,13 @@
 package service
 
 import (
-	"github.com/String-xyz/string-api/pkg/internal/db"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
 
 type Transaction interface {
 	Quote() (model.SignedQuote, error)
-	Execute() (model.TransactionResponse, error)
+	Execute() (model.Transaction, error)
 	New(repo repository.Transaction) Transaction
 }
 
@@ -17,7 +16,6 @@ type transaction struct {
 }
 
 func (t transaction) New(repo repository.Transaction) Transaction {
-	db.Start()
 	return &transaction{repository: repo}
 }
 
@@ -30,8 +28,7 @@ func (t transaction) Quote() (model.SignedQuote, error) {
 	return model.SignedQuote{}, nil
 }
 
-func (t transaction) Execute() (model.TransactionResponse, error) {
-
+func (t transaction) Execute() (model.Transaction, error) {
 	// create execution response struct and return that
-	return model.TransactionResponse{}, nil
+	return model.Transaction{}, nil
 }
