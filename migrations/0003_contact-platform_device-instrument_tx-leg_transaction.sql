@@ -43,8 +43,8 @@ CREATE TABLE tx_leg (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   timestamp TIMESTAMP WITH TIME ZONE,
   amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
-  asset UUID REFERENCES asset (id),
   value BIGINT DEFAULT 0, -- the relative quantity in USD at the time of the transaction
+  asset UUID REFERENCES asset (id),
   user_id UUID NOT NULL REFERENCES string_user (id),
   instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
