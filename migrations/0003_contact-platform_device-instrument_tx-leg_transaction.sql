@@ -36,7 +36,7 @@ CREATE OR REPLACE TRIGGER update_device_instrument_updated_at
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
--- TX_LEG ----------------------------------------------------
+-- TX_LEG ---------------------------------------------------------------
 CREATE TABLE tx_leg (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -97,7 +97,7 @@ DROP TRIGGER IF EXISTS update_transaction_updated_at ON transaction;
 DROP TABLE transaction;
 
 -------------------------------------------------------------------------
--- TX_LEG ----------------------------------------------------
+-- TX_LEG ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_tx_leg_updated_at ON tx_leg;
 DROP TABLE tx_leg;
 
