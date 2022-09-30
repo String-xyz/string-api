@@ -80,7 +80,7 @@ CREATE TABLE instrument (
   network TEXT NOT NULL, -- enum: 
   public_key TEXT DEFAULT '',
   last_4 TEXT DEFAULT '',
-  user_id UUID NOT NULL REFERENCES string_user (id),
+  user_id UUID REFERENCES string_user (id), -- instrument can be null in the circumstance that a user sends an asset to an unknown wallet
   location_id UUID REFERENCES location (id)
 );
 
