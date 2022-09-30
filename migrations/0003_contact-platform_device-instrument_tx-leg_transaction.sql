@@ -45,7 +45,7 @@ CREATE TABLE tx_leg (
   amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
   value BIGINT DEFAULT 0, -- the relative quantity in USD at the time of the transaction
   asset UUID REFERENCES asset (id),
-  user_id UUID NOT NULL REFERENCES string_user (id),
+  user_id UUID REFERENCES string_user (id), -- this can be null in the case that the recipient is an unknown wallet address
   instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
 
