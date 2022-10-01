@@ -5,18 +5,20 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 )
 
-type AuthStrategyRepoStub struct {
+type AuthStrategyRepo struct {
 }
 
-func (a AuthStrategyRepoStub) Create(authType repository.AuthType, m model.AuthStrategy) error {
+func (AuthStrategyRepo) Create(authType repository.AuthType, m model.AuthStrategy) error {
 	return nil
 }
-func (a AuthStrategyRepoStub) CreateAPIKey(ID string, apiKey string) error {
+
+func (AuthStrategyRepo) CreateAPIKey(ID string, apiKey string) error {
 	return nil
 }
-func (a AuthStrategyRepoStub) CreateJWTRefresh(ID string, token string) error {
+
+func (AuthStrategyRepo) CreateJWTRefresh(ID string, token string) error {
 	return nil
 }
-func (a AuthStrategyRepoStub) Get(string) (model.AuthStrategy, error) {
+func (AuthStrategyRepo) Get(string) (model.AuthStrategy, error) {
 	return model.AuthStrategy{}, nil
 }
