@@ -221,3 +221,19 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	}
 	return hash.String(), nil
 }
+
+func (e executor) TxWait(txID string) (uint64, error) {
+	txHash := common.HexToHash(txID)
+	receipt := types.Receipt{}
+	for receipt.Status == 0 {
+		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
+		if err != nil {
+			return 0, err
+		}
+		if pendingReceipt != nil {
+			receipt = *pendingReceipt
+		}
+		// TODO: Sleep for a few ms to keep the cpu cooler
+	}
+	return receipt.GasUsed, nil
+}

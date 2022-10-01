@@ -178,7 +178,8 @@ func initiateTransaction(e model.ExecutionRequest) (string, error) {
 }
 
 func confirmTX(txID string) (float64, float64, error) {
-
+	// TxWait(txID)
+	return 0, 0, nil
 }
 
 func chargeCard(userWallet string, authorizationID string, usd float64) error {
