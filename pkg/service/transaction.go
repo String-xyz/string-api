@@ -64,7 +64,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	// model.status = quoteVerified, update db
 
 	//Authorize quoted cost on end-user CC
-	_, err = authcard(e.UserAddress, e.CardToken, uint64(e.TotalUSD))
+	_, err = authcard(e.UserAddress, e.CardToken, e.TotalUSD)
 	if err != nil {
 		return res, err
 	}
@@ -76,7 +76,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	}
 	// model.status = txInitiated, update db
 
-	defer postProcess(txID, e)
+	go postProcess(txID, e)
 
 	return model.Transaction{TxID: txID}, nil
 }
@@ -147,9 +147,10 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func authcard(userWallet string, cardToken string, usd uint64) (string, error) {
+func authcard(userWallet string, cardToken string, usd float64) (string, error) {
 	// auth their card
-	return "chargeresponse", nil
+	auth, err := Authorize(usd, userWallet, cardToken)
+	return auth, err
 }
 
 func initiateTransaction(e model.ExecutionRequest) (string, error) {
@@ -176,6 +177,18 @@ func initiateTransaction(e model.ExecutionRequest) (string, error) {
 	return txID, nil
 }
 
-func postProcess(txID string, e model.ExecutionRequest /*a ChargeResponse, m TransactionModel*/) {
+func confirmTX(txID string) (float64, float64, error) {
 
+}
+
+func chargeCard(userWallet string, authorizationID string, usd float64) error {
+	_, err := Capture(usd, userWallet, authorizationID)
+	return err
+}
+
+func postProcess(txID string, e model.ExecutionRequest /*a ChargeResponse, m TransactionModel*/) {
+	// confirm the TX on the EVM, update db status
+	// compute profit and log to db
+	// charge the users CC
+	// update tx status to complete in the db
 }
