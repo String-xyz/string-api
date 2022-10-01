@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
@@ -20,48 +19,45 @@ type UserUpdates struct {
 	LastName      *string         `json:"lastName" db:"last_name"`
 }
 
+type UserRegister struct {
+	FirstNname string `json:"firstName" db:"first_name"`
+	MiddleName string `json:"middleName" db:"middle_name"`
+	LastName   string `json:"lastName" db:"last_name"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+}
+
 type User interface {
+	Register(UserRegister) error
 	Create(model.User) error
 	GetID(ID string) (model.User, error)
 	List(limit int, offset int) ([]model.User, error)
 	Update(ID string, updates UserUpdates) error
 }
 
-type user struct {
-	table string
-	store *sqlx.DB
+type user[T any] struct {
+	base[T]
 }
 
 func NewUser(db *sqlx.DB) User {
-	return &user{store: db, table: "string-user"}
+	return &user[model.User]{base[model.User]{store: db, table: "string_user"}}
 }
 
-func (u user) Create(m model.User) error {
+// Register registers an user with authentication (email/password)
+// this is a rudimentary implementation of onboarding, will later have proper
+// onboarding process.
+func (u user[T]) Register(UserRegister) error {
+	return nil
+}
+
+func (u user[T]) Create(m model.User) error {
 	_, err := u.store.NamedExec(`
-		INSERT INTO string-user (first_name, last_name, type, status) 
+		INSERT INTO string_user (first_name, last_name, type, status) 
 		VALUES(:first_name,:last_name, :type, :status)`, m)
 	return err
 }
 
-func (u user) GetID(ID string) (model.User, error) {
-	m := model.User{}
-	err := u.store.Get(&m, "SELECT FROM string-user WHERE id = $1 deactivated_at = NULL", ID)
-	return m, err
-}
-
-func (u user) List(limit int, offset int) ([]model.User, error) {
-	list := []model.User{}
-	if limit == 0 {
-		limit = 20
-	}
-	err := u.store.Select(&list, "SELECT * FROM string-user LIMIT $1 OFFSET $2", limit, offset)
-	if err == sql.ErrNoRows {
-		return list, nil
-	}
-	return list, err
-}
-
-func (u user) Update(ID string, updates UserUpdates) error {
+func (u user[T]) Update(ID string, updates UserUpdates) error {
 	if ID == "" {
 		return errors.New("invalid id")
 	}

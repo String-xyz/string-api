@@ -24,17 +24,30 @@ type User struct {
 	DeactivatedAt *time.Time     `json:"deactivatedAt" db:"deactivated_at"`
 	Type          string         `json:"type" db:"type"`
 	Status        string         `json:"status" db:"status"`
-	Tags          types.JSONText `json:"Tags" db:"tags"`
+	Tags          types.JSONText `json:"tags" db:"tags"`
 	FirstName     string         `json:"firstName" db:"first_name"`
 	MiddleName    string         `json:"middleName" db:"middle_name"`
 	LastName      string         `json:"lastName" db:"last_name"`
 }
 
+type Contact struct {
+	ID            string     `json:"id" db:"id"`
+	UserID        string     `json:"userId" db:"user_id"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type          string     `json:"type" db:"type"`
+	Status        string     `json:"status" db:"status"`
+	Data          string     `json:"data" db:"data"`
+}
+
 type AuthStrategy struct {
-	ID            string     `json:"id"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	InvalidatedAt *time.Time `json:"invalidatedAt"`
-	AuthType      string     `json:"authType"`
-	EntityType    string     `json:"entityType"`
-	Token         string     `json:"token"`
+	ID            string     `json:"id" db:"id"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created"`
+	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type          string     `json:"authType" db:"type"`
+	EntityType    string     `json:"entityType"`  // for redis use only
+	ContactData   string     `json:"contactData"` // for redis use only
+	ContactID     string     `json:"contactId" db:"contact_id"`
+	Data          string     `json:"data" data:"data"`
 }

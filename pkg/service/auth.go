@@ -1,6 +1,7 @@
 package service
 
 import (
+	"net/mail"
 	"os"
 	"time"
 
@@ -8,19 +9,11 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
-
-type EntityType string
-type AuthType string
 
 var TOKEN_SECRET = os.Getenv("JWT_SECRET_KEY")
-
-const (
-	Platform   = EntityType("PLATFORM")
-	User       = EntityType("USER")
-	JWTAuth    = AuthType("JWT")
-	APIKeyAuth = AuthType("API_KEY")
-)
 
 type JWT struct {
 	ExpAt        time.Time `json:"expAt"`
@@ -41,17 +34,18 @@ type AuthValidator interface {
 type Auth interface {
 	GenerateJWT(model.User) (JWT, error)
 	GenerateAPIKey(model.Platform) error
+	LoginEmail(email string, password string) error
+	RefreshToken()
 	LoginPK() error
 	LoginOTP() error
-	RefreshToken()
 }
 
 type auth struct {
-	repo repository.Auth
+	repo repository.AuthStrategy
 }
 
-func NewAuth() Auth {
-	return &auth{}
+func NewAuth(repo repository.AuthStrategy) Auth {
+	return &auth{repo}
 }
 
 func (a auth) GenerateJWT(m model.User) (JWT, error) {
@@ -80,6 +74,30 @@ func (a auth) GenerateAPIKey(model.Platform) error {
 	return nil
 }
 
+func (a auth) LoginEmail(email string, password string) error {
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
+		return errors.Wrap(err, "Invalid email")
+	}
+	m, err := a.repo.Get(addr.Address)
+	if err != nil {
+		return err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(m.Data), []byte(password))
+	if err != nil {
+		return errors.Wrap(err, "invalid or wrong password")
+	}
+	return nil
+}
+
+func (a auth) Validate(token string) (bool, error) {
+	var claims = &JWTClaims{}
+	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(TOKEN_SECRET), nil
+	})
+	return t.Valid, err
+}
+
 func (a auth) LoginPK() error {
 	return nil
 }
@@ -90,12 +108,4 @@ func (a auth) LoginOTP() error {
 
 func (a auth) RefreshToken() {
 
-}
-
-func (a auth) Validate(token string) (bool, error) {
-	var claims = &JWTClaims{}
-	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(TOKEN_SECRET), nil
-	})
-	return t.Valid, err
 }

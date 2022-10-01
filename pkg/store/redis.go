@@ -26,8 +26,8 @@ type redisStore struct {
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
 	client := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("redis_url"),
-		Password: os.Getenv("redis_token"),
+		Addr:     os.Getenv("REDIS_HOST"),
+		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 
