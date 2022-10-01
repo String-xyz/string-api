@@ -45,7 +45,7 @@ func (a auth) Create(authType AuthType, m model.AuthStrategy) error {
 	}
 	strat := &m
 	strat.Data = string(hash)
-	return a.redis.Set(m.ContactData, strat)
+	return a.redis.Set(strat.ContactData, strat)
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
@@ -78,10 +78,8 @@ func (a auth) CreateJWTRefresh(ID string, token string) error {
 	return a.redis.Set(m.Data, m)
 }
 
-// Get will hash the key and attemp a look up on redis using the key(JWT refresh token | API key)
 func (a auth) Get(key string) (model.AuthStrategy, error) {
-	bs := sha256.Sum256([]byte(key))
-	m, err := a.redis.Get(string(bs[:]))
+	m, err := a.redis.Get(key)
 	if err != nil {
 		return model.AuthStrategy{}, err
 	}

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -9,20 +10,76 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type Queryable interface {
+	sqlx.Ext
+	sqlx.ExecerContext
+	sqlx.PreparerContext
+	sqlx.QueryerContext
+	sqlx.Preparer
+
+	GetContext(context.Context, interface{}, string, ...interface{}) error
+	SelectContext(context.Context, interface{}, string, ...interface{}) error
+	Get(interface{}, string, ...interface{}) error
+	MustExecContext(context.Context, string, ...interface{}) sql.Result
+	PreparexContext(context.Context, string) (*sqlx.Stmt, error)
+	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+	Select(interface{}, string, ...interface{}) error
+	QueryRow(string, ...interface{}) *sql.Row
+	PrepareNamedContext(context.Context, string) (*sqlx.NamedStmt, error)
+	PrepareNamed(string) (*sqlx.NamedStmt, error)
+	Preparex(string) (*sqlx.Stmt, error)
+	NamedExec(string, interface{}) (sql.Result, error)
+	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
+	MustExec(string, ...interface{}) sql.Result
+	NamedQuery(string, interface{}) (*sqlx.Rows, error)
+}
+
+type Transactable interface {
+	MustBegin() Queryable
+	Rollback()
+	Commit()
+	SetTx(t Queryable)
+}
+
 type base[T any] struct {
-	store *sqlx.DB
+	store Queryable
+	db    Queryable
 	table string
 }
 
-// SetTransactor sets the underlying db to be able to begin a sql transaction
-func (b *base[T]) SetTransactor(tx *sqlx.DB) {
-	b.store = tx
+// MustBegin panic is transaction cant start
+// the underlying store is set to the transaction
+// returned by db.MustBegin()
+// You must call rollBack or Commit to return back to a Db state
+func (b *base[T]) MustBegin() Queryable {
+	db := b.store.(*sqlx.DB)
+	b.db = db
+	t := db.MustBegin()
+	b.store = t
+	return t
+}
+
+func (b *base[T]) Rollback() {
+	t := b.store.(*sqlx.Tx)
+	t.Rollback()
+	b.store = b.db
+}
+
+func (b *base[T]) Commit() {
+	t := b.store.(*sqlx.Tx)
+	t.Commit()
+	b.store = b.db
+}
+
+func (b *base[T]) SetTx(t Queryable) {
+	b.store = t
 }
 
 func (u base[T]) List(limit int, offset int) (list []T, err error) {
 	if limit == 0 {
 		limit = 20
 	}
+
 	err = u.store.Select(&list, fmt.Sprintf("SELECT * FROM %s LIMIT $1 OFFSET $2", u.table), limit, offset)
 	if err == sql.ErrNoRows {
 		return list, nil

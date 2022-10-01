@@ -8,19 +8,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var (
-	DBUser     = os.Getenv("DB_USERNAME")
-	DBPassword = os.Getenv("DB_PASSWORD")
-	DBName     = os.Getenv("DB_NAME")
-	DBHost     = os.Getenv("DB_HOST")
-	DBPort     = os.Getenv("DB_PORT")
-	DBDriver   = "postgres"
-	SSLMode    = "disable" // require
-)
-
 var pgDB *sqlx.DB
+var DBDriver = "postgres"
 
 func strConnection() string {
+	var (
+		DBUser     = os.Getenv("DB_USERNAME")
+		DBPassword = os.Getenv("DB_PASSWORD")
+		DBName     = os.Getenv("DB_NAME")
+		DBHost     = os.Getenv("DB_HOST")
+		DBPort     = os.Getenv("DB_PORT")
+		SSLMode    = "disable" // require
+	)
+
 	str := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		DBHost,
 		DBPort,
@@ -29,6 +29,7 @@ func strConnection() string {
 		DBPassword,
 		SSLMode,
 	)
+
 	return str
 }
 

@@ -15,6 +15,9 @@ import (
 
 var TOKEN_SECRET = os.Getenv("JWT_SECRET_KEY")
 
+type UserRegister = model.UserRegister
+type UserLogin = model.UserLogin
+
 type JWT struct {
 	ExpAt        time.Time `json:"expAt"`
 	IssuedAt     time.Time `json:"issuedAt"`
@@ -32,20 +35,73 @@ type AuthValidator interface {
 }
 
 type Auth interface {
+	Register(UserRegister) (JWT, error)
+	LoginEmail(UserLogin) (JWT, error)
 	GenerateJWT(model.User) (JWT, error)
 	GenerateAPIKey(model.Platform) error
-	LoginEmail(email string, password string) error
 	RefreshToken()
 	LoginPK() error
 	LoginOTP() error
 }
 
 type auth struct {
-	repo repository.AuthStrategy
+	authRepo    repository.AuthStrategy
+	userRepo    repository.User
+	contactRepo repository.UserContact
 }
 
-func NewAuth(repo repository.AuthStrategy) Auth {
-	return &auth{repo}
+func NewAuth(a repository.AuthStrategy, u repository.User, c repository.UserContact) Auth {
+	return &auth{a, u, c}
+}
+
+// Register registers an user with authentication (email/password)
+// this is a rudimentary implementation of onboarding, will later have proper
+// onboarding process.
+func (a auth) Register(m UserRegister) (JWT, error) {
+	tx := a.userRepo.MustBegin()
+	user, err := a.userRepo.Create(model.User{FirstName: m.FirstNname, LastName: m.LastName, Status: "registered", Type: "client"})
+	if err != nil {
+		a.userRepo.Rollback()
+		return JWT{}, err
+	}
+	a.contactRepo.SetTx(tx)
+	contact, err := a.contactRepo.Create(model.Contact{UserID: user.ID, Data: m.Email})
+	if err != nil {
+		a.contactRepo.Rollback()
+		return JWT{}, err
+	}
+	a.contactRepo.Commit()
+	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
+		EntityID:    user.ID,
+		ContactID:   contact.ID,
+		CreatedAt:   time.Now(),
+		Type:        string(repository.AuthTypeEmail),
+		EntityType:  string(repository.EntityTypeUser),
+		Data:        m.Password,
+		ContactData: contact.Data,
+	})
+	if err != nil {
+		return JWT{}, err
+	}
+	return a.GenerateJWT(user)
+
+}
+
+func (a auth) LoginEmail(login UserLogin) (JWT, error) {
+	_, err := mail.ParseAddress(login.Email)
+	if err != nil {
+		return JWT{}, errors.Wrap(err, "Invalid email")
+	}
+	m, err := a.authRepo.Get(login.Email)
+	if err != nil {
+		return JWT{}, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(m.Data), []byte(login.Password))
+	if err != nil {
+		return JWT{}, errors.Wrap(err, "invalid or wrong password")
+	}
+
+	return a.GenerateJWT(model.User{ID: m.EntityID})
 }
 
 func (a auth) GenerateJWT(m model.User) (JWT, error) {
@@ -71,22 +127,6 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 }
 
 func (a auth) GenerateAPIKey(model.Platform) error {
-	return nil
-}
-
-func (a auth) LoginEmail(email string, password string) error {
-	addr, err := mail.ParseAddress(email)
-	if err != nil {
-		return errors.Wrap(err, "Invalid email")
-	}
-	m, err := a.repo.Get(addr.Address)
-	if err != nil {
-		return err
-	}
-	err = bcrypt.CompareHashAndPassword([]byte(m.Data), []byte(password))
-	if err != nil {
-		return errors.Wrap(err, "invalid or wrong password")
-	}
 	return nil
 }
 

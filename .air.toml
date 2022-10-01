@@ -1,5 +1,5 @@
 root = "."
-testdata_dir = "test"
+testdata_dir = "pkg/test"
 tmp_dir = "tmp"
 
 [build]

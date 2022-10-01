@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 
@@ -56,7 +57,11 @@ func (r redisStore) Get(id string) ([]byte, error) {
 
 func (r redisStore) Set(id string, value any) error {
 	ctx := context.Background()
-	if err := r.client.Set(ctx, id, value, 0).Err(); err != nil {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	if err := r.client.Set(ctx, id, p, 0).Err(); err != nil {
 		return errors.Wrap(err, "failed to save value to redis")
 	}
 

@@ -20,10 +20,12 @@ func main() {
 	if port == "" {
 		panic("no port!")
 	}
-	db := store.GetPGInstance()
+	// if you are running local make sure to have an instance of pg running
+	db := store.MustNewPG()
 	// setup api
-	_ = api.Start(api.APIConfig{
-		DB:   db,
-		Port: port,
+	api.Start(api.APIConfig{
+		DB:    db,
+		Redis: store.NewRedisStore(),
+		Port:  port,
 	})
 }
