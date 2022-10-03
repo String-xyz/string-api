@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -41,7 +42,7 @@ type Transactable interface {
 	MustBegin() Queryable
 	// Rollback rollback the underyling Tx and resets back to  *sqlx.DB from *sqlx.Tx
 	Rollback()
-	//Commit commits the undelying Tx and resets to back to *sqlx.DB from *sqlx.Tx
+	// Commit commits the undelying Tx and resets to back to *sqlx.DB from *sqlx.Tx
 	Commit() error
 	SetTx(t Queryable)
 	// Reset changes the store back to *sqlx.DB from *sqlx.Tx
@@ -100,13 +101,15 @@ func (u base[T]) List(limit int, offset int) (list []T, err error) {
 }
 
 func (b base[T]) GetID(ID string) (m T, err error) {
-	fmt.Printf("What is query now %T", b.store)
 	err = b.store.Get(&m, fmt.Sprintf("SELECT FROM %s WHERE id = $1 deactivated_at = NULL", b.table), ID)
 	return m, err
 }
 
 func (b base[T]) Update(ID string, updates any) error {
 	names, keyToUpdate := keysAndValues(updates)
+	if len(names) == 0 {
+		return errors.New("no fields to update")
+	}
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = %s", b.table, strings.Join(names, ","), ID)
 	_, err := b.store.NamedExec(query, keyToUpdate)
 	return err

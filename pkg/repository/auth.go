@@ -54,16 +54,16 @@ func (a auth) CreateAny(key string, val any, expire time.Duration) error {
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
-func (a auth) CreateAPIKey(ID string, key string) error {
+func (a auth) CreateAPIKey(entityID string, key string) error {
 	m := model.AuthStrategy{
-		ID:         ID,
+		EntityID:   entityID,
 		CreatedAt:  time.Now(),
 		Type:       string(AuthTypeAPIKey),
 		EntityType: string(EntityTypePlatform),
 		Data:       key,
 	}
 
-	return a.redis.Set(m.Data, m, 0)
+	return a.redis.Set(key, m, 0)
 }
 
 // CreateJWTRefresh creates and persists a refresh jwt token

@@ -7,6 +7,7 @@ import (
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 )
 
 func main() {
@@ -21,11 +22,13 @@ func main() {
 		panic("no port!")
 	}
 	// if you are running local make sure to have an instance of pg running
+	// this call will panic if it cant connect
 	db := store.MustNewPG()
 	// setup api
 	api.Start(api.APIConfig{
-		DB:    db,
-		Redis: store.NewRedisStore(),
-		Port:  port,
+		DB:     db,
+		Redis:  store.NewRedisStore(),
+		Port:   port,
+		Logger: zerolog.New(os.Stdout),
 	})
 }

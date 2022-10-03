@@ -44,6 +44,7 @@ type Auth interface {
 	LoginPK(UserPKLogin) (JWT, error)
 	Challenge(publicAddres string) (string, error)
 	GenerateAPIKey(model.Platform) error
+	ValidateAPIKey(key string) bool
 	RefreshToken(string)
 	LoginOTP() error
 }
@@ -179,6 +180,14 @@ func (a auth) Challenge(publicAddress string) (string, error) {
 	}
 	nonce := uuid.NewString()
 	return nonce, a.authRepo.CreateAny(publicAddress, nonce, time.Minute*10)
+}
+
+func (a auth) ValidateAPIKey(key string) bool {
+	authKey, err := a.authRepo.Get(common.ToSha256(key))
+	if err != nil {
+		return false
+	}
+	return authKey.DeactivatedAt == nil
 }
 
 func (a auth) GenerateAPIKey(model.Platform) error {

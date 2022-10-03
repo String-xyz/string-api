@@ -10,12 +10,14 @@ import (
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type APIConfig struct {
-	DB    *sqlx.DB
-	Redis store.RedisStore
-	Port  string
+	DB     *sqlx.DB
+	Redis  store.RedisStore
+	Logger zerolog.Logger
+	Port   string
 }
 
 func heartbeat(c echo.Context) error {
@@ -24,27 +26,32 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) {
 	e := echo.New()
-	defaultMiddleware(e)
+	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
-	transactRepo := repository.NewTransaction(config.DB)
-	transactService := service.NewTransaction(transactRepo)
-	transactHandler := handler.NewTransaction(e, transactService)
-	transactHandler.RegisterRoutes(e.Group("/transact"), middleware.Auth())
-	authRoute(config, e)
+	authService := authRoute(config, e)
+	transactRoute(config, authService, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
-func defaultMiddleware(e *echo.Echo) {
+func baseMiddleware(logger zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
-	e.Use(middleware.Logger())
+	e.Use(middleware.Logger(logger))
 }
 
-func authRoute(config APIConfig, e *echo.Echo) {
+func authRoute(config APIConfig, e *echo.Echo) service.Auth {
 	auth := repository.NewAuth(config.Redis, config.DB)
 	user := repository.NewUser(config.DB)
 	contact := repository.NewUserContact(config.DB)
 	service := service.NewAuth(auth, user, contact)
 	handler := handler.NewAuth(service)
 	handler.RegisterRoutes(e.Group("/auth"))
+	return service
+}
+
+func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
+	repo := repository.NewTransaction(config.DB)
+	service := service.NewTransaction(repo)
+	handler := handler.NewTransaction(e, service)
+	handler.RegisterRoutes(e.Group("/transact"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }

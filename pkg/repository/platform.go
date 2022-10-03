@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -18,50 +16,37 @@ type PlaformUpdates struct {
 }
 
 type Platform interface {
-	Create(model.Platform) error
+	Transactable
+	Create(model.CreatePlatform) (model.Platform, error)
 	GetID(ID string) (model.Platform, error)
 	List(limit int, offset int) ([]model.Platform, error)
-	Update(ID string, updates PlaformUpdates) error
+	Update(ID string, updates any) error
 }
 
-type platform struct {
-	table string
-	store *sqlx.DB
+type platform[T any] struct {
+	base[T]
 }
 
 func NewPlatform(db *sqlx.DB) Platform {
-	return &platform{store: db, table: "platform"}
+	return &platform[model.Platform]{base: base[model.Platform]{store: db, table: "platform"}}
 }
 
-func (p platform) Create(m model.Platform) error {
-	_, err := p.store.Exec(`
-		INSERT INTO platform (type, authentication) 
-		VALUES(:type,:authentication)`, m)
-	return err
-}
+func (p platform[T]) Create(m model.CreatePlatform) (model.Platform, error) {
+	plat := model.Platform{}
+	rows, err := p.store.Queryx(`
+		INSERT INTO platform (type) 
+		VALUES($1) RETURNING *`, m.Type)
 
-func (p platform) GetID(ID string) (model.Platform, error) {
-	m := model.Platform{}
-	err := p.store.Get(&m, "SELECT FROM platform WHERE id = $1 AND deactivated_at = NULL", ID)
-	return m, err
-}
-
-func (p platform) List(limit int, offset int) ([]model.Platform, error) {
-	list := []model.Platform{}
-	if limit == 0 {
-		limit = 20
+	if err != nil {
+		return plat, err
 	}
-	err := p.store.Select(&list, "SELECT * FROM platform LIMIT $1 OFFSET $2", limit, offset)
-	if err == sql.ErrNoRows {
-		return list, nil
-	}
-	return list, err
-}
 
-func (p platform) Update(ID string, updates PlaformUpdates) error {
-	if ID == "" {
-		return errors.New("invalid id")
+	for rows.Next() {
+		err := rows.StructScan(&plat)
+		if err != nil {
+			return plat, err
+		}
 	}
-	// Implement updates
-	return nil
+
+	return plat, nil
 }

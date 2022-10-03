@@ -14,6 +14,12 @@ type UserRegister struct {
 	Password   string `json:"password"`
 }
 
+type CreatePlatform struct {
+	Type   string `json:"type"`
+	UserID string `json:"userId"`
+	Email  string `json:"email"`
+}
+
 type UserEmailLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
