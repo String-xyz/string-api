@@ -12,8 +12,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var TOKEN_SECRET = os.Getenv("JWT_SECRET_KEY")
-
 func allowOrigin(origin string) (bool, error) {
 	// TODO: Modify to be more restrictive
 	return regexp.MatchString(`*`, origin)
@@ -57,7 +55,7 @@ func RequestID() echo.MiddlewareFunc {
 func Auth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		Claims:     &service.JWTClaims{},
-		SigningKey: []byte(TOKEN_SECRET),
+		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
 	}
 	return echoMiddleware.JWTWithConfig(config)
 }

@@ -3,8 +3,10 @@ package service
 import (
 	"net/mail"
 	"os"
+	"regexp"
 	"time"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -13,10 +15,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var TOKEN_SECRET = os.Getenv("JWT_SECRET_KEY")
-
 type UserRegister = model.UserRegister
-type UserLogin = model.UserLogin
+type UserLoginEmail = model.UserEmailLogin
+type UserPKLogin = model.UserPKLogin
+
+var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
 type JWT struct {
 	ExpAt        time.Time `json:"expAt"`
@@ -36,11 +39,12 @@ type AuthValidator interface {
 
 type Auth interface {
 	Register(UserRegister) (JWT, error)
-	LoginEmail(UserLogin) (JWT, error)
+	LoginEmail(UserLoginEmail) (JWT, error)
 	GenerateJWT(model.User) (JWT, error)
 	GenerateAPIKey(model.Platform) error
 	RefreshToken()
-	LoginPK() error
+	LoginPK(UserPKLogin) (JWT, error)
+	Challenge(publicAddres string) (string, error)
 	LoginOTP() error
 }
 
@@ -87,10 +91,10 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 
 }
 
-func (a auth) LoginEmail(login UserLogin) (JWT, error) {
+func (a auth) LoginEmail(login UserLoginEmail) (JWT, error) {
 	_, err := mail.ParseAddress(login.Email)
 	if err != nil {
-		return JWT{}, errors.Wrap(err, "Invalid email")
+		return JWT{}, errors.Wrap(err, "invalid email")
 	}
 	m, err := a.authRepo.Get(login.Email)
 	if err != nil {
@@ -104,26 +108,27 @@ func (a auth) LoginEmail(login UserLogin) (JWT, error) {
 	return a.GenerateJWT(model.User{ID: m.EntityID})
 }
 
+// GenerateJWT generates a jwt token and a refresh token which is saved on redis
 func (a auth) GenerateJWT(m model.User) (JWT, error) {
 	claims := JWTClaims{}
+	refreshToken := uuid.NewString()
 	t := &JWT{
 		IssuedAt:     time.Now(),
 		ExpAt:        time.Now().Add(time.Hour * 24),
-		RefreshToken: uuid.NewString(),
+		RefreshToken: refreshToken,
 	}
 
 	claims.ID = m.ID
 	claims.ExpiresAt = t.ExpAt.Unix()
 	claims.IssuedAt = t.IssuedAt.Unix()
+	// replace this signing method with RSA or something similar
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	signed, err := token.SignedString([]byte(TOKEN_SECRET))
+	signed, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		return *t, err
 	}
 	t.Token = signed
-
-	return *t, nil
+	return *t, a.authRepo.CreateJWTRefresh(m.ID, common.ToSha256(refreshToken))
 }
 
 func (a auth) GenerateAPIKey(model.Platform) error {
@@ -133,13 +138,43 @@ func (a auth) GenerateAPIKey(model.Platform) error {
 func (a auth) Validate(token string) (bool, error) {
 	var claims = &JWTClaims{}
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(TOKEN_SECRET), nil
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 	return t.Valid, err
 }
 
-func (a auth) LoginPK() error {
-	return nil
+func (a auth) LoginPK(login UserPKLogin) (JWT, error) {
+	if !hexRegex.MatchString(login.PublicAddress) {
+		return JWT{}, errors.New("invalid address")
+	}
+	if login.Signature == "" {
+		return JWT{}, errors.New("invalid signature")
+	}
+	nonce, err := a.authRepo.GetKeyString(login.PublicAddress)
+	if err != nil {
+		return JWT{}, err
+	}
+
+	recoveredAddr, err := common.RecoverAddress(nonce, login.Signature)
+	if login.PublicAddress != recoveredAddr.Hex() {
+		return JWT{}, err
+	}
+
+	newNonce := uuid.NewString()
+	err = a.authRepo.CreateAny(login.PublicAddress, newNonce, time.Minute*10)
+	if err != nil {
+		return JWT{}, err
+	}
+
+	return a.GenerateJWT(model.User{ID: login.PublicAddress})
+}
+
+func (a auth) Challenge(publicAddress string) (string, error) {
+	if !hexRegex.MatchString(publicAddress) {
+		return "", errors.New("invalid address")
+	}
+	nonce := uuid.NewString()
+	return nonce, a.authRepo.CreateAny(publicAddress, nonce, time.Minute*10)
 }
 
 func (a auth) LoginOTP() error {

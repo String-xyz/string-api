@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"errors"
-
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -12,7 +10,7 @@ type User interface {
 	Create(model.User) (model.User, error)
 	GetID(ID string) (model.User, error)
 	List(limit int, offset int) ([]model.User, error)
-	Update(ID string, updates model.UserUpdates) error
+	Update(ID string, updates any) error
 }
 
 type user[T any] struct {
@@ -37,12 +35,4 @@ func (u user[T]) Create(insert model.User) (model.User, error) {
 
 	defer rows.Close()
 	return m, err
-}
-
-func (u user[T]) Update(ID string, updates model.UserUpdates) error {
-	if ID == "" {
-		return errors.New("invalid id")
-	}
-	// Implement updates
-	return nil
 }

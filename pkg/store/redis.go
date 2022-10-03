@@ -2,9 +2,9 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
@@ -12,7 +12,7 @@ import (
 
 type RedisStore interface {
 	Get(id string) ([]byte, error)
-	Set(string, any) error
+	Set(string, any, time.Duration) error
 	HSet(string, map[string]interface{}) error
 	HGetAll(string) (map[string]string, error)
 	HDel(string, string) int64
@@ -55,16 +55,11 @@ func (r redisStore) Get(id string) ([]byte, error) {
 	return r.client.Get(ctx, id).Bytes()
 }
 
-func (r redisStore) Set(id string, value any) error {
+func (r redisStore) Set(id string, value any, expire time.Duration) error {
 	ctx := context.Background()
-	p, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	if err := r.client.Set(ctx, id, p, 0).Err(); err != nil {
+	if err := r.client.Set(ctx, id, value, expire).Err(); err != nil {
 		return errors.Wrap(err, "failed to save value to redis")
 	}
-
 	return nil
 }
 

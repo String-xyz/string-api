@@ -14,7 +14,7 @@ type UserRegister struct {
 	Password   string `json:"password"`
 }
 
-type UserLogin struct {
+type UserEmailLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -27,4 +27,10 @@ type UserUpdates struct {
 	FirstNname    *string         `json:"firstName" db:"first_name"`
 	MiddleName    *string         `json:"middleName" db:"middle_name"`
 	LastName      *string         `json:"lastName" db:"last_name"`
+}
+
+type UserPKLogin struct {
+	PublicAddress string `json:"publicAddress"`
+	Signature     string `json:"signature"`
+	Nonce         string `json:"nonce"`
 }
