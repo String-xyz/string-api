@@ -35,10 +35,18 @@ type Queryable interface {
 }
 
 type Transactable interface {
+	// MustBegin panic if Tx cant start
+	// the underlying store is set to *sqlx.Tx
+	// You must call rollBack(), Commit() or Reset() to return back from *sqlx.Tx to *sqlx.DB
 	MustBegin() Queryable
+	// Rollback rollback the underyling Tx and resets back to  *sqlx.DB from *sqlx.Tx
 	Rollback()
-	Commit()
+	//Commit commits the undelying Tx and resets to back to *sqlx.DB from *sqlx.Tx
+	Commit() error
 	SetTx(t Queryable)
+	// Reset changes the store back to *sqlx.DB from *sqlx.Tx
+	// Useful when there are many repos using the same *sqlx.Tx
+	Reset(b ...base[any])
 }
 
 type base[T any] struct {
@@ -47,10 +55,6 @@ type base[T any] struct {
 	table string
 }
 
-// MustBegin panic is transaction cant start
-// the underlying store is set to the transaction
-// returned by db.MustBegin()
-// You must call rollBack or Commit to return back to a Db state
 func (b *base[T]) MustBegin() Queryable {
 	db := b.store.(*sqlx.DB)
 	b.db = db
@@ -62,17 +66,25 @@ func (b *base[T]) MustBegin() Queryable {
 func (b *base[T]) Rollback() {
 	t := b.store.(*sqlx.Tx)
 	t.Rollback()
-	b.store = b.db
+	b.Reset()
 }
 
-func (b *base[T]) Commit() {
+func (b *base[T]) Commit() error {
 	t := b.store.(*sqlx.Tx)
-	t.Commit()
-	b.store = b.db
+	err := t.Commit()
+	b.Reset()
+	return err
 }
 
 func (b *base[T]) SetTx(t Queryable) {
 	b.store = t
+}
+
+func (b *base[T]) Reset(repos ...base[any]) {
+	b.store = b.db
+	for _, v := range repos {
+		v.Reset()
+	}
 }
 
 func (u base[T]) List(limit int, offset int) (list []T, err error) {
@@ -88,6 +100,7 @@ func (u base[T]) List(limit int, offset int) (list []T, err error) {
 }
 
 func (b base[T]) GetID(ID string) (m T, err error) {
+	fmt.Printf("What is query now %T", b.store)
 	err = b.store.Get(&m, fmt.Sprintf("SELECT FROM %s WHERE id = $1 deactivated_at = NULL", b.table), ID)
 	return m, err
 }

@@ -41,10 +41,10 @@ type Auth interface {
 	Register(UserRegister) (JWT, error)
 	LoginEmail(UserLoginEmail) (JWT, error)
 	GenerateJWT(model.User) (JWT, error)
-	GenerateAPIKey(model.Platform) error
-	RefreshToken()
 	LoginPK(UserPKLogin) (JWT, error)
 	Challenge(publicAddres string) (string, error)
+	GenerateAPIKey(model.Platform) error
+	RefreshToken(string)
 	LoginOTP() error
 }
 
@@ -74,7 +74,7 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 		a.contactRepo.Rollback()
 		return JWT{}, err
 	}
-	a.contactRepo.Commit()
+
 	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
 		EntityID:    user.ID,
 		ContactID:   contact.ID,
@@ -84,9 +84,17 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 		Data:        m.Password,
 		ContactData: contact.Data,
 	})
+
+	if err != nil {
+		a.contactRepo.Rollback()
+		return JWT{}, err
+	}
+
+	err = a.contactRepo.Commit()
 	if err != nil {
 		return JWT{}, err
 	}
+	defer a.userRepo.Reset()
 	return a.GenerateJWT(user)
 
 }
@@ -128,11 +136,7 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 		return *t, err
 	}
 	t.Token = signed
-	return *t, a.authRepo.CreateJWTRefresh(m.ID, common.ToSha256(refreshToken))
-}
-
-func (a auth) GenerateAPIKey(model.Platform) error {
-	return nil
+	return *t, a.authRepo.CreateJWTRefresh(common.ToSha256(refreshToken), m.ID)
 }
 
 func (a auth) Validate(token string) (bool, error) {
@@ -177,10 +181,14 @@ func (a auth) Challenge(publicAddress string) (string, error) {
 	return nonce, a.authRepo.CreateAny(publicAddress, nonce, time.Minute*10)
 }
 
+func (a auth) GenerateAPIKey(model.Platform) error {
+	return nil
+}
+
 func (a auth) LoginOTP() error {
 	return nil
 }
 
-func (a auth) RefreshToken() {
-
+func (a auth) RefreshToken(token string) {
+	//stra, err := a.authRepo.Get(common.ToSha256(token))
 }

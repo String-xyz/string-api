@@ -16,7 +16,9 @@ func ToSha256(v string) string {
 
 func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 	sig := hexutil.MustDecode(signature)
-	sig[crypto.RecoveryIDOffset] -= 27
+	if sig[crypto.RecoveryIDOffset] == 27 || sig[crypto.RecoveryIDOffset] == 28 {
+		sig[crypto.RecoveryIDOffset] -= 27
+	}
 	msg := accounts.TextHash([]byte(message))
 	recovered, err := crypto.SigToPub(msg, sig)
 	if err != nil {

@@ -25,7 +25,7 @@ type AuthStrategy interface {
 	Create(authType AuthType, m model.AuthStrategy) error
 	CreateAny(key string, val any, expire time.Duration) error
 	CreateAPIKey(ID string, apiKey string) error
-	CreateJWTRefresh(ID string, token string) error
+	CreateJWTRefresh(key string, val string) error
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
 }
@@ -68,16 +68,16 @@ func (a auth) CreateAPIKey(ID string, key string) error {
 
 // CreateJWTRefresh creates and persists a refresh jwt token
 // TODO: include expire time
-func (a auth) CreateJWTRefresh(ID string, token string) error {
+func (a auth) CreateJWTRefresh(key string, val string) error {
 	m := model.AuthStrategy{
-		ID:         ID,
+		ID:         key,
 		CreatedAt:  time.Now(),
 		Type:       string(AuthTypeJWT),
 		EntityType: string(EntityTypeUser),
-		Data:       token,
+		Data:       val,
 	}
 
-	return a.redis.Set(m.Data, m, 0)
+	return a.redis.Set(key, m, 0)
 }
 
 func (a auth) Get(key string) (model.AuthStrategy, error) {
