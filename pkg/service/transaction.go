@@ -238,7 +238,6 @@ type postProcessRequest struct {
 }
 
 func postProcess(request postProcessRequest) error {
-	fmt.Printf("POST PROCESSING!!!!")
 	chain, err := model.ChainInfo(request.ChainID)
 	if err != nil {
 		return err
@@ -248,7 +247,6 @@ func postProcess(request postProcessRequest) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("CONFIRMING TX %+v", request.TxID)
 	// confirm the TX on the EVM, update db status
 	trueGas, err := executor.TxWait(request.TxID)
 	if err != nil {
