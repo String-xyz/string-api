@@ -54,3 +54,26 @@ func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes)
 	return verified, nil
 }
+
+func ValidateExternalEVMSignature(signature string, address string, data interface{}) (bool, error) {
+	buffer, err := json.Marshal(data)
+	if err != nil {
+		return false, err
+	}
+	hash := crypto.Keccak256Hash(buffer)
+
+	sigBytes, err := hexutil.Decode(signature)
+	if err != nil {
+		return false, err
+	}
+	sigBytes = sigBytes[:len(sigBytes)-1] // last byte is a recovery ID
+
+	addrBytes, err := hexutil.Decode(address)
+	if err != nil {
+		return false, err
+	}
+	addrBytes = addrBytes[:len(addrBytes)-1] // last byte is a recovery ID
+
+	verified := crypto.VerifySignature(addrBytes, hash.Bytes(), sigBytes)
+	return verified, nil
+}

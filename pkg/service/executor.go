@@ -18,7 +18,6 @@ import (
 )
 
 type ContractCall struct {
-	RPC        string
 	CxAddr     string   // Address of contract ie "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 	CxFunc     string   // Function declaration ie "mintTo(address) payable"
 	CxReturn   string   // Function return type ie "uint256"
@@ -36,9 +35,11 @@ type CallEstimate struct {
 type Executor interface {
 	New() Executor
 	Initialize(RPC string) error
-	Initiate(call ContractCall) (string, error)
+	Initiate(call ContractCall) (string, *big.Int, error)
 	Estimate(call ContractCall) (CallEstimate, error)
+	TxWait(txID string) (uint64, error)
 	Close() error
+	ChainID() (uint64, error)
 }
 
 type executor struct {
@@ -143,11 +144,11 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
 }
 
-func (e executor) Initiate(call ContractCall) (string, error) {
+func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get private key
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
@@ -155,7 +156,7 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return "", errors.New("Estimate: Error casting public key to ECDSA")
+		return "", nil, errors.New("Estimate: Error casting public key to ECDSA")
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
@@ -166,14 +167,14 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Get sender nonce
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Get dynamic fee tx gas params
@@ -183,13 +184,13 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Encode function parameters
 	data, err := stringCommon.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Type conversion for chainID
@@ -217,9 +218,9 @@ func (e executor) Initiate(call ContractCall) (string, error) {
 	err = e.client.Call(eth.SendTx(tx).Returns(&hash))
 	if err != nil {
 		// Execution failed!
-		return "", err
+		return "", nil, err
 	}
-	return hash.String(), nil
+	return hash.String(), value, nil
 }
 
 func (e executor) TxWait(txID string) (uint64, error) {
@@ -236,4 +237,14 @@ func (e executor) TxWait(txID string) (uint64, error) {
 		// TODO: Sleep for a few ms to keep the cpu cooler
 	}
 	return receipt.GasUsed, nil
+}
+
+func (e executor) ChainID() (uint64, error) {
+	// Get ChainID from state
+	var chainId64 uint64
+	err := e.client.Call(eth.ChainID().Returns(&chainId64))
+	if err != nil {
+		return 0, err
+	}
+	return chainId64, nil
 }

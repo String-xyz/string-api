@@ -39,6 +39,7 @@ type Cost interface {
 	EstimateTransaction(p EstimationParams) (model.Quote, error)
 	New(repo repository.Cost) Cost
 	QueryOwlracle(chainId uint64) (float64, error)
+	LookupUSD(coin string, quantity float64) (float64, error)
 }
 
 type cost struct {
@@ -78,7 +79,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	}
 
 	// Query cost of native token in USD
-	nativeCost, err := c.lookupUSD(blockChain.CoingeckoName, 1)
+	nativeCost, err := c.LookupUSD(blockChain.CoingeckoName, 1)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -104,7 +105,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 
 	// Query cost of token in USD if used and apply buffer
 	costToken := common.WeiToEther(&p.CostToken)
-	tokenCost, err := c.lookupUSD(p.TokenName, costToken)
+	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -131,7 +132,7 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float32, uniqueEntri
 	return (float32(uniqueEntries*60000) / rateLimitPerMinute)
 }
 
-func (c cost) lookupUSD(coin string, quantity float64) (float64, error) {
+func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	// DB under construction
 	res, err := c.coingeckoUSD(coin, 1)
 	if err != nil {
