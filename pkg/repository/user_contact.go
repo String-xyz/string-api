@@ -48,12 +48,6 @@ func (u userContact[T]) Create(insert model.Contact) (model.Contact, error) {
 	return m, err
 }
 
-func (u userContact[T]) GetUserID(userID string) (model.Contact, error) {
-	m := model.Contact{}
-	err := u.store.Get(&m, "SELECT FROM contact WHERE user_id = $1 deactivated_at = NULL", userID)
-	return m, err
-}
-
 func (u userContact[T]) ListUserID(userID string, limit int, offset int) ([]model.Contact, error) {
 	list := []model.Contact{}
 	if limit == 0 {

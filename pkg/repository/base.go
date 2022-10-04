@@ -11,6 +11,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var ErrNotFound = errors.New("no found")
+
 type Queryable interface {
 	sqlx.Ext
 	sqlx.ExecerContext
@@ -101,7 +103,18 @@ func (u base[T]) List(limit int, offset int) (list []T, err error) {
 }
 
 func (b base[T]) GetID(ID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT FROM %s WHERE id = $1 deactivated_at = NULL", b.table), ID)
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND 'deactivated_at' IS NOT NULL", b.table), ID)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
+	return m, err
+}
+
+func (b base[T]) GetUserID(userID string) (m T, err error) {
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL", b.table), userID)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
 	return m, err
 }
 

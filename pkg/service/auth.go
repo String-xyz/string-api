@@ -70,9 +70,10 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 		return JWT{}, err
 	}
 	a.contactRepo.SetTx(tx)
+	defer a.contactRepo.Reset()
 	contact, err := a.contactRepo.Create(model.Contact{UserID: user.ID, Data: m.Email})
 	if err != nil {
-		a.contactRepo.Rollback()
+		a.userRepo.Rollback()
 		return JWT{}, err
 	}
 
@@ -87,7 +88,7 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 	})
 
 	if err != nil {
-		a.contactRepo.Rollback()
+		a.userRepo.Rollback()
 		return JWT{}, err
 	}
 
@@ -95,7 +96,7 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 	if err != nil {
 		return JWT{}, err
 	}
-	defer a.userRepo.Reset()
+
 	return a.GenerateJWT(user)
 
 }
@@ -183,14 +184,15 @@ func (a auth) Challenge(publicAddress string) (string, error) {
 }
 
 func (a auth) ValidateAPIKey(key string) bool {
-	authKey, err := a.authRepo.Get(common.ToSha256(key))
+	hashed := common.ToSha256(key)
+	authKey, err := a.authRepo.Get(hashed)
 	if err != nil {
 		return false
 	}
-	return authKey.DeactivatedAt == nil
+	return authKey.Data == hashed
 }
 
-func (a auth) GenerateAPIKey(model.Platform) error {
+func (a auth) GenerateAPIKey(m model.Platform) error {
 	return nil
 }
 

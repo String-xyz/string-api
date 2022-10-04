@@ -47,6 +47,6 @@ func (p platform[T]) Create(m model.CreatePlatform) (model.Platform, error) {
 			return plat, err
 		}
 	}
-
+	defer rows.Close()
 	return plat, nil
 }

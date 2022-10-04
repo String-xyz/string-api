@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -54,7 +55,14 @@ func RequestID() echo.MiddlewareFunc {
 
 func BearerAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
-		Claims:     &service.JWTClaims{},
+		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
+			var claims = &service.JWTClaims{}
+			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
+				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+			})
+			c.Set("userId", claims.ID)
+			return t, err
+		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
 	}
 	return echoMiddleware.JWTWithConfig(config)

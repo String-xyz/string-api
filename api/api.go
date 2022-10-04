@@ -21,7 +21,7 @@ type APIConfig struct {
 }
 
 func heartbeat(c echo.Context) error {
-	return c.JSON(http.StatusOK, "healthy")
+	return c.JSON(http.StatusOK, "alive")
 }
 
 func Start(config APIConfig) {
@@ -29,6 +29,7 @@ func Start(config APIConfig) {
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
+	platformRoute(config, e)
 	transactRoute(config, authService, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -40,13 +41,22 @@ func baseMiddleware(logger zerolog.Logger, e *echo.Echo) {
 }
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
-	auth := repository.NewAuth(config.Redis, config.DB)
-	user := repository.NewUser(config.DB)
-	contact := repository.NewUserContact(config.DB)
-	service := service.NewAuth(auth, user, contact)
+	a := repository.NewAuth(config.Redis, config.DB)
+	u := repository.NewUser(config.DB)
+	c := repository.NewUserContact(config.DB)
+	service := service.NewAuth(a, u, c)
 	handler := handler.NewAuth(service)
 	handler.RegisterRoutes(e.Group("/auth"))
 	return service
+}
+
+func platformRoute(config APIConfig, e *echo.Echo) {
+	p := repository.NewPlatform(config.DB)
+	a := repository.NewAuth(config.Redis, config.DB)
+	c := repository.NewUserContact(config.DB)
+	service := service.NewPlatform(p, c, a)
+	handler := handler.NewPlatform(service)
+	handler.RegisterRoutes(e.Group("/platform"), middleware.BearerAuth())
 }
 
 func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
