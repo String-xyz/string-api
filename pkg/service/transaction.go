@@ -248,7 +248,7 @@ func postProcess(request postProcessRequest) error {
 		return err
 	}
 	// confirm the TX on the EVM, update db status
-	trueGas, err := executor.TxWait(request.TxID)
+	trueGas, err := confirmTX(executor, request.TxID)
 	if err != nil {
 		return err
 	}
