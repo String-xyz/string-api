@@ -29,7 +29,7 @@ CREATE TABLE string_user (
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- enum: to be defined at struct level in Go
   status TEXT NOT NULL, -- enum: to be defined at struct level in Go
-  tags JSONB DEFAULT '{}'::JSONB,
+  tags JSONB DEFAULT '{}'::JSONB, -- platforms should be listed in the tags
   first_name TEXT DEFAULT '', -- name in separate table?
   middle_name TEXT DEFAULT '',
   last_name TEXT DEFAULT ''

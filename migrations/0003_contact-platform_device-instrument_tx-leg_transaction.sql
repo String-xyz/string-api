@@ -36,34 +36,22 @@ CREATE OR REPLACE TRIGGER update_device_instrument_updated_at
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
--- BLOCKCHAIN_TX --------------------------------------------------------
-CREATE TABLE blockchain_tx (
+-- TX_LEG ---------------------------------------------------------------
+CREATE TABLE tx_leg (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   timestamp TIMESTAMP WITH TIME ZONE,
-  status TEXT DEFAULT '', --enum
-  tags JSONB DEFAULT '[]'::JSONB,
-  transaction_hash TEXT DEFAULT '',
-  network_id UUID NOT NULL REFERENCES network (id),
-  network_fee BIGINT DEFAULT 0,
-  parameters JSONB DEFAULT '{}'::JSONB,
-  contract_abi JSONB DEFAULT '{}'::JSONB,
-  sender_amount BIGINT DEFAULT 0,
-  sender_asset UUID REFERENCES asset (id),
-  sender_value BIGINT DEFAULT 0,
-  sender_user_id UUID NOT NULL REFERENCES string_user (id),
-  sender_instrument_id UUID NOT NULL REFERENCES instrument (id),
-  reciever_amount BIGINT DEFAULT 0,
-  reciever_asset UUID NOT NULL REFERENCES asset (id),
-  reciever_value BIGINT DEFAULT 0,
-  reciever_user_id UUID NOT NULL REFERENCES string_user (id),
-  reciever_instrument_id UUID NOT NULL REFERENCES instrument (id)
+  amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
+  value BIGINT DEFAULT 0, -- the relative quantity in USD at the time of the transaction
+  asset UUID REFERENCES asset (id),
+  user_id UUID REFERENCES string_user (id), -- this can be null in the case that the recipient is an unknown wallet address
+  instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
 
-CREATE OR REPLACE TRIGGER update_blockchain_tx_updated_at
+CREATE OR REPLACE TRIGGER update_tx_leg_updated_at
     BEFORE UPDATE
-    ON blockchain_tx
+    ON tx_leg
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
@@ -80,17 +68,15 @@ CREATE TABLE transaction (
   device_id UUID REFERENCES device (id),
   ip_address TEXT DEFAULT '',
   platform_id UUID REFERENCES platform (id),
-  sender_amount BIGINT DEFAULT 0, -- will need to define the base for USD and other fiat currencies
-  sender_asset UUID REFERENCES asset (id),
-  sender_value BIGINT DEFAULT 0, -- the relative quantity in USD at the time of the transaction
-  sender_user_id UUID NOT NULL REFERENCES string_user (id),
-  sender_instrument_id UUID NOT NULL REFERENCES instrument (id),
-  reciever_amount BIGINT DEFAULT 0,
-  reciever_asset UUID NOT NULL REFERENCES asset (id),
-  reciever_value BIGINT DEFAULT 0,
-  reciever_user_id UUID NOT NULL REFERENCES string_user (id),
-  reciever_instrument_id UUID NOT NULL REFERENCES instrument (id),
-  blockchain_tx_id UUID NOT NULL REFERENCES blockchain_tx (id),
+  transaction_hash TEXT DEFAULT '',
+  network_id UUID NOT NULL REFERENCES network (id),
+  network_fee BIGINT DEFAULT 0,
+  parameters JSONB DEFAULT '{}'::JSONB, 
+  contract_abi JSONB DEFAULT '{}'::JSONB,
+  origin_tx_leg_id UUID NOT NULL REFERENCES tx_leg (id),
+  receipt_tx_leg_id UUID NOT NULL REFERENCES tx_leg (id),
+  response_tx_leg_id UUID NOT NULL REFERENCES tx_leg (id),
+  destination_tx_leg_id UUID NOT NULL REFERENCES tx_leg (id),
   processing_fee BIGINT DEFAULT 0,
   processing_fee_asset UUID REFERENCES asset (id),
   string_fee BIGINT DEFAULT 0 -- // always USD?
@@ -111,9 +97,9 @@ DROP TRIGGER IF EXISTS update_transaction_updated_at ON transaction;
 DROP TABLE transaction;
 
 -------------------------------------------------------------------------
--- BLOCKCHAIN_TX --------------------------------------------------------
-DROP TRIGGER IF EXISTS update_blockchain_tx_updated_at ON blockchain_tx;
-DROP TABLE blockchain_tx;
+-- TX_LEG ---------------------------------------------------------------
+DROP TRIGGER IF EXISTS update_tx_leg_updated_at ON tx_leg;
+DROP TABLE tx_leg;
 
 -------------------------------------------------------------------------
 -- DEVICE_INSTRUMENT ----------------------------------------------------
