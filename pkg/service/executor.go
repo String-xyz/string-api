@@ -228,7 +228,8 @@ func (e executor) TxWait(txID string) (uint64, error) {
 	receipt := types.Receipt{}
 	for receipt.Status == 0 {
 		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
-		if err != nil {
+		// TransactionReceipt returns error "not found" while tx is pending
+		if err != nil && err.Error() != "not found" {
 			return 0, err
 		}
 		if pendingReceipt != nil {
