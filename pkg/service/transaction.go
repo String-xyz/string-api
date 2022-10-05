@@ -180,13 +180,6 @@ func authcard(userWallet string, cardToken string, usd float64) (string, error) 
 }
 
 func initiateTransaction(executor Executor, e model.ExecutionRequest) (string, *big.Int, error) {
-	// executor := NewExecutor() // maybe scope this outside and pass in a reference
-	// Verify Chain is supported and get RPC for chain
-	// chain, err := model.ChainInfo(uint64(e.ChainID))
-	// if err != nil {
-	// 	return "", err
-	// }
-	// executor.Initialize(chain.RPC)
 	call := ContractCall{
 		CxAddr:     e.CxAddr,
 		CxFunc:     e.CxFunc,
