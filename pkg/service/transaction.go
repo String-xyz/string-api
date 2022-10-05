@@ -85,7 +85,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	// model.status = quoteVerified, update db
 
 	//Authorize quoted cost on end-user CC
-	authorizationID, err := authcard(e.UserAddress, e.CardToken, e.TotalUSD)
+	authorizationID, err := authCard(e.UserAddress, e.CardToken, e.TotalUSD)
 	if err != nil {
 		return res, err
 	}
@@ -130,7 +130,7 @@ func testTransaction(executor Executor, t model.TransactionRequest, useBuffer bo
 		return res, err
 	}
 
-	chainID, err := executor.ChainID()
+	chainID, err := executor.GetChainID()
 	if err != nil {
 		return res, err
 	}
@@ -173,9 +173,9 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func authcard(userWallet string, cardToken string, usd float64) (string, error) {
+func authCard(userWallet string, cardToken string, usd float64) (string, error) {
 	// auth their card
-	auth, err := Authorize(usd, userWallet, cardToken)
+	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
 	return auth, err
 }
 
@@ -204,7 +204,7 @@ func confirmTX(executor Executor, txID string) (uint64, error) {
 }
 
 func chargeCard(userWallet string, authorizationID string, usd float64) error {
-	_, err := Capture(usd, userWallet, authorizationID)
+	_, err := CaptureCharge(usd, userWallet, authorizationID)
 	return err
 }
 

@@ -25,7 +25,7 @@ func convertAmount(amount float64) uint64 {
 	return uint64(math.Round(amount * 100))
 }
 
-func Token(card *tokens.Card) (*tokens.Response, error) {
+func CreateToken(card *tokens.Card) (*tokens.Response, error) {
 	var config, err = getConfig()
 	client := tokens.NewClient(*config)
 
@@ -33,7 +33,7 @@ func Token(card *tokens.Card) (*tokens.Response, error) {
 	return res, err
 }
 
-func Authorize(amount float64, userWallet string, tokenId string) (string, error) {
+func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string, error) {
 	var config, err = getConfig()
 	client := payments.NewClient(*config)
 
@@ -47,7 +47,7 @@ func Authorize(amount float64, userWallet string, tokenId string) (string, error
 		Name:        "Customer Name",
 		CVV:         "100",
 	}
-	paymentToken, err := Token(&card)
+	paymentToken, err := CreateToken(&card)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +86,7 @@ func Authorize(amount float64, userWallet string, tokenId string) (string, error
 	return res.Processed.ID, err
 }
 
-func Capture(amount float64, userWallet string, authorizationID string) (*payments.CapturesResponse, error) {
+func CaptureCharge(amount float64, userWallet string, authorizationID string) (*payments.CapturesResponse, error) {
 	var config, err = getConfig()
 	client := payments.NewClient(*config)
 
