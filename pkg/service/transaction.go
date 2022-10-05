@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -30,12 +31,22 @@ func NewTransaction(repo repository.Transaction) Transaction {
 func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
 	// TODO: use prefab service to parse d and fill out known params
 	res := model.ExecutionRequest{TransactionRequest: d}
+	chain, err := model.ChainInfo(uint64(d.ChainID))
+	if err != nil {
+		return res, err
+	}
+	executor := NewExecutor()
+	err = executor.Initialize(chain.RPC)
+	if err != nil {
+		return res, err
+	}
 
-	estimateUSD, err := testTransaction(d, true)
+	estimateUSD, err := testTransaction(executor, d, true)
 	if err != nil {
 		return res, err
 	}
 	res.Quote = estimateUSD
+	executor.Close()
 
 	// Sign entire payload
 	signature, err := common.EVMSign(res)
@@ -51,7 +62,17 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	res := model.Transaction{}
 	// TODO: Create entry of E in TX DB
 
-	estimateUSD, err := testTransaction(e.TransactionRequest, false)
+	chain, err := model.ChainInfo(uint64(e.ChainID))
+	if err != nil {
+		return res, err
+	}
+	executor := NewExecutor()
+	err = executor.Initialize(chain.RPC)
+	if err != nil {
+		return res, err
+	}
+
+	estimateUSD, err := testTransaction(executor, e.TransactionRequest, false)
 	if err != nil {
 		return res, err
 	}
@@ -64,36 +85,38 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	// model.status = quoteVerified, update db
 
 	//Authorize quoted cost on end-user CC
-	_, err = authcard(e.UserAddress, e.CardToken, uint64(e.TotalUSD))
+	authorizationID, err := authCard(e.UserAddress, e.CardToken, e.TotalUSD)
 	if err != nil {
 		return res, err
 	}
 	// model.status = ccAuthorized, update db
 
-	txID, err := initiateTransaction(e)
+	txID, value, err := initiateTransaction(executor, e)
 	if err != nil {
 		return res, err
 	}
 	// model.status = txInitiated, update db
 
-	defer postProcess(txID, e)
+	// this Executor will not exist in scope of postProcess
+	executor.Close()
+
+	post := postProcessRequest{
+		TxID:            txID,
+		ChainID:         chain.ChainID,
+		AuthorizationID: authorizationID,
+		UserAddress:     e.UserAddress,
+		CumulativeValue: value,
+		QuotedTotal:     e.TotalUSD,
+	}
+	go postProcess(post)
 
 	return model.Transaction{TxID: txID}, nil
 }
 
-func testTransaction(t model.TransactionRequest, useBuffer bool) (model.Quote, error) {
+func testTransaction(executor Executor, t model.TransactionRequest, useBuffer bool) (model.Quote, error) {
 	res := model.Quote{}
-	executor := NewExecutor() // maybe scope this outside and pass in a reference
 
-	// Verify Chain is supported and get RPC for chain
-	chain, err := model.ChainInfo(uint64(t.ChainID))
-	if err != nil {
-		return res, err
-	}
-
-	executor.Initialize(chain.RPC) // we want to avoid calling this redundantly in /transact
 	call := ContractCall{
-		RPC:        chain.RPC,
 		CxAddr:     t.CxAddr,
 		CxFunc:     t.CxFunc,
 		CxReturn:   t.CxReturn,
@@ -106,11 +129,14 @@ func testTransaction(t model.TransactionRequest, useBuffer bool) (model.Quote, e
 	if err != nil {
 		return res, err
 	}
-	executor.Close()
 
+	chainID, err := executor.GetChainID()
+	if err != nil {
+		return res, err
+	}
 	cost := NewCost(repository.NewCost(nil))
 	estimationParams := EstimationParams{
-		ChainID:    chain.ChainID,
+		ChainID:    chainID,
 		CostETH:    estimateEVM.Value,
 		UseBuffer:  useBuffer,
 		GasUsedWei: estimateEVM.Gas,
@@ -147,21 +173,14 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func authcard(userWallet string, cardToken string, usd uint64) (string, error) {
+func authCard(userWallet string, cardToken string, usd float64) (string, error) {
 	// auth their card
-	return "chargeresponse", nil
+	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
+	return auth, err
 }
 
-func initiateTransaction(e model.ExecutionRequest) (string, error) {
-	executor := NewExecutor() // maybe scope this outside and pass in a reference
-	// Verify Chain is supported and get RPC for chain
-	chain, err := model.ChainInfo(uint64(e.ChainID))
-	if err != nil {
-		return "", err
-	}
-	executor.Initialize(chain.RPC)
+func initiateTransaction(executor Executor, e model.ExecutionRequest) (string, *big.Int, error) {
 	call := ContractCall{
-		RPC:        chain.RPC,
 		CxAddr:     e.CxAddr,
 		CxFunc:     e.CxFunc,
 		CxReturn:   e.CxReturn,
@@ -169,13 +188,79 @@ func initiateTransaction(e model.ExecutionRequest) (string, error) {
 		TxValue:    e.TxValue,
 		TxGasLimit: e.TxGasLimit,
 	}
-	txID, err := executor.Initiate(call)
+	txID, value, err := executor.Initiate(call)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return txID, nil
+	return txID, value, nil
 }
 
-func postProcess(txID string, e model.ExecutionRequest /*a ChargeResponse, m TransactionModel*/) {
+func confirmTX(executor Executor, txID string) (uint64, error) {
+	trueGas, err := executor.TxWait(txID)
+	if err != nil {
+		return 0, err
+	}
+	return trueGas, nil
+}
 
+func chargeCard(userWallet string, authorizationID string, usd float64) error {
+	_, err := CaptureCharge(usd, userWallet, authorizationID)
+	return err
+}
+
+func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain model.Chain) (float64, error) {
+	cost := NewCost(repository.NewCost(nil)) // temporary nil
+	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
+	trueEth := common.WeiToEther(trueWei)
+	trueUSD, err := cost.LookupUSD(chain.CoingeckoName, trueEth)
+	if err != nil {
+		return 0, err
+	}
+	profit := quotedTotal - trueUSD
+	return profit, nil
+}
+
+type postProcessRequest struct {
+	TxID            string
+	ChainID         uint64
+	AuthorizationID string
+	UserAddress     string
+	CumulativeGas   uint64
+	CumulativeValue *big.Int
+	QuotedTotal     float64
+}
+
+func postProcess(request postProcessRequest) error {
+	chain, err := model.ChainInfo(request.ChainID)
+	if err != nil {
+		return err
+	}
+	executor := NewExecutor()
+	err = executor.Initialize(chain.RPC)
+	if err != nil {
+		return err
+	}
+	// confirm the TX on the EVM, update db status
+	trueGas, err := confirmTX(executor, request.TxID)
+	if err != nil {
+		return err
+	}
+
+	// compute profit and log to db
+	profit, err := tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, chain)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("PROFIT=%+v", profit)
+	// log profit to db
+
+	// charge the users CC
+	err = chargeCard(request.UserAddress, request.AuthorizationID, request.QuotedTotal)
+	if err != nil {
+		return err
+	}
+
+	// update tx status to complete in the db
+	executor.Close()
+	return nil
 }

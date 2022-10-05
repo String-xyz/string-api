@@ -13,7 +13,7 @@ func main() {
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Error loading .env file") // TODO: figure out why this wasnt hit
 	}
 
 	port := os.Getenv("PORT")
