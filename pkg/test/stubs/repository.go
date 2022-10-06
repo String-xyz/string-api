@@ -14,7 +14,7 @@ func (AuthStrategyRepo) Create(authType repository.AuthType, m model.AuthStrateg
 	return nil
 }
 
-func (AuthStrategyRepo) CreateAPIKey(ID string, apiKey string) error {
+func (AuthStrategyRepo) CreateAPIKey(entityID string, authType model.AuthType, apiKey string) error {
 	return nil
 }
 

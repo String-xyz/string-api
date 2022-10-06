@@ -15,9 +15,10 @@ type UserRegister struct {
 }
 
 type CreatePlatform struct {
-	Type   string `json:"type"`
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
+	Type           string   `json:"type"`
+	Email          string   `json:"email"`
+	ApiKey         string   `json:"apiKey" db:"api_key"`
+	Authentication AuthType `json:"authentication" db:"authentication"`
 }
 
 type UserEmailLogin struct {
@@ -35,8 +36,25 @@ type UserUpdates struct {
 	LastName      *string         `json:"lastName" db:"last_name"`
 }
 
+type UserContactUpdates struct {
+	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type          *string    `json:"type" db:"type"`
+	Status        *string    `json:"status" db:"status"`
+	Data          *string    `json:"data" db:"data"`
+}
+
+type PlaformContactUpdates struct {
+	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type          *string    `json:"type" db:"type"`
+	Status        *string    `json:"status" db:"status"`
+	Data          *string    `json:"data" db:"data"`
+}
+
 type UserPKLogin struct {
 	PublicAddress string `json:"publicAddress"`
 	Signature     string `json:"signature"`
 	Nonce         string `json:"nonce"`
 }
+
+type EntityType string
+type AuthType string

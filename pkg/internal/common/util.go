@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	ethcomm "github.com/ethereum/go-ethereum/common"
@@ -11,7 +12,7 @@ import (
 
 func ToSha256(v string) string {
 	bs := sha256.Sum256([]byte(v))
-	return string(bs[:])
+	return hex.EncodeToString(bs[:])
 }
 
 func RecoverAddress(message string, signature string) (ethcomm.Address, error) {

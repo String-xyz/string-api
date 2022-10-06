@@ -10,21 +10,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type EntityType string
-type AuthType string
+type EntityType = model.EntityType
+type AuthType = model.AuthType
 
 const (
 	EntityTypePlatform = EntityType("platform")
 	EntityTypeUser     = EntityType("user")
 	AuthTypeJWT        = AuthType("jwt")
 	AuthTypeEmail      = AuthType("email")
-	AuthTypeAPIKey     = AuthType("api_key")
+	AuthTypePK         = AuthType("privateKey")
+	AuthTypeOTP        = AuthType("otp")
+	AuthTypeAPIKey     = AuthType("apiKey")
 )
 
 type AuthStrategy interface {
 	Create(authType AuthType, m model.AuthStrategy) error
 	CreateAny(key string, val any, expire time.Duration) error
-	CreateAPIKey(entityID string, apiKey string) error
+	CreateAPIKey(entityID string, authType AuthType, apiKey string) error
 	CreateJWTRefresh(key string, val string) error
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
@@ -56,11 +58,11 @@ func (a auth) CreateAny(key string, val any, expire time.Duration) error {
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
-func (a auth) CreateAPIKey(entityID string, key string) error {
+func (a auth) CreateAPIKey(entityID string, authType AuthType, key string) error {
 	m := model.AuthStrategy{
 		EntityID:   entityID,
 		CreatedAt:  time.Now(),
-		Type:       string(AuthTypeAPIKey),
+		Type:       string(authType),
 		EntityType: string(EntityTypePlatform),
 		Data:       key,
 	}

@@ -90,12 +90,12 @@ func (b *base[T]) Reset(repos ...base[any]) {
 	}
 }
 
-func (u base[T]) List(limit int, offset int) (list []T, err error) {
+func (b base[T]) List(limit int, offset int) (list []T, err error) {
 	if limit == 0 {
 		limit = 20
 	}
 
-	err = u.store.Select(&list, fmt.Sprintf("SELECT * FROM %s LIMIT $1 OFFSET $2", u.table), limit, offset)
+	err = b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s LIMIT $1 OFFSET $2", b.table), limit, offset)
 	if err == sql.ErrNoRows {
 		return list, nil
 	}
@@ -116,6 +116,18 @@ func (b base[T]) GetUserID(userID string) (m T, err error) {
 		return m, ErrNotFound
 	}
 	return m, err
+}
+
+func (b base[T]) ListUserID(userID string, limit int, offset int) ([]T, error) {
+	list := []T{}
+	if limit == 0 {
+		limit = 20
+	}
+	err := b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userID, limit, offset)
+	if err == sql.ErrNoRows {
+		return list, nil
+	}
+	return list, err
 }
 
 func (b base[T]) Update(ID string, updates any) error {

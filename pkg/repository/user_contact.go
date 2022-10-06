@@ -1,19 +1,9 @@
 package repository
 
 import (
-	"database/sql"
-	"time"
-
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
-
-type UserContactUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Status        *string    `json:"status" db:"status"`
-	Data          *string    `json:"data" db:"data"`
-}
 
 type UserContact interface {
 	Transactable
@@ -46,16 +36,4 @@ func (u userContact[T]) Create(insert model.Contact) (model.Contact, error) {
 	}
 	defer rows.Close()
 	return m, err
-}
-
-func (u userContact[T]) ListUserID(userID string, limit int, offset int) ([]model.Contact, error) {
-	list := []model.Contact{}
-	if limit == 0 {
-		limit = 20
-	}
-	err := u.store.Select(&list, "SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3", userID, limit, offset)
-	if err == sql.ErrNoRows {
-		return list, nil
-	}
-	return list, err
 }

@@ -21,14 +21,13 @@ func NewPlatform(service service.Platform) Platform {
 }
 
 func (p platform) Create(c echo.Context) error {
-	userID := c.Get("userId").(string)
-	body := &service.CreatePlatform{}
-	err := c.Bind(body)
+	body := service.CreatePlatform{}
+	err := c.Bind(&body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
-	body.UserID = userID
-	m, err := p.service.Create(*body)
+
+	m, err := p.service.Create(body)
 	if err != nil {
 		println(err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError)

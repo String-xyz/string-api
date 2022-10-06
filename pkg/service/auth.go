@@ -4,6 +4,7 @@ import (
 	"net/mail"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -121,7 +122,7 @@ func (a auth) LoginEmail(login UserLoginEmail) (JWT, error) {
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
 func (a auth) GenerateJWT(m model.User) (JWT, error) {
 	claims := JWTClaims{}
-	refreshToken := uuid.NewString()
+	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
 		IssuedAt:     time.Now(),
 		ExpAt:        time.Now().Add(time.Hour * 24),
@@ -202,4 +203,9 @@ func (a auth) LoginOTP() error {
 
 func (a auth) RefreshToken(token string) {
 	//stra, err := a.authRepo.Get(common.ToSha256(token))
+}
+
+func uuidWithoutHyphens() string {
+	s := uuid.New().String()
+	return strings.Replace(s, "-", "", -1)
 }
