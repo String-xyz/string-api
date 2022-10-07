@@ -7,6 +7,31 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
+type Transaction struct {
+	ID                 string         `json:"id" db:"id"`
+	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
+	Timestamp          time.Time      `json:"timestamp" db:"timestamp"`
+	Type               string         `json:"type" db:"type"`
+	Status             string         `json:"status" db:"status"`
+	Tags               types.JSONText `json:"tags" db:"tags"`
+	DeviceID           string         `json:"deviceId" db:"device_id"`
+	IPAddress          string         `json:"ipAddress" db:"ip_address"`
+	PlatformID         string         `json:"platformId" db:"platform_id"`
+	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
+	NetworkID          string         `json:"networkId" db:"network_id"`
+	NetworkFee         uint64         `json:"networkFee" db:"network_fee"` // gas fee
+	Parameters         types.JSONText `json:"parameters" db:"parameters"`
+	ContractABI        string         `json:"contractABI" db:"contract_ABI"`
+	OriginTXLegID      string         `json:"originTXLegId" db:"origin_tx_leg_id"`
+	ReceiptTXLegID     string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
+	ResponeTXLegID     string         `json:"responseTXLegId" db:"response_tx_leg_id"`
+	DestinationTXLegID string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
+	ProcessingFee      float64        `json:"processingFee" db:"processing_fee"`            // GAS IN NATIVE TOKEN
+	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"` // NATIVE TOKEN
+	StringFee          uint64         `json:"stringFee" db:"string_fee"`
+}
+
 type Platform struct {
 	ID             string         `json:"id" db:"id"`
 	CreatedAt      time.Time      `json:"createdAt" db:"created_at"`

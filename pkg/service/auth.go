@@ -65,7 +65,7 @@ func NewAuth(a repository.AuthStrategy, u repository.User, c repository.UserCont
 // onboarding process.
 func (a auth) Register(m UserRegister) (JWT, error) {
 	tx := a.userRepo.MustBegin()
-	user, err := a.userRepo.Create(model.User{FirstName: m.FirstNname, LastName: m.LastName, Status: "registered", Type: "client"})
+	user, err := a.userRepo.Create(model.User{FirstName: m.FirstName, LastName: m.LastName, Status: "registered", Type: "client"})
 	if err != nil {
 		a.userRepo.Rollback()
 		return JWT{}, err
