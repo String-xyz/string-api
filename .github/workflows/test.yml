@@ -8,14 +8,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Install Go
         uses: actions/setup-go@v3
         with:
           go-version-file: go.mod
           cache: true
           cache-dependency-path: go.sum
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: Install golangci-lint
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.47.3
       - name: Run golangci-lint
