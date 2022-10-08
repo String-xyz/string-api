@@ -37,8 +37,6 @@ type UserRegister struct {
 
 type CreatePlatform struct {
 	Type           string   `json:"type"`
-	Email          string   `json:"email"`
-	ApiKey         string   `json:"apiKey" db:"api_key"`
 	Authentication AuthType `json:"authentication" db:"authentication"`
 }
 

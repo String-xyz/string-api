@@ -29,7 +29,7 @@ func Recover() echo.MiddlewareFunc {
 	return echoMiddleware.Recover()
 }
 
-func Logger(logger zerolog.Logger) echo.MiddlewareFunc {
+func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
 	return echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
 		LogURI:       true,
 		LogStatus:    true,

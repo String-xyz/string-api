@@ -24,11 +24,12 @@ func main() {
 	// if you are running local make sure to have an instance of pg running
 	// this call will panic if it cant connect
 	db := store.MustNewPG()
+	lg := zerolog.New(os.Stdout)
 	// setup api
 	api.Start(api.APIConfig{
 		DB:     db,
 		Redis:  store.NewRedisStore(),
 		Port:   port,
-		Logger: zerolog.New(os.Stdout),
+		Logger: &lg,
 	})
 }
