@@ -23,8 +23,8 @@ func NewTransaction(db *sqlx.DB) Transaction {
 func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, error) {
 	m := model.Transaction{}
 	rows, err := t.store.NamedQuery(`
-		INSERT INTO transaction (type, status) 
-		VALUES(:type, :status) 	RETURNING *`, insert)
+		INSERT INTO transaction (status) 
+		VALUES(:status) 	RETURNING *`, insert)
 	if err != nil {
 		return m, err
 	}
