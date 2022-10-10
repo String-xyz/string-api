@@ -72,7 +72,7 @@ type Location struct {
 type Custom struct {
 	//more can be added to this as needed
 	Platform string `json:"platform"` //where does this come from? do you want it called partnerName instead?
-	Tier     int    `json:"tier"`     //is this an int?
+	Tier     int    `json:"tier"`     //is this an int? where is this coming from?
 }
 
 type Options struct {
