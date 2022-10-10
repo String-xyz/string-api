@@ -2,11 +2,26 @@ package model
 
 import (
 	"encoding/json"
+	"math/big"
 	"time"
 
 	"github.com/jmoiron/sqlx/types"
 )
 
+// See migrations 0003 for definitions
+type TxLeg struct {
+	ID           string    `json:"id" db:"id"`
+	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt    time.Time `json:"updatedAt" db:"updated_at"`
+	Timestamp    time.Time `json:"timestamp" db:"timestamp"`
+	Amount       big.Int   `json:"amount" db:"amount"`
+	Value        big.Int   `json:"value" db:"value"`
+	AssetID      string    `json:"assetId" db:"asset_id"`
+	UserID       string    `json:"userId" db:"user_id"`
+	InstrumentID string    `json:"instrumentId" db:"instrument_id"`
+}
+
+// See migrations 0003 for definitions
 type Transaction struct {
 	ID                 string         `json:"id" db:"id"`
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
@@ -20,16 +35,17 @@ type Transaction struct {
 	PlatformID         string         `json:"platformId" db:"platform_id"`
 	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
 	NetworkID          string         `json:"networkId" db:"network_id"`
-	NetworkFee         uint64         `json:"networkFee" db:"network_fee"` // gas fee
-	Parameters         types.JSONText `json:"parameters" db:"parameters"`
-	ContractABI        string         `json:"contractABI" db:"contract_ABI"`
+	NetworkFee         big.Int        `json:"networkFee" db:"network_fee"`
+	ContractParams     types.JSONText `json:"contractParameters" db:"contract_params"`
+	ContractFunc       string         `json:"contractFunc" db:"contract_func"`
+	TransactionAmount  big.Int        `json:"transactionAmount" db:"transaction_amount"`
 	OriginTXLegID      string         `json:"originTXLegId" db:"origin_tx_leg_id"`
 	ReceiptTXLegID     string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
-	ResponeTXLegID     string         `json:"responseTXLegId" db:"response_tx_leg_id"`
+	ResponseTXLegID    string         `json:"responseTXLegId" db:"response_tx_leg_id"`
 	DestinationTXLegID string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      float64        `json:"processingFee" db:"processing_fee"`            // GAS IN NATIVE TOKEN
-	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"` // NATIVE TOKEN
-	StringFee          uint64         `json:"stringFee" db:"string_fee"`
+	ProcessingFee      big.Int        `json:"processingFee" db:"processing_fee"`
+	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"`
+	StringFee          big.Int        `json:"stringFee" db:"string_fee"`
 }
 
 type Platform struct {
