@@ -41,24 +41,27 @@ CREATE TABLE tx_leg (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(), -- unique identifier for the TX leg which we generate
   created_at TIMESTAMP WITH TIME ZONE NOT NULL, -- initial timestamp of creation
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL, -- timestamp whenever this tx_leg is updated
-  timestamp TIMESTAMP WITH TIME ZONE, 
+  -- TIMESTAMP:
   -- For CC send = auth timestamp
   -- For CC receive = capture timestamp
   -- For EVM send = txid generation timestamp
   -- For EVM receive = txid confirmation timestamp 
+  timestamp TIMESTAMP WITH TIME ZONE, 
   amount BIGINT DEFAULT 0, -- Quantity of financial asset in Asset wei
   value BIGINT DEFAULT 0, -- Quantity of financial asset in [USD wei (6 digits precision)]
   asset_id UUID REFERENCES asset (id), -- ID of table entry of Asset (for USD, ETH, AVAX etc)
-  user_id UUID REFERENCES string_user (id),
+  -- USER_ID:
   -- For CC send = id that correlates to the end-user in our user table
   -- For CC receive = id that correlates to the STRING entry in our user table
   -- For EVM send = id that correlates to the STRING entry in our user table
   -- For EVM receive = NULL if recipient is not an end user, or id that corrlates to end-user recipient in our user table
-  instrument_id UUID NOT NULL REFERENCES instrument (id)
+  user_id UUID REFERENCES string_user (id),
+  -- INSTRUMENT_ID:
   -- For CC send = id that correlates to the users credit card in our Instrument table
   -- For CC receive = id that correlates to STRING bank account in our Instrument table
   -- For EVM send = id that correlates to our wallet address in our Instrument table
   -- For EVM receive = id that correlates to RECIPIENTS wallet in our Instrument table, regardless of if they are a user
+  instrument_id UUID NOT NULL REFERENCES instrument (id)
 );
 
 CREATE OR REPLACE TRIGGER update_tx_leg_updated_at
@@ -75,7 +78,7 @@ CREATE TABLE transaction (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL, -- time transaction entry was last updated, including adding tags
   type TEXT DEFAULT '', -- enum [fiat-to-crypto, crypto-to-fiat] (these types may eventually have subtypes, ie NFT_MINT)
   status TEXT DEFAULT '', --enum State of the transaction in the /transact endpoint
-  tags JSONB DEFAULT '[]'::JSONB, -- Empty but will be used for Unit21.  These are key-val pairs for flagging transactions
+  tags JSONB DEFAULT '{}'::JSONB, -- Empty but will be used for Unit21.  These are key-val pairs for flagging transactions
   device_id UUID REFERENCES device (id), -- id that correlates to end-users device in our Device table, we get the data from fingerprint.com
   ip_address TEXT DEFAULT '', -- we get this data from fingerprint.com, whatever is being used at time of transaction
   platform_id UUID REFERENCES platform (id), -- id that correlates to CUSTOMER in our Platform table (ie gamefi.xyz)
