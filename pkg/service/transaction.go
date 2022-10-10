@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -63,76 +62,76 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	res := model.TransactionReceipt{}
 	// TODO: Create entry of E in TX DB
 	db, err := t.repo.Create(model.Transaction{Status: "Created"})
-	db.ContractABI = e.CxFunc + e.CxReturn
-	db.Parameters, err = json.Marshal(e.CxParams)
-	if err != nil {
-		return res, err
-	}
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.ContractABI = e.CxFunc + e.CxReturn
+	// db.Parameters, err = json.Marshal(e.CxParams)
+	// if err != nil {
+	// 	return res, err
+	// }
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	chain, err := model.ChainInfo(uint64(e.ChainID))
 	if err != nil {
 		return res, err
 	}
-	db.NetworkID = chain.OwlracleName
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.NetworkID = chain.OwlracleName
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 	executor := NewExecutor()
 	err = executor.Initialize(chain.RPC)
 	if err != nil {
 		return res, err
 	}
-	db.Status = "RPC Dialed"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.Status = "RPC Dialed"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	estimateUSD, err := testTransaction(executor, e.TransactionRequest, false)
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Tested and Estimated"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.Status = "Tested and Estimated"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	_, err = verifyQuote(e, estimateUSD)
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Quote Verified"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.Status = "Quote Verified"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	//Authorize quoted cost on end-user CC
 	authorizationID, err := authCard(e.UserAddress, e.CardToken, e.TotalUSD)
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Card Authorized"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.Status = "Card Authorized"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	txID, value, err := initiateTransaction(executor, e)
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Transaction Initiated"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return res, err
-	}
+	// db.Status = "Transaction Initiated"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	// this Executor will not exist in scope of postProcess
 	executor.Close()
@@ -279,22 +278,22 @@ func (t transaction) postProcess(request postProcessRequest) error {
 	if err != nil {
 		return err
 	}
-	db := request.db
-	db.Status = "Post Process RPC Dialed"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return err
-	}
+	// db := request.db
+	// db.Status = "Post Process RPC Dialed"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return err
+	// }
 	// confirm the TX on the EVM, update db status
 	trueGas, err := confirmTX(executor, request.TxID)
 	if err != nil {
 		return err
 	}
-	db.Status = "TX Confirmed"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return err
-	}
+	// db.Status = "TX Confirmed"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// compute profit and log to db
 	profit, err := tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, chain)
@@ -302,28 +301,28 @@ func (t transaction) postProcess(request postProcessRequest) error {
 		return err
 	}
 	fmt.Printf("PROFIT=%+v", profit)
-	db.Status = "Profit Tendered"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return err
-	}
+	// db.Status = "Profit Tendered"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// charge the users CC
 	err = chargeCard(request.UserAddress, request.AuthorizationID, request.QuotedTotal)
 	if err != nil {
 		return err
 	}
-	db.Status = "Card Charged"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return err
-	}
+	// db.Status = "Card Charged"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return err
+	// }
 
-	db.Status = "Completed"
-	err = t.repo.Update(db.ID, db)
-	if err != nil {
-		return err
-	}
+	// db.Status = "Completed"
+	// err = t.repo.Update(db.ID, db)
+	// if err != nil {
+	// 	return err
+	// }
 	executor.Close()
 	return nil
 }

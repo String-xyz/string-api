@@ -67,7 +67,8 @@ CREATE TABLE network (
   name TEXT NOT NULL,
   network_id INT DEFAULT 0,
   chain_id INT NOT NULL,
-  gas_token_id UUID DEFAULT NULL -- INDEX CREATED BELOW
+  gas_token_id UUID DEFAULT NULL, -- INDEX CREATED BELOW
+  gas_oracle TEXT DEFAULT '' -- the name of the network in oracle (i.e. in owlracle)
 );
 CREATE OR REPLACE TRIGGER update_network_updated_at
     BEFORE UPDATE
@@ -77,7 +78,7 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
 -- ASSET ----------------------------------------------------------------
-CREATE TABLE asset (
+CREATE TABLE asset ( -- We will write sql commands to add/update these in bulk.
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -86,7 +87,7 @@ CREATE TABLE asset (
   decimals INT DEFAULT 0,
   is_crypto BOOLEAN NOT NULL,
   network_id UUID REFERENCES network (id),
-  value_oracle TEXT DEFAULT ''
+  value_oracle TEXT DEFAULT '' -- the name of the asset in oracle (i.e. in coingecko).  
 );
 
 CREATE OR REPLACE TRIGGER update_asset_updated_at

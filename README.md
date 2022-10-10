@@ -6,6 +6,7 @@ For Live Reloading:
 For migrations:
 1. install [Goose|https://pressly.github.io/] `brew install goose`
 2. Note, this binary is separate from the go package.
+3. `goose postgres "host=localhost dbname=string_db user=string_db password=string_password sslmode=disable" down-to 0`
 
 Postgres Docker Compose: ***local dev only***
 1. Run `docker-compose -f docker-compose.yml up`
