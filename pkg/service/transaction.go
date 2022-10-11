@@ -12,20 +12,20 @@ import (
 
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
-	Execute(e model.ExecutionRequest) (model.Transaction, error)
+	Execute(e model.ExecutionRequest) (model.TransactionReceipt, error)
 	New(repo repository.Transaction) Transaction
 }
 
 type transaction struct {
-	repository repository.Transaction
+	repo repository.Transaction
 }
 
 func (t transaction) New(repo repository.Transaction) Transaction {
-	return &transaction{repository: repo}
+	return &transaction{repo: repo}
 }
 
 func NewTransaction(repo repository.Transaction) Transaction {
-	return &transaction{repository: repo}
+	return &transaction{repo: repo}
 }
 
 func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
@@ -58,8 +58,8 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	return res, nil
 }
 
-func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error) {
-	res := model.Transaction{}
+func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt, error) {
+	res := model.TransactionReceipt{}
 	// TODO: Create entry of E in TX DB
 
 	chain, err := model.ChainInfo(uint64(e.ChainID))
@@ -110,7 +110,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.Transaction, error
 	}
 	go postProcess(post)
 
-	return model.Transaction{TxID: txID}, nil
+	return model.TransactionReceipt{TxID: txID}, nil
 }
 
 func testTransaction(executor Executor, t model.TransactionRequest, useBuffer bool) (model.Quote, error) {

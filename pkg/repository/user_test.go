@@ -23,7 +23,7 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("error %s was not expected when opening stub db", err)
 	}
 	defer db.Close()
-	mock.ExpectExec(`INSERT INTO string-user`).WithArgs(m.FirstName, m.LastName, m.Type, m.Status)
+	mock.ExpectQuery(`INSERT INTO string_user`).WithArgs(m.FirstName, m.LastName, m.Type, m.Status)
 
 	NewUser(sqlxDB).Create(m)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -43,7 +43,7 @@ func TestGetUser(t *testing.T) {
 	sqlmock.NewRows([]string{"id", "first_name", "last_name", "created_at", "updated_at"}).
 		AddRow(id, "Mocking", "Jay", time.Now(), time.Now())
 
-	mock.ExpectQuery("SELECT * FROM string-user WHERE").WithArgs(id)
+	mock.ExpectQuery("SELECT * FROM string_user WHERE").WithArgs(id)
 
 	NewUser(sqlxDB).GetID(id)
 	if err := mock.ExpectationsWereMet(); err != nil {

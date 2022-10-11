@@ -36,6 +36,6 @@ type TransactionRequest struct {
 	TxGasLimit  string   `json:"gasLimit"`           // Gwei gas limit ie "210000 gwei"
 }
 
-type Transaction struct {
+type TransactionReceipt struct {
 	TxID string `json:"txID"`
 }

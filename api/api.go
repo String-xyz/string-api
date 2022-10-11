@@ -1,69 +1,67 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type APIConfig struct {
-	DB   *sqlx.DB
-	Port string
-	// redis
+	DB     *sqlx.DB
+	Redis  store.RedisStore
+	Logger *zerolog.Logger
+	Port   string
 }
 
 func heartbeat(c echo.Context) error {
-	return c.JSON(http.StatusOK, "healthy")
+	return c.JSON(http.StatusOK, "alive")
 }
 
-func Start(config APIConfig) error {
+func Start(config APIConfig) {
 	e := echo.New()
+	baseMiddleware(config.Logger, e)
+	e.GET("/heartbeat", heartbeat)
+	authService := authRoute(config, e)
+	platformRoute(config, e)
+	transactRoute(config, authService, e)
+	e.Logger.Fatal(e.Start(":" + config.Port))
+}
+
+func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
-	e.Use(middleware.Logger())
-	// e.Use(middleware.Auth()) // add these middleware to other groups
-	e.GET("/heartbeat", heartbeat)
-	// Allow all CORS
+	e.Use(middleware.Logger(logger))
+}
 
-	// Todo: Add Logger
+func authRoute(config APIConfig, e *echo.Echo) service.Auth {
+	a := repository.NewAuth(config.Redis, config.DB)
+	u := repository.NewUser(config.DB)
+	c := repository.NewUserContact(config.DB)
+	service := service.NewAuth(a, u, c)
+	handler := handler.NewAuth(service)
+	handler.RegisterRoutes(e.Group("/auth"))
+	return service
+}
 
-	// TODO: Create middleware for jwt
+func platformRoute(config APIConfig, e *echo.Echo) {
+	p := repository.NewPlatform(config.DB)
+	a := repository.NewAuth(config.Redis, config.DB)
+	c := repository.NewUserContact(config.DB)
+	service := service.NewPlatform(p, c, a)
+	handler := handler.NewPlatform(service)
+	handler.RegisterRoutes(e.Group("/platform"), middleware.BearerAuth())
+}
 
-	////////////////////////
-	// REPOSITORIES
-	////////////////////////
-	transactRepo := repository.NewTransaction(config.DB)
-
-	////////////////////////
-	// SERVICES
-	////////////////////////
-	transactService := service.NewTransaction(transactRepo)
-
-	////////////////////////
-	// HANDLERS
-	////////////////////////
-	transactHandler := handler.NewTransaction(e, transactService)
-
-	////////////////////////
-	// MIDDLEWARE
-	////////////////////////
-	// cors := middleware.StringMiddleware(middleware.MiddlewareConfig{any: 0})
-
-	var transactMiddleware []echo.MiddlewareFunc
-
-	////////////////////////
-	// REGISTER ROUTES
-	////////////////////////
-	transactHandler.RegisterRoutes(e.Group("/transact"), transactMiddleware...)
-
-	e.Logger.Fatal(e.Start(":" + config.Port))
-
-	return errors.New("error")
-
+func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
+	repo := repository.NewTransaction(config.DB)
+	service := service.NewTransaction(repo)
+	handler := handler.NewTransaction(e, service)
+	handler.RegisterRoutes(e.Group("/transact"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }

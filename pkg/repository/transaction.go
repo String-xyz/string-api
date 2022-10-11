@@ -6,22 +6,32 @@ import (
 )
 
 type Transaction interface {
-	Create(model.Transaction) error
+	Transactable
+	Create(model.Transaction) (model.Transaction, error)
 	GetID(id string) (model.Transaction, error)
+	Update(ID string, updates any) error
 }
 
-type transaction struct {
-	store *sqlx.DB
+type transaction[T any] struct {
+	base[T]
 }
 
-func NewTransaction(store *sqlx.DB) Transaction {
-	return &transaction{store}
+func NewTransaction(db *sqlx.DB) Transaction {
+	return &transaction[model.Transaction]{base[model.Transaction]{store: db, table: "transaction"}}
 }
 
-func (t transaction) Create(model.Transaction) error {
-	return nil
-}
+func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, error) {
+	m := model.Transaction{}
+	rows, err := t.store.NamedQuery(`
+		INSERT INTO transaction (type, status) 
+		VALUES(:type, :status) 	RETURNING *`, insert)
+	if err != nil {
+		return m, err
+	}
+	for rows.Next() {
+		err = rows.StructScan(&m)
+	}
 
-func (t transaction) GetID(id string) (model.Transaction, error) {
-	return model.Transaction{}, nil
+	defer rows.Close()
+	return m, err
 }
