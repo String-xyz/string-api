@@ -17,7 +17,7 @@ type PlaformUpdates struct {
 
 type Platform interface {
 	Transactable
-	Create(model.CreatePlatform) (model.Platform, error)
+	Create(model.Platform) (model.Platform, error)
 	GetID(ID string) (model.Platform, error)
 	List(limit int, offset int) ([]model.Platform, error)
 	Update(ID string, updates any) error
@@ -31,7 +31,7 @@ func NewPlatform(db *sqlx.DB) Platform {
 	return &platform[model.Platform]{base: base[model.Platform]{store: db, table: "platform"}}
 }
 
-func (p platform[T]) Create(m model.CreatePlatform) (model.Platform, error) {
+func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	plat := model.Platform{}
 	rows, err := p.store.NamedQuery(`
 		INSERT INTO platform (type, authentication, api_key) 

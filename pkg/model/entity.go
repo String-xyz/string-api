@@ -55,7 +55,7 @@ type Platform struct {
 	DeactivatedAt  *time.Time     `json:"deactivatedAt" db:"deactivated_at"`
 	Type           string         `json:"type" db:"type"`
 	ApiKey         string         `json:"apiKey" db:"api_key"`
-	Authentication string         `json:"authentication" db:"authentication"`
+	Authentication AuthType       `json:"authentication" db:"authentication"`
 	Tags           types.JSONText `json:"Tags" db:"tags"`
 }
 

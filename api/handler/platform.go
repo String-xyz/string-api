@@ -29,7 +29,6 @@ func (p platform) Create(c echo.Context) error {
 
 	m, err := p.service.Create(body)
 	if err != nil {
-		println(err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusCreated, m)

@@ -16,7 +16,7 @@ import (
 type APIConfig struct {
 	DB     *sqlx.DB
 	Redis  store.RedisStore
-	Logger zerolog.Logger
+	Logger *zerolog.Logger
 	Port   string
 }
 
@@ -34,7 +34,7 @@ func Start(config APIConfig) {
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
-func baseMiddleware(logger zerolog.Logger, e *echo.Echo) {
+func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
