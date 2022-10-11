@@ -65,8 +65,8 @@ CREATE TABLE network (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   name TEXT NOT NULL,
-  network_id INT DEFAULT 0,
-  chain_id INT NOT NULL,
+  network_id INT DEFAULT 0, -- might actually be big.Int
+  chain_id INT NOT NULL, -- might actually be big.Int
   gas_token_id UUID DEFAULT NULL, -- INDEX CREATED BELOW
   gas_oracle TEXT DEFAULT '' -- the name of the network in oracle (i.e. in owlracle)
 );
