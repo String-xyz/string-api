@@ -1,15 +1,13 @@
-package unit21
+package service
 
 import (
 	"testing"
 )
 
 // StringData {
+// 	id            string
 // 	tags          map[string]string
 // 	partnerName   string
-// 	tier          int
-// 	id            string
-// 	userType      string
 // 	status        string
 // 	createdAt     int
 // 	firstName     string
@@ -19,7 +17,6 @@ import (
 // 	phones        []string
 // 	ipAddresses   []string
 // 	fingerprints  []string
-// 	instrumentIds []string
 // }
 
 func TestCreateEntity(t *testing.T) {
