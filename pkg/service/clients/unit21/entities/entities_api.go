@@ -1,23 +1,20 @@
-package unit21
+package service
 
 import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log" // do you have a logging pattern yet that i should follow?
+	"log"
 	"net/http"
 	"os"
 	"time"
 )
 
 // questions:
-// do you want to allow upserts? or only new entity creation?
-// will an instrument exist first? and need to be attched in this call?
-// what are whitelisted entities?
-// will you want to run verification on an entity after creation?
-// will there be batch uploads for entity creation?
-// where does tier come from? don't see it in the db
-// where is partner name? it's not on the platform
+// do you want to allow upserts of entities? or only new entity creation?
+// what is the format/type of the data in the user.tags jsonb? unit21 requires key:value pairs
+// what format are phone numbers saved in the String db?
+
 func CreateEntity(data StringData) (unit21Id string, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 	url := os.Getenv("UNIT21_URL") + "/entities/create"

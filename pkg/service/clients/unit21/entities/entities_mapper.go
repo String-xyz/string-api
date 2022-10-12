@@ -1,25 +1,18 @@
-package unit21
-
-import (
-	"strconv"
-)
+package service
 
 type StringData struct { //temporary until the input data is established
-	tags          map[string]string
-	partnerName   string
-	tier          int
-	id            string
-	userType      string
-	status        string
-	createdAt     int
-	firstName     string
-	middleName    string
-	lastName      string
-	emails        []string
-	phones        []string
-	ipAddresses   []string
-	fingerprints  []string
-	instrumentIds []string
+	id           string
+	tags         map[string]string
+	partnerName  string
+	status       string
+	createdAt    int
+	firstName    string
+	middleName   string
+	lastName     string
+	emails       []string
+	phones       []string
+	ipAddresses  []string
+	fingerprints []string
 }
 
 func MapStringDataToEntity(data StringData) *NewEntity {
@@ -30,8 +23,7 @@ func MapStringDataToEntity(data StringData) *NewEntity {
 			userTagArr = append(userTagArr, key+":"+value)
 		}
 	}
-	userTagArr = append(userTagArr, "platform:"+data.partnerName)    //partnerName is not in the schema
-	userTagArr = append(userTagArr, "tier:"+strconv.Itoa(data.tier)) // tier is not in the schema
+	userTagArr = append(userTagArr, "platform:"+data.partnerName)
 
 	for key, value := range userTags {
 		userTagArr = append(userTagArr, key+":"+value)
@@ -40,12 +32,11 @@ func MapStringDataToEntity(data StringData) *NewEntity {
 	// https://www.digitalocean.com/community/tutorials/how-to-use-json-in-go
 	jsonBody := &NewEntity{
 		GeneralData: &Entity{
-			EntityId:      data.id,
-			EntityType:    "user", //or employee?
-			EntitySubType: data.userType,
-			Status:        data.status,
-			RegisteredAt:  data.createdAt, //probably need to convert to seconds
-			Tags:          userTagArr,     // convert from jsonb into array of key:value string pairs
+			EntityId:     data.id,
+			EntityType:   "user",
+			Status:       data.status,
+			RegisteredAt: data.createdAt, //probably need to convert to seconds
+			Tags:         userTagArr,     // convert from jsonb into array of key:value string pairs
 		},
 		UserData: &User{
 			FirstName:  data.firstName,
@@ -60,10 +51,8 @@ func MapStringDataToEntity(data StringData) *NewEntity {
 			IpAddresses:        data.ipAddresses,  //might need to be converted to []string
 			ClientFingerprints: data.fingerprints, //schema doesn't have a fingerprint, might need to be convered to []string
 		},
-		InstrumentIds: data.instrumentIds, //might need to be converted to []string
 		CustomData: &Custom{
 			Platform: data.partnerName, //partnerName is not in the schema
-			Tier:     data.tier,        //tier is not in the schema
 		},
 		// add WorkflowOptions if not default?
 	}
