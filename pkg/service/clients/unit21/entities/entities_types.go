@@ -2,26 +2,20 @@ package service
 
 type NewEntity struct {
 	GeneralData       *Entity        `json:"general_data"`
-	UserData          *User          `json:"user_data"`
-	CommunicationData *Communication `json:"communication_data"`
-	DigitalData       *DigitalInfo   `json:"digital_data"`
-	CustomData        *Custom        `json:"custom_data"`
+	UserData          *User          `json:"user_data,omitempty"`
+	CommunicationData *Communication `json:"communication_data,omitempty"`
+	DigitalData       *DigitalInfo   `json:"digital_data,omitempty"`
+	CustomData        *Custom        `json:"custom_data,omitempty"`
 	WorkflowOptions   *Options       `json:"options,omitempty"`
 }
 
 type Entity struct {
-	EntityId      string    `json:"entity_id"`
-	EntityType    string    `json:"entity_type"` //employee or business - says user in the spreadsheet?
-	EntitySubType string    `json:"entity_subtype"`
-	Status        string    `json:"status"`
-	RegisteredAt  int       `json:"registered_at"` //date in seconds since 1/1/1970
-	Parents       []*Parent `json:"parents,omitempty"`
-	Tags          []string  `json:"tags"` //list of format: keyString:valueString
-}
-
-type Parent struct {
-	EntityId   string `json:"entity_id"`
-	EntityType string `json:"entity_type"` //employee or business
+	EntityId      string   `json:"entity_id"`
+	EntityType    string   `json:"entity_type"` //employee or business - says user in the spreadsheet?
+	EntitySubType string   `json:"entity_subtype"`
+	Status        string   `json:"status,omitempty"`
+	RegisteredAt  int      `json:"registered_at"`  //date in seconds since 1/1/1970
+	Tags          []string `json:"tags,omitempty"` //list of format: keyString:valueString
 }
 
 type User struct {
@@ -35,18 +29,18 @@ type User struct {
 }
 
 type Communication struct {
-	Emails []string `json:"email_addresses"`
-	Phones []string `json:"phone_numbers"` //E.164 format +12125551395 ( '[+][country code][area code][local phone number]' https://en.wikipedia.org/wiki/E.164
+	Emails []string `json:"email_addresses,omitempty"`
+	Phones []string `json:"phone_numbers,omitempty"` //E.164 format +12125551395 ( '[+][country code][area code][local phone number]' https://en.wikipedia.org/wiki/E.164
 }
 
 type DigitalInfo struct {
-	IpAddresses        []string `json:"ip_addresses"` //ipv4 or ipv6
-	ClientFingerprints []string `json:"client_fingerprints"`
+	IpAddresses        []string `json:"ip_addresses,omitempty"` //ipv4 or ipv6
+	ClientFingerprints []string `json:"client_fingerprints,omitempty"`
 }
 
 type Custom struct {
 	//more can be added to this as needed
-	Platform string `json:"platform"` //where does this come from? do you want it called partnerName instead?
+	Platforms []string `json:"platforms,omitempty"` //where does this come from? do you want it called partnerName instead?
 }
 
 type Options struct {
