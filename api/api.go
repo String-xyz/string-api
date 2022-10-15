@@ -60,8 +60,14 @@ func platformRoute(config APIConfig, e *echo.Echo) {
 }
 
 func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
-	repo := repository.NewTransaction(config.DB)
-	service := service.NewTransaction(repo)
+	repos := service.TransactionRepos{
+		Asset:       repository.NewAsset(config.DB),
+		Network:     repository.NewNetwork(config.DB),
+		Transaction: repository.NewTransaction(config.DB),
+		TxLeg:       repository.NewTxLeg(config.DB),
+		// More will follow
+	}
+	service := service.NewTransaction(repos)
 	handler := handler.NewTransaction(e, service)
 	handler.RegisterRoutes(e.Group("/transact"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }

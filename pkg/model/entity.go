@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	"math/big"
 	"time"
 
 	"github.com/jmoiron/sqlx/types"
@@ -44,6 +43,7 @@ type Network struct {
 	ChainID    uint64    `json:"chainId" db:"chain_id"`
 	GasTokenID string    `json:"gasTokenId" db:"gas_token_id"`
 	GasOracle  string    `json:"gasOracle" db:"gas_oracle"`
+	RPCUrl     string    `json:"rpcUrl" db:"rpc_url"`
 }
 
 // See ASSET in Migrations 0001
@@ -147,8 +147,8 @@ type TxLeg struct {
 	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt    time.Time `json:"updatedAt" db:"updated_at"`
 	Timestamp    time.Time `json:"timestamp" db:"timestamp"`
-	Amount       big.Int   `json:"amount" db:"amount"`
-	Value        big.Int   `json:"value" db:"value"`
+	Amount       string    `json:"amount" db:"amount"`
+	Value        string    `json:"value" db:"value"`
 	AssetID      string    `json:"assetId" db:"asset_id"`
 	UserID       string    `json:"userId" db:"user_id"`
 	InstrumentID string    `json:"instrumentId" db:"instrument_id"`
@@ -168,17 +168,17 @@ type Transaction struct {
 	PlatformID         string         `json:"platformId" db:"platform_id"`
 	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
 	NetworkID          string         `json:"networkId" db:"network_id"`
-	NetworkFee         big.Int        `json:"networkFee" db:"network_fee"`
+	NetworkFee         string         `json:"networkFee" db:"network_fee"`
 	ContractParams     types.JSONText `json:"contractParameters" db:"contract_params"`
 	ContractFunc       string         `json:"contractFunc" db:"contract_func"`
-	TransactionAmount  big.Int        `json:"transactionAmount" db:"transaction_amount"`
+	TransactionAmount  string         `json:"transactionAmount" db:"transaction_amount"`
 	OriginTXLegID      string         `json:"originTXLegId" db:"origin_tx_leg_id"`
 	ReceiptTXLegID     string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
 	ResponseTXLegID    string         `json:"responseTXLegId" db:"response_tx_leg_id"`
 	DestinationTXLegID string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      big.Int        `json:"processingFee" db:"processing_fee"`
+	ProcessingFee      string         `json:"processingFee" db:"processing_fee"`
 	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"`
-	StringFee          big.Int        `json:"stringFee" db:"string_fee"`
+	StringFee          string         `json:"stringFee" db:"string_fee"`
 }
 
 type AuthStrategy struct {

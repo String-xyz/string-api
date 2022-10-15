@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION update_updated_at_column()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    NEW.update_at = now();
+    NEW.updated_at = now();
     RETURN NEW;
 END;
 $$ language 'plpgsql';
@@ -65,10 +65,11 @@ CREATE TABLE network (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   name TEXT NOT NULL,
-  network_id INT DEFAULT 0, -- might actually be big.Int
-  chain_id INT NOT NULL, -- might actually be big.Int
+  network_id TEXT DEFAULT '', -- might actually be big.Int
+  chain_id TEXT NOT NULL, -- might actually be big.Int
   gas_token_id UUID DEFAULT NULL, -- INDEX CREATED BELOW
-  gas_oracle TEXT DEFAULT '' -- the name of the network in oracle (i.e. in owlracle)
+  gas_oracle TEXT DEFAULT '', -- the name of the network in oracle (i.e. in owlracle)
+  rpc_url TEXT DEFAULT '' -- The RPC used to access the network (ie "https://mainnet.infura.io/v3")
 );
 CREATE OR REPLACE TRIGGER update_network_updated_at
     BEFORE UPDATE
