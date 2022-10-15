@@ -47,10 +47,11 @@ CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  type TEXT DEFAULT '', -- enum:
+  type TEXT NOT NULL, -- enum: to be defined at struct level in Go
+  status TEXT NOT NULL, -- enum: to be defined at struct level in Go
+  name TEXT DEFAULT '',
   api_key TEXT DEFAULT '',
   authentication TEXT DEFAULT '', --enum [email, phone, wallet]
-  tags JSONB DEFAULT '[]'::JSONB
 );
 CREATE OR REPLACE TRIGGER update_platform_updated_at
     BEFORE UPDATE

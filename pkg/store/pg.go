@@ -21,6 +21,8 @@ func strConnection() string {
 		SSLMode    = "disable" // require
 	)
 
+	fmt.Println("DBUser: ", DBUser)
+
 	str := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		DBHost,
 		DBPort,
@@ -29,6 +31,8 @@ func strConnection() string {
 		DBPassword,
 		SSLMode,
 	)
+
+	fmt.Println("str: ", str)
 
 	return str
 }
