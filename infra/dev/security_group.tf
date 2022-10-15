@@ -53,3 +53,18 @@ resource "aws_security_group" "ecs_task_sg" {
     environment = local.env
   }
 }
+
+# Give access to DB through Security group rule
+data "aws_security_group" "client" {
+  name   = "${local.env}-string-write-master-client-rds"
+  vpc_id = data.terraform_remote_state.vpc.outputs.id
+}
+
+resource "aws_security_group_rule" "client_write_db_sg" {
+  type                     = "ingress"
+  protocol                 = "TCP"
+  from_port                = local.db_port
+  to_port                  = local.db_port
+  source_security_group_id = aws_security_group.ecs_task_sg.id
+  security_group_id        = data.aws_security_group.client.id
+}

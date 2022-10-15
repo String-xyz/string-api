@@ -6,6 +6,7 @@ locals {
   container_port     = "3000"
   origin_id          = "string-api"
   desired_task_count = "1"
+  db_port            = "5432"
   memory             = 512
   cpu                = 256
   region             = "us-west-2"
@@ -29,28 +30,44 @@ locals {
       portMappings = [
         { containerPort = 3000 }
       ],
-      secrets = [ 
+      secrets = [
         {
-          name = "EVM_PRIVATE_KEY"
+          name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.hot_wallet.arn
-        }, 
+        },
         {
-          name = "CHECKOUT_PUBLIC_KEY"
+          name      = "CHECKOUT_PUBLIC_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_public_key.arn
-         },
+        },
         {
-          name = "CHECKOUT_SECRET_KEY"
+          name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
         },
         {
-          name = "OWLRACLE_API_KEY"
+          name      = "OWLRACLE_API_KEY"
           valueFrom = data.aws_ssm_parameter.owlracle_api_key.arn
         },
         {
-          name = "OWLRACLE_API_SECRET"
+          name      = "OWLRACLE_API_SECRET"
           valueFrom = data.aws_ssm_parameter.owlracle_api_secret.arn
+        },
+        {
+          name      = "DB_USERNAME"
+          valueFrom = data.aws_ssm_parameter.db_username.arn
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = data.aws_ssm_parameter.db_password.arn
+        },
+        {
+          name      = "DB_HOST"
+          valueFrom = data.aws_ssm_parameter.db_host.arn
+        },
+        {
+          name      = "DB_NAME"
+          valueFrom = data.aws_ssm_parameter.db_name.arn
         }
-       ]
+      ]
       environment = [
         {
           name  = "PORT"
@@ -69,15 +86,15 @@ locals {
           value = "true"
         },
         {
-          name = "AWS_KMS_KEY_ID"
+          name  = "AWS_KMS_KEY_ID"
           value = data.aws_kms_key.kms_key.key_id
         },
         {
-          name = "OWLRACLE_API_URL" 
+          name  = "OWLRACLE_API_URL"
           value = "https://api.owlracle.info/v3/"
         },
         {
-          name = "COINGECKO_API_URL"
+          name  = "COINGECKO_API_URL"
           value = "https://api.coingecko.com/api/v3/"
         },
         {

@@ -39,7 +39,11 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.checkout_private_key.arn,
       data.aws_ssm_parameter.owlracle_api_key.arn,
       data.aws_ssm_parameter.owlracle_api_secret.arn,
-      data.aws_ssm_parameter.hot_wallet.arn
+      data.aws_ssm_parameter.hot_wallet.arn,
+      data.aws_ssm_parameter.db_password.arn,
+      data.aws_ssm_parameter.db_username.arn,
+      data.aws_ssm_parameter.db_name.arn,
+      data.aws_ssm_parameter.db_host.arn
     ]
   }
 
