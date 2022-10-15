@@ -5,6 +5,7 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type Auth interface {
@@ -23,6 +24,7 @@ func NewAuth(service service.Auth) Auth {
 }
 
 func (o auth) Register(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	var body service.UserRegister
 	err := c.Bind(&body)
 	if err != nil {
@@ -30,6 +32,7 @@ func (o auth) Register(c echo.Context) error {
 	}
 	jwt, err := o.service.Register(body)
 	if err != nil {
+		lg.Err(err).Msg("auth register")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusCreated, jwt)
@@ -58,22 +61,27 @@ func (o auth) Login(c echo.Context) error {
 }
 
 func (o auth) LoginEmail(c echo.Context, body service.UserLoginEmail) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	jwt, err := o.service.LoginEmail(body)
 	if err != nil {
+		lg.Err(err).Msg("auth loginEmail")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
 
 func (o auth) LoginPK(c echo.Context, body service.UserPKLogin) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	jwt, err := o.service.LoginPK(body)
 	if err != nil {
+		lg.Err(err).Msg("auth loginPK")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
 
 func (o auth) NonceChallenge(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	param := struct {
 		PublicAddress string `param:"address"`
 	}{}
@@ -84,6 +92,7 @@ func (o auth) NonceChallenge(c echo.Context) error {
 
 	nonce, err := o.service.Challenge(param.PublicAddress)
 	if err != nil {
+		lg.Err(err).Msg("auth challenge")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

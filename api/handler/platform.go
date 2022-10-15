@@ -5,6 +5,7 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type Platform interface {
@@ -21,6 +22,7 @@ func NewPlatform(service service.Platform) Platform {
 }
 
 func (p platform) Create(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	body := service.CreatePlatform{}
 	err := c.Bind(&body)
 	if err != nil {
@@ -29,6 +31,7 @@ func (p platform) Create(c echo.Context) error {
 
 	m, err := p.service.Create(body)
 	if err != nil {
+		lg.Err(err).Msg("platform create")
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusCreated, m)

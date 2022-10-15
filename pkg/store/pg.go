@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
 )
 
 var pgDB *sqlx.DB
@@ -37,7 +39,8 @@ func MustNewPG() *sqlx.DB {
 	if pgDB != nil {
 		return pgDB
 	}
-	connection, err := sqlx.Open(DBDriver, strConnection())
+	sqltrace.Register(DBDriver, &pq.Driver{}, sqltrace.WithServiceName("string-api"))
+	connection, err := sqlxtrace.Open(DBDriver, strConnection())
 	if err != nil {
 		panic(err)
 	}

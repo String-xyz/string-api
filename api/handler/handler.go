@@ -6,6 +6,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type Transaction interface {
@@ -24,6 +25,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.ExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
@@ -31,6 +33,7 @@ func (t transaction) Transact(c echo.Context) error {
 	}
 	res, err := t.Service.Execute(body)
 	if err != nil {
+		lg.Err(err).Msg("transaction execute")
 		return c.String(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, res)
@@ -38,12 +41,14 @@ func (t transaction) Transact(c echo.Context) error {
 
 func (t transaction) Quote(c echo.Context) error {
 	var body model.TransactionRequest
+	lg := c.Get("logger").(*zerolog.Logger)
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad request")
 	}
 	res, err := t.Service.Quote(body)
 	if err != nil {
+		lg.Err(err).Msg("transaction qoute")
 		return c.String(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, res)

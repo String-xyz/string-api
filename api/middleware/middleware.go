@@ -3,7 +3,6 @@ package middleware
 import (
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/service"
@@ -11,17 +10,13 @@ import (
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
+	echoDatadog "gopkg.in/DataDog/dd-trace-go.v1/contrib/labstack/echo.v4"
 )
-
-func allowOrigin(origin string) (bool, error) {
-	// TODO: Modify to be more restrictive
-	return regexp.MatchString(`*`, origin)
-}
 
 func CORS() echo.MiddlewareFunc {
 	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOriginFunc: allowOrigin,
-		AllowMethods:    []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
 	})
 }
 
@@ -43,6 +38,7 @@ func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
 				Str("host", v.Host).
 				Dur("latency", time.Duration(v.Latency.Milliseconds())).
 				Msg("request")
+			c.Set("logger", logger)
 			return nil
 		},
 	})
@@ -77,4 +73,8 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 		},
 	}
 	return echoMiddleware.KeyAuthWithConfig(config)
+}
+
+func Tracer() echo.MiddlewareFunc {
+	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
 }

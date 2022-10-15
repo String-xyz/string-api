@@ -1,22 +1,24 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
 	// load .env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file") // TODO: figure out why this wasnt hit
-	}
+	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	tracer.Start(
+		tracer.WithServiceName("string-api"),
+		tracer.WithEnv(os.Getenv("ENV")),
+	)
 
+	defer tracer.Stop()
 	port := os.Getenv("PORT")
 	if port == "" {
 		panic("no port!")
