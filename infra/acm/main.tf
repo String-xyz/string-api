@@ -20,7 +20,7 @@ variable "alternative_names" {
 }
 
 variable "tags" {
-  description = "The associted tags"
+  description = "The associated tags"
   default     = []
 }
 
