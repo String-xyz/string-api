@@ -1,4 +1,4 @@
-package main //why isn't this at the root of the project?
+package main
 
 import (
 	"log"
