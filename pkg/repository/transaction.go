@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"fmt"
-
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -25,17 +23,15 @@ func NewTransaction(db *sqlx.DB) Transaction {
 func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, error) {
 	m := model.Transaction{}
 	rows, err := t.store.NamedQuery(`
-		INSERT INTO transaction (status) 
-		VALUES(:status) 	RETURNING *`, insert)
+		INSERT INTO transaction (status, network_id) 
+		VALUES(:status, :network_id) 	RETURNING id`, insert)
 	if err != nil {
-		fmt.Printf("\nnqERR = %+v", err)
 		return m, err
 	}
 	for rows.Next() {
-		err = rows.StructScan(&m)
+		err = rows.Scan(&m.ID)
 	}
 
-	fmt.Printf("\n_ERR = %+v", err)
 	defer rows.Close()
 	return m, err
 }

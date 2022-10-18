@@ -29,7 +29,8 @@ func (t transaction) Transact(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
-	res, err := t.Service.Execute(body)
+	// userId := c.Get("userId").(string)
+	res, err := t.Service.Execute(body) // TODO: pass in userId and use it
 	if err != nil {
 		return c.String(http.StatusOK, err.Error())
 	}
@@ -42,7 +43,8 @@ func (t transaction) Quote(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad request")
 	}
-	res, err := t.Service.Quote(body)
+	// userId := c.Get("userId").(string)
+	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil {
 		return c.String(http.StatusOK, err.Error())
 	}

@@ -10,6 +10,7 @@ type Chain struct {
 	CoingeckoName string
 	OwlracleName  string
 	StringFee     float64
+	UUID          string
 }
 
 // TODO: should we store this in a DB or determine it dynamically???  Previously this was defined in the preprocessor in the Chain array
@@ -30,5 +31,5 @@ func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo reposit
 	if err != nil {
 		return Chain{}, err
 	}
-	return Chain{ChainID: chainId, RPC: network.RPCUrl, CoingeckoName: asset.ValueOracle, OwlracleName: network.GasOracle, StringFee: fee}, nil
+	return Chain{ChainID: chainId, RPC: network.RPCUrl, CoingeckoName: asset.ValueOracle.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.ID}, nil
 }

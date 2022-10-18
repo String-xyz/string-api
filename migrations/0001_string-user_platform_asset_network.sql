@@ -87,7 +87,7 @@ CREATE TABLE asset ( -- We will write sql commands to add/update these in bulk.
   description TEXT DEFAULT '',
   decimals INT DEFAULT 0,
   is_crypto BOOLEAN NOT NULL,
-  network_id UUID REFERENCES network (id),
+  network_id UUID REFERENCES network (id) DEFAULT NULL,
   value_oracle TEXT DEFAULT '' -- the name of the asset in oracle (i.e. in coingecko).  
 );
 

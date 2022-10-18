@@ -11,7 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var ErrNotFound = errors.New("no found")
+var ErrNotFound = errors.New("not found")
 
 type Queryable interface {
 	sqlx.Ext
