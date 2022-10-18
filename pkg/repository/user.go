@@ -7,6 +7,7 @@ import (
 
 type User interface {
 	Transactable
+	Readable
 	Create(model.User) (model.User, error)
 	GetID(ID string) (model.User, error)
 	List(limit int, offset int) ([]model.User, error)

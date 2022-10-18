@@ -40,7 +40,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	// TODO: use prefab service to parse d and fill out known params
 	res := model.ExecutionRequest{TransactionRequest: d}
 	// chain, err := model.ChainInfo(uint64(d.ChainID))
-	chain, err := common.ChainInfo(uint64(d.ChainID), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(uint64(d.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, err
 	}
@@ -87,7 +87,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	}
 
 	// chain, err := model.ChainInfo(uint64(e.ChainID))
-	chain, err := common.ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, err
 	}
@@ -165,7 +165,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	return model.TransactionReceipt{TxID: txID}, nil
 }
 
-func testTransaction(executor Executor, t model.TransactionRequest, chain common.Chain, useBuffer bool) (model.Quote, error) {
+func testTransaction(executor Executor, t model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -260,7 +260,7 @@ func chargeCard(userWallet string, authorizationID string, usd float64) error {
 	return err
 }
 
-func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain common.Chain) (float64, error) {
+func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain) (float64, error) {
 	cost := NewCost(repository.NewCost(nil)) // temporary nil
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -274,7 +274,7 @@ func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTot
 
 type postProcessRequest struct {
 	TxID            string
-	Chain           common.Chain
+	Chain           Chain
 	AuthorizationID string
 	UserAddress     string
 	CumulativeGas   uint64

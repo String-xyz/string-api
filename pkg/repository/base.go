@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+
+	"github.com/String-xyz/string-api/pkg/internal/common"
 )
 
 var ErrNotFound = errors.New("no found")
@@ -35,6 +36,11 @@ type Queryable interface {
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
 	MustExec(string, ...interface{}) sql.Result
 	NamedQuery(string, interface{}) (*sqlx.Rows, error)
+}
+
+type Readable interface {
+	Select(interface{}, string, ...interface{}) error
+	Get(interface{}, string, ...interface{}) error
 }
 
 type Transactable interface {
@@ -111,8 +117,9 @@ func (b base[T]) GetID(ID string) (m T, err error) {
 	return m, err
 }
 
+// Returns the first match of the user's ID
 func (b base[T]) GetUserID(userID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL", b.table), userID)
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL LIMIT 1", b.table), userID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}
@@ -132,7 +139,7 @@ func (b base[T]) ListUserID(userID string, limit int, offset int) ([]T, error) {
 }
 
 func (b base[T]) Update(ID string, updates any) error {
-	names, keyToUpdate := keysAndValues(updates)
+	names, keyToUpdate := common.KeysAndValues(updates)
 	if len(names) == 0 {
 		return errors.New("no fields to update")
 	}
@@ -141,40 +148,10 @@ func (b base[T]) Update(ID string, updates any) error {
 	return err
 }
 
-// keysAndValues is only being used for optional updates
-// do not use it for insert or select
-func keysAndValues(item interface{}) ([]string, map[string]interface{}) {
-	tag := "db"
-	v := reflect.TypeOf(item)
-	reflectValue := reflect.ValueOf(item)
-	reflectValue = reflect.Indirect(reflectValue)
-
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	keyNames := make([]string, 0, v.NumField())
-	keyValues := make(map[string]interface{}, v.NumField())
-
-	for i := 0; i < v.NumField(); i++ {
-		field := reflectValue.Field(i).Interface()
-		if !isNil(field) {
-			t := v.Field(i).Tag.Get(tag) + "=:" + v.Field(i).Tag.Get(tag)
-			keyNames = append(keyNames, t)
-			keyValues[v.Field(i).Tag.Get(tag)] = field
-		}
-	}
-
-	return keyNames, keyValues
+func (b base[T]) Select(model interface{}, query string, params ...interface{}) error {
+	return b.store.Select(model, query, params)
 }
 
-func isNil(i interface{}) bool {
-	if i == nil {
-		return true
-	}
-	switch reflect.TypeOf(i).Kind() {
-	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
-		return reflect.ValueOf(i).IsNil()
-	}
-	return false
+func (b base[T]) Get(model interface{}, query string, params ...interface{}) error {
+	return b.store.Get(model, query, params)
 }
