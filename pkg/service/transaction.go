@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -138,7 +139,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	}
 
 	// Authorize quoted cost on end-user CC and update model status
-	authorizationID, err := authCard(e.UserAddress, e.CardToken, e.TotalUSD)
+	authorizationID, err := t.authCard(e.UserAddress, e.CardToken, e.TotalUSD, processingFeeAsset, db.ID)
 	if err != nil {
 		return res, err
 	}
@@ -266,9 +267,32 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func authCard(userWallet string, cardToken string, usd float64) (string, error) {
+func (t transaction) authCard(userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string) (string, error) {
 	// auth their card
 	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
+	if err != nil {
+		return "", err
+	}
+
+	// Create Origin TX leg
+	usdWei := floatToFixedString(usd, int(chargeAsset.Decimals))
+	origin := model.TxLeg{
+		Timestamp:    time.Now(),
+		Amount:       usdWei,
+		Value:        usdWei,
+		AssetID:      chargeAsset.ID,
+		UserID:       "0e837b73-55cf-43ff-9b1e-0d8258eec978", // TODO: Get dynamically
+		InstrumentID: "13438963-f5e7-47c4-a790-ebca3e3bf915", // TODO: Get dynamically
+	}
+	origin, err = t.repos.TxLeg.Create(origin)
+	if err != nil {
+		return auth, err
+	}
+	txLeg := model.TransactionUpdates{OriginTXLegID: &origin.ID}
+	err = t.repos.Transaction.Update(dbID, txLeg)
+	if err != nil {
+		return auth, err
+	}
 	return auth, err
 }
 

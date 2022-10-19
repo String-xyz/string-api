@@ -23,8 +23,8 @@ func NewTxLeg(db *sqlx.DB) TxLeg {
 func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 	m := model.TxLeg{}
 	rows, err := t.store.NamedQuery(`
-		INSERT INTO tx_leg (instrument_id) 
-		VALUES(:instrument_id) 	RETURNING *`, insert)
+		INSERT INTO tx_leg (timestamp, amount, value, asset_id, user_id, instrument_id) 
+		VALUES(:timestamp, :amount, :value, :asset_id, :user_id, :instrument_id) 	RETURNING *`, insert)
 	if err != nil {
 		return m, err
 	}
