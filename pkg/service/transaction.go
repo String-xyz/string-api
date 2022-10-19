@@ -11,6 +11,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/jmoiron/sqlx/types"
 )
 
 type Transaction interface {
@@ -24,6 +25,7 @@ type TransactionRepos struct {
 	Network     repository.Network
 	Transaction repository.Transaction
 	TxLeg       repository.TxLeg
+	User        repository.User
 }
 
 type transaction struct {
@@ -77,22 +79,26 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
+	fmt.Printf("\nGot Chain Info")
 
 	// Create new TX in repository, populate it with known info
 	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID})
 	if err != nil {
 		return res, err
 	}
-	db, processingFeeAsset, err := t.populateInitialTxModelData(e, db)
+	updateDB := &model.TransactionUpdates{}
+	fmt.Printf("\nCreated TX in db")
+	processingFeeAsset, err := t.populateInitialTxModelData(e, updateDB)
 	if err != nil {
 		return res, err
 	}
-	err = t.repos.Transaction.Update(db.ID, db)
+	fmt.Printf("\nGot Initial TX model data")
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		fmt.Printf("\nMODEL = %+v", db)
 		fmt.Printf("\nERROR = %+v", err)
 		return res, err
 	}
+	fmt.Printf("\nUpdate TX table")
 
 	// Dial the RPC and update model status
 	executor := NewExecutor()
@@ -100,8 +106,9 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	db.Status = "RPC Dialed"
-	err = t.repos.Transaction.Update(db.ID, db)
+	status := "RPC Dialed"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, err
 	}
@@ -111,8 +118,9 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Tested and Estimated"
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Tested and Estimated"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, err
 	}
@@ -122,8 +130,9 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Quote Verified"
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Quote Verified"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, err
 	}
@@ -133,8 +142,9 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Card Authorized"
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Card Authorized"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, err
 	}
@@ -144,10 +154,12 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	db.Status = "Transaction Initiated"
-	db.TransactionHash = txID
-	db.TransactionAmount = value.String()
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Transaction Initiated"
+	updateDB.Status = &status
+	updateDB.TransactionHash = &txID
+	txAmount := value.String()
+	updateDB.TransactionAmount = &txAmount
+	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, err
 	}
@@ -163,32 +175,35 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 		UserAddress:        e.UserAddress,
 		CumulativeValue:    value,
 		QuotedTotal:        e.TotalUSD,
-		db:                 db,
+		TxDBID:             db.ID,
 		processingFeeAsset: processingFeeAsset,
 	}
 	go t.postProcess(post)
 	return model.TransactionReceipt{TxID: txID}, nil
 }
 
-func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m model.Transaction) (model.Transaction, model.Asset, error) {
-	m.Type = "fiat-to-crypto" // TODO: only this option exists right now
+func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+	txType := "fiat-to-crypto"
+	m.Type = &txType
 	// TODO populate db.Tags with key-val pairs for Unit21
 	// TODO populate db.DeviceID with info from fingerprint
 	// TODO populate db.IPAddress with info from fingerprint
 	// TODO populate db.PlatformID with UUID of customer
 	bytes, err := json.Marshal(e.CxParams)
 	if err != nil {
-		return m, model.Asset{}, err
+		return model.Asset{}, err
 	}
-	m.ContractParams = bytes
-	m.ContractFunc = e.CxFunc + e.CxReturn
+	contractParams := types.JSONText(bytes)
+	m.ContractParams = &contractParams
+	contractFunc := e.CxFunc + e.CxReturn
+	m.ContractFunc = &contractFunc
 
 	asset, err := t.repos.Asset.GetName("USD")
 	if err != nil {
-		return m, model.Asset{}, err
+		return model.Asset{}, err
 	}
-	m.ProcessingFeeAsset = asset.ID // Checkout processing asset
-	return m, asset, nil
+	m.ProcessingFeeAsset = &asset.ID // Checkout processing asset
+	return asset, nil
 }
 
 func testTransaction(executor Executor, t model.TransactionRequest, chain common.Chain, useBuffer bool) (model.Quote, error) {
@@ -306,7 +321,7 @@ type postProcessRequest struct {
 	CumulativeGas      uint64
 	CumulativeValue    *big.Int
 	QuotedTotal        float64
-	db                 model.Transaction
+	TxDBID             string
 	processingFeeAsset model.Asset
 }
 
@@ -316,9 +331,10 @@ func (t transaction) postProcess(request postProcessRequest) {
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
-	db := request.db
-	db.Status = "Post Process RPC Dialed"
-	err = t.repos.Transaction.Update(db.ID, db)
+	updateDB := model.TransactionUpdates{}
+	status := "Post Process RPC Dialed"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -328,9 +344,11 @@ func (t transaction) postProcess(request postProcessRequest) {
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
-	db.Status = "TX Confirmed"
-	db.NetworkFee = strconv.FormatUint(trueGas, 10) // geth uses uint64 for gas
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "TX Confirmed"
+	updateDB.Status = &status
+	networkFee := strconv.FormatUint(trueGas, 10)
+	updateDB.NetworkFee = &networkFee // geth uses uint64 for gas
+	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -342,9 +360,11 @@ func (t transaction) postProcess(request postProcessRequest) {
 		// TODO: Handle error instead of returning it
 	}
 	fmt.Printf("PROFIT=%+v", profit)
-	db.Status = "Profit Tendered"
-	db.StringFee = floatToFixedString(profit, 6) // string fee is always USD with 6 digits
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Profit Tendered"
+	updateDB.Status = &status
+	stringFee := floatToFixedString(profit, 6)
+	updateDB.StringFee = &stringFee // string fee is always USD with 6 digits
+	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -354,16 +374,18 @@ func (t transaction) postProcess(request postProcessRequest) {
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
-	db.Status = "Card Charged"
+	status = "Card Charged"
+	updateDB.Status = &status
 	// TODO: Figure out how much we paid the CC payment processor and deduct it
 	// and use it to populate processing_fee and processing_fee_asset in the table
-	err = t.repos.Transaction.Update(db.ID, db)
+	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 
-	db.Status = "Completed"
-	err = t.repos.Transaction.Update(db.ID, db)
+	status = "Completed"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}

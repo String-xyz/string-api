@@ -4,18 +4,20 @@
 -------------------------------------------------------------------------
 -- CONTACT_PLATFORM -----------------------------------------------------
 CREATE TABLE contact_platform (
-  id PRIMARY KEY (contact_id, platform_id), -- this makes the ID a combo of the two other IDs
   contact_id UUID REFERENCES contact (id),
   platform_id UUID REFERENCES platform (id)
 );
 
+CREATE UNIQUE INDEX contact_platform_contact_id_platform_id_idx ON contact_platform(contact_id, platform_id);
+
 -------------------------------------------------------------------------
 -- DEVICE_INSTRUMENT ----------------------------------------------------
 CREATE TABLE device_instrument (
-  id PRIMARY KEY (device_id, instrument_id),
   device_id UUID REFERENCES device (id),
   instrument_id UUID REFERENCES instrument (id)
 );
+
+CREATE UNIQUE INDEX device_instrument_device_id_instrument_id_idx ON device_instrument(device_id, instrument_id);
 
 -------------------------------------------------------------------------
 -- TX_LEG ---------------------------------------------------------------

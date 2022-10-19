@@ -157,29 +157,28 @@ type TxLeg struct {
 
 // See TRANSACTION in Migrations 0003
 type Transaction struct {
-	ID                 string            `json:"id" db:"id"`
-	CreatedAt          time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt          time.Time         `json:"updatedAt" db:"updated_at"`
-	Timestamp          time.Time         `json:"timestamp" db:"timestamp"`
-	Type               string            `json:"type" db:"type"`
-	Status             string            `json:"status" db:"status"`
-	Tags               map[string]string `json:"tags" db:"tags"` // TODO: Fix this alongside Unit21 integration
-	DeviceID           string            `json:"deviceId" db:"device_id"`
-	IPAddress          string            `json:"ipAddress" db:"ip_address"`
-	PlatformID         string            `json:"platformId" db:"platform_id"`
-	TransactionHash    string            `json:"transactionHash" db:"transaction_hash"`
-	NetworkID          string            `json:"networkId" db:"network_id"`
-	NetworkFee         string            `json:"networkFee" db:"network_fee"`
-	ContractParams     types.JSONText    `json:"contractParameters" db:"contract_params"`
-	ContractFunc       string            `json:"contractFunc" db:"contract_func"`
-	TransactionAmount  string            `json:"transactionAmount" db:"transaction_amount"`
-	OriginTXLegID      string            `json:"originTXLegId" db:"origin_tx_leg_id"`
-	ReceiptTXLegID     string            `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
-	ResponseTXLegID    string            `json:"responseTXLegId" db:"response_tx_leg_id"`
-	DestinationTXLegID string            `json:"destinationTXLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      string            `json:"processingFee" db:"processing_fee"`
-	ProcessingFeeAsset string            `json:"processingFeeAsset" db:"processing_fee_asset"`
-	StringFee          string            `json:"stringFee" db:"string_fee"`
+	ID                 string         `json:"id" db:"id"`
+	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
+	Type               string         `json:"type" db:"type"`
+	Status             string         `json:"status" db:"status"`
+	Tags               types.JSONText `json:"tags" db:"tags"` // TODO: Fix this alongside Unit21 integration
+	DeviceID           string         `json:"deviceId" db:"device_id"`
+	IPAddress          string         `json:"ipAddress" db:"ip_address"`
+	PlatformID         string         `json:"platformId" db:"platform_id"`
+	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
+	NetworkID          string         `json:"networkId" db:"network_id"`
+	NetworkFee         string         `json:"networkFee" db:"network_fee"`
+	ContractParams     types.JSONText `json:"contractParameters" db:"contract_params"`
+	ContractFunc       string         `json:"contractFunc" db:"contract_func"`
+	TransactionAmount  string         `json:"transactionAmount" db:"transaction_amount"`
+	OriginTXLegID      string         `json:"originTXLegId" db:"origin_tx_leg_id"`
+	ReceiptTXLegID     string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
+	ResponseTXLegID    string         `json:"responseTXLegId" db:"response_tx_leg_id"`
+	DestinationTXLegID string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
+	ProcessingFee      string         `json:"processingFee" db:"processing_fee"`
+	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"`
+	StringFee          string         `json:"stringFee" db:"string_fee"`
 }
 
 type AuthStrategy struct {

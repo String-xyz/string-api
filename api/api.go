@@ -65,6 +65,7 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Network:     repository.NewNetwork(config.DB),
 		Transaction: repository.NewTransaction(config.DB),
 		TxLeg:       repository.NewTxLeg(config.DB),
+		User:        repository.NewUser(config.DB),
 		// More will follow
 	}
 	service := service.NewTransaction(repos)

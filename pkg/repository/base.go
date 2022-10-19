@@ -136,7 +136,7 @@ func (b base[T]) Update(ID string, updates any) error {
 	if len(names) == 0 {
 		return errors.New("no fields to update")
 	}
-	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = %s", b.table, strings.Join(names, ","), ID)
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s'", b.table, strings.Join(names, ", "), ID)
 	_, err := b.store.NamedExec(query, keyToUpdate)
 	return err
 }
