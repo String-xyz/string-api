@@ -27,7 +27,7 @@ import (
 // jsonBody = MapUserToEntity(user)
 func create(datatype string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
-	url := os.Getenv("UNIT21_URL") + "/" + datatype + "/create"
+	url := os.Getenv("UNIT21_URL") + datatype + "/create"
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
