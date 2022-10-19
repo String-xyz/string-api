@@ -80,7 +80,6 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	if err != nil {
 		return res, err
 	}
-	fmt.Printf("\nGot Chain Info")
 
 	// Create new TX in repository, populate it with known info
 	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID})
@@ -88,18 +87,15 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 		return res, err
 	}
 	updateDB := &model.TransactionUpdates{}
-	fmt.Printf("\nCreated TX in db")
 	processingFeeAsset, err := t.populateInitialTxModelData(e, updateDB)
 	if err != nil {
 		return res, err
 	}
-	fmt.Printf("\nGot Initial TX model data")
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		fmt.Printf("\nERROR = %+v", err)
 		return res, err
 	}
-	fmt.Printf("\nUpdate TX table")
 
 	// Dial the RPC and update model status
 	executor := NewExecutor()
@@ -151,7 +147,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
-	txID, value, err := initiateTransaction(executor, e)
+	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID)
 	if err != nil {
 		return res, err
 	}
@@ -296,7 +292,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	return auth, err
 }
 
-func initiateTransaction(executor Executor, e model.ExecutionRequest) (string, *big.Int, error) {
+func (t transaction) initiateTransaction(executor Executor, e model.ExecutionRequest, chargeAsset model.Asset, txUUID string) (string, *big.Int, error) {
 	call := ContractCall{
 		CxAddr:     e.CxAddr,
 		CxFunc:     e.CxFunc,
@@ -309,6 +305,29 @@ func initiateTransaction(executor Executor, e model.ExecutionRequest) (string, *
 	if err != nil {
 		return "", nil, err
 	}
+
+	// Create Send TX leg
+	eth := common.WeiToEther(value)
+	wei := floatToFixedString(eth, 18)
+	usd := floatToFixedString(e.TotalUSD, int(chargeAsset.Decimals))
+	send := model.TxLeg{
+		Timestamp:    time.Now(),
+		Amount:       wei,
+		Value:        usd,
+		AssetID:      chargeAsset.ID,
+		UserID:       "0e837b73-55cf-43ff-9b1e-0d8258eec978", // TODO: Get dynamically
+		InstrumentID: "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c", // TODO: Get dynamically
+	}
+	send, err = t.repos.TxLeg.Create(send)
+	if err != nil {
+		return txID, value, err
+	}
+	txLeg := model.TransactionUpdates{ResponseTXLegID: &send.ID}
+	err = t.repos.Transaction.Update(txUUID, txLeg)
+	if err != nil {
+		return txID, value, err
+	}
+
 	return txID, value, nil
 }
 
@@ -320,12 +339,36 @@ func confirmTX(executor Executor, txID string) (uint64, error) {
 	return trueGas, nil
 }
 
-func chargeCard(userWallet string, authorizationID string, usd float64) error {
+func (t transaction) chargeCard(userWallet string, authorizationID string, usd float64, chargeAsset model.Asset, txUUID string) error {
 	_, err := CaptureCharge(usd, userWallet, authorizationID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Create Receipt TX leg
+	usdWei := floatToFixedString(usd, int(chargeAsset.Decimals))
+	receipt := model.TxLeg{
+		Timestamp:    time.Now(),
+		Amount:       usdWei,
+		Value:        usdWei,
+		AssetID:      chargeAsset.ID,
+		UserID:       "0e837b73-55cf-43ff-9b1e-0d8258eec978", // TODO: Get dynamically
+		InstrumentID: "13438963-f5e7-47c4-a790-ebca3e3bf915", // TODO: Get dynamically
+	}
+	receipt, err = t.repos.TxLeg.Create(receipt)
+	if err != nil {
+		return err
+	}
+	txLeg := model.TransactionUpdates{ReceiptTXLegID: &receipt.ID}
+	err = t.repos.Transaction.Update(txUUID, txLeg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain common.Chain) (float64, error) {
+func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain common.Chain, txUUID string) (float64, error) {
 	cost := NewCost(repository.NewCost(nil)) // temporary nil
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -334,6 +377,32 @@ func tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTot
 		return 0, err
 	}
 	profit := quotedTotal - trueUSD
+
+	// Create Receive TX leg
+	asset, err := t.repos.Asset.GetName("ETH")
+	if err != nil {
+		return profit, err
+	}
+	wei := floatToFixedString(trueEth, int(asset.Decimals))
+	usd := floatToFixedString(quotedTotal, 6)
+	send := model.TxLeg{
+		Timestamp:    time.Now(),
+		Amount:       wei,
+		Value:        usd,
+		AssetID:      asset.ID,
+		UserID:       "0e837b73-55cf-43ff-9b1e-0d8258eec978", // TODO: Get dynamically
+		InstrumentID: "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c", // TODO: Get dynamically
+	}
+	send, err = t.repos.TxLeg.Create(send)
+	if err != nil {
+		return profit, err
+	}
+	txLeg := model.TransactionUpdates{DestinationTXLegID: &send.ID}
+	err = t.repos.Transaction.Update(txUUID, txLeg)
+	if err != nil {
+		return profit, err
+	}
+
 	return profit, nil
 }
 
@@ -379,7 +448,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	profit, err := tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, request.Chain)
+	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, request.Chain, request.TxDBID)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -394,7 +463,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 	}
 
 	// charge the users CC
-	err = chargeCard(request.UserAddress, request.AuthorizationID, request.QuotedTotal)
+	err = t.chargeCard(request.UserAddress, request.AuthorizationID, request.QuotedTotal, request.processingFeeAsset, request.TxDBID)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
