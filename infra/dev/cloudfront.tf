@@ -29,7 +29,7 @@ resource "aws_cloudfront_distribution" "this" {
 
     forwarded_values {
       query_string = true
-      headers      = ["X-Forwarded-For","X-Real-IP", "Host","X-Api-Key"]
+      headers      = ["X-Forwarded-For", "Host","X-Api-Key"]
       cookies {
         forward = "all"
       }
