@@ -40,8 +40,11 @@ func TestCreateEntity(t *testing.T) {
 	}
 
 	// "SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userID, limit, offset)
-	mock.ExpectQuery("SELECT * FROM (.+) WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)")
-
+	// mockedRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "poolid"}).AddRow(1, time.Now(), time.Now(), "1")
+	mockedRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "deactivated_at", "type", "status", "data"})
+	mock.ExpectQuery(`SELECT \* FROM (.+) WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedRow)
+	// mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "contact"`)) // WHERE  ((user_id = ?)) LIMIT 100 OFFSET 0
+	// "storage_pools"."deleted_at" IS NULL AND ((poolid = ?)) ORDER BY "storage_pools"."id" ASC LIMIT 1`))
 	// Dependent on Device and Instrument Repos being created
 	userRepo := repository.NewUser(sqlxDB)
 	// deviceRepo := repository.NewDevice(sqlxDB)
