@@ -52,6 +52,6 @@ type options struct {
 type entityResponse struct {
 	Ignored           bool   `json:"ignored,omitempty"`
 	EntityId          string `json:"entity_id"`
-	PreviouslyExisted bool   `json:"previusly_existed"`
+	PreviouslyExisted bool   `json:"previously_existed"`
 	Unit21Id          string `json:"unit21_id"`
 }
