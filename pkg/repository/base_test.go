@@ -6,16 +6,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
 )
-
-func TestKeysAndValues(t *testing.T) {
-	mType := "type"
-	m := model.UserContactUpdates{Type: &mType}
-	names, vals := keysAndValues(m)
-	assert.Len(t, names, 1)
-	assert.Len(t, vals, 1)
-}
 
 func TestBaseUpdate(t *testing.T) {
 	db, mock, err := sqlmock.New()

@@ -36,13 +36,6 @@ func newEntity(user repository.User, contact repository.UserContact) Entity {
 	return &entity{userRepo: user, contactRepo: contact}
 }
 
-// //
-// u21entity := unit21.NewEntity()
-// u21insturment := unit21.NewIntrument()
-
-// u21entity.Create(user)
-// //
-
 // https://docs.unit21.ai/reference/create_entity
 func (e entity) Create(user model.User) (unit21Id string, err error) {
 
@@ -50,25 +43,13 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	// devices, err  := e.deviceRepo.ListUserID(user.ID, 100, 0)
 	// instruments, err  := e.instrumentRepo.ListUserID(user.ID, 100, 0)
 
-	// Get user contacts
-	contacts, err := e.contactRepo.ListUserID(user.ID, 100, 0)
+	communications, err := getCommunications(user.ID, e.contactRepo)
 	if err != nil {
-		log.Printf("Failed go get user contacts: %s", err)
+		log.Printf("Failed to gather entity communications: %s", err)
 		return
 	}
 
-	// Convert contact structs to an entity communication struct
-	var communication communication
-	for _, contact := range contacts {
-		if contact.Type == "Email" {
-			communication.Emails = append(communication.Emails, contact.Data)
-		} else if contact.Type == "Phone" {
-			communication.Phones = append(communication.Phones, contact.Data)
-		}
-	}
-	log.Printf("communication: %s", communication)
-
-	body, err := create("entities", MapUserToEntity(user, communication))
+	body, err := create("entities", mapUserToEntity(user, communications))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		return
@@ -156,4 +137,60 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	// }
 
 	return
+}
+
+func getCommunications(userId string, contactRepo repository.UserContact) (communications communication, err error) {
+
+	// Get user contacts
+	contacts, err := contactRepo.ListUserID(userId, 100, 0)
+	if err != nil {
+		log.Printf("Failed go get user contacts: %s", err)
+		return
+	}
+
+	// Convert contact structs to an entity communication struct
+	for _, contact := range contacts {
+		if contact.Type == "Email" {
+			communications.Emails = append(communications.Emails, contact.Data)
+		} else if contact.Type == "Phone" {
+			communications.Phones = append(communications.Phones, contact.Data)
+		}
+	}
+	log.Printf("communication: %s", communications)
+	return
+}
+
+func mapUserToEntity(user model.User, communication communication) *u21entity {
+	var userTagArr []string
+	if user.Tags != nil {
+		for key, value := range user.Tags {
+			userTagArr = append(userTagArr, key+":"+value)
+		}
+	}
+
+	jsonBody := &u21entity{
+		GeneralData: &general{
+			EntityId:     user.ID,
+			EntityType:   "user",
+			Status:       user.Status,
+			RegisteredAt: int(user.CreatedAt.Unix()),
+			Tags:         userTagArr, // convert from jsonb into array of key:value string pairs
+		},
+		UserData: &personal{
+			FirstName:  user.FirstName,
+			MiddleName: user.MiddleName,
+			LastName:   user.LastName,
+		},
+		CommunicationData: &communication,
+		DigitalData: &digitalInfo{
+			IpAddresses:        nil, //data.ipAddresses,  //might need to be converted to []string
+			ClientFingerprints: nil, //data.fingerprints, //schema doesn't have a fingerprint, might need to be convered to []string
+		},
+		CustomData: nil, //&custom{
+		// 	Platform: nil,//data.partnerName,
+		// },
+		// add WorkflowOptions if not default?
+	}
+
+	return jsonBody
 }
