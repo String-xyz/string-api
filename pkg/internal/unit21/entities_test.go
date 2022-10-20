@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"log"
 	"testing"
 	"time"
 
@@ -47,8 +48,10 @@ func TestCreateEntity(t *testing.T) {
 	// u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)
 	u21Entity := newEntity(userRepo, contactRepo)
 
-	_, err = u21Entity.Create(user)
+	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)
+	log.Printf("u21EntityId: %s", u21EntityId)
+	assert.Greater(t, len([]rune(u21EntityId)), 0)
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new entity added
