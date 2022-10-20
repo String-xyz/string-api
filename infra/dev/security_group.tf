@@ -55,16 +55,30 @@ resource "aws_security_group" "ecs_task_sg" {
 }
 
 # Give access to DB through Security group rule
-data "aws_security_group" "client" {
+data "aws_security_group" "rds" {
   name   = "${local.env}-string-write-master-client-rds"
   vpc_id = data.terraform_remote_state.vpc.outputs.id
 }
 
-resource "aws_security_group_rule" "client_write_db_sg" {
+data "aws_security_group" "redis" {
+  name        = "redis-client-redis"
+  vpc_id      = data.terraform_remote_state.vpc.outputs.id
+}
+
+resource "aws_security_group_rule" "rds_to_ecs" {
   type                     = "ingress"
   protocol                 = "TCP"
   from_port                = local.db_port
   to_port                  = local.db_port
   source_security_group_id = aws_security_group.ecs_task_sg.id
-  security_group_id        = data.aws_security_group.client.id
+  security_group_id        = data.aws_security_group.rds.id
+}
+
+resource "aws_security_group_rule" "redis_to_ecs" {
+  type                     = "ingress"
+  protocol                 = "TCP"
+  from_port                = local.redis_port
+  to_port                  = local.redis_port
+  source_security_group_id = aws_security_group.ecs_task_sg.id
+  security_group_id        = data.aws_security_group.redis.id
 }

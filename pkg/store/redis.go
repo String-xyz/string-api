@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"os"
 	"time"
@@ -26,12 +27,15 @@ type redisStore struct {
 
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
+	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 	client := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST"),
+		Addr: url,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
-
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to ping Redis: %v", err)

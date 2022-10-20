@@ -20,8 +20,15 @@ func strConnection() string {
 		DBName     = os.Getenv("DB_NAME")
 		DBHost     = os.Getenv("DB_HOST")
 		DBPort     = os.Getenv("DB_PORT")
-		SSLMode    = "disable" // require
 	)
+
+	var SSLMode string
+
+	if os.Getenv("ENV") == "local" {
+		SSLMode = "disable"
+	} else {
+		SSLMode = "require"
+	}
 
 	str := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		DBHost,

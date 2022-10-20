@@ -13,10 +13,7 @@ import (
 func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	tracer.Start(
-		tracer.WithServiceName("string-api"),
-		tracer.WithEnv(os.Getenv("ENV")),
-	)
+	tracer.Start()
 
 	defer tracer.Stop()
 	port := os.Getenv("PORT")

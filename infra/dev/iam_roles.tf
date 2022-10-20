@@ -43,7 +43,9 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.db_password.arn,
       data.aws_ssm_parameter.db_username.arn,
       data.aws_ssm_parameter.db_name.arn,
-      data.aws_ssm_parameter.db_host.arn
+      data.aws_ssm_parameter.db_host.arn,
+      data.aws_ssm_parameter.redis_host_url.arn,
+      data.aws_ssm_parameter.redis_auth_token.arn
     ]
   }
 
