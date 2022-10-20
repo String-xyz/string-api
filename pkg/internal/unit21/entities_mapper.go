@@ -2,7 +2,7 @@ package unit21
 
 import "github.com/String-xyz/string-api/pkg/model"
 
-func MapUserToEntity(user model.User) *u21entity {
+func MapUserToEntity(user model.User, communication communication) *u21entity {
 	var userTagArr []string
 	if user.Tags != nil {
 		for key, value := range user.Tags {
@@ -23,10 +23,7 @@ func MapUserToEntity(user model.User) *u21entity {
 			MiddleName: user.MiddleName,
 			LastName:   user.LastName,
 		},
-		CommunicationData: &communication{
-			Emails: nil, //data.emails, //might need to be converted to []string
-			Phones: nil, //data.phones, //might need to be converted to []string
-		},
+		CommunicationData: &communication,
 		DigitalData: &digitalInfo{
 			IpAddresses:        nil, //data.ipAddresses,  //might need to be converted to []string
 			ClientFingerprints: nil, //data.fingerprints, //schema doesn't have a fingerprint, might need to be convered to []string
