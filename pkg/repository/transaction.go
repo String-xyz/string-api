@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"fmt"
-
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,14 +26,12 @@ func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, err
 		INSERT INTO transaction (status) 
 		VALUES(:status) 	RETURNING *`, insert)
 	if err != nil {
-		fmt.Printf("\nnqERR = %+v", err)
 		return m, err
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 	}
 
-	fmt.Printf("\n_ERR = %+v", err)
 	defer rows.Close()
 	return m, err
 }

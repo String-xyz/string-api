@@ -25,6 +25,9 @@ func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 	rows, err := t.store.NamedQuery(`
 		INSERT INTO tx_leg (instrument_id) 
 		VALUES(:instrument_id) 	RETURNING *`, insert)
+
+	defer rows.Close()
+
 	if err != nil {
 		return m, err
 	}
@@ -32,6 +35,5 @@ func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 		err = rows.StructScan(&m)
 	}
 
-	defer rows.Close()
 	return m, err
 }
