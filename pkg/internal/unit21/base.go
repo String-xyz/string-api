@@ -28,7 +28,7 @@ import (
 func create(datatype string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 	url := os.Getenv("UNIT21_URL") + datatype + "/create"
-	log.Printf("url: %s", url)
+
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
 		log.Printf("Could not encode %s to bytes: %s", datatype, err)
