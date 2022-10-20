@@ -10,7 +10,6 @@ func MapUserToEntity(user model.User) *u21entity {
 		}
 	}
 
-	// https://www.digitalocean.com/community/tutorials/how-to-use-json-in-go
 	jsonBody := &u21entity{
 		GeneralData: &general{
 			EntityId:     user.ID,

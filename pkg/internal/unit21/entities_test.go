@@ -13,21 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// StringData {
-// 	id            string
-// 	tags          map[string]string
-// 	partnerName   string
-// 	status        string
-// 	createdAt     int
-// 	firstName     string
-// 	middleName    string
-// 	lastName      string
-// 	emails        []string
-// 	phones        []string
-// 	ipAddresses   []string
-// 	fingerprints  []string
-// }
-
 func TestCreateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
