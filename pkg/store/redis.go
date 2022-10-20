@@ -25,17 +25,27 @@ type redisStore struct {
 	client *redis.Client
 }
 
+func redisConf() *redis.Options {
+	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
+	var tlsCf *tls.Config
+	if os.Getenv("ENV") != "local" {
+		tlsCf = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	cf := &redis.Options{
+		Addr:      url,
+		TLSConfig: tlsCf,
+		Password:  os.Getenv("REDIS_PASSWORD"),
+		DB:        0,
+	}
+	return cf
+}
+
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
-	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
-	client := redis.NewClient(&redis.Options{
-		Addr: url,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       0,
-	})
+	client := redis.NewClient(redisConf())
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to ping Redis: %v", err)
