@@ -36,9 +36,8 @@ type OwlracleJSON struct {
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams) (model.Quote, error)
+	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
 	New(repo repository.Cost) Cost
-	QueryOwlracle(chainId uint64) (float64, error)
 	LookupUSD(coin string, quantity float64) (float64, error)
 }
 
@@ -58,41 +57,25 @@ func NewCost(repo repository.Cost) Cost {
 	}
 }
 
-func (c cost) QueryOwlracle(chainId uint64) (float64, error) {
-	blockChain, err := model.ChainInfo(chainId)
-	if err != nil {
-		return 0, err
-	}
-	gwei, err := c.owlracle(blockChain.OwlracleName)
-	if err != nil {
-		return 0, err
-	}
-	return gwei, nil
-}
-
-func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
+func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
-	blockChain, err := model.ChainInfo(p.ChainID)
-	if err != nil {
-		return model.Quote{}, err
-	}
 
 	// Query cost of native token in USD
-	nativeCost, err := c.LookupUSD(blockChain.CoingeckoName, 1)
+	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
 	if err != nil {
 		return model.Quote{}, err
 	}
 
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
-		nativeCost *= 1.0 + common.NativeTokenBuffer(blockChain.ChainID)
+		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainID)
 	}
 	costEth := common.WeiToEther(&p.CostETH)
 	transactionCost := costEth * nativeCost
 
 	// Query owlracle for gas
-	ethGasFee, err := c.lookupGas(blockChain.OwlracleName)
+	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
 		return model.Quote{}, err
 	}
@@ -100,7 +83,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
-		gasInUSD *= 1.0 + common.GasBuffer(blockChain.ChainID)
+		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainID)
 	}
 
 	// Query cost of token in USD if used and apply buffer
@@ -114,7 +97,7 @@ func (c cost) EstimateTransaction(p EstimationParams) (model.Quote, error) {
 	}
 
 	// Compute service fee
-	upcharge := blockChain.StringFee
+	upcharge := chain.StringFee
 	serviceFee := (transactionCost + gasInUSD + tokenCost) * upcharge
 
 	// Fill out CostEstimate and return

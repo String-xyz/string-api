@@ -7,6 +7,7 @@ import (
 
 type UserContact interface {
 	Transactable
+	Readable
 	Create(model.Contact) (model.Contact, error)
 	GetID(ID string) (model.Contact, error)
 	GetUserID(userID string) (model.Contact, error)
