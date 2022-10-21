@@ -19,6 +19,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
+	gopkg.in/DataDog/dd-trace-go.v1 v1.43.0
 )
 
 require (
@@ -39,7 +40,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -47,7 +47,6 @@ require (
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -72,7 +71,6 @@ require (
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/DataDog/dd-trace-go.v1 v1.43.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	inet.af/netaddr v0.0.0-20220617031823-097006376321 // indirect
