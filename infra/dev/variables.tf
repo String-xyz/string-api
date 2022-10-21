@@ -7,6 +7,7 @@ locals {
   origin_id          = "string-api"
   desired_task_count = "1"
   db_port            = "5432"
+  redis_port         = "6379"
   memory             = 512
   cpu                = 256
   region             = "us-west-2"
@@ -66,6 +67,14 @@ locals {
         {
           name      = "DB_NAME"
           valueFrom = data.aws_ssm_parameter.db_name.arn
+        },
+        {
+          name = "REDIS_HOST",
+          valuefrom = data.aws_ssm_parameter.redis_host_url.arn
+        },
+        {
+          name = "REDIS_PASSWORD",
+          valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
         }
       ]
       environment = [
@@ -74,16 +83,20 @@ locals {
           value = local.container_port
         },
         {
+          name  = "REDIS_PORT"
+          value = local.redis_port
+        },
+         {
+          name = "DB_PORT",
+          value = local.db_port
+        },
+        {
           name  = "ENV"
           value = local.env
         },
         {
           name  = "AWS_REGION"
           value = local.region
-        },
-        {
-          name  = "ECS_FARGATE"
-          value = "true"
         },
         {
           name  = "AWS_KMS_KEY_ID"
@@ -96,22 +109,6 @@ locals {
         {
           name  = "COINGECKO_API_URL"
           value = "https://api.coingecko.com/api/v3/"
-        },
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        },
-        {
-          name  = "DD_ENV"
-          value = local.env
         }
       ],
       logConfiguration = {
@@ -134,12 +131,38 @@ locals {
     },
     {
       name      = "datadog-agent"
-      image     = "gcr.io/datadoghq/agent:latest"
-      essential = false
+      image     = "public.ecr.aws/datadog/agent:latest"
+      essential = true
       secrets = [{
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
+      environment = [ 
+        {
+          name  = "DD_APM_ENABLED"
+          value = "true"
+        },
+        {
+          name = "DD_SITE"
+          value = "datadoghq.com"
+        },
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
+        },
+        {
+          name  = "DD_ENV"
+          value = local.env
+        },
+        {
+          name  = "ECS_FARGATE"
+          value = "true"
+        },
+      ]
       portMappings = [{
         hostPort      = 8126,
         protocol      = "tcp",

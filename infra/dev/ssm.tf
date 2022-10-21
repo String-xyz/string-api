@@ -46,6 +46,14 @@ data "aws_ssm_parameter" "db_host" {
   name = "${local.env}-string-write-db-host-url"
 }
 
+data "aws_ssm_parameter" "redis_auth_token" {
+  name = "redis-auth-token"
+}
+
+data "aws_ssm_parameter" "redis_host_url" {
+  name  = "redis-host-url"
+}
+
 data "aws_kms_key" "kms_key" {
   key_id = "alias/main-kms-key"
 }
