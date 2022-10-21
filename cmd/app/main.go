@@ -7,6 +7,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/pkgerrors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -20,8 +21,8 @@ func main() {
 	if port == "" {
 		panic("no port!")
 	}
-	// if you are running local make sure to have an instance of pg running
-	// this call will panic if it cant connect
+
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	db := store.MustNewPG()
 	lg := zerolog.New(os.Stdout)
 	// setup api

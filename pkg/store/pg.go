@@ -51,6 +51,7 @@ func MustNewPG() *sqlx.DB {
 	if err != nil {
 		panic(err)
 	}
+
 	if err := connection.Ping(); err != nil {
 		panic(err)
 	}

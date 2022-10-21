@@ -3,7 +3,6 @@ package middleware
 import (
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
@@ -46,7 +45,7 @@ func LogRequest() echo.MiddlewareFunc {
 				Int("status", v.Status).
 				Str("requestId", v.RequestID).
 				Str("host", v.Host).
-				Dur("latency", time.Duration(v.Latency.Milliseconds())).
+				Dur("latency", v.Latency).
 				Msg("request")
 			return nil
 		},
