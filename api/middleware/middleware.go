@@ -25,12 +25,22 @@ func Recover() echo.MiddlewareFunc {
 }
 
 func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("logger", logger)
+			return next(c)
+		}
+	}
+}
+
+func LogRequest() echo.MiddlewareFunc {
 	return echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
 		LogURI:       true,
 		LogStatus:    true,
 		LogRequestID: true,
 		LogLatency:   true,
 		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
+			logger := c.Get("logger").(*zerolog.Logger)
 			logger.Info().
 				Str("URI", v.URI).
 				Int("status", v.Status).
@@ -38,7 +48,6 @@ func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
 				Str("host", v.Host).
 				Dur("latency", time.Duration(v.Latency.Milliseconds())).
 				Msg("request")
-			c.Set("logger", logger)
 			return nil
 		},
 	})

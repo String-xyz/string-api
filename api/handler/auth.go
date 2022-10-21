@@ -17,6 +17,7 @@ type Auth interface {
 
 type auth struct {
 	service service.Auth
+	logger  *zerolog.Logger
 }
 
 func NewAuth(service service.Auth) Auth {
@@ -61,10 +62,9 @@ func (o auth) Login(c echo.Context) error {
 }
 
 func (o auth) LoginEmail(c echo.Context, body service.UserLoginEmail) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	jwt, err := o.service.LoginEmail(body)
 	if err != nil {
-		lg.Err(err).Msg("auth loginEmail")
+		o.logger.Err(err).Msg("auth loginEmail")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, jwt)
@@ -81,7 +81,7 @@ func (o auth) LoginPK(c echo.Context, body service.UserPKLogin) error {
 }
 
 func (o auth) NonceChallenge(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
+
 	param := struct {
 		PublicAddress string `param:"address"`
 	}{}
@@ -92,7 +92,7 @@ func (o auth) NonceChallenge(c echo.Context) error {
 
 	nonce, err := o.service.Challenge(param.PublicAddress)
 	if err != nil {
-		lg.Err(err).Msg("auth challenge")
+		o.logger.Err(err).Msg("auth challenge")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
