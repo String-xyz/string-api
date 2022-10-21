@@ -23,8 +23,8 @@ type Entity interface {
 type entity struct {
 	userRepo repository.User
 	// deviceRepo     repository.Device
-	contactRepo repository.UserContact
-	// instrumentRepo repository.Instrument
+	contactRepo  repository.UserContact
+	platformRepo repository.Platform
 }
 
 // With Device and Instrument
@@ -45,7 +45,19 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 
 	communications, err := getCommunications(user.ID, e.contactRepo)
 	if err != nil {
-		log.Printf("Failed to gather entity communications: %s", err)
+		log.Printf("Failed to gather Unit21 entity communications: %s", err)
+		return
+	}
+
+	// digitalData, err := getDigitalData(user.ID, e.deviceRepo)
+	// if err != nil {
+	// 	log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+	// 	return
+	// }
+
+	customData, err := getCustomData(user.ID, e.platformRepo)
+	if err != nil {
+		log.Printf("Failed to gather Unit21 entity customData: %s", err)
 		return
 	}
 
