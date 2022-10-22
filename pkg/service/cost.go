@@ -36,7 +36,7 @@ type OwlracleJSON struct {
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams, chain common.Chain) (model.Quote, error)
+	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
 	New(repo repository.Cost) Cost
 	LookupUSD(coin string, quantity float64) (float64, error)
 }
@@ -57,7 +57,7 @@ func NewCost(repo repository.Cost) Cost {
 	}
 }
 
-func (c cost) EstimateTransaction(p EstimationParams, chain common.Chain) (model.Quote, error) {
+func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
 

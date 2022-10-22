@@ -29,14 +29,17 @@ func (n network[T]) Create(insert model.Network) (model.Network, error) {
 	rows, err := n.store.NamedQuery(`
 		INSERT INTO network (name) 
 		VALUES(:name) 	RETURNING *`, insert)
+
+	defer rows.Close()
+
 	if err != nil {
 		return m, err
 	}
+
 	for rows.Next() {
 		err = rows.StructScan(&m)
 	}
 
-	defer rows.Close()
 	return m, err
 }
 

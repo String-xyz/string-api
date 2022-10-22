@@ -36,8 +36,10 @@ func Start(config APIConfig) {
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.RequestID())
+	e.Use(middleware.Tracer())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
+	e.Use(middleware.LogRequest())
 }
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {

@@ -45,7 +45,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	// TODO: use prefab service to parse d and fill out known params
 	res := model.ExecutionRequest{TransactionRequest: d}
 	// chain, err := model.ChainInfo(uint64(d.ChainID))
-	chain, err := common.ChainInfo(uint64(d.ChainID), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(uint64(d.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, err
 	}

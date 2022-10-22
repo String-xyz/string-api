@@ -32,6 +32,5 @@ func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 		err = rows.StructScan(&m)
 	}
 
-	defer rows.Close()
 	return m, err
 }

@@ -1,8 +1,6 @@
-package common
+package service
 
-import (
-	"github.com/String-xyz/string-api/pkg/repository"
-)
+import "github.com/String-xyz/string-api/pkg/repository"
 
 type Chain struct {
 	ChainID       uint64

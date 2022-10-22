@@ -3,25 +3,19 @@ package middleware
 import (
 	"net/http"
 	"os"
-	"regexp"
-	"time"
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
+	echoDatadog "gopkg.in/DataDog/dd-trace-go.v1/contrib/labstack/echo.v4"
 )
-
-func allowOrigin(origin string) (bool, error) {
-	// TODO: Modify to be more restrictive
-	return regexp.MatchString(`*`, origin)
-}
 
 func CORS() echo.MiddlewareFunc {
 	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOriginFunc: allowOrigin,
-		AllowMethods:    []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
 	})
 }
 
@@ -30,18 +24,28 @@ func Recover() echo.MiddlewareFunc {
 }
 
 func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("logger", logger)
+			return next(c)
+		}
+	}
+}
+
+func LogRequest() echo.MiddlewareFunc {
 	return echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
 		LogURI:       true,
 		LogStatus:    true,
 		LogRequestID: true,
 		LogLatency:   true,
 		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
+			logger := c.Get("logger").(*zerolog.Logger)
 			logger.Info().
 				Str("URI", v.URI).
 				Int("status", v.Status).
 				Str("requestId", v.RequestID).
 				Str("host", v.Host).
-				Dur("latency", time.Duration(v.Latency.Milliseconds())).
+				Dur("latency", v.Latency).
 				Msg("request")
 			return nil
 		},
@@ -77,4 +81,8 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 		},
 	}
 	return echoMiddleware.KeyAuthWithConfig(config)
+}
+
+func Tracer() echo.MiddlewareFunc {
+	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
 }
