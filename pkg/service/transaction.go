@@ -76,7 +76,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	res := model.TransactionReceipt{}
 
 	// Pull chain info needed for execution from repository
-	chain, err := common.ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, err
 	}
@@ -203,7 +203,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	return asset, nil
 }
 
-func testTransaction(executor Executor, t model.TransactionRequest, chain common.Chain, useBuffer bool) (model.Quote, error) {
+func testTransaction(executor Executor, t model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -368,7 +368,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 	return nil
 }
 
-func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain common.Chain, txUUID string) (float64, error) {
+func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string) (float64, error) {
 	cost := NewCost(repository.NewCost(nil)) // temporary nil
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -408,7 +408,7 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 
 type postProcessRequest struct {
 	TxID               string
-	Chain              common.Chain
+	Chain              Chain
 	AuthorizationID    string
 	UserAddress        string
 	CumulativeGas      uint64
