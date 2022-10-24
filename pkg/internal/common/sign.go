@@ -14,16 +14,16 @@ import (
 func EVMSign(data interface{}) (string, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
-		return "", err
+		return "", StringError(err)
 	}
 	buffer, err := json.Marshal(data)
 	if err != nil {
-		return "", err
+		return "", StringError(err)
 	}
 	hash := crypto.Keccak256Hash(buffer)
 	signature, err := crypto.Sign(hash.Bytes(), sk)
 	if err != nil {
-		return "", err
+		return "", StringError(err)
 	}
 	return hexutil.Encode(signature), nil
 }
@@ -31,24 +31,24 @@ func EVMSign(data interface{}) (string, error) {
 func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	pk := sk.Public()
 	pkECDSA, ok := pk.(*ecdsa.PublicKey)
 	if !ok {
-		return false, errors.New("ValidateSignature: Failed to cast pk to ECDSA")
+		return false, StringError(errors.New("ValidateSignature: Failed to cast pk to ECDSA"))
 	}
 	pkBytes := crypto.FromECDSAPub(pkECDSA)
 
 	buffer, err := json.Marshal(data)
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	hash := crypto.Keccak256Hash(buffer)
 
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	sigBytes = sigBytes[:len(sigBytes)-1] // last byte is a recovery ID
 	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes)
@@ -58,19 +58,19 @@ func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 func ValidateExternalEVMSignature(signature string, address string, data interface{}) (bool, error) {
 	buffer, err := json.Marshal(data)
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	hash := crypto.Keccak256Hash(buffer)
 
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	sigBytes = sigBytes[:len(sigBytes)-1] // last byte is a recovery ID
 
 	addrBytes, err := hexutil.Decode(address)
 	if err != nil {
-		return false, err
+		return false, StringError(err)
 	}
 	addrBytes = addrBytes[:len(addrBytes)-1] // last byte is a recovery ID
 

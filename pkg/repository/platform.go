@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/types"
@@ -38,13 +39,13 @@ func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 		VALUES(:type, :authentication, :api_key) RETURNING *`, m)
 
 	if err != nil {
-		return plat, err
+		return plat, common.StringError(err)
 	}
 
 	for rows.Next() {
 		err := rows.StructScan(&plat)
 		if err != nil {
-			return plat, err
+			return plat, common.StringError(err)
 		}
 	}
 	defer rows.Close()

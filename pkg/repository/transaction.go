@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -26,12 +27,15 @@ func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, err
 		INSERT INTO transaction (status, network_id) 
 		VALUES(:status, :network_id) 	RETURNING id`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.Scan(&m.ID)
+		if err != nil {
+			return m, common.StringError(err)
+		}
 	}
 
 	defer rows.Close()
-	return m, err
+	return m, nil
 }

@@ -4,8 +4,9 @@ import (
 	"math"
 	"os"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/checkout/checkout-sdk-go"
-	"github.com/checkout/checkout-sdk-go/common"
+	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
@@ -16,7 +17,7 @@ func getConfig() (*checkout.Config, error) {
 
 	var config, err = checkout.SdkConfig(&sk, &pk, checkout.Sandbox)
 	if err != nil {
-		return nil, err
+		return nil, common.StringError(err)
 	}
 	return config, err
 }
@@ -27,20 +28,29 @@ func convertAmount(amount float64) uint64 {
 
 func CreateToken(card *tokens.Card) (*tokens.Response, error) {
 	var config, err = getConfig()
+	if err != nil {
+		return nil, common.StringError(err)
+	}
 	client := tokens.NewClient(*config)
 
 	res, err := client.Request(&tokens.Request{Card: card})
-	return res, err
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	return res, nil
 }
 
 func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string, error) {
 	var config, err = getConfig()
+	if err != nil {
+		return "", common.StringError(err)
+	}
 	client := payments.NewClient(*config)
 
 	// Generate a payment token ID in case we don't yet have one in the front end
 	// For testing purposes only
 	card := tokens.Card{
-		Type:        common.Card,
+		Type:        checkoutCommon.Card,
 		Number:      "4242424242424242",
 		ExpiryMonth: 2,
 		ExpiryYear:  2024,
@@ -49,7 +59,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	}
 	paymentToken, err := CreateToken(&card)
 	if err != nil {
-		return "", err
+		return "", common.StringError(err)
 	}
 	paymentTokenID := paymentToken.Created.Token
 	if tokenId != "" {
@@ -61,7 +71,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	capture := false
 	request := &payments.Request{
 		Source: payments.TokenSource{
-			Type:  common.Token.String(),
+			Type:  checkoutCommon.Token.String(),
 			Token: paymentTokenID,
 		},
 		Amount:   usd,
@@ -80,14 +90,17 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	res, err := client.Request(request, &params)
 
 	if err != nil {
-		return "", err
+		return "", common.StringError(err)
 	}
 	// TODO: Create entry for authorization in our DB associated with userWallet
-	return res.Processed.ID, err
+	return res.Processed.ID, nil
 }
 
 func CaptureCharge(amount float64, userWallet string, authorizationID string) (*payments.CapturesResponse, error) {
 	var config, err = getConfig()
+	if err != nil {
+		return nil, common.StringError(err)
+	}
 	client := payments.NewClient(*config)
 
 	usd := convertAmount(amount)
@@ -100,6 +113,9 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (*
 		Amount: usd,
 	}
 	res, err := client.Captures(authorizationID, &request, &params)
+	if err != nil {
+		return nil, common.StringError(err)
+	}
 	// TODO: Create entry for capture in our DB associated with userWallet
-	return res, err
+	return res, nil
 }

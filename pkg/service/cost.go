@@ -64,7 +64,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query cost of native token in USD
 	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
 	if err != nil {
-		return model.Quote{}, err
+		return model.Quote{}, common.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
@@ -77,7 +77,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query owlracle for gas
 	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
-		return model.Quote{}, err
+		return model.Quote{}, common.StringError(err)
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
@@ -90,7 +90,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	costToken := common.WeiToEther(&p.CostToken)
 	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
 	if err != nil {
-		return model.Quote{}, err
+		return model.Quote{}, common.StringError(err)
 	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
@@ -119,7 +119,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	// DB under construction
 	res, err := c.coingeckoUSD(coin, 1)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	return res * quantity, nil
 }
@@ -128,7 +128,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 	// DB under construction
 	res, err := c.owlracle(network)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	return res, nil
 }
@@ -138,7 +138,7 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	var res map[string]interface{}
 	err := common.GetJson(requestURL, &res)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	prices, found := res[coin]
 	if found {
@@ -148,6 +148,9 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 			return usd.(float64), nil
 		}
 	}
+	// return 0, common.StringError(errors.New("Price not found for " + coin))
+	// fmt.Printf("\n\nPRICE LOOKUP %+v", coin)
+	// TODO: this is getting hit somewhere, figure out why
 	return 0, nil
 }
 
@@ -160,7 +163,7 @@ func (c cost) owlracle(network string) (float64, error) {
 	var res OwlracleJSON
 	err := common.GetJson(requestURL, &res)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	if len(res.Speeds) > 0 {
 		return res.Speeds[0].MaxFeePerGas, nil

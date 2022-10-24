@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 )
@@ -59,7 +60,7 @@ func NewRedisStore() RedisStore {
 func (r redisStore) Delete(id string) error {
 	_, err := r.client.Del(r.client.Context(), id).Result()
 	if err != nil {
-		return errors.Wrap(err, "unable to delete")
+		return common.StringError(errors.Wrap(err, "unable to delete"))
 	}
 	return nil
 }
@@ -72,7 +73,7 @@ func (r redisStore) Get(id string) ([]byte, error) {
 func (r redisStore) Set(id string, value any, expire time.Duration) error {
 	ctx := context.Background()
 	if err := r.client.Set(ctx, id, value, expire).Err(); err != nil {
-		return errors.Wrap(err, "failed to save value to redis")
+		return common.StringError(errors.Wrap(err, "failed to save value to redis"))
 	}
 	return nil
 }
@@ -80,7 +81,7 @@ func (r redisStore) Set(id string, value any, expire time.Duration) error {
 func (r redisStore) HSet(key string, data map[string]interface{}) error {
 	ctx := context.Background()
 	if err := r.client.HSet(ctx, key, data).Err(); err != nil {
-		return errors.Wrap(err, "failed to save array to redis")
+		return common.StringError(errors.Wrap(err, "failed to save array to redis"))
 	}
 
 	return nil
@@ -89,7 +90,10 @@ func (r redisStore) HSet(key string, data map[string]interface{}) error {
 func (r redisStore) HGetAll(key string) (map[string]string, error) {
 	ctx := context.Background()
 	data, err := r.client.HGetAll(ctx, key).Result()
-	return data, err
+	if err != nil {
+		return data, common.StringError(err)
+	}
+	return data, nil
 }
 
 func (r redisStore) HMLen(key string) int64 {

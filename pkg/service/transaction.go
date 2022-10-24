@@ -47,17 +47,17 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	// chain, err := model.ChainInfo(uint64(d.ChainID))
 	chain, err := ChainInfo(uint64(d.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	executor := NewExecutor()
 	err = executor.Initialize(chain.RPC)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	estimateUSD, err := testTransaction(executor, d, chain, true)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	res.Quote = estimateUSD
 	executor.Close()
@@ -65,7 +65,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	// Sign entire payload
 	signature, err := common.EVMSign(res)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	res.Signature = signature
 
@@ -78,78 +78,78 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	// Pull chain info needed for execution from repository
 	chain, err := ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Create new TX in repository, populate it with known info
 	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID})
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	updateDB := &model.TransactionUpdates{}
 	processingFeeAsset, err := t.populateInitialTxModelData(e, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		fmt.Printf("\nERROR = %+v", err)
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Dial the RPC and update model status
 	executor := NewExecutor()
 	err = executor.Initialize(chain.RPC)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	status := "RPC Dialed"
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Test the TX and update model status
 	estimateUSD, err := testTransaction(executor, e.TransactionRequest, chain, false)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	status = "Tested and Estimated"
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Verify the Quote and update model status
 	_, err = verifyQuote(e, estimateUSD)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	status = "Quote Verified"
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Authorize quoted cost on end-user CC and update model status
 	authorizationID, err := t.authCard(e.UserAddress, e.CardToken, e.TotalUSD, processingFeeAsset, db.ID)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	status = "Card Authorized"
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
 	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	status = "Transaction Initiated"
 	updateDB.Status = &status
@@ -158,7 +158,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	updateDB.TransactionAmount = &txAmount
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	// this Executor will not exist in scope of postProcess
@@ -188,7 +188,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	// TODO populate db.PlatformID with UUID of customer
 	bytes, err := json.Marshal(e.CxParams)
 	if err != nil {
-		return model.Asset{}, err
+		return model.Asset{}, common.StringError(err)
 	}
 	contractParams := types.JSONText(bytes)
 	m.ContractParams = &contractParams
@@ -197,7 +197,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 
 	asset, err := t.repos.Asset.GetName("USD")
 	if err != nil {
-		return model.Asset{}, err
+		return model.Asset{}, common.StringError(err)
 	}
 	m.ProcessingFeeAsset = &asset.ID // Checkout processing asset
 	return asset, nil
@@ -217,12 +217,12 @@ func testTransaction(executor Executor, t model.TransactionRequest, chain Chain,
 	// Estimate value and gas of TX request
 	estimateEVM, err := executor.Estimate(call)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 
 	chainID, err := executor.GetChainID()
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	cost := NewCost(repository.NewCost(nil))
 	estimationParams := EstimationParams{
@@ -236,7 +236,7 @@ func testTransaction(executor Executor, t model.TransactionRequest, chain Chain,
 	// Estimate Cost in USD to execute TX request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)
 	if err != nil {
-		return res, err
+		return res, common.StringError(err)
 	}
 	res = estimateUSD
 	return res, nil
@@ -249,16 +249,16 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	dataToValidate.CardToken = ""
 	valid, err := common.ValidateEVMSignature(e.Signature, dataToValidate)
 	if err != nil {
-		return false, err
+		return false, common.StringError(err)
 	}
 	if !valid {
-		return false, errors.New("verifyQuote: invalid signature")
+		return false, common.StringError(errors.New("verifyQuote: invalid signature"))
 	}
 	if newEstimate.Timestamp-e.Timestamp > 20000 {
-		return false, errors.New("verifyQuote: quote expired")
+		return false, common.StringError(errors.New("verifyQuote: quote expired"))
 	}
 	if newEstimate.TotalUSD > e.TotalUSD {
-		return false, errors.New("verifyQuote: price too volatile")
+		return false, common.StringError(errors.New("verifyQuote: price too volatile"))
 	}
 	return true, nil
 }
@@ -267,7 +267,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	// auth their card
 	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
 	if err != nil {
-		return "", err
+		return "", common.StringError(err)
 	}
 
 	// Create Origin TX leg
@@ -282,14 +282,14 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	}
 	origin, err = t.repos.TxLeg.Create(origin)
 	if err != nil {
-		return auth, err
+		return auth, common.StringError(err)
 	}
 	txLeg := model.TransactionUpdates{OriginTXLegID: &origin.ID}
 	err = t.repos.Transaction.Update(dbID, txLeg)
 	if err != nil {
-		return auth, err
+		return auth, common.StringError(err)
 	}
-	return auth, err
+	return auth, nil
 }
 
 func (t transaction) initiateTransaction(executor Executor, e model.ExecutionRequest, chargeAsset model.Asset, txUUID string) (string, *big.Int, error) {
@@ -303,7 +303,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 	}
 	txID, value, err := executor.Initiate(call)
 	if err != nil {
-		return "", nil, err
+		return "", nil, common.StringError(err)
 	}
 
 	// Create Send TX leg
@@ -320,12 +320,12 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 	}
 	send, err = t.repos.TxLeg.Create(send)
 	if err != nil {
-		return txID, value, err
+		return txID, value, common.StringError(err)
 	}
 	txLeg := model.TransactionUpdates{ResponseTXLegID: &send.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
-		return txID, value, err
+		return txID, value, common.StringError(err)
 	}
 
 	return txID, value, nil
@@ -334,7 +334,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 func confirmTX(executor Executor, txID string) (uint64, error) {
 	trueGas, err := executor.TxWait(txID)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	return trueGas, nil
 }
@@ -342,7 +342,7 @@ func confirmTX(executor Executor, txID string) (uint64, error) {
 func (t transaction) chargeCard(userWallet string, authorizationID string, usd float64, chargeAsset model.Asset, txUUID string) error {
 	_, err := CaptureCharge(usd, userWallet, authorizationID)
 	if err != nil {
-		return err
+		return common.StringError(err)
 	}
 
 	// Create Receipt TX leg
@@ -357,12 +357,12 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 	}
 	receipt, err = t.repos.TxLeg.Create(receipt)
 	if err != nil {
-		return err
+		return common.StringError(err)
 	}
 	txLeg := model.TransactionUpdates{ReceiptTXLegID: &receipt.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
-		return err
+		return common.StringError(err)
 	}
 
 	return nil
@@ -374,14 +374,14 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 	trueEth := common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(chain.CoingeckoName, trueEth)
 	if err != nil {
-		return 0, err
+		return 0, common.StringError(err)
 	}
 	profit := quotedTotal - trueUSD
 
 	// Create Receive TX leg
 	asset, err := t.repos.Asset.GetName("ETH")
 	if err != nil {
-		return profit, err
+		return profit, common.StringError(err)
 	}
 	wei := floatToFixedString(trueEth, int(asset.Decimals))
 	usd := floatToFixedString(quotedTotal, 6)
@@ -395,12 +395,12 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 	}
 	send, err = t.repos.TxLeg.Create(send)
 	if err != nil {
-		return profit, err
+		return profit, common.StringError(err)
 	}
 	txLeg := model.TransactionUpdates{DestinationTXLegID: &send.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
-		return profit, err
+		return profit, common.StringError(err)
 	}
 
 	return profit, nil

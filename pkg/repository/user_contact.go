@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -30,11 +31,14 @@ func (u userContact[T]) Create(insert model.Contact) (model.Contact, error) {
 		INSERT INTO contact (user_id, data, type, status) 
 		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
+		if err != nil {
+			return m, common.StringError(err)
+		}
 	}
 	defer rows.Close()
-	return m, err
+	return m, nil
 }

@@ -59,12 +59,12 @@ func (e *executor) Initialize(RPC string) error {
 	var err error
 	e.client, err = w3.Dial(RPC)
 	if err != nil {
-		return err
+		return stringCommon.StringError(err)
 	}
 	// Do it again for our low-level client
 	e.geth, err = ethclient.Dial(RPC)
 	if err != nil {
-		return err
+		return stringCommon.StringError(err)
 	}
 	return nil
 }
@@ -72,7 +72,7 @@ func (e *executor) Initialize(RPC string) error {
 func (e *executor) Close() error {
 	err := e.client.Close()
 	if err != nil {
-		return err
+		return stringCommon.StringError(err)
 	}
 	e.geth.Close()
 	return nil
@@ -82,7 +82,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get private key
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
-		return CallEstimate{}, err
+		return CallEstimate{}, stringCommon.StringError(err)
 	}
 	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
@@ -90,7 +90,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return CallEstimate{}, errors.New("Estimate: Error casting public key to ECDSA")
+		return CallEstimate{}, stringCommon.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
@@ -98,14 +98,14 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return CallEstimate{}, err
+		return CallEstimate{}, stringCommon.StringError(err)
 	}
 
 	// Get sender nonce
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
 	if err != nil {
-		return CallEstimate{}, err
+		return CallEstimate{}, stringCommon.StringError(err)
 	}
 
 	// Get dynamic fee tx gas params
@@ -115,13 +115,13 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
-		return CallEstimate{}, err
+		return CallEstimate{}, stringCommon.StringError(err)
 	}
 
 	// Encode function parameters
 	data, err := stringCommon.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
-		return CallEstimate{}, err
+		return CallEstimate{}, stringCommon.StringError(err)
 	}
 
 	// Generate blockchain message
@@ -148,7 +148,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get private key
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
@@ -156,7 +156,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return "", nil, errors.New("Estimate: Error casting public key to ECDSA")
+		return "", nil, stringCommon.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
@@ -167,14 +167,14 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 
 	// Get sender nonce
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
 	if err != nil {
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 
 	// Get dynamic fee tx gas params
@@ -184,13 +184,13 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 
 	// Encode function parameters
 	data, err := stringCommon.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 
 	// Type conversion for chainID
@@ -218,7 +218,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	err = e.client.Call(eth.SendTx(tx).Returns(&hash))
 	if err != nil {
 		// Execution failed!
-		return "", nil, err
+		return "", nil, stringCommon.StringError(err)
 	}
 	return hash.String(), value, nil
 }
@@ -230,7 +230,7 @@ func (e executor) TxWait(txID string) (uint64, error) {
 		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
 		// TransactionReceipt returns error "not found" while tx is pending
 		if err != nil && err.Error() != "not found" {
-			return 0, err
+			return 0, stringCommon.StringError(err)
 		}
 		if pendingReceipt != nil {
 			receipt = *pendingReceipt
@@ -245,7 +245,7 @@ func (e executor) GetChainID() (uint64, error) {
 	var chainId64 uint64
 	err := e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return 0, err
+		return 0, stringCommon.StringError(err)
 	}
 	return chainId64, nil
 }

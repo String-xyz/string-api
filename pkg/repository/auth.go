@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
@@ -46,7 +47,7 @@ func NewAuth(redis store.RedisStore, store *sqlx.DB) AuthStrategy {
 func (a auth) Create(authType AuthType, m model.AuthStrategy) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(m.Data), 8)
 	if err != nil {
-		return err
+		return common.StringError(err)
 	}
 	strat := &m
 	strat.Data = string(hash)
@@ -87,18 +88,21 @@ func (a auth) CreateJWTRefresh(key string, val string) error {
 func (a auth) Get(key string) (model.AuthStrategy, error) {
 	m, err := a.redis.Get(key)
 	if err != nil {
-		return model.AuthStrategy{}, err
+		return model.AuthStrategy{}, common.StringError(err)
 	}
 	authStrat := model.AuthStrategy{}
 	err = json.Unmarshal(m, &authStrat)
+	if err != nil {
+		return model.AuthStrategy{}, common.StringError(err)
+	}
 
-	return authStrat, err
+	return authStrat, nil
 }
 
 func (a auth) GetKeyString(key string) (string, error) {
 	m, err := a.redis.Get(key)
 	if err != nil {
-		return "", err
+		return "", common.StringError(err)
 	}
 	return string(m), nil
 }

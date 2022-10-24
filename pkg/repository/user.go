@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,12 +29,15 @@ func (u user[T]) Create(insert model.User) (model.User, error) {
 		INSERT INTO string_user (first_name, last_name, type, status) 
 		VALUES(:first_name,:last_name, :type, :status) 	RETURNING *`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
+		if err != nil {
+			return m, common.StringError(err)
+		}
 	}
 
 	defer rows.Close()
-	return m, err
+	return m, nil
 }

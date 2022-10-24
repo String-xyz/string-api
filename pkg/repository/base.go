@@ -83,7 +83,10 @@ func (b *base[T]) Commit() error {
 	t := b.store.(*sqlx.Tx)
 	err := t.Commit()
 	b.Reset()
-	return err
+	if err != nil {
+		common.StringError(err)
+	}
+	return nil
 }
 
 func (b *base[T]) SetTx(t Queryable) {
@@ -112,18 +115,18 @@ func (b base[T]) List(limit int, offset int) (list []T, err error) {
 func (b base[T]) GetID(ID string) (m T, err error) {
 	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND 'deactivated_at' IS NOT NULL", b.table), ID)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, common.StringError(ErrNotFound)
 	}
-	return m, err
+	return m, nil
 }
 
 // Returns the first match of the user's ID
 func (b base[T]) GetUserID(userID string) (m T, err error) {
 	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL LIMIT 1", b.table), userID)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, common.StringError(ErrNotFound)
 	}
-	return m, err
+	return m, nil
 }
 
 func (b base[T]) ListUserID(userID string, limit int, offset int) ([]T, error) {
@@ -135,17 +138,23 @@ func (b base[T]) ListUserID(userID string, limit int, offset int) ([]T, error) {
 	if err == sql.ErrNoRows {
 		return list, nil
 	}
-	return list, err
+	if err != nil {
+		return list, common.StringError(err)
+	}
+	return list, nil
 }
 
 func (b base[T]) Update(ID string, updates any) error {
 	names, keyToUpdate := common.KeysAndValues(updates)
 	if len(names) == 0 {
-		return errors.New("no fields to update")
+		return common.StringError(errors.New("no fields to update"))
 	}
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s'", b.table, strings.Join(names, ", "), ID)
 	_, err := b.store.NamedExec(query, keyToUpdate)
-	return err
+	if err != nil {
+		return common.StringError(err)
+	}
+	return nil
 }
 
 func (b base[T]) Select(model interface{}, query string, params ...interface{}) error {

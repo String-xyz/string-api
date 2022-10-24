@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/String-xyz/string-api/pkg/internal/common"
 )
 
 // type Unit21Data interface {
@@ -32,7 +34,7 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
 		log.Printf("Could not encode %s to bytes: %s", datatype, err)
-		return
+		return nil, common.StringError(err)
 	}
 
 	bodyReader := bytes.NewReader(reqBodyBytes)
@@ -40,7 +42,7 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
 	if err != nil {
 		log.Printf("Could not create request for %s: %s", datatype, err)
-		return
+		return nil, common.StringError(err)
 	}
 
 	req.Header.Add("accept", "application/json")
@@ -54,7 +56,7 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 		log.Printf("Request failed to create %s: %s", datatype, err)
 		//handle 409 on update that is not allowed
 		//handle 423, 500, 503 for retries
-		return
+		return nil, common.StringError(err)
 	}
 
 	defer res.Body.Close()
@@ -62,12 +64,12 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	body, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Printf("Error extracting body from %s create request: %s", datatype, err)
-		return
+		return nil, common.StringError(err)
 	}
 
 	log.Printf("String of body from response: %s", string(body))
 
-	return
+	return body, nil
 }
 
 func update(datatype string, id string, updates any) (body []byte, err error) {

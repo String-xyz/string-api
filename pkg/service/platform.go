@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	stringCommon "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
@@ -33,14 +34,14 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 
 	plat, err := a.platRepo.Create(m)
 	if err != nil {
-		return model.Platform{}, err
+		return model.Platform{}, stringCommon.StringError(err)
 	}
 
 	err = a.authRepo.CreateAPIKey(plat.ID, c.Authentication, hashed)
 	pt := &plat
 	pt.ApiKey = uuiKey
 	if err != nil {
-		return *pt, err
+		return *pt, stringCommon.StringError(err)
 	}
 
 	return plat, nil

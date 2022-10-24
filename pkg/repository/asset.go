@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -30,7 +31,7 @@ func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
 		INSERT INTO asset (name) 
 		VALUES(:name) 	RETURNING *`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
@@ -44,7 +45,7 @@ func (a asset[T]) GetName(name string) (model.Asset, error) {
 	m := model.Asset{}
 	err := a.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE name = $1", a.table), name)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, common.StringError(ErrNotFound)
 	}
-	return m, err
+	return m, nil
 }

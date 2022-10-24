@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -26,12 +27,15 @@ func (d device[T]) Create(insert model.Device) (model.Device, error) {
 		INSERT INTO device (name) 
 		VALUES(:name) 	RETURNING *`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
+		if err != nil {
+			return m, common.StringError(err)
+		}
 	}
 
 	defer rows.Close()
-	return m, err
+	return m, nil
 }
