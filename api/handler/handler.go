@@ -50,7 +50,7 @@ func (t transaction) Quote(c echo.Context) error {
 	// userId := c.Get("userId").(string)
 	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil {
-		lg.Err(err).Msg("transaction qoute")
+		lg.Err(err).Msg("transaction quote")
 		return c.String(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, res)

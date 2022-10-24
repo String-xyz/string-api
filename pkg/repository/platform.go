@@ -34,8 +34,8 @@ func NewPlatform(db *sqlx.DB) Platform {
 func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	plat := model.Platform{}
 	rows, err := p.store.NamedQuery(`
-		INSERT INTO platform (type, authentication, api_key) 
-		VALUES(:type, :authentication, :api_key) RETURNING *`, m)
+		INSERT INTO platform (type, authentication, api_key, status) 
+		VALUES(:type, :authentication, :api_key, :status) RETURNING *`, m)
 
 	if err != nil {
 		return plat, err
