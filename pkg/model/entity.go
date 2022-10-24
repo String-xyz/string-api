@@ -24,14 +24,15 @@ type User struct {
 
 // See PLATFORM in Migrations 0001
 type Platform struct {
-	ID             string            `json:"id" db:"id"`
-	CreatedAt      time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time        `json:"deactivatedAt" db:"deactivated_at"`
-	Type           string            `json:"type" db:"type"`
-	ApiKey         string            `json:"apiKey" db:"api_key"`
-	Authentication AuthType          `json:"authentication" db:"authentication"`
-	Tags           map[string]string `json:"Tags" db:"tags"`
+	ID             string     `json:"id" db:"id"`
+	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt  *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type           string     `json:"type" db:"type"`
+	Status         string     `json:"status" db:"status"`
+	Name           string     `json:"name" db:"name"`
+	ApiKey         string     `json:"apiKey" db:"api_key"`
+	Authentication AuthType   `json:"authentication" db:"authentication"`
 }
 
 // See NETWORK in Migrations 0001

@@ -30,6 +30,7 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 		Type:           c.Type,
 		Authentication: c.Authentication,
 		ApiKey:         hashed,
+		Status:         "initialized",
 	}
 
 	plat, err := a.platRepo.Create(m)
