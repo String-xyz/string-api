@@ -51,7 +51,7 @@ CREATE TABLE platform (
   status TEXT NOT NULL, -- enum: to be defined at struct level in Go
   name TEXT DEFAULT '',
   api_key TEXT DEFAULT '',
-  authentication TEXT DEFAULT '', --enum [email, phone, wallet]
+  authentication TEXT DEFAULT '' --enum [email, phone, wallet]
 );
 CREATE OR REPLACE TRIGGER update_platform_updated_at
     BEFORE UPDATE
