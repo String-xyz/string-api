@@ -26,7 +26,7 @@ type entity struct {
 // 	return &entity{userRepo: user, deviceRepo: device, contactRepo: contact, instrumentRepo: instrument}
 // }
 
-func newEntity(user repository.User, contact repository.UserContact) Entity {
+func NewEntity(user repository.User, contact repository.UserContact) Entity {
 	return &entity{userRepo: user, contactRepo: contact}
 }
 
@@ -69,7 +69,7 @@ func (e entity) Update(id string, updates any) (err error) {
 
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
-		return "", common.StringError(err)
+		return common.StringError(err)
 	}
 
 	return nil
