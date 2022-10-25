@@ -46,7 +46,7 @@ func TestCreateEntity(t *testing.T) {
 	// instrumentRepo := repository.NewInstrument(sqlxDB)
 
 	// u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)
-	u21Entity := newEntity(userRepo, contactRepo)
+	u21Entity := NewEntity(userRepo, contactRepo)
 
 	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)
