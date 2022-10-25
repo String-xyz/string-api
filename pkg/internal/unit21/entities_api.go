@@ -55,7 +55,11 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	contacts, err := e.contactRepo.ListUserID(user.ID, 100, 0)
 	if err != nil {
 		log.Printf("Failed go get user contacts: %s", err)
+<<<<<<< HEAD
 		return "", common.StringError(err)
+=======
+		return
+>>>>>>> 204eceb (AddInstruments working as expected, CreateEntity test requires a mock.ExpectQuery it seems)
 	}
 
 	// Convert contact structs to an entity communication struct
@@ -72,7 +76,11 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	body, err := create("entities", MapUserToEntity(user, communication))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
+<<<<<<< HEAD
 		return "", common.StringError(err)
+=======
+		return
+>>>>>>> 204eceb (AddInstruments working as expected, CreateEntity test requires a mock.ExpectQuery it seems)
 	}
 
 	var entity *entityResponse
@@ -97,6 +105,66 @@ func (e entity) Update(id string, updates any) (err error) {
 	}
 
 	return nil
+}
+
+// https://docs.unit21.ai/reference/add_instruments
+func (e entity) AddInstruments(entityId string, instrumentIds []string) (err error) {
+	apiKey := os.Getenv("UNIT21_API_KEY")
+	orgName := os.Getenv("UNIT21_ORG_NAME")
+	url := os.Getenv("UNIT21_URL") + orgName + "/entities/" + entityId + "/add-instruments"
+
+	instruments := make(map[string][]string)
+	instruments["instrument_ids"] = instrumentIds
+	reqBodyBytes, err := json.Marshal(instruments)
+	if err != nil {
+		log.Printf("Could not encode instrumentIds to bytes: %s", err)
+		return
+	}
+
+	bodyReader := bytes.NewReader(reqBodyBytes)
+
+	req, err := http.NewRequest(http.MethodPut, url, bodyReader)
+	if err != nil {
+		log.Printf("Could not create request for instrumentIds: %s", err)
+		return
+	}
+
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("u21-key", apiKey)
+
+	client := http.Client{Timeout: 10 * time.Second}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Printf("Request failed to create instrumentIds: %s", err)
+		//handle 409 on update that is not allowed
+		//handle 423, 500, 503 for retries
+		return
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("Error extracting return body from instrumentIds add request: %s", err)
+		return
+	}
+	if res.StatusCode != 200 {
+		log.Printf("Request failed to create instrumentIds: %s", fmt.Sprint(res.StatusCode))
+		err = fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body))
+		return
+	}
+
+	log.Printf("String of body from response: %s", string(body))
+
+	// err = json.Unmarshal(body) // we just need to check if 200
+	// if err != nil {
+	// 	log.Printf("Reading body failed: %s", err)
+	// 	return
+	// }
+
+	return
 }
 
 // https://docs.unit21.ai/reference/add_instruments
