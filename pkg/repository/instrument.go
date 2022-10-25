@@ -9,7 +9,7 @@ import (
 type Instrument interface {
 	Transactable
 	Create(model.Instrument) (model.Instrument, error)
-	GetID(id string) (model.Instrument, error)
+	GetById(id string) (model.Instrument, error)
 	Update(ID string, updates any) error
 }
 

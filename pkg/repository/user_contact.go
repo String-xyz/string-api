@@ -10,9 +10,9 @@ type UserContact interface {
 	Transactable
 	Readable
 	Create(model.Contact) (model.Contact, error)
-	GetID(ID string) (model.Contact, error)
-	GetUserID(userID string) (model.Contact, error)
-	ListUserID(userID string, imit int, offset int) ([]model.Contact, error)
+	GetById(ID string) (model.Contact, error)
+	GetByUserId(userID string) (model.Contact, error)
+	ListByUserId(userID string, imit int, offset int) ([]model.Contact, error)
 	List(limit int, offset int) ([]model.Contact, error)
 	Update(ID string, updates any) error
 }

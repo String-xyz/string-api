@@ -63,17 +63,17 @@ type Asset struct {
 
 // See DEVICE in Migrations 0002
 type Device struct {
-	ID            string         `json:"id" db:"id"`
-	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
-	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
-	ValidatedAt   time.Time      `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt time.Time      `json:"deactivatedAt" db:"deactivated_at"`
-	Type          string         `json:"type" db:"type"`
-	Description   string         `json:"description" db:"description"`
-	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
-	IpAddresses   types.JSONText `json:"ipAddresses" db:"ip_addresses"`
-	UserID        string         `json:"userId" db:"user_id"`
+	ID            string    `json:"id" db:"id"`
+	CreatedAt     time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time `json:"updatedAt" db:"updated_at"`
+	LastUsedAt    time.Time `json:"lastUsedAt" db:"last_used_at"`
+	ValidatedAt   time.Time `json:"validatedAt" db:"validated_at"`
+	DeactivatedAt time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	Type          string    `json:"type" db:"type"`
+	Description   string    `json:"description" db:"description"`
+	Fingerprint   string    `json:"fingerprint" db:"fingerprint"`
+	IpAddresses   []string  `json:"ipAddresses" db:"ip_addresses"`
+	UserID        string    `json:"userId" db:"user_id"`
 }
 
 // See CONTACT in Migrations 0002

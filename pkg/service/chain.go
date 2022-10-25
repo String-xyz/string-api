@@ -24,7 +24,7 @@ func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo reposit
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}
-	asset, err := assetRepo.GetID(network.GasTokenID)
+	asset, err := assetRepo.GetById(network.GasTokenID)
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}

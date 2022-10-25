@@ -39,7 +39,7 @@ import (
 // 	return model.Asset{}, nil
 // }
 
-// func (Asset) GetID(id string) (model.Asset, error) {
+// func (Asset) GetById(id string) (model.Asset, error) {
 // 	if id == "1" {
 // 		return avax, nil
 // 	}

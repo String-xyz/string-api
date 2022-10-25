@@ -112,7 +112,7 @@ func (b base[T]) List(limit int, offset int) (list []T, err error) {
 	return list, err
 }
 
-func (b base[T]) GetID(ID string) (m T, err error) {
+func (b base[T]) GetById(ID string) (m T, err error) {
 	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND 'deactivated_at' IS NOT NULL", b.table), ID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
@@ -121,7 +121,7 @@ func (b base[T]) GetID(ID string) (m T, err error) {
 }
 
 // Returns the first match of the user's ID
-func (b base[T]) GetUserID(userID string) (m T, err error) {
+func (b base[T]) GetByUserId(userID string) (m T, err error) {
 	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL LIMIT 1", b.table), userID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
@@ -129,7 +129,7 @@ func (b base[T]) GetUserID(userID string) (m T, err error) {
 	return m, nil
 }
 
-func (b base[T]) ListUserID(userID string, limit int, offset int) ([]T, error) {
+func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error) {
 	list := []T{}
 	if limit == 0 {
 		limit = 20

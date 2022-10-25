@@ -9,7 +9,7 @@ import (
 type TxLeg interface {
 	Transactable
 	Create(model.TxLeg) (model.TxLeg, error)
-	GetID(id string) (model.TxLeg, error)
+	GetById(id string) (model.TxLeg, error)
 	Update(ID string, updates any) error
 }
 
