@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -23,16 +24,16 @@ func NewTxLeg(db *sqlx.DB) TxLeg {
 func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 	m := model.TxLeg{}
 	rows, err := t.store.NamedQuery(`
-		INSERT INTO tx_leg (instrument_id) 
-		VALUES(:instrument_id) 	RETURNING *`, insert)
-
-	defer rows.Close()
-
+		INSERT INTO tx_leg (timestamp, amount, value, asset_id, user_id, instrument_id) 
+		VALUES(:timestamp, :amount, :value, :asset_id, :user_id, :instrument_id) 	RETURNING *`, insert)
 	if err != nil {
-		return m, err
+		return m, common.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
+		if err != nil {
+			return m, common.StringError(err)
+		}
 	}
 
 	return m, err

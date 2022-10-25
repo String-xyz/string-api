@@ -6,25 +6,26 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
-type UpdateTransaction struct {
+type TransactionUpdates struct {
 	Type               *string         `json:"type" db:"type"`
 	Status             *string         `json:"status" db:"status"`
-	Tags               *types.JSONText `json:"tags" db:"tags"`
+	Tags               *types.JSONText `json:"tags" db:"tags"` // TODO: Fix this alongside Unit21 integration
 	DeviceID           *string         `json:"deviceId" db:"device_id"`
 	IPAddress          *string         `json:"ipAddress" db:"ip_address"`
 	PlatformID         *string         `json:"platformId" db:"platform_id"`
 	TransactionHash    *string         `json:"transactionHash" db:"transaction_hash"`
 	NetworkID          *string         `json:"networkId" db:"network_id"`
-	NetworkFee         *uint64         `json:"networkFee" db:"network_fee"` // gas fee
-	Parameters         *types.JSONText `json:"parameters" db:"parameters"`
-	ContractABI        *string         `json:"contractABI" db:"contract_ABI"`
+	NetworkFee         *string         `json:"networkFee" db:"network_fee"`
+	ContractParams     *types.JSONText `json:"contractParameters" db:"contract_params"`
+	ContractFunc       *string         `json:"contractFunc" db:"contract_func"`
+	TransactionAmount  *string         `json:"transactionAmount" db:"transaction_amount"`
 	OriginTXLegID      *string         `json:"originTXLegId" db:"origin_tx_leg_id"`
 	ReceiptTXLegID     *string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
-	ResponeTXLegID     *string         `json:"responseTXLegId" db:"response_tx_leg_id"`
+	ResponseTXLegID    *string         `json:"responseTXLegId" db:"response_tx_leg_id"`
 	DestinationTXLegID *string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      *float64        `json:"processingFee" db:"processing_fee"`            // GAS IN NATIVE TOKEN
-	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"` // NATIVE TOKEN
-	StringFee          *uint64         `json:"stringFee" db:"string_fee"`
+	ProcessingFee      *string         `json:"processingFee" db:"processing_fee"`
+	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"`
+	StringFee          *string         `json:"stringFee" db:"string_fee"`
 }
 
 type UserRegister struct {

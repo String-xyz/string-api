@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
@@ -42,14 +43,20 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	// devices, err  := e.deviceRepo.ListUserID(user.ID, 100, 0)
 	// instruments, err  := e.instrumentRepo.ListUserID(user.ID, 100, 0)
 	_, err = e.contactRepo.ListUserID(user.ID, 100, 0)
+	if err != nil {
+		return "", common.StringError(err)
+	}
 
 	body, err := create("entities", MapUserToEntity(user))
+	if err != nil {
+		return "", common.StringError(err)
+	}
 
 	var entity *entityResponse
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
-		return
+		return "", common.StringError(err)
 	}
 
 	log.Printf("Unit21Id: %s", entity.Unit21Id)
@@ -62,8 +69,8 @@ func (e entity) Update(id string, updates any) (err error) {
 
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
-		return
+		return "", common.StringError(err)
 	}
 
-	return
+	return nil
 }

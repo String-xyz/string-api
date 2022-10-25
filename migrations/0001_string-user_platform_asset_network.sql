@@ -51,7 +51,7 @@ CREATE TABLE platform (
   status TEXT NOT NULL, -- enum: to be defined at struct level in Go
   name TEXT DEFAULT '',
   api_key TEXT DEFAULT '',
-  authentication TEXT DEFAULT '', --enum [email, phone, wallet]
+  authentication TEXT DEFAULT '' --enum [email, phone, wallet]
 );
 CREATE OR REPLACE TRIGGER update_platform_updated_at
     BEFORE UPDATE
@@ -88,7 +88,7 @@ CREATE TABLE asset ( -- We will write sql commands to add/update these in bulk.
   description TEXT DEFAULT '',
   decimals INT DEFAULT 0,
   is_crypto BOOLEAN NOT NULL,
-  network_id UUID REFERENCES network (id),
+  network_id UUID REFERENCES network (id) DEFAULT NULL,
   value_oracle TEXT DEFAULT '' -- the name of the asset in oracle (i.e. in coingecko).  
 );
 

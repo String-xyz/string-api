@@ -98,6 +98,8 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 		return JWT{}, err
 	}
 
+	// TODO: Now share this with Unit21!!!!!!!!!! EntityCreate(...)
+
 	return a.GenerateJWT(user)
 
 }

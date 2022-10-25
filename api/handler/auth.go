@@ -34,7 +34,7 @@ func (o auth) Register(c echo.Context) error {
 	jwt, err := o.service.Register(body)
 	if err != nil {
 		lg.Err(err).Msg("auth register")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "Register Service Failed")
 	}
 	return c.JSON(http.StatusCreated, jwt)
 }
@@ -65,7 +65,7 @@ func (o auth) LoginEmail(c echo.Context, body service.UserLoginEmail) error {
 	jwt, err := o.service.LoginEmail(body)
 	if err != nil {
 		o.logger.Err(err).Msg("auth loginEmail")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "Login Email Service Failed")
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
@@ -75,7 +75,7 @@ func (o auth) LoginPK(c echo.Context, body service.UserPKLogin) error {
 	jwt, err := o.service.LoginPK(body)
 	if err != nil {
 		lg.Err(err).Msg("auth loginPK")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "Login PK Service Failed")
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
@@ -93,7 +93,7 @@ func (o auth) NonceChallenge(c echo.Context) error {
 	nonce, err := o.service.Challenge(param.PublicAddress)
 	if err != nil {
 		o.logger.Err(err).Msg("auth challenge")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "Nonce Challenge Service Failed")
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"nonce": nonce})

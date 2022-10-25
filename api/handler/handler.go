@@ -31,10 +31,11 @@ func (t transaction) Transact(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
-	res, err := t.Service.Execute(body)
+	// userId := c.Get("userId").(string)
+	res, err := t.Service.Execute(body) // TODO: pass in userId and use it
 	if err != nil {
 		lg.Err(err).Msg("transaction execute")
-		return c.String(http.StatusOK, err.Error())
+		return c.String(http.StatusOK, "Execute Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -46,10 +47,11 @@ func (t transaction) Quote(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad request")
 	}
-	res, err := t.Service.Quote(body)
+	// userId := c.Get("userId").(string)
+	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil {
-		lg.Err(err).Msg("transaction qoute")
-		return c.String(http.StatusOK, err.Error())
+		lg.Err(err).Msg("transaction quote")
+		return c.String(http.StatusOK, "Quote Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
 }

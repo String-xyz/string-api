@@ -24,7 +24,7 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 	msg := accounts.TextHash([]byte(message))
 	recovered, err := crypto.SigToPub(msg, sig)
 	if err != nil {
-		return ethcomm.Address{}, err
+		return ethcomm.Address{}, StringError(err)
 	}
 	return crypto.PubkeyToAddress(*recovered), nil
 }

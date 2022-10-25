@@ -81,7 +81,7 @@ CREATE TABLE instrument (
   public_key TEXT DEFAULT '',
   last_4 TEXT DEFAULT '',
   user_id UUID REFERENCES string_user (id), -- instrument can be null in the circumstance that a user sends an asset to an unknown wallet
-  location_id UUID REFERENCES location (id)
+  location_id UUID REFERENCES location (id) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER update_instrument_updated_at
