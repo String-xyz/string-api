@@ -61,6 +61,12 @@ type Asset struct {
 	ValueOracle sql.NullString `json:"valueOracle" db:"value_oracle"`
 }
 
+// See USER_PLATFORM in Migrations 0002
+type UserPlatform struct {
+	UserID     string `json:"userId" db:"user_id"`
+	PlatformID string `json:"platformId" db:"platform_id"`
+}
+
 // See DEVICE in Migrations 0002
 type Device struct {
 	ID            string    `json:"id" db:"id"`
@@ -125,22 +131,14 @@ type Instrument struct {
 
 // See CONTACT_PLATFORM in Migrations 0003
 type ContactPlatform struct {
-	ID            string     `json:"id" db:"id"`
-	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	ContactID     string     `json:"contactId" db:"contact_id"`
-	PlatformID    string     `json:"platformId" db:"platform_id"`
+	ContactID  string `json:"contactId" db:"contact_id"`
+	PlatformID string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE_INSTRUMENT in Migrations 0003
 type DeviceInstrument struct {
-	ID            string     `json:"id" db:"id"`
-	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	DeviceID      string     `json:"deviceId" db:"device_id"`
-	InstrumentID  string     `json:"instrumentId" db:"instrument_id"`
+	DeviceID     string `json:"deviceId" db:"device_id"`
+	InstrumentID string `json:"instrumentId" db:"instrument_id"`
 }
 
 // See TX_LEG in Migrations 0003

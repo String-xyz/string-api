@@ -6,7 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type UserContact interface {
+type Contact interface {
 	Transactable
 	Readable
 	Create(model.Contact) (model.Contact, error)
@@ -17,15 +17,15 @@ type UserContact interface {
 	Update(ID string, updates any) error
 }
 
-type userContact[T any] struct {
+type contact[T any] struct {
 	base[T]
 }
 
-func NewUserContact(db *sqlx.DB) UserContact {
-	return &userContact[model.Contact]{base: base[model.Contact]{store: db, table: "contact"}}
+func NewContact(db *sqlx.DB) Contact {
+	return &contact[model.Contact]{base: base[model.Contact]{store: db, table: "contact"}}
 }
 
-func (u userContact[T]) Create(insert model.Contact) (model.Contact, error) {
+func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 	m := model.Contact{}
 	rows, err := u.store.NamedQuery(`
 		INSERT INTO contact (user_id, data, type, status) 

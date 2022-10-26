@@ -53,10 +53,10 @@ type Auth interface {
 type auth struct {
 	authRepo    repository.AuthStrategy
 	userRepo    repository.User
-	contactRepo repository.UserContact
+	contactRepo repository.Contact
 }
 
-func NewAuth(a repository.AuthStrategy, u repository.User, c repository.UserContact) Auth {
+func NewAuth(a repository.AuthStrategy, u repository.User, c repository.Contact) Auth {
 	return &auth{a, u, c}
 }
 

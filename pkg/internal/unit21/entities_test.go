@@ -46,7 +46,7 @@ func TestCreateEntity(t *testing.T) {
 	// Dependent on Device and Instrument Repos being created
 	userRepo := repository.NewUser(sqlxDB)
 	// deviceRepo := repository.NewDevice(sqlxDB)
-	contactRepo := repository.NewUserContact(sqlxDB)
+	contactRepo := repository.NewContact(sqlxDB)
 	// instrumentRepo := repository.NewInstrument(sqlxDB)
 
 	// u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)
@@ -83,7 +83,7 @@ func TestAddInstruments(t *testing.T) {
 	// Dependent on Device and Instrument Repos being created
 	userRepo := repository.NewUser(sqlxDB)
 	// deviceRepo := repository.NewDevice(sqlxDB)
-	contactRepo := repository.NewUserContact(sqlxDB)
+	contactRepo := repository.NewContact(sqlxDB)
 	// instrumentRepo := repository.NewInstrument(sqlxDB)
 
 	// u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)

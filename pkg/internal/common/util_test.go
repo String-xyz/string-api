@@ -16,7 +16,7 @@ func TestRecoverSignature(t *testing.T) {
 
 func TestKeysAndValues(t *testing.T) {
 	mType := "type"
-	m := model.UserContactUpdates{Type: &mType}
+	m := model.ContactUpdates{Type: &mType}
 	names, vals := KeysAndValues(m)
 	assert.Len(t, names, 1)
 	assert.Len(t, vals, 1)

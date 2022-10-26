@@ -24,16 +24,16 @@ type Entity interface {
 type entity struct {
 	userRepo    repository.User
 	deviceRepo  repository.Device
-	contactRepo repository.UserContact
+	contactRepo repository.Contact
 	// platformRepo repository.Platform
 }
 
 // With Device and Instrument
-// func newEntity(user repository.User, device repository.Device, contact repository.UserContact, instrument repository.Instrument) Entity {
+// func newEntity(user repository.User, device repository.Device, contact repository.Contact, instrument repository.Instrument) Entity {
 // 	return &entity{userRepo: user, deviceRepo: device, contactRepo: contact, instrumentRepo: instrument}
 // }
 
-func newEntity(user repository.User, device repository.Device, contact repository.UserContact) Entity {
+func newEntity(user repository.User, device repository.Device, contact repository.Contact) Entity {
 	return &entity{userRepo: user, deviceRepo: device, contactRepo: contact}
 }
 
@@ -181,7 +181,7 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	return
 }
 
-func getCommunications(userId string, contactRepo repository.UserContact) (communications communication, err error) {
+func getCommunications(userId string, contactRepo repository.Contact) (communications communication, err error) {
 	// Get user contacts
 	contacts, err := contactRepo.ListByUserId(userId, 100, 0)
 	if err != nil {

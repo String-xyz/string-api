@@ -11,14 +11,14 @@ import (
 )
 
 func TestGenerateJWT(t *testing.T) {
-	a := NewAuth(stubs.AuthStrategyRepo{}, repository.NewUser(mocks.MockedDB()), repository.NewUserContact(mocks.MockedDB()))
+	a := NewAuth(stubs.AuthStrategyRepo{}, repository.NewUser(mocks.MockedDB()), repository.NewContact(mocks.MockedDB()))
 	m := model.User{ID: "id"}
 	token, err := a.GenerateJWT(m)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token.Token)
 }
 func TestValidate(t *testing.T) {
-	a := NewAuth(stubs.AuthStrategyRepo{}, repository.NewUser(mocks.MockedDB()), repository.NewUserContact(mocks.MockedDB()))
+	a := NewAuth(stubs.AuthStrategyRepo{}, repository.NewUser(mocks.MockedDB()), repository.NewContact(mocks.MockedDB()))
 	m := model.User{ID: "id"}
 	token, err := a.GenerateJWT(m)
 	assert.NoError(t, err)

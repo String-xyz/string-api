@@ -15,11 +15,11 @@ type Platform interface {
 
 type platform struct {
 	platRepo    repository.Platform
-	contactRepo repository.UserContact
+	contactRepo repository.Contact
 	authRepo    repository.AuthStrategy
 }
 
-func NewPlatform(p repository.Platform, c repository.UserContact, a repository.AuthStrategy) Platform {
+func NewPlatform(p repository.Platform, c repository.Contact, a repository.AuthStrategy) Platform {
 	return &platform{p, c, a}
 }
 

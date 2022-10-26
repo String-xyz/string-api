@@ -56,7 +56,7 @@ type UserUpdates struct {
 	LastName      *string         `json:"lastName" db:"last_name"`
 }
 
-type UserContactUpdates struct {
+type ContactUpdates struct {
 	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
 	Type          *string    `json:"type" db:"type"`
 	Status        *string    `json:"status" db:"status"`

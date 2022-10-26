@@ -45,7 +45,7 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
 	a := repository.NewAuth(config.Redis, config.DB)
 	u := repository.NewUser(config.DB)
-	c := repository.NewUserContact(config.DB)
+	c := repository.NewContact(config.DB)
 	service := service.NewAuth(a, u, c)
 	handler := handler.NewAuth(service)
 	handler.RegisterRoutes(e.Group("/auth"))
@@ -55,7 +55,7 @@ func authRoute(config APIConfig, e *echo.Echo) service.Auth {
 func platformRoute(config APIConfig, e *echo.Echo) {
 	p := repository.NewPlatform(config.DB)
 	a := repository.NewAuth(config.Redis, config.DB)
-	c := repository.NewUserContact(config.DB)
+	c := repository.NewContact(config.DB)
 	service := service.NewPlatform(p, c, a)
 	handler := handler.NewPlatform(service)
 	handler.RegisterRoutes(e.Group("/platform"), middleware.BearerAuth())
