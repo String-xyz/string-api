@@ -55,7 +55,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 		return res, common.StringError(err)
 	}
 
-	estimateUSD, err := testTransaction(executor, d, chain, true)
+	estimateUSD, _, err := testTransaction(executor, d, chain, true)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -111,7 +111,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	}
 
 	// Test the TX and update model status
-	estimateUSD, err := testTransaction(executor, e.TransactionRequest, chain, false)
+	estimateUSD, estimateETH, err := testTransaction(executor, e.TransactionRequest, chain, false)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -132,6 +132,17 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, common.StringError(err)
+	}
+
+	// Get current balance of primary token
+	preBalance, err := executor.GetBalance()
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	if preBalance < estimateETH {
+		msg := fmt.Sprintf("STRING-API: %s balance is too low to execute %.2f transaction at %.2f", chain.OwlracleName, estimateETH, preBalance)
+		MessageStaff(msg)
+		return res, common.StringError(errors.New("hot wallet ETH balance too low"))
 	}
 
 	// Authorize quoted cost on end-user CC and update model status
@@ -174,6 +185,7 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 		QuotedTotal:        e.TotalUSD,
 		TxDBID:             db.ID,
 		processingFeeAsset: processingFeeAsset,
+		preBalance:         preBalance,
 	}
 	go t.postProcess(post)
 	return model.TransactionReceipt{TxID: txID}, nil
@@ -203,7 +215,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	return asset, nil
 }
 
-func testTransaction(executor Executor, t model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, error) {
+func testTransaction(executor Executor, t model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, float64, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -217,12 +229,18 @@ func testTransaction(executor Executor, t model.TransactionRequest, chain Chain,
 	// Estimate value and gas of TX request
 	estimateEVM, err := executor.Estimate(call)
 	if err != nil {
-		return res, common.StringError(err)
+		return res, 0, common.StringError(err)
 	}
+
+	// Calculate total eth estimate as float64
+	gas := new(big.Int)
+	gas.SetUint64(estimateEVM.Gas)
+	wei := gas.Add(&estimateEVM.Value, gas)
+	eth := common.WeiToEther(wei)
 
 	chainID, err := executor.GetChainID()
 	if err != nil {
-		return res, common.StringError(err)
+		return res, eth, common.StringError(err)
 	}
 	cost := NewCost(repository.NewCost(nil))
 	estimationParams := EstimationParams{
@@ -236,10 +254,10 @@ func testTransaction(executor Executor, t model.TransactionRequest, chain Chain,
 	// Estimate Cost in USD to execute TX request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)
 	if err != nil {
-		return res, common.StringError(err)
+		return res, eth, common.StringError(err)
 	}
 	res = estimateUSD
-	return res, nil
+	return res, eth, nil
 }
 
 func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error) {
@@ -416,6 +434,7 @@ type postProcessRequest struct {
 	QuotedTotal        float64
 	TxDBID             string
 	processingFeeAsset model.Asset
+	preBalance         float64
 }
 
 func (t transaction) postProcess(request postProcessRequest) {
@@ -444,6 +463,18 @@ func (t transaction) postProcess(request postProcessRequest) {
 	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
+	}
+
+	// Check and see if balance threshold was crossed
+	postBalance, err := executor.GetBalance()
+	if err != nil {
+		// TODO: handle error instead of returning it
+	}
+	// TODO: store threshold on a per-network basis in the repo
+	threshold := 10.0
+	if request.preBalance >= threshold && postBalance < threshold {
+		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", request.Chain.OwlracleName, threshold, postBalance)
+		MessageStaff(msg)
 	}
 
 	// compute profit, update db status and processing fees to db
