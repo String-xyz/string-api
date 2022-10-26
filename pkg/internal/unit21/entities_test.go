@@ -45,12 +45,12 @@ func TestCreateEntity(t *testing.T) {
 
 	// Dependent on Device and Instrument Repos being created
 	userRepo := repository.NewUser(sqlxDB)
-	// deviceRepo := repository.NewDevice(sqlxDB)
+	deviceRepo := repository.NewDevice(sqlxDB)
 	contactRepo := repository.NewContact(sqlxDB)
-	// instrumentRepo := repository.NewInstrument(sqlxDB)
+	instrumentRepo := repository.NewInstrument(sqlxDB)
 
 	// u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)
-	u21Entity := newEntity(userRepo, contactRepo)
+	u21Entity := newEntity(userRepo, deviceRepo, contactRepo, instrumentRepo)
 
 	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)

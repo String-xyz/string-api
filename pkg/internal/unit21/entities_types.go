@@ -49,9 +49,14 @@ type options struct {
 	UpsertOnConflict bool `json:"upsert_on_conflict"` //default true BUT should we change to false? don't need update endpoint if allowed
 }
 
-type entityResponse struct {
+type createResponse struct {
 	Ignored           bool   `json:"ignored,omitempty"`
 	EntityId          string `json:"entity_id"`
 	PreviouslyExisted bool   `json:"previously_existed"`
 	Unit21Id          string `json:"unit21_id"`
+}
+
+type updateResponse struct {
+	EntityId string `json:"entity_id"`
+	Unit21Id string `json:"unit21_id"`
 }

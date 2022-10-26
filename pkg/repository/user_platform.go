@@ -12,6 +12,7 @@ type UserPlatform interface {
 	Create(model.UserPlatform) (model.UserPlatform, error)
 	GetById(ID string) (model.UserPlatform, error)
 	List(limit int, offset int) ([]model.UserPlatform, error)
+	ListByUserId(userID string, imit int, offset int) ([]model.UserPlatform, error)
 	Update(ID string, updates any) error
 }
 
