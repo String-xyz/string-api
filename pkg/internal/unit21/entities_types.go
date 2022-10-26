@@ -4,8 +4,8 @@ type u21entity struct {
 	GeneralData       *general       `json:"general_data"`
 	UserData          *personal      `json:"user_data,omitempty"`
 	CommunicationData *communication `json:"communication_data,omitempty"`
-	DigitalData       *digitalInfo   `json:"digital_data,omitempty"`
-	CustomData        *custom        `json:"custom_data,omitempty"`
+	DigitalData       *digitalData   `json:"digital_data,omitempty"`
+	CustomData        *customData    `json:"custom_data,omitempty"`
 	WorkflowOptions   *options       `json:"options,omitempty"`
 }
 
@@ -33,12 +33,12 @@ type communication struct {
 	Phones []string `json:"phone_numbers,omitempty"` //E.164 format +12125551395 ( '[+][country code][area code][local phone number]' https://en.wikipedia.org/wiki/E.164
 }
 
-type digitalInfo struct {
+type digitalData struct {
 	IpAddresses        []string `json:"ip_addresses,omitempty"` //ipv4 or ipv6
 	ClientFingerprints []string `json:"client_fingerprints,omitempty"`
 }
 
-type custom struct {
+type customData struct {
 	//more can be added to this as needed
 	Platforms []string `json:"platforms,omitempty"` //where does this come from? do you want it called partnerName instead?
 }

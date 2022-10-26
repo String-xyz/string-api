@@ -2,6 +2,15 @@
 -- +goose Up
 
 -------------------------------------------------------------------------
+-- USER_PLATFORM --------------------------------------------------------
+CREATE TABLE user_platform (
+  user_id UUID REFERENCES string_user (id),
+  platform_id UUID REFERENCES platform (id)
+);
+
+CREATE UNIQUE INDEX user_platform_user_id_platform_id_idx ON user_platform(user_id, platform_id);
+
+-------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 CREATE TABLE device (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
@@ -112,3 +121,7 @@ DROP TABLE contact;
 -- DEVICE ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_device_updated_at ON device;
 DROP TABLE device;
+
+-------------------------------------------------------------------------
+-- CONTACT_PLATFORM -----------------------------------------------------
+DROP TABLE contact_platform;

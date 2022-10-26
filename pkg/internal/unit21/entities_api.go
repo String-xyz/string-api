@@ -17,7 +17,7 @@ import (
 
 type Entity interface {
 	Create(user model.User) (unit21Id string, err error)
-	Update(id string, updates any) (err error)
+	Update(user model.User) (err error)
 	AddInstruments(entityId string, instrumentId []string) (err error)
 }
 
@@ -62,7 +62,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	// 	return "", common.StringError(err)
 	// }
 
-	body, err := create("entities", mapUserToEntity(user, communications))
+	body, err := create("entities", mapUserToEntity(user, communications, digitalData))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		return "", common.StringError(err)
@@ -80,16 +80,45 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 }
 
 // https://docs.unit21.ai/reference/update_entity
-func (e entity) Update(id string, updates any) (err error) {
+func (e entity) Update(user model.User) (err error) {
 
-	_, err = update("entities", id, updates)
+	// ultimately may want a join here.
+	// devices, err  := e.deviceRepo.ListByUserId(user.ID, 100, 0)
+	// instruments, err  := e.instrumentRepo.ListByUserId(user.ID, 100, 0)
 
+	communications, err := getCommunications(user.ID, e.contactRepo)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
-		return common.StringError(err)
+		log.Printf("Failed to gather Unit21 entity communications: %s", err)
+		return "", common.StringError(err)
 	}
 
-	return nil
+	digitalData, err := getDigitalData(user.ID, e.deviceRepo)
+	if err != nil {
+		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+		return
+	}
+
+	// customData, err := getCustomData(user.ID, e.platformRepo)
+	// if err != nil {
+	// 	log.Printf("Failed to gather Unit21 entity customData: %s", err)
+	// 	return "", common.StringError(err)
+	// }
+
+	body, err := create("entities", mapUserToEntity(user, communications, digitalData))
+	if err != nil {
+		log.Printf("Unit21 Entity create failed: %s", err)
+		return "", common.StringError(err)
+	}
+
+	var entity *entityResponse
+	err = json.Unmarshal(body, &entity)
+	if err != nil {
+		log.Printf("Reading body failed: %s", err)
+		return "", common.StringError(err)
+	}
+
+	log.Printf("Unit21Id: %s", entity.Unit21Id)
+	return entity.Unit21Id, nil
 }
 
 // https://docs.unit21.ai/reference/add_instruments
@@ -153,7 +182,6 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 }
 
 func getCommunications(userId string, contactRepo repository.UserContact) (communications communication, err error) {
-
 	// Get user contacts
 	contacts, err := contactRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
@@ -174,7 +202,7 @@ func getCommunications(userId string, contactRepo repository.UserContact) (commu
 	return
 }
 
-func getDigitalData(userId string, deviceRepo repository.Device) (deviceData digitalInfo, err error) {
+func getDigitalData(userId string, deviceRepo repository.Device) (deviceData digitalData, err error) {
 	devices, err := deviceRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user devices: %s", err)
@@ -190,7 +218,7 @@ func getDigitalData(userId string, deviceRepo repository.Device) (deviceData dig
 	return
 }
 
-func mapUserToEntity(user model.User, communication communication) *u21entity {
+func mapUserToEntity(user model.User, communication communication, digitalData digitalData) *u21entity {
 	var userTagArr []string
 	if user.Tags != nil {
 		for key, value := range user.Tags {
@@ -212,11 +240,8 @@ func mapUserToEntity(user model.User, communication communication) *u21entity {
 			LastName:   user.LastName,
 		},
 		CommunicationData: &communication,
-		DigitalData: &digitalInfo{
-			IpAddresses:        nil, //data.ipAddresses,  //might need to be converted to []string
-			ClientFingerprints: nil, //data.fingerprints, //schema doesn't have a fingerprint, might need to be convered to []string
-		},
-		CustomData: nil, //&custom{
+		DigitalData:       &digitalData,
+		CustomData:        nil, //&custom{
 		// 	Platform: nil,//data.partnerName,
 		// },
 		// add WorkflowOptions if not default?
