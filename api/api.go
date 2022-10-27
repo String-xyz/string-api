@@ -29,10 +29,18 @@ func Start(config APIConfig) {
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
-	platformRoute(config, e)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 	verificationRoute(config, e)
+	e.Logger.Fatal(e.Start(":" + config.Port))
+}
+
+// Temp, will move to a more dedicated place
+func StartInternal(config APIConfig) {
+	e := echo.New()
+	baseMiddleware(config.Logger, e)
+	e.GET("/heartbeat", heartbeat)
+	platformRoute(config, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
