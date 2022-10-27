@@ -46,7 +46,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	digitalData, err := getDigitalData(user.ID, e.deviceRepo)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
-		return
+		return "", common.StringError(err)
 	}
 
 	customData, err := getCustomData(user.ID, e.userPlatformRepo)
@@ -61,7 +61,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 		return "", common.StringError(err)
 	}
 
-	var entity *createResponse
+	var entity *createEntityResponse
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
@@ -98,14 +98,14 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 		return
 	}
 
-	body, err := create("entities", mapUserToEntity(user, communications, digitalData, customData))
+	body, err := update("entities", user.ID, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	var entity *updateResponse
+	var entity *updateEntityResponse
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
@@ -177,7 +177,7 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	return
 }
 
-func getCommunications(userId string, contactRepo repository.Contact) (communications communication, err error) {
+func getCommunications(userId string, contactRepo repository.Contact) (communications entityCommunication, err error) {
 	// Get user contacts
 	contacts, err := contactRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
@@ -198,7 +198,7 @@ func getCommunications(userId string, contactRepo repository.Contact) (communica
 	return
 }
 
-func getDigitalData(userId string, deviceRepo repository.Device) (deviceData digitalData, err error) {
+func getDigitalData(userId string, deviceRepo repository.Device) (deviceData entityDigitalData, err error) {
 	devices, err := deviceRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user devices: %s", err)
@@ -214,7 +214,7 @@ func getDigitalData(userId string, deviceRepo repository.Device) (deviceData dig
 	return
 }
 
-func getCustomData(userId string, userPlatformRepo repository.UserPlatform) (customData customData, err error) {
+func getCustomData(userId string, userPlatformRepo repository.UserPlatform) (customData entityCustomData, err error) {
 	devices, err := userPlatformRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user platforms: %s", err)
@@ -229,7 +229,7 @@ func getCustomData(userId string, userPlatformRepo repository.UserPlatform) (cus
 	return
 }
 
-func mapUserToEntity(user model.User, communication communication, digitalData digitalData, customData customData) *u21entity {
+func mapUserToEntity(user model.User, communication entityCommunication, digitalData entityDigitalData, customData entityCustomData) *u21Entity {
 	var userTagArr []string
 	if user.Tags != nil {
 		for key, value := range user.Tags {
@@ -237,15 +237,15 @@ func mapUserToEntity(user model.User, communication communication, digitalData d
 		}
 	}
 
-	jsonBody := &u21entity{
-		GeneralData: &general{
+	jsonBody := &u21Entity{
+		GeneralData: &entityGeneral{
 			EntityId:     user.ID,
 			EntityType:   "user",
 			Status:       user.Status,
 			RegisteredAt: int(user.CreatedAt.Unix()),
 			Tags:         userTagArr, // convert from jsonb into array of key:value string pairs
 		},
-		UserData: &personal{
+		UserData: &entityPersonal{
 			FirstName:  user.FirstName,
 			MiddleName: user.MiddleName,
 			LastName:   user.LastName,
