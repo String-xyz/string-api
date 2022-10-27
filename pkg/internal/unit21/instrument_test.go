@@ -52,7 +52,7 @@ func TestCreateInstrument(t *testing.T) {
 	userRepo := repository.NewUser(sqlxDB)
 	locationRepo := repository.NewLocation(sqlxDB)
 
-	u21Instrument := newInstrument(instrumentRepo, userRepo, locationRepo)
+	u21Instrument := NewInstrument(instrumentRepo, userRepo, locationRepo)
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 	assert.NoError(t, err)
@@ -102,7 +102,7 @@ func TestUpdateInstrument(t *testing.T) {
 	userRepo := repository.NewUser(sqlxDB)
 	locationRepo := repository.NewLocation(sqlxDB)
 
-	u21Instrument := newInstrument(instrumentRepo, userRepo, locationRepo)
+	u21Instrument := NewInstrument(instrumentRepo, userRepo, locationRepo)
 
 	u21InstrumentId, err := u21Instrument.Update(instrument)
 	assert.NoError(t, err)

@@ -28,8 +28,7 @@ type entity struct {
 	userPlatformRepo repository.UserPlatform
 }
 
-
-func newEntity(user repository.User, device repository.Device, contact repository.Contact, userPlatform repository.UserPlatform) Entity {
+func NewEntity(user repository.User, device repository.Device, contact repository.Contact, userPlatform repository.UserPlatform) Entity {
 	return &entity{userRepo: user, deviceRepo: device, contactRepo: contact, userPlatformRepo: userPlatform}
 }
 

@@ -20,7 +20,7 @@ type instrument struct {
 	locationRepo   repository.Location
 }
 
-func newInstrument(inst repository.Instrument, user repository.User, location repository.Location) Instrument {
+func NewInstrument(inst repository.Instrument, user repository.User, location repository.Location) Instrument {
 	return &instrument{instrumentRepo: inst, userRepo: user, locationRepo: location}
 }
 

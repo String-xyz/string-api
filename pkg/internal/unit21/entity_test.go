@@ -55,7 +55,7 @@ func TestCreateEntity(t *testing.T) {
 	contactRepo := repository.NewContact(sqlxDB)
 	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
 
-	u21Entity := newEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
 
 	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)
@@ -108,7 +108,7 @@ func TestUpdateEntity(t *testing.T) {
 	contactRepo := repository.NewContact(sqlxDB)
 	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
 
-	u21Entity := newEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
 
 	u21EntityId, err := u21Entity.Update(user)
 	assert.NoError(t, err)
