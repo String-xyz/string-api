@@ -3,6 +3,7 @@ package unit21
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -54,9 +55,13 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("Request failed to create %s: %s", datatype, err)
-		//handle 409 on update that is not allowed
-		//handle 423, 500, 503 for retries
 		return nil, common.StringError(err)
+	}
+
+	if res.StatusCode != 200 {
+		log.Printf("Request failed to create %s: %s", datatype, fmt.Sprint(res.StatusCode))
+		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
+		return
 	}
 
 	defer res.Body.Close()
@@ -99,9 +104,13 @@ func update(datatype string, id string, jsonBody any) (body []byte, err error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("Request failed to update %s: %s", datatype, err)
-		//handle 409 on update that is not allowed
-		//handle 423, 500, 503 for retries
 		return nil, common.StringError(err)
+	}
+
+	if res.StatusCode != 200 {
+		log.Printf("Request failed to update %s: %s", datatype, fmt.Sprint(res.StatusCode))
+		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
+		return
 	}
 
 	defer res.Body.Close()

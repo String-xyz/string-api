@@ -87,7 +87,7 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 		return "", common.StringError(err)
 	}
 
-	var u21Response *createInstrumentResponse
+	var u21Response *updateInstrumentResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
