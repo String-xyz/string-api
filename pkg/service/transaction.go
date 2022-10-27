@@ -475,6 +475,9 @@ func (t transaction) postProcess(request postProcessRequest) {
 	if request.preBalance >= threshold && postBalance < threshold {
 		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", request.Chain.OwlracleName, threshold, postBalance)
 		MessageStaff(msg)
+		if err != nil {
+			// TODO: handle error instead of returning it
+		}
 	}
 
 	// compute profit, update db status and processing fees to db
