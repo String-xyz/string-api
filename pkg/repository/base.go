@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -130,10 +131,15 @@ func (b base[T]) GetByUserId(userID string) (m T, err error) {
 }
 
 func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error) {
+	log.Printf("ListByUserId: userId: %s", userID)
+	log.Printf("ListByUserId: limit: %s", limit)
+	log.Printf("ListByUserId: offset: %s", offset)
+	log.Printf("ListByUserId: b.table %s", b.table)
 	list := []T{}
 	if limit == 0 {
 		limit = 20
 	}
+	log.Printf("SELECT * FROM %s WHERE user_id = %s LIMIT %s OFFSET %s", b.table, userID, limit, offset)
 	err := b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userID, limit, offset)
 	if err == sql.ErrNoRows {
 		return list, nil

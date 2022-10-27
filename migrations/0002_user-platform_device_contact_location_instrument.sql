@@ -123,5 +123,5 @@ DROP TRIGGER IF EXISTS update_device_updated_at ON device;
 DROP TABLE device;
 
 -------------------------------------------------------------------------
--- CONTACT_PLATFORM -----------------------------------------------------
-DROP TABLE contact_platform;
+-- USER_PLATFORM -----------------------------------------------------
+DROP TABLE user_platform;

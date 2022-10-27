@@ -17,7 +17,7 @@ import (
 
 type Entity interface {
 	Create(user model.User) (unit21Id string, err error)
-	Update(user model.User) (err error)
+	Update(user model.User) (unit21Id string, err error)
 	AddInstruments(entityId string, instrumentId []string) (err error)
 }
 
@@ -217,13 +217,13 @@ func getDigitalData(userId string, deviceRepo repository.Device) (deviceData dig
 func getCustomData(userId string, userPlatformRepo repository.UserPlatform) (customData customData, err error) {
 	devices, err := userPlatformRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
-		log.Printf("Failed to get user devices: %s", err)
+		log.Printf("Failed to get user platforms: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
 	for _, platform := range devices {
-		customData.Platforms = append(customData.Platforms, platform.platformId)
+		customData.Platforms = append(customData.Platforms, platform.PlatformID)
 	}
 	log.Printf("deviceData: %s", customData)
 	return
