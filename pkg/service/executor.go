@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"math"
 	"math/big"
 	"os"
 
@@ -40,6 +41,7 @@ type Executor interface {
 	TxWait(txID string) (uint64, error)
 	Close() error
 	GetChainID() (uint64, error)
+	GetBalance() (float64, error)
 }
 
 type executor struct {
@@ -248,4 +250,29 @@ func (e executor) GetChainID() (uint64, error) {
 		return 0, stringCommon.StringError(err)
 	}
 	return chainId64, nil
+}
+
+func (e executor) GetBalance() (float64, error) {
+	// Get private key
+	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	if err != nil {
+		return 0, stringCommon.StringError(err)
+	}
+	// Get public key
+	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
+	if !ok {
+		return 0, stringCommon.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
+	}
+	account := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	wei := big.Int{}
+	err = e.client.Call(eth.Balance(account, nil).Returns(&wei))
+	if err != nil {
+		return 0, stringCommon.StringError(err)
+	}
+	fwei := new(big.Float)
+	fwei.SetString(wei.String())
+	balance := new(big.Float).Quo(fwei, big.NewFloat(math.Pow10(18)))
+	fbalance, _ := balance.Float64()
+	return fbalance, nil // We like thinking in floats
 }
