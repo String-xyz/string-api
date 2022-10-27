@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -68,14 +69,14 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 	user, err := a.userRepo.Create(model.User{FirstName: m.FirstName, LastName: m.LastName, Status: "registered", Type: "client"})
 	if err != nil {
 		a.userRepo.Rollback()
-		return JWT{}, err
+		return JWT{}, common.StringError(err)
 	}
 	a.contactRepo.SetTx(tx)
 	defer a.contactRepo.Reset()
 	contact, err := a.contactRepo.Create(model.Contact{UserID: user.ID, Data: m.Email})
 	if err != nil {
 		a.userRepo.Rollback()
-		return JWT{}, err
+		return JWT{}, common.StringError(err)
 	}
 
 	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
@@ -90,18 +91,22 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 
 	if err != nil {
 		a.userRepo.Rollback()
-		return JWT{}, err
+		return JWT{}, common.StringError(err)
 	}
 
 	err = a.contactRepo.Commit()
 	if err != nil {
-		return JWT{}, err
+		return JWT{}, common.StringError(err)
 	}
 
-	// TODO: Now share this with Unit21!!!!!!!!!! EntityCreate(...)
+	// Share with Unit21
+	entityRepo := unit21.NewEntity(a.userRepo, a.contactRepo)
+	_, err = entityRepo.Create(user) // Discard Unit21 ID
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
 
 	return a.GenerateJWT(user)
-
 }
 
 func (a auth) LoginEmail(login UserLoginEmail) (JWT, error) {
