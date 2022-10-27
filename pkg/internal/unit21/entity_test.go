@@ -144,7 +144,7 @@ func TestAddInstruments(t *testing.T) {
 	contactRepo := repository.NewContact(sqlxDB)
 	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
 
-	u21Entity := newEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
 
 	err = u21Entity.AddInstruments(entityId, instrumentIds)
 	assert.NoError(t, err)
