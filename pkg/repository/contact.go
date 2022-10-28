@@ -6,28 +6,27 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type User interface {
+type Contact interface {
 	Transactable
 	Readable
-	Create(model.User) (model.User, error)
+	Create(model.Contact) (model.Contact, error)
 	GetID(ID string) (model.User, error)
-	List(limit int, offset int) ([]model.User, error)
 	Update(ID string, updates any) error
 }
 
-type user[T any] struct {
+type contact[T any] struct {
 	base[T]
 }
 
-func NewUser(db *sqlx.DB) User {
+func NewContact(db *sqlx.DB) User {
 	return &user[model.User]{base[model.User]{store: db, table: "string_user"}}
 }
 
-func (u user[T]) Create(insert model.User) (model.User, error) {
-	m := model.User{}
-	rows, err := u.store.NamedQuery(`
-		INSERT INTO string_user (type, status) 
-		VALUES(:type, :status) 	RETURNING *`, insert)
+func (c contact[T]) Create(insert model.Contact) (model.Contact, error) {
+	m := model.Contact{}
+	rows, err := c.store.NamedQuery(`
+		INSERT INTO contact (type, user_id, status) 
+		VALUES(:type, :user_id, :status) 	RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}

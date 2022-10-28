@@ -1,11 +1,15 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/lmittmann/w3"
 )
@@ -75,4 +79,23 @@ func WeiToEther(wei *big.Int) float64 {
 	ethBig := f.Quo(fWei.SetInt(wei), big.NewFloat(params.Ether))
 	eth64, _ := ethBig.Float64() // OK to reduce precision?
 	return eth64
+}
+
+// TODO: Eventually make sure we support smart contract wallets
+func IsWallet(addr string) bool {
+	RPC := "https://mainnet.infura.io/v3" // temporarily just use ETH mainnet
+	geth, _ := ethclient.Dial(RPC)
+
+	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
+	valid := re.MatchString(addr)
+	if !valid {
+		return false
+	}
+	address := common.HexToAddress(addr)
+	bytecode, err := geth.CodeAt(context.Background(), address, nil)
+	if err != nil {
+		return false
+	}
+	isContract := len(bytecode) > 0
+	return !isContract
 }
