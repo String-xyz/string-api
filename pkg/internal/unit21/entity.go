@@ -43,7 +43,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getDigitalData(user.ID, e.deviceRepo)
+	digitalData, err := getEntityDigitalData(user.ID, e.deviceRepo)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
@@ -84,7 +84,7 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 		return
 	}
 
-	digitalData, err := getDigitalData(user.ID, e.deviceRepo)
+	digitalData, err := getEntityDigitalData(user.ID, e.deviceRepo)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		err = common.StringError(err)
@@ -148,8 +148,6 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("Request failed to create instrumentIds: %s", err)
-		//handle 409 on update that is not allowed
-		//handle 423, 500, 503 for retries
 		return common.StringError(err)
 	}
 
@@ -167,12 +165,6 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	}
 
 	log.Printf("String of body from response: %s", string(body))
-
-	// err = json.Unmarshal(body) // we just need to check if 200
-	// if err != nil {
-	// 	log.Printf("Reading body failed: %s", err)
-	// 	return
-	// }
 
 	return
 }
@@ -198,7 +190,7 @@ func getCommunications(userId string, contactRepo repository.Contact) (communica
 	return
 }
 
-func getDigitalData(userId string, deviceRepo repository.Device) (deviceData entityDigitalData, err error) {
+func getEntityDigitalData(userId string, deviceRepo repository.Device) (deviceData entityDigitalData, err error) {
 	devices, err := deviceRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user devices: %s", err)

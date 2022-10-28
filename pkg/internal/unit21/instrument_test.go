@@ -41,18 +41,18 @@ func TestCreateInstrument(t *testing.T) {
 		LocationID:    uuid.NewString(),
 	}
 
-	mockedUserRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "deactivated_at", "type", "status", "tags", "first_name", "middle_name", "last_name"})
-	//.AddRow(1, time.Now(), time.Now(), "1")
-	mock.ExpectQuery(`SELECT string_user FROM %s WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedUserRow)
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "deactivated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"})
+	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"})
 	mock.ExpectQuery(`SELECT location FROM %s WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
 	instrumentRepo := repository.NewInstrument(sqlxDB)
 	userRepo := repository.NewUser(sqlxDB)
+	deviceRepo := repository.NewDevice(sqlxDB)
 	locationRepo := repository.NewLocation(sqlxDB)
 
-	u21Instrument := NewInstrument(instrumentRepo, userRepo, locationRepo)
+	u21Instrument := NewInstrument(instrumentRepo, userRepo, deviceRepo, locationRepo)
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 	assert.NoError(t, err)
@@ -68,7 +68,7 @@ func TestUpdateInstrument(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	instrumentId := uuid.NewString()
+	instrumentId := "bb73ef2d-0e62-4381-8a37-6a32c11fb226"
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
@@ -91,18 +91,18 @@ func TestUpdateInstrument(t *testing.T) {
 		LocationID:    uuid.NewString(),
 	}
 
-	mockedUserRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "deactivated_at", "type", "status", "tags", "first_name", "middle_name", "last_name"})
-	//.AddRow(1, time.Now(), time.Now(), "1")
-	mock.ExpectQuery(`SELECT string_user FROM %s WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedUserRow)
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "deactivated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"})
+	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"})
 	mock.ExpectQuery(`SELECT location FROM %s WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
 	instrumentRepo := repository.NewInstrument(sqlxDB)
 	userRepo := repository.NewUser(sqlxDB)
+	deviceRepo := repository.NewDevice(sqlxDB)
 	locationRepo := repository.NewLocation(sqlxDB)
 
-	u21Instrument := NewInstrument(instrumentRepo, userRepo, locationRepo)
+	u21Instrument := NewInstrument(instrumentRepo, userRepo, deviceRepo, locationRepo)
 
 	u21InstrumentId, err := u21Instrument.Update(instrument)
 	assert.NoError(t, err)

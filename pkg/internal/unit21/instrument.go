@@ -17,11 +17,12 @@ type Instrument interface {
 type instrument struct {
 	instrumentRepo repository.Instrument
 	userRepo       repository.User
+	deviceRepo     repository.Device
 	locationRepo   repository.Location
 }
 
-func NewInstrument(inst repository.Instrument, user repository.User, location repository.Location) Instrument {
-	return &instrument{instrumentRepo: inst, userRepo: user, locationRepo: location}
+func NewInstrument(inst repository.Instrument, user repository.User, device repository.Device, location repository.Location) Instrument {
+	return &instrument{instrumentRepo: inst, userRepo: user, deviceRepo: device, locationRepo: location}
 }
 
 func (i instrument) Create(instrument model.Instrument) (unit21Id string, err error) {
@@ -38,13 +39,19 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 		return "", common.StringError(err)
 	}
 
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.deviceRepo)
+	if err != nil {
+		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+		return "", common.StringError(err)
+	}
+
 	locationData, err := getLocationData(instrument.LocationID, i.locationRepo)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
 	}
 
-	body, err := create("instruments", mapToUnit21Instrument(instrument, source, entities, locationData))
+	body, err := create("instruments", mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
 		log.Printf("Unit21 Instrument create failed: %s", err)
 		return "", common.StringError(err)
@@ -75,13 +82,19 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 		return "", common.StringError(err)
 	}
 
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.deviceRepo)
+	if err != nil {
+		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+		return "", common.StringError(err)
+	}
+
 	locationData, err := getLocationData(instrument.LocationID, i.locationRepo)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
 	}
 
-	body, err := update("instruments", instrument.ID, mapToUnit21Instrument(instrument, source, entities, locationData))
+	body, err := update("instruments", instrument.ID, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
 		log.Printf("Unit21 Instrument create failed: %s", err)
 		return "", common.StringError(err)
@@ -127,6 +140,25 @@ func getEntities(userID string, userRepo repository.User) (entity instrumentEnti
 	return entity, nil
 }
 
+func getInstrumentDigitalData(userId string, deviceRepo repository.Device) (digitalData instrumentDigitalData, err error) {
+	devices, err := deviceRepo.ListByUserId(userId, 100, 0)
+	if err != nil {
+		log.Printf("Failed to get user devices: %s", err)
+		err = common.StringError(err)
+		return
+	}
+
+	for _, device := range devices {
+		digitalData.IpAddresses = append(digitalData.IpAddresses, device.IpAddresses...)
+	}
+	log.Printf("deviceData: %s", digitalData)
+	return
+}
+
+//{
+// 	IpAddresses: "192.206.151.131",
+// },
+
 func getLocationData(locationID string, locationRepo repository.Location) (locationData instrumentLocationData, err error) {
 	location, err := locationRepo.GetById(locationID)
 	if err != nil {
@@ -150,7 +182,7 @@ func getLocationData(locationID string, locationRepo repository.Location) (locat
 	return locationData, nil
 }
 
-func mapToUnit21Instrument(instrument model.Instrument, source string, entityData instrumentEntity, locationData instrumentLocationData) *u21Instrument {
+func mapToUnit21Instrument(instrument model.Instrument, source string, entityData instrumentEntity, digitalData instrumentDigitalData, locationData instrumentLocationData) *u21Instrument {
 	var instrumentTagArr []string
 	if instrument.Tags != nil {
 		for key, value := range instrument.Tags {
@@ -173,9 +205,7 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 		CustomData: &instrumentCustomData{
 			None: nil,
 		},
-		DigitalData: &instrumentDigitalData{
-			IpAddress: "192.161.1.1",
-		},
+		DigitalData:  &digitalData,
 		LocationData: &locationData,
 		Tags:         instrumentTagArr,
 		// Options:            &options,

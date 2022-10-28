@@ -71,7 +71,8 @@ func TestUpdateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	entityId := uuid.NewString()
+	// choose an older entity so we can update it
+	entityId := "d8451ddd-6116-4b62-9072-0e8b63a843f1"
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
@@ -85,10 +86,10 @@ func TestUpdateEntity(t *testing.T) {
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
 		Type:          "User",
-		Status:        "Onboarded",
+		Status:        "Updated", // changing from Onboarded
 		Tags:          nil,
 		FirstName:     "Test",
-		MiddleName:    "A",
+		MiddleName:    "Another", // changing from A
 		LastName:      "User",
 	}
 
@@ -110,6 +111,7 @@ func TestUpdateEntity(t *testing.T) {
 
 	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
 
+	// update in u21
 	u21EntityId, err := u21Entity.Update(user)
 	assert.NoError(t, err)
 	log.Printf("u21EntityId: %s", u21EntityId)

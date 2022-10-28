@@ -13,24 +13,11 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 )
 
-// type Unit21Data interface {
-// 	Create(any) (unit21Id string, err error)
-// 	Update(id string, updates any) (err error)
-// }
-
-// type unit21Data struct {
-// 	repository repository.Transactable
-// }
-
-// func newUnit21Data(repo repository.Transactable) Unit21Data {
-// 	return &unit21Data{repository: repo}
-// }
-
-// u21type == entities
-// jsonBody = MapUserToEntity(user)
 func create(datatype string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 	url := os.Getenv("UNIT21_URL") + datatype + "/create"
+
+	log.Printf("create call with jsonBody: %s\n and url: %s", jsonBody, url)
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
@@ -58,12 +45,6 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 		return nil, common.StringError(err)
 	}
 
-	if res.StatusCode != 200 {
-		log.Printf("Request failed to create %s: %s", datatype, fmt.Sprint(res.StatusCode))
-		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
-		return
-	}
-
 	defer res.Body.Close()
 
 	body, err = ioutil.ReadAll(res.Body)
@@ -74,12 +55,21 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 
 	log.Printf("String of body from response: %s", string(body))
 
+	if res.StatusCode != 200 {
+		log.Printf("Request failed to create %s: %s", datatype, fmt.Sprint(res.StatusCode))
+		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
+		return
+	}
+
 	return body, nil
 }
 
 func update(datatype string, id string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
-	url := os.Getenv("UNIT21_URL") + "/" + datatype + "/" + id + "/update"
+	orgName := os.Getenv("UNIT21_ORG_NAME")
+	url := os.Getenv("UNIT21_URL") + orgName + "/" + datatype + "/" + id + "/update"
+
+	log.Printf("update call with jsonBody: %s\n and url: %s", jsonBody, url)
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
@@ -107,12 +97,6 @@ func update(datatype string, id string, jsonBody any) (body []byte, err error) {
 		return nil, common.StringError(err)
 	}
 
-	if res.StatusCode != 200 {
-		log.Printf("Request failed to update %s: %s", datatype, fmt.Sprint(res.StatusCode))
-		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
-		return
-	}
-
 	defer res.Body.Close()
 
 	body, err = ioutil.ReadAll(res.Body)
@@ -122,6 +106,12 @@ func update(datatype string, id string, jsonBody any) (body []byte, err error) {
 	}
 
 	log.Printf("String of body from response: %s", string(body))
+
+	if res.StatusCode != 200 {
+		log.Printf("Request failed to update %s: %s", datatype, fmt.Sprint(res.StatusCode))
+		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
+		return
+	}
 
 	return body, nil
 }

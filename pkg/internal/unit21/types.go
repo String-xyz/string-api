@@ -3,7 +3,7 @@ package unit21
 // //////////////////////////////////////////////////////////////////
 // Entity
 type u21Entity struct {
-	GeneralData       *entityGeneral       `json:"entityGeneral_data"`
+	GeneralData       *entityGeneral       `json:"general_data"`
 	UserData          *entityPersonal      `json:"user_data,omitempty"`
 	CommunicationData *entityCommunication `json:"communication_data,omitempty"`
 	DigitalData       *entityDigitalData   `json:"digital_data,omitempty"`
@@ -70,15 +70,15 @@ type u21Instrument struct {
 	InstrumentType     string                  `json:"instrument_type"`
 	InstrumentSubtype  string                  `json:"instrument_subtype"`
 	Source             string                  `json:"source"`
-	Status             string                  `json:"status"`
+	Status             string                  `json:"status,omitempty"`
 	RegisteredAt       int                     `json:"registered_at"`
-	ParentInstrumentId string                  `json:"parent_instrument_id"`
-	Entities           []instrumentEntity      `json:"entities"`
-	CustomData         any                     `json:"custom_data"`
-	DigitalData        *instrumentDigitalData  `json:"digital_data"`
-	LocationData       *instrumentLocationData `json:"location_data"`
-	Tags               []string                `json:"tags"`
-	Options            *options                `json:"options"`
+	ParentInstrumentId string                  `json:"parent_instrument_id,omitempty"`
+	Entities           []instrumentEntity      `json:"entities,omitempty"`
+	CustomData         any                     `json:"custom_data,omitempty"`
+	DigitalData        *instrumentDigitalData  `json:"digital_data,omitempty"`
+	LocationData       *instrumentLocationData `json:"location_data,omitempty"`
+	Tags               []string                `json:"tags,omitempty"`
+	Options            *options                `json:"options,omitempty"`
 }
 
 type instrumentEntity struct {
@@ -88,7 +88,7 @@ type instrumentEntity struct {
 }
 
 type instrumentDigitalData struct {
-	IpAddress string `json:"ip_address"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
 }
 
 type instrumentLocationData struct {
@@ -118,4 +118,34 @@ type createInstrumentResponse struct {
 type updateInstrumentResponse struct {
 	InstrumentId string `json:"instrument_id"`
 	Unit21Id     string `json:"unit21_id"`
+}
+
+// //////////////////////////////////////////////////////////////////
+// Event
+
+type u21event struct {
+	GeneralData     *eventGeneral    `json:"general_data"`
+	TransactionData *transactionData `json:"transaction_data"`
+}
+
+type eventGeneral struct {
+	EventId      string       `json:"event_id"`
+	EventType    string       `json:"event_type"`
+	EventTime    int          `json:"event_time"`
+	EventSubtype string       `json:"event_subtype"`
+	Status       string       `json:"status"`
+	Parents      *eventParent `json:"parents"`
+	Tags         []string     `json:"tags,omitempty"`
+}
+
+type transactionData struct {
+	Amount         float32 `json:"amount"`
+	SentAmount     float32 `json:"sent_amount"`
+	SentCurrency   string  `json:"sent_currency"`
+	SenderEntityId string  `json:"sender_entity_id"`
+}
+
+type eventParent struct {
+	EventId   string `json:"event_id"`
+	EventType string `json:"event_type"`
 }
