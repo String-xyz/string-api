@@ -123,29 +123,70 @@ type updateInstrumentResponse struct {
 // //////////////////////////////////////////////////////////////////
 // Event
 
-type u21event struct {
-	GeneralData     *eventGeneral    `json:"general_data"`
-	TransactionData *transactionData `json:"transaction_data"`
+type u21Event struct {
+	GeneralData     *eventGeneral           `json:"general_data"`
+	TransactionData *transactionData        `json:"transaction_data"`
+	ActionData      *actionData             `json:"action_data,omitempty"`
+	DigitalData     *instrumentDigitalData  `json:"digital_data,omitempty"`
+	LocationData    *instrumentLocationData `json:"location_data,omitempty"`
+	CustomData      *eventCustomData        `json:"custom_data,omitempty"`
 }
 
 type eventGeneral struct {
 	EventId      string       `json:"event_id"`
 	EventType    string       `json:"event_type"`
 	EventTime    int          `json:"event_time"`
-	EventSubtype string       `json:"event_subtype"`
-	Status       string       `json:"status"`
-	Parents      *eventParent `json:"parents"`
+	EventSubtype string       `json:"event_subtype,omitempty"`
+	Status       string       `json:"status,omitempty"`
+	Parents      *eventParent `json:"parents,omitempty"`
 	Tags         []string     `json:"tags,omitempty"`
 }
 
 type transactionData struct {
-	Amount         float32 `json:"amount"`
-	SentAmount     float32 `json:"sent_amount"`
-	SentCurrency   string  `json:"sent_currency"`
-	SenderEntityId string  `json:"sender_entity_id"`
+	Amount               float64 `json:"amount"`
+	SentAmount           float64 `json:"sent_amount,omitempty"`
+	SentCurrency         string  `json:"sent_currency,omitempty"`
+	SenderEntityId       string  `json:"sender_entity_id,omitempty"`
+	SenderEntityType     string  `json:"sender_entity_type,omitempty"`
+	SenderInstrumentId   string  `json:"sender_instrument_id"`
+	ReceivedAmount       float64 `json:"received_amount,omitempty"`
+	ReceivedCurrency     string  `json:"received_currency,omitempty"`
+	ReceiverEntityId     string  `json:"receiver_entity_id,omitempty"`
+	ReceiverEntityType   string  `json:"receiver_entity_type,omitempty"`
+	ReceiverInstrumentId string  `json:"receiver_instrument_id"`
+	ExchangeRate         float64 `json:"exchange_rate,omitempty"`
+	TransactionHash      string  `json:"transaction_hash,omitempty"`
+	USDConversionNotes   string  `json:"usd_conversion_notes,omitempty"`
+	InternalFee          float64 `json:"internal_fee,omitempty"`
+	ExternalFee          float64 `json:"external_fee,omitempty"`
+}
+
+type actionData struct {
+	ActionType    string `json:"action_type,omitempty"`
+	ActionDetails string `json:"action_details,omitempty"`
+	EntityId      string `json:"entity_id"`
+	EntityType    string `json:"entity_type"`
+	InstrumentId  string `json:"instrument_id,omitempty"`
+}
+
+type eventCustomData struct {
+	//more can be added to this as needed
+	None any `json:"none"`
 }
 
 type eventParent struct {
 	EventId   string `json:"event_id"`
 	EventType string `json:"event_type"`
+}
+
+type createEventResponse struct {
+	Ignored           bool   `json:"ignored,omitempty"`
+	EventId           string `json:"event_id"`
+	PreviouslyExisted bool   `json:"previously_existed"`
+	Unit21Id          string `json:"unit21_id"`
+}
+
+type updateEventResponse struct {
+	EventId  string `json:"event_id"`
+	Unit21Id string `json:"unit21_id"`
 }

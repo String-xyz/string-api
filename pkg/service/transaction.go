@@ -302,7 +302,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	if err != nil {
 		return auth, common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{OriginTXLegID: &origin.ID}
+	txLeg := model.TransactionUpdates{OriginTxLegID: &origin.ID}
 	err = t.repos.Transaction.Update(dbID, txLeg)
 	if err != nil {
 		return auth, common.StringError(err)
@@ -340,7 +340,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 	if err != nil {
 		return txID, value, common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ResponseTXLegID: &send.ID}
+	txLeg := model.TransactionUpdates{ResponseTxLegID: &send.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
 		return txID, value, common.StringError(err)
@@ -377,7 +377,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 	if err != nil {
 		return common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTXLegID: &receipt.ID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receipt.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
 		return common.StringError(err)
@@ -415,7 +415,7 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 	if err != nil {
 		return profit, common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{DestinationTXLegID: &send.ID}
+	txLeg := model.TransactionUpdates{DestinationTxLegID: &send.ID}
 	err = t.repos.Transaction.Update(txUUID, txLeg)
 	if err != nil {
 		return profit, common.StringError(err)
