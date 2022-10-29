@@ -127,7 +127,7 @@ type u21Event struct {
 	GeneralData     *eventGeneral           `json:"general_data"`
 	TransactionData *transactionData        `json:"transaction_data"`
 	ActionData      *actionData             `json:"action_data,omitempty"`
-	DigitalData     *instrumentDigitalData  `json:"digital_data,omitempty"`
+	DigitalData     *eventDigitalData       `json:"digital_data,omitempty"`
 	LocationData    *instrumentLocationData `json:"location_data,omitempty"`
 	CustomData      *eventCustomData        `json:"custom_data,omitempty"`
 }
@@ -167,6 +167,10 @@ type actionData struct {
 	EntityId      string `json:"entity_id"`
 	EntityType    string `json:"entity_type"`
 	InstrumentId  string `json:"instrument_id,omitempty"`
+}
+
+type eventDigitalData struct {
+	IPAddress string `json:"ip_address",omitempty`
 }
 
 type eventCustomData struct {

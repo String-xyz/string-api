@@ -3,7 +3,10 @@ package common
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
+	"math"
 	"reflect"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	ethcomm "github.com/ethereum/go-ethereum/common"
@@ -27,6 +30,17 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 		return ethcomm.Address{}, StringError(err)
 	}
 	return crypto.PubkeyToAddress(*recovered), nil
+}
+
+func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, err error) {
+	floatReturn, err = strconv.ParseFloat(bigNumber, 64)
+	if err != nil {
+		log.Printf("Failed to convert transaction amount to float: %s", err)
+		err = StringError(err)
+		return
+	}
+	floatReturn = floatReturn * math.Pow(10, -float64(decimals))
+	return
 }
 
 func isNil(i interface{}) bool {

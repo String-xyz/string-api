@@ -3,8 +3,6 @@ package unit21
 import (
 	"encoding/json"
 	"log"
-	"math"
-	"strconv"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -35,7 +33,7 @@ func (i transaction) Create(transaction model.Transaction) (unit21Id string, err
 		return "", common.StringError(err)
 	}
 
-	body, err := create("transactions", mapToUnit21Event(transaction, transactionData))
+	body, err := create("events", mapToUnit21Event(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -60,7 +58,7 @@ func (i transaction) Update(transaction model.Transaction) (unit21Id string, err
 		return "", common.StringError(err)
 	}
 
-	body, err := update("transactions", transaction.ID, mapToUnit21Event(transaction, transactionData))
+	body, err := update("events", transaction.ID, mapToUnit21Event(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -77,7 +75,7 @@ func (i transaction) Update(transaction model.Transaction) (unit21Id string, err
 	return u21Response.Unit21Id, nil
 }
 
-func getTransactionData(transaction model.Transaction, userRepo repository.User, assetRepo repository.Asset, txLegRepo repository.TxLeg) (transactionData transactionData, err error) {
+func getTransactionData(transaction model.Transaction, userRepo repository.User, assetRepo repository.Asset, txLegRepo repository.TxLeg) (txData transactionData, err error) {
 	senderData, err := txLegRepo.GetById(transaction.OriginTxLegID)
 	if err != nil {
 		log.Printf("Failed go get origin transaction leg: %s", err)
@@ -106,28 +104,12 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		return
 	}
 
-	amount, err := strconv.ParseFloat(senderData.Value, 64)
-	if err != nil {
-		log.Printf("Failed to convert transaction value to float: %s", err)
-		err = common.StringError(err)
-		return
-	}
-	amount = amount * math.Pow(10, -6)
-
 	senderAsset, err := assetRepo.GetById(senderData.AssetID)
 	if err != nil {
 		log.Printf("Failed go get transaction sender asset: %s", err)
 		err = common.StringError(err)
 		return
 	}
-
-	senderAmount, err := strconv.ParseFloat(senderData.Amount, 64)
-	if err != nil {
-		log.Printf("Failed to convert transaction amount to float: %s", err)
-		err = common.StringError(err)
-		return
-	}
-	senderAmount = senderAmount * math.Pow(10, -float64(senderAsset.Decimals))
 
 	receiverAsset, err := assetRepo.GetById(receiverData.AssetID)
 	if err != nil {
@@ -136,39 +118,50 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		return
 	}
 
-	receiverAmount, err := strconv.ParseFloat(receiverData.Amount, 64)
+	amount, err := common.BigNumberToFloat(senderData.Value, 6)
 	if err != nil {
-		log.Printf("Failed to convert transaction amount to float: %s", err)
+		log.Printf("Failed to convert amount: %s", err)
 		err = common.StringError(err)
 		return
 	}
-	receiverAmount = receiverAmount * math.Pow(10, -float64(receiverAsset.Decimals))
 
-	stringFee, err := strconv.ParseFloat(transaction.StringFee, 64)
+	senderAmount, err := common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert transaction string fee to float: %s", err)
+		log.Printf("Failed to convert senderAmount: %s", err)
 		err = common.StringError(err)
 		return
 	}
-	stringFee = stringFee * math.Pow(10, float64(-6))
 
-	processingFee, err := strconv.ParseFloat(transaction.ProcessingFee, 64)
+	receiverAmount, err := common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert transaction processing fee to float: %s", err)
+		log.Printf("Failed to convert receiverAmount: %s", err)
 		err = common.StringError(err)
 		return
 	}
-	processingFee = processingFee * math.Pow(10, float64(-6))
 
-	transactionData = &transactionData{
+	stringFee, err := common.BigNumberToFloat(transaction.StringFee, 6)
+	if err != nil {
+		log.Printf("Failed to convert stringFee: %s", err)
+		err = common.StringError(err)
+		return
+	}
+
+	processingFee, err := common.BigNumberToFloat(transaction.ProcessingFee, 6)
+	if err != nil {
+		log.Printf("Failed to convert processingFee: %s", err)
+		err = common.StringError(err)
+		return
+	}
+
+	txData = transactionData{
 		Amount:               amount,
-		SenderAmount:         senderAmount,
-		SenderCurrency:       senderAsset.Name,
+		SentAmount:           senderAmount,
+		SentCurrency:         senderAsset.Name,
 		SenderEntityId:       senderData.UserID,
 		SenderEntityType:     senderType,
 		SenderInstrumentId:   senderData.InstrumentID,
-		ReceiverAmount:       receiverAmount,
-		ReceiverCurrency:     receiverAsset.Name,
+		ReceivedAmount:       receiverAmount,
+		ReceivedCurrency:     receiverAsset.Name,
 		ReceiverEntityId:     receiverData.UserID,
 		ReceiverEntityType:   receiverType,
 		ReceiverInstrumentId: receiverData.InstrumentID,
@@ -190,15 +183,10 @@ func mapToUnit21Event(transaction model.Transaction, transactionData transaction
 		}
 	}
 
-	//transaction.IPAddress
-
-	// var entityArray []transactionEntity
-	// entityArray = append(entityArray, entityData)
-
 	jsonBody := &u21Event{
 		GeneralData: &eventGeneral{
 			EventId:      transaction.ID,
-			EventType:    transaction.Type,
+			EventType:    "transaction",
 			EventTime:    int(transaction.CreatedAt.Unix()),
 			EventSubtype: "",
 			Status:       transaction.Status,
@@ -207,9 +195,11 @@ func mapToUnit21Event(transaction model.Transaction, transactionData transaction
 		},
 		TransactionData: &transactionData,
 		ActionData:      nil,
-		DigitalData:     nil,
-		LocationData:    nil,
-		CustomData:      nil,
+		DigitalData: &eventDigitalData{
+			IPAddress: transaction.IPAddress,
+		},
+		LocationData: nil,
+		CustomData:   nil,
 	}
 
 	return jsonBody
