@@ -22,7 +22,7 @@ CREATE TABLE device (
   type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   description TEXT DEFAULT '',
   fingerprint TEXT DEFAULT '',
-  ip_addresses JSONB DEFAULT '[]'::JSONB,
+  ip_addresses TEXT[] DEFAULT NULL,
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 

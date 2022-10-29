@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx/types"
+	"github.com/lib/pq"
 )
 
 // See STRING_USER in Migrations 0001
@@ -13,7 +14,7 @@ type User struct {
 	ID            string            `json:"id" db:"id"`
 	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt" db:"deactivated_at"`
+	DeactivatedAt *time.Time        `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type          string            `json:"type" db:"type"`
 	Status        string            `json:"status" db:"status"`
 	Tags          map[string]string `json:"tags" db:"tags"`
@@ -27,7 +28,7 @@ type Platform struct {
 	ID             string     `json:"id" db:"id"`
 	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type           string     `json:"type" db:"type"`
 	Status         string     `json:"status" db:"status"`
 	Name           string     `json:"name" db:"name"`
@@ -69,17 +70,17 @@ type UserPlatform struct {
 
 // See DEVICE in Migrations 0002
 type Device struct {
-	ID            string    `json:"id" db:"id"`
-	CreatedAt     time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time `json:"updatedAt" db:"updated_at"`
-	LastUsedAt    time.Time `json:"lastUsedAt" db:"last_used_at"`
-	ValidatedAt   time.Time `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          string    `json:"type" db:"type"`
-	Description   string    `json:"description" db:"description"`
-	Fingerprint   string    `json:"fingerprint" db:"fingerprint"`
-	IpAddresses   []string  `json:"ipAddresses" db:"ip_addresses"`
-	UserID        string    `json:"userId" db:"user_id"`
+	ID            string         `json:"id" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
+	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
+	ValidatedAt   time.Time      `json:"validatedAt" db:"validated_at"`
+	DeactivatedAt time.Time      `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type          string         `json:"type" db:"type"`
+	Description   string         `json:"description" db:"description"`
+	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
+	IpAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
+	UserID        string         `json:"userId" db:"user_id"`
 }
 
 // See CONTACT in Migrations 0002
@@ -89,7 +90,7 @@ type Contact struct {
 	CreatedAt           time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt           time.Time  `json:"updatedAt" db:"updated_at"`
 	LastAuthenticatedAt *time.Time `json:"lastAuthenticatedAt" db:"last_authenticated_at"`
-	DeactivatedAt       *time.Time `json:"deactivatedAt" db:"deactivated_at"`
+	DeactivatedAt       *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type                string     `json:"type" db:"type"`
 	Status              string     `json:"status" db:"status"`
 	Data                string     `json:"data" db:"data"`
@@ -118,7 +119,7 @@ type Instrument struct {
 	ID            string            `json:"id" db:"id"`
 	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt" db:"deactivated_at"`
+	DeactivatedAt *time.Time        `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type          string            `json:"type" db:"type"`
 	Status        string            `json:"status" db:"status"`
 	Tags          map[string]string `json:"tags" db:"tags"`
