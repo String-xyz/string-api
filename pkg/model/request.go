@@ -87,13 +87,13 @@ type UserRequest struct {
 
 // Can be used for user, instrument, etc
 type UpdateStatus struct {
-	Status string `json:"status"`
+	Status *string `json:"status" db:"status"`
 }
 
 type UpdateUserName struct {
-	FirstName  string `json:"firstName"`
-	MiddleName string `json:"middleName"`
-	LastName   string `json:"lastName"`
+	FirstName  string `json:"firstName" db:"first_name"`
+	MiddleName string `json:"middleName" db:"middle_name"`
+	LastName   string `json:"lastName" db:"last_name"`
 }
 
 type EntityType string

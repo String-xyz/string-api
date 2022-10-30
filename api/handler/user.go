@@ -79,6 +79,19 @@ func (u user) Authenticate(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
+
+	// Token was provided
+	token := c.QueryParam("token")
+	if token != "" {
+		err = u.Service.ReceiveEmailAuthentication(token)
+		if err != nil {
+			lg.Err(err).Msg("user authenticate")
+			return c.String(http.StatusOK, "User Service Failed")
+		}
+		return c.JSON(http.StatusOK, nil)
+	}
+
+	// User needs a token
 	err = u.Service.Authenticate(body)
 	if err != nil {
 		lg.Err(err).Msg("user authenticate")

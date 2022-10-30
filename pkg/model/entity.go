@@ -10,16 +10,16 @@ import (
 
 // See STRING_USER in Migrations 0001
 type User struct {
-	ID            string            `json:"id" db:"id"`
-	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt" db:"deactivated_at"`
-	Type          string            `json:"type" db:"type"`
-	Status        string            `json:"status" db:"status"`
-	Tags          map[string]string `json:"tags" db:"tags"`
-	FirstName     string            `json:"firstName" db:"first_name"`
-	MiddleName    string            `json:"middleName" db:"middle_name"`
-	LastName      string            `json:"lastName" db:"last_name"`
+	ID            string         `json:"id" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt" db:"deactivated_at"`
+	Type          string         `json:"type" db:"type"`
+	Status        string         `json:"status" db:"status"`
+	Tags          types.JSONText `json:"tags" db:"tags"`
+	FirstName     string         `json:"firstName" db:"first_name"`
+	MiddleName    string         `json:"middleName" db:"middle_name"`
+	LastName      string         `json:"lastName" db:"last_name"`
 }
 
 // See PLATFORM in Migrations 0001
@@ -91,36 +91,36 @@ type Contact struct {
 
 // See LOCATION in Migrations 0002
 type Location struct {
-	ID             string            `json:"id" db:"id"`
-	UserID         string            `json:"userId" db:"user_id"`
-	CreatedAt      time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time         `json:"updatedAt" db:"updated_at"`
-	Type           string            `json:"type" db:"type"`
-	Status         string            `json:"status" db:"status"`
-	Tags           map[string]string `json:"tags" db:"tags"`
-	BuildingNumber string            `json:"buildingNumber" db:"building_number"`
-	UnitNumber     string            `json:"unitNumber" db:"unit_number"`
-	StreetName     string            `json:"streetName" db:"street_name"`
-	City           string            `json:"city" db:"city"`
-	State          string            `json:"state" db:"state"`
-	PostalCode     string            `json:"postalCode" db:"postal_code"`
-	Country        string            `json:"country" db:"country"`
+	ID             string         `json:"id" db:"id"`
+	UserID         string         `json:"userId" db:"user_id"`
+	CreatedAt      time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updatedAt" db:"updated_at"`
+	Type           string         `json:"type" db:"type"`
+	Status         string         `json:"status" db:"status"`
+	Tags           types.JSONText `json:"tags" db:"tags"`
+	BuildingNumber string         `json:"buildingNumber" db:"building_number"`
+	UnitNumber     string         `json:"unitNumber" db:"unit_number"`
+	StreetName     string         `json:"streetName" db:"street_name"`
+	City           string         `json:"city" db:"city"`
+	State          string         `json:"state" db:"state"`
+	PostalCode     string         `json:"postalCode" db:"postal_code"`
+	Country        string         `json:"country" db:"country"`
 }
 
 // See INSTRUMENT in Migrations 0002
 type Instrument struct {
-	ID            string            `json:"id" db:"id"`
-	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt" db:"deactivated_at"`
-	Type          string            `json:"type" db:"type"`
-	Status        string            `json:"status" db:"status"`
-	Tags          map[string]string `json:"tags" db:"tags"`
-	Network       string            `json:"network" db:"network"`
-	PublicKey     string            `json:"publicKey" db:"public_key"`
-	Last4         string            `json:"last4" db:"last_4"`
-	UserID        string            `json:"userId" db:"user_id"`
-	LocationID    string            `json:"locationId" db:"location_id"`
+	ID            string         `json:"id" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt" db:"deactivated_at"`
+	Type          string         `json:"type" db:"type"`
+	Status        string         `json:"status" db:"status"`
+	Tags          types.JSONText `json:"tags" db:"tags"`
+	Network       string         `json:"network" db:"network"`
+	PublicKey     string         `json:"publicKey" db:"public_key"`
+	Last4         string         `json:"last4" db:"last_4"`
+	UserID        string         `json:"userId" db:"user_id"`
+	LocationID    sql.NullString `json:"locationId" db:"location_id"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003

@@ -10,7 +10,7 @@ type Contact interface {
 	Transactable
 	Readable
 	Create(model.Contact) (model.Contact, error)
-	GetID(ID string) (model.User, error)
+	GetID(ID string) (model.Contact, error)
 	Update(ID string, updates any) error
 }
 
@@ -18,8 +18,8 @@ type contact[T any] struct {
 	base[T]
 }
 
-func NewContact(db *sqlx.DB) User {
-	return &user[model.User]{base[model.User]{store: db, table: "string_user"}}
+func NewContact(db *sqlx.DB) Contact {
+	return &contact[model.Contact]{base[model.Contact]{store: db, table: "contact"}}
 }
 
 func (c contact[T]) Create(insert model.Contact) (model.Contact, error) {

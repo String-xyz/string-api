@@ -83,7 +83,7 @@ func WeiToEther(wei *big.Int) float64 {
 
 // TODO: Eventually make sure we support smart contract wallets
 func IsWallet(addr string) bool {
-	RPC := "https://mainnet.infura.io/v3" // temporarily just use ETH mainnet
+	RPC := "https://rpc.ankr.com/eth" // temporarily just use ETH mainnet
 	geth, _ := ethclient.Dial(RPC)
 
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
