@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	netMail "net/mail"
 	"os"
 	"strings"
@@ -73,7 +72,6 @@ func (u user) Create(request UserRequest) error {
 	// Make sure wallet does not already exist
 	// TODO: Revisit this logic.  Parsing error string for "not found" is bad.
 	instrument, err := u.repos.Instrument.GetWallet(addr)
-	fmt.Printf("\nINSTRUMENT=%+v", instrument)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
@@ -136,7 +134,7 @@ func (u user) Sign(request UserRequest) error {
 		return common.StringError(errors.New("wallet already validated"))
 	}
 
-	// TESTING
+	// @dev Uncomment these lines to sign payload without using front end
 	// signed, _ := common.EVMSign(addr)
 	// fmt.Printf("\n\nSECRET SIGNATURE=%+v", signed)
 
@@ -177,46 +175,31 @@ func (u user) Authenticate(request UserRequest) error {
 	if instrument.UserID == "" {
 		return common.StringError(errors.New("wallet not associated with user"))
 	}
-	// user, err := u.repos.User.GetID(instrument.UserID)
-	// if err != nil {
-	// 	return common.StringError(err)
-	// }
-
-	// twilio / sendgrid stuff
-	// key := os.Getenv("STRING_ENCRYPTION_KEY")
-	// expectedResponse, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserID: instrument.UserID}, key)
-	// if err != nil {
-	// 	return common.StringError(err)
-	// }
-	// var AUTH_SID = os.Getenv("TWILIO_AUTH_SID")
-	// client := twilio.NewRestClient()
-	// params := &verify.CreateVerificationParams{}
-	// params.SetTo(email)
-	// params.SetChannel("email")
-	// params.SetCustomCode(expectedResponse) // Code is needed to check if email was verified
-	// _, err = client.VerifyV2.CreateVerification(AUTH_SID, params)
-	// if err != nil {
-	// 	return common.StringError(err)
-	// }
+	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserID: instrument.UserID}, key)
 	if err != nil {
 		return common.StringError(err)
 	}
+	baseURL := "http://localhost:5555/"
+	env := os.Getenv("ENV")
+	if env == "dev" {
+		baseURL = "https://app.dev.string-api.xyz/"
+	} else {
+		baseURL = "https://app.string-api.xyz/"
+	}
+
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
 	subject := "String Email Authentication"
 	to := mail.NewEmail("New String User", email)
 	textContent := "Click the link below to complete your e-mail authentication!"
-	htmlContent := "<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='http://localhost:5555/user/email?token=" + code + "' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>"
+	htmlContent := "<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='" + baseURL + "user/email?token=" + code + "' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>"
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
-	response, err := client.Send(message)
+	_, err = client.Send(message)
 	if err != nil {
 		return common.StringError(err)
 	}
-	fmt.Printf("\nResponse Status Code = %+v", response.StatusCode)
-	fmt.Printf("\nResponse Body = %+v", response.Body)
-	fmt.Printf("\nResponse Headers = %+v", response.Headers)
 	// success
 	return nil
 }

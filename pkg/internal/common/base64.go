@@ -3,7 +3,6 @@ package common
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 )
 
 func EncodeToBase64(object interface{}) (string, error) {
@@ -18,7 +17,6 @@ func DecodeFromBase64[T any](from string) (T, error) {
 	var result *T = new(T)
 	buffer, err := base64.StdEncoding.DecodeString(from)
 	if err != nil {
-		fmt.Printf("\nFROM=%+v", from)
 		return *result, StringError(err)
 	}
 	err = json.Unmarshal(buffer, &result)
