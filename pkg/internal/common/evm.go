@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/lmittmann/w3"
+	"golang.org/x/crypto/sha3"
 )
 
 func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte, error) {
@@ -86,11 +87,13 @@ func IsWallet(addr string) bool {
 	RPC := "https://rpc.ankr.com/eth" // temporarily just use ETH mainnet
 	geth, _ := ethclient.Dial(RPC)
 
-	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
-	valid := re.MatchString(addr)
-	if !valid {
+	if !validAddress(addr) {
 		return false
 	}
+	if !validChecksum(addr) {
+		return false
+	}
+
 	address := common.HexToAddress(addr)
 	bytecode, err := geth.CodeAt(context.Background(), address, nil)
 	if err != nil {
@@ -98,4 +101,28 @@ func IsWallet(addr string) bool {
 	}
 	isContract := len(bytecode) > 0
 	return !isContract
+}
+
+func validChecksum(addr string) bool {
+	lowerCase := strings.ToLower(addr)[2:]
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write([]byte(lowerCase))
+	hashBytes := hash.Sum(nil)
+
+	valid := "0x"
+	for i, b := range lowerCase {
+		c := string(b)
+		if b < '0' || b > '9' {
+			if hashBytes[i/2]&byte(128-i%2*120) != 0 {
+				c = string(b - 32)
+			}
+		}
+		valid += c
+	}
+	return addr == valid
+}
+
+func validAddress(addr string) bool {
+	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
+	return re.MatchString(addr)
 }
