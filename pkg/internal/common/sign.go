@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +25,6 @@ func EVMSign(data interface{}) (string, error) {
 	if err != nil {
 		return "", StringError(err)
 	}
-	fmt.Printf("\nSIGNED=%+v", hexutil.Encode(signature))
 	return hexutil.Encode(signature), nil
 }
 
