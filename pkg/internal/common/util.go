@@ -35,7 +35,7 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, err error) {
 	floatReturn, err = strconv.ParseFloat(bigNumber, 64)
 	if err != nil {
-		log.Printf("Failed to convert transaction amount to float: %s", err)
+		log.Printf("Failed to convert bigNumber to float: %s", err)
 		err = StringError(err)
 		return
 	}

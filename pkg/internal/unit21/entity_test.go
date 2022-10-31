@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,14 +40,13 @@ func TestCreateEntity(t *testing.T) {
 		LastName:      "User",
 	}
 
-	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "deactivated_at", "type", "status", "data"})
-	//.AddRow(1, time.Now(), time.Now(), "1")
+	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "type", "status", "data"}).AddRow(uuid.NewString(), entityId, time.Now(), time.Now(), time.Now(), "email", "verified", "test@gmail.com")
 	mock.ExpectQuery(`SELECT \* FROM contact WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedContactRow)
 
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "deactivated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"})
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
-	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"})
+	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
 
 	// Dependent on Device and Instrument Repos being created
@@ -93,14 +93,13 @@ func TestUpdateEntity(t *testing.T) {
 		LastName:      "User",
 	}
 
-	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "deactivated_at", "type", "status", "data"})
-	//.AddRow(1, time.Now(), time.Now(), "1")
+	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "type", "status", "data"}).AddRow(uuid.NewString(), entityId, time.Now(), time.Now(), time.Now(), "email", "verified", "test@gmail.com")
 	mock.ExpectQuery(`SELECT \* FROM contact WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedContactRow)
 
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "deactivated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"})
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
-	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"})
+	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
 
 	// Dependent on Device and Instrument Repos being created

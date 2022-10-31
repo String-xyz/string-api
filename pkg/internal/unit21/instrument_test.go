@@ -96,11 +96,11 @@ func TestUpdateInstrument(t *testing.T) {
 		LocationID:    uuid.NewString(),
 	}
 
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "deactivated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"})
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
-	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"})
-	mock.ExpectQuery(`SELECT location FROM %s WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
+	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"}).AddRow(uuid.NewString(), time.Now(), time.Now(), "Home", "Verified", nil, "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
+	mock.ExpectQuery(`SELECT \* FROM location WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
 	instrumentRepo := repository.NewInstrument(sqlxDB)
 	userRepo := repository.NewUser(sqlxDB)

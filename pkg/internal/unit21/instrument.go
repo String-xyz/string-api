@@ -2,6 +2,7 @@ package unit21
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -108,7 +109,9 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 	}
 
 	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
-	return u21Response.Unit21Id, nil
+	return "", fmt.Errorf("throw an error here")
+
+	// return u21Response.Unit21Id, nil
 }
 
 func getSource(userID string, userRepo repository.User) (source string, err error) {
@@ -210,6 +213,8 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 		Tags:         instrumentTagArr,
 		// Options:            &options,
 	}
+
+	log.Printf("%+v\n", jsonBody)
 
 	return jsonBody
 }
