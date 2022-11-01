@@ -37,7 +37,7 @@ func (u user) GetStatus(c echo.Context) error {
 	res, err := u.Service.GetStatus(body)
 	if err != nil {
 		lg.Err(err).Msg("user getstatus")
-		return c.String(http.StatusOK, "User Service Failed")
+		return c.String(http.StatusNotFound, "User Not Found")
 	}
 	return c.JSON(http.StatusOK, res)
 }

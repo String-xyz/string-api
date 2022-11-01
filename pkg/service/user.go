@@ -46,7 +46,7 @@ func NewUser(repos UserRepos) User {
 }
 
 func (u user) GetStatus(request UserRequest) (model.UserOnboardingStatus, error) {
-	res := model.UserOnboardingStatus{Status: "Not Found"}
+	res := model.UserOnboardingStatus{Status: "not found"}
 	addr := request.WalletAddress
 	if addr == "" {
 		return res, common.StringError(errors.New("no wallet address provided"))
@@ -59,8 +59,11 @@ func (u user) GetStatus(request UserRequest) (model.UserOnboardingStatus, error)
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	res.Status = associatedUser.Status
-	return res, nil
+	if associatedUser.Status != "" {
+		res.Status = associatedUser.Status
+		return res, nil
+	}
+	return res, common.StringError(errors.New("not found"))
 }
 
 func (u user) Create(request UserRequest) error {
@@ -86,7 +89,7 @@ func (u user) Create(request UserRequest) error {
 	}
 
 	// Optionally verify signature
-	status := "Created"
+	status := "unverified"
 	if request.Signature != "" {
 		valid, err := common.ValidateExternalEVMSignature(request.Signature, addr, addr) // they signed their own address.
 		// it's like writing your name on your hand and then xeroxing it
@@ -96,18 +99,18 @@ func (u user) Create(request UserRequest) error {
 		if !valid {
 			return common.StringError(errors.New("signature invalid"))
 		}
-		status = "Validated"
+		status = "validated"
 	}
 
 	// Initialize a new user
-	user := model.User{Type: "String User", Status: "Created"} // Validated status pertains to specific instrument
+	user := model.User{Type: "string-user", Status: "unverified"} // Validated status pertains to specific instrument
 	user, err = u.repos.User.Create(user)
 	if err != nil {
 		return common.StringError(err)
 	}
 
 	// Create a new wallet instrument and associate it with the new user
-	instrument = model.Instrument{Type: "Crypto Wallet", Status: status, Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument = model.Instrument{Type: "crypto-wallet", Status: status, Network: "EVM", PublicKey: addr, UserID: user.ID}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		return common.StringError(err)
@@ -130,7 +133,7 @@ func (u user) Sign(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	if instrument.Status == "Validated" {
+	if instrument.Status == "validated" {
 		return common.StringError(errors.New("wallet already validated"))
 	}
 
@@ -146,7 +149,7 @@ func (u user) Sign(request UserRequest) error {
 	if !valid {
 		return common.StringError(errors.New("signature invalid"))
 	}
-	validated := "Validated"
+	validated := "validated"
 	status := model.UpdateStatus{Status: &validated}
 	err = u.repos.Instrument.Update(instrument.ID, status)
 	if err != nil {
@@ -158,6 +161,7 @@ func (u user) Sign(request UserRequest) error {
 func (u user) Authenticate(request UserRequest) error {
 	addr := request.WalletAddress
 	email := request.EmailAddress
+	// TODO: Use go-playground/validator
 	if addr == "" || email == "" {
 		return common.StringError(errors.New("missing wallet/email"))
 	}
@@ -185,6 +189,8 @@ func (u user) Authenticate(request UserRequest) error {
 	env := os.Getenv("ENV")
 	if env == "dev" {
 		baseURL = "https://app.dev.string-api.xyz/"
+	} else if env == "local" {
+		baseURL = "http://localhost:5555/"
 	} else {
 		baseURL = "https://app.string-api.xyz/"
 	}
