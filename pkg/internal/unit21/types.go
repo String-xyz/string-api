@@ -14,7 +14,7 @@ type u21Entity struct {
 type entityGeneral struct {
 	EntityId      string   `json:"entity_id"`
 	EntityType    string   `json:"entity_type"` //employee or business - says user in the spreadsheet?
-	EntitySubType string   `json:"entity_subtype"`
+	EntitySubType string   `json:"entity_subtype,omitempty"`
 	Status        string   `json:"status,omitempty"`
 	RegisteredAt  int      `json:"registered_at"`  //date in seconds since 1/1/1970
 	Tags          []string `json:"tags,omitempty"` //list of format: keyString:valueString
@@ -68,8 +68,8 @@ type updateEntityResponse struct {
 type u21Instrument struct {
 	InstrumentId       string                  `json:"instrument_id"`
 	InstrumentType     string                  `json:"instrument_type"`
-	InstrumentSubtype  string                  `json:"instrument_subtype"`
-	Source             string                  `json:"source"`
+	InstrumentSubtype  string                  `json:"instrument_subtype,omitempty"`
+	Source             string                  `json:"source,omitempty"`
 	Status             string                  `json:"status,omitempty"`
 	RegisteredAt       int                     `json:"registered_at"`
 	ParentInstrumentId string                  `json:"parent_instrument_id,omitempty"`
@@ -83,8 +83,8 @@ type u21Instrument struct {
 
 type instrumentEntity struct {
 	EntityId       string `json:"entity_id"`
-	RelationshipId string `json:"relationship_id"`
-	EntityType     string `json:"entity_type"`
+	RelationshipId string `json:"relationship_id,omitempty"`
+	EntityType     string `json:"entity_type,omitempty"`
 }
 
 type instrumentDigitalData struct {
@@ -94,7 +94,7 @@ type instrumentDigitalData struct {
 type instrumentLocationData struct {
 	Type           string `json:"type"`
 	BuildingNumber string `json:"building_number"`
-	UnitNumber     string `json:"unit_number"`
+	UnitNumber     string `json:"unit_number,omitempty"`
 	StreetName     string `json:"street_name"`
 	City           string `json:"city"`
 	State          string `json:"state"`

@@ -20,6 +20,7 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	log.Printf("create call with jsonBody: %s\n and url: %s", jsonBody, url)
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
+	log.Printf("reqBodyBytes: %s", reqBodyBytes)
 	if err != nil {
 		log.Printf("Could not encode %s to bytes: %s", datatype, err)
 		return nil, common.StringError(err)

@@ -197,10 +197,10 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 	entityArray = append(entityArray, entityData)
 
 	jsonBody := &u21Instrument{
-		InstrumentId:       instrument.ID,
-		InstrumentType:     instrument.Type,
-		InstrumentSubtype:  "",
-		Source:             source,
+		InstrumentId:   instrument.ID,
+		InstrumentType: instrument.Type,
+		// InstrumentSubtype:  "",
+		// Source:             "internal",
 		Status:             instrument.Status,
 		RegisteredAt:       int(instrument.CreatedAt.Unix()),
 		ParentInstrumentId: "",
@@ -211,7 +211,7 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 		DigitalData:  &digitalData,
 		LocationData: &locationData,
 		Tags:         instrumentTagArr,
-		// Options:            &options,
+		// Options:      &options,
 	}
 
 	log.Printf("%+v\n", jsonBody)
