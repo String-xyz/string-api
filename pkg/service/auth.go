@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -99,12 +98,12 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 		return JWT{}, common.StringError(err)
 	}
 
-	// Share with Unit21
-	entityRepo := unit21.NewEntity(a.userRepo, a.contactRepo)
-	_, err = entityRepo.Create(user) // Discard Unit21 ID
-	if err != nil {
-		return JWT{}, common.StringError(err)
-	}
+	// // Share with Unit21
+	// entityRepo := unit21.NewEntity(a.userRepo, a.contactRepo)
+	// _, err = entityRepo.Create(user) // Discard Unit21 ID
+	// if err != nil {
+	// 	return JWT{}, common.StringError(err)
+	// }
 
 	return a.GenerateJWT(user)
 }

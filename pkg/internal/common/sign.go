@@ -50,8 +50,7 @@ func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	if err != nil {
 		return false, StringError(err)
 	}
-	sigBytes = sigBytes[:len(sigBytes)-1] // last byte is a recovery ID
-	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes)
+	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery ID
 	return verified, nil
 }
 
@@ -66,14 +65,18 @@ func ValidateExternalEVMSignature(signature string, address string, data interfa
 	if err != nil {
 		return false, StringError(err)
 	}
-	sigBytes = sigBytes[:len(sigBytes)-1] // last byte is a recovery ID
 
-	addrBytes, err := hexutil.Decode(address)
+	sigPKECDSA, err := crypto.SigToPub(hash.Bytes(), sigBytes)
 	if err != nil {
 		return false, StringError(err)
 	}
-	addrBytes = addrBytes[:len(addrBytes)-1] // last byte is a recovery ID
+	sigPKBytes := crypto.FromECDSAPub(sigPKECDSA)
 
-	verified := crypto.VerifySignature(addrBytes, hash.Bytes(), sigBytes)
+	SIGPKString := crypto.PubkeyToAddress(*sigPKECDSA).String()
+	if address != SIGPKString {
+		return false, nil
+	}
+
+	verified := crypto.VerifySignature(sigPKBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery ID
 	return verified, nil
 }

@@ -76,5 +76,25 @@ type UserPKLogin struct {
 	Nonce         string `json:"nonce"`
 }
 
+type UserRequest struct {
+	WalletAddress string `json:"walletAddress"`
+	EmailAddress  string `json:"emailAddress"`
+	FirstName     string `json:"firstName"`
+	MiddleName    string `json:"middleName"`
+	LastName      string `json:"lastName"`
+	Signature     string `json:"signature"`
+}
+
+// Can be used for user, instrument, etc
+type UpdateStatus struct {
+	Status *string `json:"status" db:"status"`
+}
+
+type UpdateUserName struct {
+	FirstName  string `json:"firstName" db:"first_name"`
+	MiddleName string `json:"middleName" db:"middle_name"`
+	LastName   string `json:"lastName" db:"last_name"`
+}
+
 type EntityType string
 type AuthType string

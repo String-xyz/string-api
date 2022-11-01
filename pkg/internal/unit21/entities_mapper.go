@@ -4,11 +4,12 @@ import "github.com/String-xyz/string-api/pkg/model"
 
 func MapUserToEntity(user model.User) *u21entity {
 	var userTagArr []string
-	if user.Tags != nil {
-		for key, value := range user.Tags {
-			userTagArr = append(userTagArr, key+":"+value)
-		}
-	}
+	// Temporarily disabled
+	// if user.Tags != nil {
+	// 	for key, value := range user.Tags {
+	// 		userTagArr = append(userTagArr, key+":"+value)
+	// 	}
+	// }
 
 	jsonBody := &u21entity{
 		GeneralData: &general{
