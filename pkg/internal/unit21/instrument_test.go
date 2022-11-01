@@ -42,10 +42,6 @@ func TestCreateInstrument(t *testing.T) {
 		LocationID:    uuid.NewString(),
 	}
 
-	// mockedUserRow1 := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "deactivated_at", "type", "status", "tags", "first_name", "middle_name", "last_name"}).AddRow(uuid.NewString(), time.Now(), time.Now(), nil, "User", "Onboarded", `{"kyc_level": "1", "platform": "mortal kombat"}`, "Daemon", "", "Targaryan")
-	// mock.ExpectQuery(`SELECT \* FROM string_user WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedUserRow1)
-	// mock.ExpectQuery(`SELECT \* FROM string_user WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedUserRow1)
-
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
 
