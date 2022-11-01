@@ -156,10 +156,6 @@ func getInstrumentDigitalData(userId string, deviceRepo repository.Device) (digi
 	return
 }
 
-//{
-// 	IpAddresses: "192.206.151.131",
-// },
-
 func getLocationData(locationID string, locationRepo repository.Location) (locationData instrumentLocationData, err error) {
 	location, err := locationRepo.GetById(locationID)
 	if err != nil {

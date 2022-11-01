@@ -17,10 +17,7 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 	url := os.Getenv("UNIT21_URL") + datatype + "/create"
 
-	log.Printf("create call with jsonBody: %s\n and url: %s", jsonBody, url)
-
 	reqBodyBytes, err := json.Marshal(jsonBody)
-	log.Printf("reqBodyBytes: %s", reqBodyBytes)
 	if err != nil {
 		log.Printf("Could not encode %s to bytes: %s", datatype, err)
 		return nil, common.StringError(err)
@@ -69,8 +66,6 @@ func update(datatype string, id string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 	orgName := os.Getenv("UNIT21_ORG_NAME")
 	url := os.Getenv("UNIT21_URL") + orgName + "/" + datatype + "/" + id + "/update"
-
-	log.Printf("update call with jsonBody: %s\n and url: %s", jsonBody, url)
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
