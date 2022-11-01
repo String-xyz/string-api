@@ -114,9 +114,9 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	}
 	u.Group = g
 	g.Use(ms...)
-	g.GET("/", u.GetStatus)
-	g.POST("/", u.Create)
-	g.PUT("/", u.Sign)
+	g.GET("", u.GetStatus)
+	g.POST("", u.Create)
+	g.PUT("", u.Sign)
 	g.POST("/email", u.Authenticate)
 	g.POST("/name", u.Name)
 }
