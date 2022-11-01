@@ -18,6 +18,10 @@ type User interface {
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
+type ResultMessage struct {
+	Status string
+}
+
 type user struct {
 	Service service.User
 	Group   *echo.Group
@@ -54,7 +58,7 @@ func (u user) Create(c echo.Context) error {
 		lg.Err(err).Msg("user create")
 		return c.String(http.StatusOK, "User Service Failed")
 	}
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, ResultMessage{Status: "User Created"})
 }
 
 func (u user) Sign(c echo.Context) error {
@@ -67,9 +71,9 @@ func (u user) Sign(c echo.Context) error {
 	err = u.Service.Sign(body)
 	if err != nil {
 		lg.Err(err).Msg("user sign")
-		return c.String(http.StatusOK, "User Service Failed")
+		return c.String(http.StatusBadRequest, "Signing Wallet Failed")
 	}
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Wallet Signed"})
 }
 
 func (u user) Authenticate(c echo.Context) error {
@@ -86,18 +90,18 @@ func (u user) Authenticate(c echo.Context) error {
 		err = u.Service.ReceiveEmailAuthentication(token)
 		if err != nil {
 			lg.Err(err).Msg("user authenticate")
-			return c.String(http.StatusOK, "User Service Failed")
+			return c.String(http.StatusBadRequest, "Invalid Token")
 		}
-		return c.JSON(http.StatusOK, nil)
+		return c.JSON(http.StatusOK, ResultMessage{Status: "Email Validated Successfully"})
 	}
 
 	// User needs a token
 	err = u.Service.Authenticate(body)
 	if err != nil {
 		lg.Err(err).Msg("user authenticate")
-		return c.String(http.StatusOK, "User Service Failed")
+		return c.String(http.StatusBadRequest, "Could Not Send Email Verification")
 	}
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Validation Sent"})
 }
 
 func (u user) Name(c echo.Context) error {
@@ -110,9 +114,9 @@ func (u user) Name(c echo.Context) error {
 	err = u.Service.Name(body)
 	if err != nil {
 		lg.Err(err).Msg("user name")
-		return c.String(http.StatusOK, "User Service Failed")
+		return c.String(http.StatusBadRequest, "Could Not Update Name")
 	}
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Name Updated Successfully"})
 }
 
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
