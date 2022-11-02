@@ -14,38 +14,41 @@ type Instrument interface {
 	Update(instrument model.Instrument) (unit21Id string, err error)
 }
 
-type instrument struct {
-	instrumentRepo repository.Instrument
-	userRepo       repository.User
-	deviceRepo     repository.Device
-	locationRepo   repository.Location
+type InstrumentRepo struct {
+	user     repository.User
+	device   repository.Device
+	location repository.Location
 }
 
-func NewInstrument(inst repository.Instrument, user repository.User, device repository.Device, location repository.Location) Instrument {
-	return &instrument{instrumentRepo: inst, userRepo: user, deviceRepo: device, locationRepo: location}
+type instrument struct {
+	repo InstrumentRepo
+}
+
+func NewInstrument(r InstrumentRepo) Instrument {
+	return &instrument{repo: r}
 }
 
 func (i instrument) Create(instrument model.Instrument) (unit21Id string, err error) {
 
-	source, err := getSource(instrument.UserID, i.userRepo)
+	source, err := getSource(instrument.UserID, i.repo.user)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	entities, err := getEntities(instrument.UserID, i.userRepo)
+	entities, err := getEntities(instrument.UserID, i.repo.user)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.deviceRepo)
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID, i.locationRepo)
+	locationData, err := getLocationData(instrument.LocationID, i.repo.location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
@@ -70,25 +73,25 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 
 func (i instrument) Update(instrument model.Instrument) (unit21Id string, err error) {
 
-	source, err := getSource(instrument.UserID, i.userRepo)
+	source, err := getSource(instrument.UserID, i.repo.user)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	entities, err := getEntities(instrument.UserID, i.userRepo)
+	entities, err := getEntities(instrument.UserID, i.repo.user)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.deviceRepo)
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID, i.locationRepo)
+	locationData, err := getLocationData(instrument.LocationID, i.repo.location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)

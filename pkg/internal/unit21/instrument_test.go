@@ -48,12 +48,13 @@ func TestCreateInstrument(t *testing.T) {
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"}).AddRow(uuid.NewString(), time.Now(), time.Now(), "Home", "Verified", nil, "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
 	mock.ExpectQuery(`SELECT \* FROM location WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
-	instrumentRepo := repository.NewInstrument(sqlxDB)
-	userRepo := repository.NewUser(sqlxDB)
-	deviceRepo := repository.NewDevice(sqlxDB)
-	locationRepo := repository.NewLocation(sqlxDB)
+	repo := InstrumentRepo{
+		user:     repository.NewUser(sqlxDB),
+		device:   repository.NewDevice(sqlxDB),
+		location: repository.NewLocation(sqlxDB),
+	}
 
-	u21Instrument := NewInstrument(instrumentRepo, userRepo, deviceRepo, locationRepo)
+	u21Instrument := NewInstrument(repo)
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 	assert.NoError(t, err)
@@ -98,12 +99,13 @@ func TestUpdateInstrument(t *testing.T) {
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "tags", "building_numeber", "unit_number", "street_name", "city", "state", "postal_code", "country"}).AddRow(uuid.NewString(), time.Now(), time.Now(), "Home", "Verified", nil, "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
 	mock.ExpectQuery(`SELECT \* FROM location WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
-	instrumentRepo := repository.NewInstrument(sqlxDB)
-	userRepo := repository.NewUser(sqlxDB)
-	deviceRepo := repository.NewDevice(sqlxDB)
-	locationRepo := repository.NewLocation(sqlxDB)
+	repo := InstrumentRepo{
+		user:     repository.NewUser(sqlxDB),
+		device:   repository.NewDevice(sqlxDB),
+		location: repository.NewLocation(sqlxDB),
+	}
 
-	u21Instrument := NewInstrument(instrumentRepo, userRepo, deviceRepo, locationRepo)
+	u21Instrument := NewInstrument(repo)
 
 	u21InstrumentId, err := u21Instrument.Update(instrument)
 	assert.NoError(t, err)

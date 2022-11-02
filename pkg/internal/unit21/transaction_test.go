@@ -70,12 +70,13 @@ func TestCreateTransaction(t *testing.T) {
 	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).AddRow(uuid.NewString(), time.Now(), time.Now(), "Noose The Goose", "Noose the Goose NFT", 1, true, uuid.NewString(), "joepegs.com")
 	mock.ExpectQuery(`SELECT \* FROM asset WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedAssetRow2)
 
-	transactionRepo := repository.NewTransaction(sqlxDB)
-	txLegRepo := repository.NewTxLeg((sqlxDB))
-	userRepo := repository.NewUser(sqlxDB)
-	assetRepo := repository.NewAsset(sqlxDB)
+	repo := TransactionRepo{
+		txLeg: repository.NewTxLeg((sqlxDB)),
+		user:  repository.NewUser(sqlxDB),
+		asset: repository.NewAsset(sqlxDB),
+	}
 
-	u21Transaction := NewTransaction(transactionRepo, txLegRepo, userRepo, assetRepo)
+	u21Transaction := NewTransaction(repo)
 
 	u21TransactionId, err := u21Transaction.Create(transaction)
 	assert.NoError(t, err)
@@ -142,12 +143,13 @@ func TestUpdateTransaction(t *testing.T) {
 	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).AddRow(uuid.NewString(), time.Now(), time.Now(), "Noose The Goose", "Noose the Goose NFT", 1, true, uuid.NewString(), "joepegs.com")
 	mock.ExpectQuery(`SELECT \* FROM asset WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedAssetRow2)
 
-	transactionRepo := repository.NewTransaction(sqlxDB)
-	txLegRepo := repository.NewTxLeg((sqlxDB))
-	userRepo := repository.NewUser(sqlxDB)
-	assetRepo := repository.NewAsset(sqlxDB)
+	repo := TransactionRepo{
+		txLeg: repository.NewTxLeg((sqlxDB)),
+		user:  repository.NewUser(sqlxDB),
+		asset: repository.NewAsset(sqlxDB),
+	}
 
-	u21Transaction := NewTransaction(transactionRepo, txLegRepo, userRepo, assetRepo)
+	u21Transaction := NewTransaction(repo)
 
 	u21TransactionId, err := u21Transaction.Update(transaction)
 	assert.NoError(t, err)

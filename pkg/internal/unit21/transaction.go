@@ -14,20 +14,23 @@ type Transaction interface {
 	Update(transaction model.Transaction) (unit21Id string, err error)
 }
 
-type transaction struct {
-	transactionRepo repository.Transaction
-	txLegRepo       repository.TxLeg
-	userRepo        repository.User
-	assetRepo       repository.Asset
+type TransactionRepo struct {
+	txLeg repository.TxLeg
+	user  repository.User
+	asset repository.Asset
 }
 
-func NewTransaction(tx repository.Transaction, txLeg repository.TxLeg, user repository.User, asset repository.Asset) Transaction {
-	return &transaction{transactionRepo: tx, txLegRepo: txLeg, userRepo: user, assetRepo: asset}
+type transaction struct {
+	repo TransactionRepo
+}
+
+func NewTransaction(r TransactionRepo) Transaction {
+	return &transaction{repo: r}
 }
 
 func (i transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.userRepo, i.assetRepo, i.txLegRepo)
+	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
@@ -52,7 +55,7 @@ func (i transaction) Create(transaction model.Transaction) (unit21Id string, err
 
 func (i transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.userRepo, i.assetRepo, i.txLegRepo)
+	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)

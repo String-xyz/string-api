@@ -49,13 +49,13 @@ func TestCreateEntity(t *testing.T) {
 	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
 
-	// Dependent on Device and Instrument Repos being created
-	userRepo := repository.NewUser(sqlxDB)
-	deviceRepo := repository.NewDevice(sqlxDB)
-	contactRepo := repository.NewContact(sqlxDB)
-	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
+	repos := EntityRepos{
+		device:       repository.NewDevice(sqlxDB),
+		contact:      repository.NewContact(sqlxDB),
+		userPlatform: repository.NewUserPlatform(sqlxDB),
+	}
 
-	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(repos)
 
 	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)
@@ -102,13 +102,13 @@ func TestUpdateEntity(t *testing.T) {
 	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
 	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
 
-	// Dependent on Device and Instrument Repos being created
-	userRepo := repository.NewUser(sqlxDB)
-	deviceRepo := repository.NewDevice(sqlxDB)
-	contactRepo := repository.NewContact(sqlxDB)
-	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
+	repos := EntityRepos{
+		device:       repository.NewDevice(sqlxDB),
+		contact:      repository.NewContact(sqlxDB),
+		userPlatform: repository.NewUserPlatform(sqlxDB),
+	}
 
-	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(repos)
 
 	// update in u21
 	u21EntityId, err := u21Entity.Update(user)
