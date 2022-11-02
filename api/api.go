@@ -95,6 +95,6 @@ func verificationRoute(config APIConfig, e *echo.Echo) {
 		Instrument: repository.NewInstrument(config.DB),
 	}
 	service := service.NewUser(repos)
-	handler := handler.NewUser(e, service)
+	handler := handler.NewVerification(e, service)
 	handler.RegisterRoutes(e.Group("/verification"))
 }
