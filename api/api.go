@@ -37,6 +37,7 @@ func Start(config APIConfig) {
 }
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
+	e.Use(middleware.CORS())
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Tracer())
 	e.Use(middleware.Recover())
