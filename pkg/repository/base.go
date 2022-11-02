@@ -52,7 +52,7 @@ type Transactable interface {
 	Rollback()
 	// Commit commits the undelying Tx and resets to back to *sqlx.DB from *sqlx.Tx
 	Commit() error
-	// SetTx sets the underying store to be sqlx.TX so it can be used for transaction across multiple repos
+	// SetTx sets the underying store to be sqlx.Tx so it can be used for transaction across multiple repos
 	SetTx(t Queryable)
 	// Reset changes the store back to *sqlx.DB from *sqlx.Tx
 	// Useful when there are many repos using the same *sqlx.Tx

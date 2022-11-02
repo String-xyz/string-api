@@ -139,13 +139,13 @@ func TestAddInstruments(t *testing.T) {
 		instrumentIds = append(instrumentIds, uuid.NewString())
 	}
 
-	// Dependent on Device and Instrument Repos being created
-	userRepo := repository.NewUser(sqlxDB)
-	deviceRepo := repository.NewDevice(sqlxDB)
-	contactRepo := repository.NewContact(sqlxDB)
-	userPlatformRepo := repository.NewUserPlatform(sqlxDB)
+	repos := EntityRepos{
+		device:       repository.NewDevice(sqlxDB),
+		contact:      repository.NewContact(sqlxDB),
+		userPlatform: repository.NewUserPlatform(sqlxDB),
+	}
 
-	u21Entity := NewEntity(userRepo, deviceRepo, contactRepo, userPlatformRepo)
+	u21Entity := NewEntity(repos)
 
 	err = u21Entity.AddInstruments(entityId, instrumentIds)
 	assert.NoError(t, err)

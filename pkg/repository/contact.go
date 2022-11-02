@@ -39,6 +39,7 @@ func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 			return m, common.StringError(err)
 		}
 	}
+
 	defer rows.Close()
 	return m, nil
 }

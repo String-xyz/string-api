@@ -4,23 +4,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
-
-	"github.com/jmoiron/sqlx/types"
-	"github.com/lib/pq"
 )
 
 // See STRING_USER in Migrations 0001
 type User struct {
-	ID            string            `json:"id" db:"id"`
-	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string            `json:"type" db:"type"`
-	Status        string            `json:"status" db:"status"`
-	Tags          map[string]string `json:"tags" db:"tags"`
-	FirstName     string            `json:"firstName" db:"first_name"`
-	MiddleName    string            `json:"middleName" db:"middle_name"`
-	LastName      string            `json:"lastName" db:"last_name"`
+	ID            string     `json:"id" db:"id"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type          string     `json:"type" db:"type"`
+	Status        string     `json:"status" db:"status"`
+	Tags          StringMap  `json:"tags" db:"tags"`
+	FirstName     string     `json:"firstName" db:"first_name"`
+	MiddleName    string     `json:"middleName" db:"middle_name"`
+	LastName      string     `json:"lastName" db:"last_name"`
 }
 
 // See PLATFORM in Migrations 0001
@@ -70,17 +67,17 @@ type UserPlatform struct {
 
 // See DEVICE in Migrations 0002
 type Device struct {
-	ID            string         `json:"id" db:"id"`
-	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
-	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
-	ValidatedAt   time.Time      `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt time.Time      `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string         `json:"type" db:"type"`
-	Description   string         `json:"description" db:"description"`
-	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
-	IpAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
-	UserID        string         `json:"userId" db:"user_id"`
+	ID            string      `json:"id" db:"id"`
+	CreatedAt     time.Time   `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time   `json:"updatedAt" db:"updated_at"`
+	LastUsedAt    time.Time   `json:"lastUsedAt" db:"last_used_at"`
+	ValidatedAt   time.Time   `json:"validatedAt" db:"validated_at"`
+	DeactivatedAt time.Time   `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type          string      `json:"type" db:"type"`
+	Description   string      `json:"description" db:"description"`
+	Fingerprint   string      `json:"fingerprint" db:"fingerprint"`
+	IpAddresses   StringArray `json:"ipAddresses" db:"ip_addresses"`
+	UserID        string      `json:"userId" db:"user_id"`
 }
 
 // See CONTACT in Migrations 0002
@@ -98,36 +95,36 @@ type Contact struct {
 
 // See LOCATION in Migrations 0002
 type Location struct {
-	ID             string            `json:"id" db:"id"`
-	UserID         string            `json:"userId" db:"user_id"`
-	CreatedAt      time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time         `json:"updatedAt" db:"updated_at"`
-	Type           string            `json:"type" db:"type"`
-	Status         string            `json:"status" db:"status"`
-	Tags           map[string]string `json:"tags" db:"tags"`
-	BuildingNumber string            `json:"buildingNumber" db:"building_number"`
-	UnitNumber     string            `json:"unitNumber" db:"unit_number"`
-	StreetName     string            `json:"streetName" db:"street_name"`
-	City           string            `json:"city" db:"city"`
-	State          string            `json:"state" db:"state"`
-	PostalCode     string            `json:"postalCode" db:"postal_code"`
-	Country        string            `json:"country" db:"country"`
+	ID             string    `json:"id" db:"id"`
+	UserID         string    `json:"userId" db:"user_id"`
+	CreatedAt      time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time `json:"updatedAt" db:"updated_at"`
+	Type           string    `json:"type" db:"type"`
+	Status         string    `json:"status" db:"status"`
+	Tags           StringMap `json:"tags" db:"tags"`
+	BuildingNumber string    `json:"buildingNumber" db:"building_number"`
+	UnitNumber     string    `json:"unitNumber" db:"unit_number"`
+	StreetName     string    `json:"streetName" db:"street_name"`
+	City           string    `json:"city" db:"city"`
+	State          string    `json:"state" db:"state"`
+	PostalCode     string    `json:"postalCode" db:"postal_code"`
+	Country        string    `json:"country" db:"country"`
 }
 
 // See INSTRUMENT in Migrations 0002
 type Instrument struct {
-	ID            string            `json:"id" db:"id"`
-	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time        `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string            `json:"type" db:"type"`
-	Status        string            `json:"status" db:"status"`
-	Tags          map[string]string `json:"tags" db:"tags"`
-	Network       string            `json:"network" db:"network"`
-	PublicKey     string            `json:"publicKey" db:"public_key"`
-	Last4         string            `json:"last4" db:"last_4"`
-	UserID        string            `json:"userId" db:"user_id"`
-	LocationID    string            `json:"locationId" db:"location_id"`
+	ID            string         `json:"id" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type          string         `json:"type" db:"type"`
+	Status        string         `json:"status" db:"status"`
+	Tags          StringMap      `json:"tags" db:"tags"`
+	Network       string         `json:"network" db:"network"`
+	PublicKey     string         `json:"publicKey" db:"public_key"`
+	Last4         string         `json:"last4" db:"last_4"`
+	UserID        string         `json:"userId" db:"user_id"`
+	LocationID    sql.NullString `json:"locationId" db:"location_id"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
@@ -142,7 +139,7 @@ type DeviceInstrument struct {
 	InstrumentID string `json:"instrumentId" db:"instrument_id"`
 }
 
-// See TX_LEG in Migrations 0003
+// See Tx_LEG in Migrations 0003
 type TxLeg struct {
 	ID           string    `json:"id" db:"id"`
 	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
@@ -157,28 +154,28 @@ type TxLeg struct {
 
 // See TRANSACTION in Migrations 0003
 type Transaction struct {
-	ID                 string            `json:"id" db:"id"`
-	CreatedAt          time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt          time.Time         `json:"updatedAt" db:"updated_at"`
-	Type               string            `json:"type" db:"type"`
-	Status             string            `json:"status" db:"status"`
-	Tags               map[string]string `json:"tags" db:"tags"`
-	DeviceID           string            `json:"deviceId" db:"device_id"`
-	IPAddress          string            `json:"ipAddress" db:"ip_address"`
-	PlatformID         string            `json:"platformId" db:"platform_id"`
-	TransactionHash    string            `json:"transactionHash" db:"transaction_hash"`
-	NetworkID          string            `json:"networkId" db:"network_id"`
-	NetworkFee         string            `json:"networkFee" db:"network_fee"`
-	ContractParams     types.JSONText    `json:"contractParameters" db:"contract_params"`
-	ContractFunc       string            `json:"contractFunc" db:"contract_func"`
-	TransactionAmount  string            `json:"transactionAmount" db:"transaction_amount"`
-	OriginTxLegID      string            `json:"originTxLegId" db:"origin_tx_leg_id"`
-	ReceiptTxLegID     string            `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
-	ResponseTxLegID    string            `json:"responseTxLegId" db:"response_tx_leg_id"`
-	DestinationTxLegID string            `json:"destinationTxLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      string            `json:"processingFee" db:"processing_fee"`
-	ProcessingFeeAsset string            `json:"processingFeeAsset" db:"processing_fee_asset"`
-	StringFee          string            `json:"stringFee" db:"string_fee"`
+	ID                 string      `json:"id" db:"id"`
+	CreatedAt          time.Time   `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time   `json:"updatedAt" db:"updated_at"`
+	Type               string      `json:"type" db:"type"`
+	Status             string      `json:"status" db:"status"`
+	Tags               StringMap   `json:"tags" db:"tags"`
+	DeviceID           string      `json:"deviceId" db:"device_id"`
+	IPAddress          string      `json:"ipAddress" db:"ip_address"`
+	PlatformID         string      `json:"platformId" db:"platform_id"`
+	TransactionHash    string      `json:"transactionHash" db:"transaction_hash"`
+	NetworkID          string      `json:"networkId" db:"network_id"`
+	NetworkFee         string      `json:"networkFee" db:"network_fee"`
+	ContractParams     StringArray `json:"contractParameters" db:"contract_params"`
+	ContractFunc       string      `json:"contractFunc" db:"contract_func"`
+	TransactionAmount  string      `json:"transactionAmount" db:"transaction_amount"`
+	OriginTxLegID      string      `json:"originTxLegId" db:"origin_tx_leg_id"`
+	ReceiptTxLegID     string      `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
+	ResponseTxLegID    string      `json:"responseTxLegId" db:"response_tx_leg_id"`
+	DestinationTxLegID string      `json:"destinationTxLegId" db:"destination_tx_leg_id"`
+	ProcessingFee      string      `json:"processingFee" db:"processing_fee"`
+	ProcessingFeeAsset string      `json:"processingFeeAsset" db:"processing_fee_asset"`
+	StringFee          string      `json:"stringFee" db:"string_fee"`
 }
 
 type AuthStrategy struct {

@@ -26,8 +26,8 @@ func NewUser(db *sqlx.DB) User {
 func (u user[T]) Create(insert model.User) (model.User, error) {
 	m := model.User{}
 	rows, err := u.store.NamedQuery(`
-		INSERT INTO string_user (first_name, last_name, type, status) 
-		VALUES(:first_name,:last_name, :type, :status) 	RETURNING *`, insert)
+		INSERT INTO string_user (type, status) 
+		VALUES(:type, :status) 	RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}
