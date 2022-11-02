@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"database/sql"
 	"log"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestCreateInstrument(t *testing.T) {
 		PublicKey:     "",
 		Last4:         "1234",
 		UserID:        uuid.NewString(),
-		LocationID:    uuid.NewString(),
+		LocationID:    sql.NullString{String: uuid.NewString()},
 	}
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
@@ -90,7 +91,7 @@ func TestUpdateInstrument(t *testing.T) {
 		PublicKey:     "",
 		Last4:         "1234",
 		UserID:        uuid.NewString(),
-		LocationID:    uuid.NewString(),
+		LocationID:    sql.NullString{String: uuid.NewString()},
 	}
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())

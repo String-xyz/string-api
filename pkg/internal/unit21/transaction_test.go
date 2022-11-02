@@ -10,8 +10,8 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/types"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func TestCreateTransaction(t *testing.T) {
 		TransactionHash:    "",
 		NetworkID:          uuid.NewString(),
 		NetworkFee:         "100000000",
-		ContractParams:     types.JSONText{},
+		ContractParams:     pq.StringArray{},
 		ContractFunc:       "mintTo()",
 		TransactionAmount:  "1000000000",
 		OriginTxLegID:      uuid.NewString(),
@@ -113,7 +113,7 @@ func TestUpdateTransaction(t *testing.T) {
 		TransactionHash:    "",
 		NetworkID:          uuid.NewString(),
 		NetworkFee:         "100000000",
-		ContractParams:     types.JSONText{},
+		ContractParams:     pq.StringArray{},
 		ContractFunc:       "mintTo()",
 		TransactionAmount:  "1000000000",
 		OriginTxLegID:      uuid.NewString(),

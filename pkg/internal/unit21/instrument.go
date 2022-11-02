@@ -48,7 +48,7 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID, i.repo.location)
+	locationData, err := getLocationData(instrument.LocationID.String, i.repo.location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
@@ -91,7 +91,7 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID, i.repo.location)
+	locationData, err := getLocationData(instrument.LocationID.String, i.repo.location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)

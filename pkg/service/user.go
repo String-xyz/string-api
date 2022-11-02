@@ -55,7 +55,7 @@ func (u user) GetStatus(request UserRequest) (model.UserOnboardingStatus, error)
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	associatedUser, err := u.repos.User.GetID(instrument.UserID)
+	associatedUser, err := u.repos.User.GetById(instrument.UserID)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -129,7 +129,7 @@ func (u user) Sign(request UserRequest) error {
 	if instrument.UserID == "" {
 		return common.StringError(errors.New("wallet not associated with user"))
 	}
-	_, err = u.repos.User.GetID(instrument.UserID) // Don't need to update user, just verify they exist
+	_, err = u.repos.User.GetById(instrument.UserID) // Don't need to update user, just verify they exist
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -236,7 +236,7 @@ func (u user) Name(request UserRequest) error {
 	if instrument.UserID == "" {
 		return common.StringError(errors.New("wallet not associated with user"))
 	}
-	user, err := u.repos.User.GetID(instrument.UserID)
+	user, err := u.repos.User.GetById(instrument.UserID)
 	if err != nil {
 		return common.StringError(err)
 	}

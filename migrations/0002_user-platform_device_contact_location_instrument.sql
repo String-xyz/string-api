@@ -105,23 +105,23 @@ EXECUTE PROCEDURE update_updated_at_column();
 -------------------------------------------------------------------------
 -- INSTRUMENT -----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_instrument_updated_at ON instrument;
-DROP TABLE instrument;
+DROP TABLE IF EXISTS instrument;
 
 -------------------------------------------------------------------------
 -- LOCATION -----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_location_updated_at ON location;
-DROP TABLE location;
+DROP TABLE IF EXISTS location;
 
 -------------------------------------------------------------------------
 -- CONTACT --------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_contact_updated_at ON contact;
-DROP TABLE contact;
+DROP TABLE IF EXISTS contact;
 
 -------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_device_updated_at ON device;
-DROP TABLE device;
+DROP TABLE IF EXISTS device;
 
 -------------------------------------------------------------------------
 -- USER_PLATFORM -----------------------------------------------------
-DROP TABLE user_platform;
+DROP TABLE IF EXISTS user_platform;

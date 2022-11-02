@@ -108,26 +108,26 @@ CREATE INDEX network_gas_token_id_fk ON network (gas_token_id);
 -- ASSET ----------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_asset_updated_at ON asset;
 DROP INDEX IF EXISTS network_gas_token_id_fk;
-DROP TABLE asset;
+DROP TABLE IF EXISTS asset;
 
 -------------------------------------------------------------------------
 -- NETWORK --------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_network_updated_at ON network;
-DROP TABLE network;
+DROP TABLE IF EXISTS network;
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_platform_updated_at ON platfom;
-DROP TABLE platform;
+DROP TABLE IF EXISTS platform;
 
 -------------------------------------------------------------------------
 -- STRING_USER ----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_string_user_updated_at ON string_user;
-DROP TABLE string_user;
+DROP TABLE IF EXISTS string_user;
 
 -------------------------------------------------------------------------
 -- UPDATE_UPDATED_AT_COLUMN() -------------------------------------------
-DROP FUNCTION update_updated_at_column;
+DROP FUNCTION IF EXISTS update_updated_at_column;
 
 -------------------------------------------------------------------------
 -- UUID EXTENSION -------------------------------------------------------

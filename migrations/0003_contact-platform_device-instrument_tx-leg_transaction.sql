@@ -93,17 +93,17 @@ EXECUTE PROCEDURE update_updated_at_column();
 -------------------------------------------------------------------------
 -- TRANSACTION ----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_transaction_updated_at ON transaction;
-DROP TABLE transaction;
+DROP TABLE IF EXISTS transaction;
 
 -------------------------------------------------------------------------
 -- TX_LEG ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_tx_leg_updated_at ON tx_leg;
-DROP TABLE tx_leg;
+DROP TABLE IF EXISTS tx_leg;
 
 -------------------------------------------------------------------------
 -- DEVICE_INSTRUMENT ----------------------------------------------------
-DROP TABLE device_instrument;
+DROP TABLE IF EXISTS device_instrument;
 
 -------------------------------------------------------------------------
 -- CONTACT_PLATFORM -----------------------------------------------------
-DROP TABLE contact_platform;
+DROP TABLE IF EXISTS contact_platform;
