@@ -19,10 +19,10 @@ type TransactionUpdates struct {
 	ContractParams     *types.JSONText `json:"contractParameters" db:"contract_params"`
 	ContractFunc       *string         `json:"contractFunc" db:"contract_func"`
 	TransactionAmount  *string         `json:"transactionAmount" db:"transaction_amount"`
-	OriginTXLegID      *string         `json:"originTXLegId" db:"origin_tx_leg_id"`
-	ReceiptTXLegID     *string         `json:"receiptTXLegId" db:"receipt_tx_leg_id"`
-	ResponseTXLegID    *string         `json:"responseTXLegId" db:"response_tx_leg_id"`
-	DestinationTXLegID *string         `json:"destinationTXLegId" db:"destination_tx_leg_id"`
+	OriginTxLegID      *string         `json:"originTxLegId" db:"origin_tx_leg_id"`
+	ReceiptTxLegID     *string         `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
+	ResponseTxLegID    *string         `json:"responseTxLegId" db:"response_tx_leg_id"`
+	DestinationTxLegID *string         `json:"destinationTxLegId" db:"destination_tx_leg_id"`
 	ProcessingFee      *string         `json:"processingFee" db:"processing_fee"`
 	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"`
 	StringFee          *string         `json:"stringFee" db:"string_fee"`
@@ -56,7 +56,7 @@ type UserUpdates struct {
 	LastName      *string         `json:"lastName" db:"last_name"`
 }
 
-type UserContactUpdates struct {
+type ContactUpdates struct {
 	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
 	Type          *string    `json:"type" db:"type"`
 	Status        *string    `json:"status" db:"status"`

@@ -17,4 +17,4 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -- +goose Down
 DROP TRIGGER IF EXISTS update_auth_strategy_updated_at ON auth_strategy;
-DROP TABLE auth_strategy;
+DROP TABLE IF EXISTS auth_strategy;

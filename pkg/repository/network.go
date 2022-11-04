@@ -12,7 +12,7 @@ import (
 type Network interface {
 	Transactable
 	Create(model.Network) (model.Network, error)
-	GetID(id string) (model.Network, error)
+	GetById(id string) (model.Network, error)
 	GetChainID(chainId uint64) (model.Network, error)
 	Update(ID string, updates any) error
 }

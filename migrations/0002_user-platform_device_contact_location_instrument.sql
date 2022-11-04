@@ -2,6 +2,15 @@
 -- +goose Up
 
 -------------------------------------------------------------------------
+-- USER_PLATFORM --------------------------------------------------------
+CREATE TABLE user_platform (
+  user_id UUID REFERENCES string_user (id),
+  platform_id UUID REFERENCES platform (id)
+);
+
+CREATE UNIQUE INDEX user_platform_user_id_platform_id_idx ON user_platform(user_id, platform_id);
+
+-------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 CREATE TABLE device (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
@@ -13,7 +22,7 @@ CREATE TABLE device (
   type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   description TEXT DEFAULT '',
   fingerprint TEXT DEFAULT '',
-  ip_addresses JSONB DEFAULT '[]'::JSONB,
+  ip_addresses TEXT[] DEFAULT NULL,
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
@@ -96,19 +105,23 @@ EXECUTE PROCEDURE update_updated_at_column();
 -------------------------------------------------------------------------
 -- INSTRUMENT -----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_instrument_updated_at ON instrument;
-DROP TABLE instrument;
+DROP TABLE IF EXISTS instrument;
 
 -------------------------------------------------------------------------
 -- LOCATION -----------------------------------------------------------
 DROP TRIGGER IF EXISTS update_location_updated_at ON location;
-DROP TABLE location;
+DROP TABLE IF EXISTS location;
 
 -------------------------------------------------------------------------
 -- CONTACT --------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_contact_updated_at ON contact;
-DROP TABLE contact;
+DROP TABLE IF EXISTS contact;
 
 -------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_device_updated_at ON device;
-DROP TABLE device;
+DROP TABLE IF EXISTS device;
+
+-------------------------------------------------------------------------
+-- USER_PLATFORM -----------------------------------------------------
+DROP TABLE IF EXISTS user_platform;

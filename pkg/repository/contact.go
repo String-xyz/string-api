@@ -10,7 +10,10 @@ type Contact interface {
 	Transactable
 	Readable
 	Create(model.Contact) (model.Contact, error)
-	GetID(ID string) (model.Contact, error)
+	GetById(ID string) (model.Contact, error)
+	GetByUserId(userID string) (model.Contact, error)
+	ListByUserId(userID string, imit int, offset int) ([]model.Contact, error)
+	List(limit int, offset int) ([]model.Contact, error)
 	Update(ID string, updates any) error
 }
 
@@ -19,14 +22,14 @@ type contact[T any] struct {
 }
 
 func NewContact(db *sqlx.DB) Contact {
-	return &contact[model.Contact]{base[model.Contact]{store: db, table: "contact"}}
+	return &contact[model.Contact]{base: base[model.Contact]{store: db, table: "contact"}}
 }
 
-func (c contact[T]) Create(insert model.Contact) (model.Contact, error) {
+func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 	m := model.Contact{}
-	rows, err := c.store.NamedQuery(`
-		INSERT INTO contact (type, user_id, status) 
-		VALUES(:type, :user_id, :status) 	RETURNING *`, insert)
+	rows, err := u.store.NamedQuery(`
+		INSERT INTO contact (user_id, data, type, status) 
+		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}

@@ -12,7 +12,7 @@ import (
 type Asset interface {
 	Transactable
 	Create(model.Asset) (model.Asset, error)
-	GetID(id string) (model.Asset, error)
+	GetById(id string) (model.Asset, error)
 	GetName(name string) (model.Asset, error)
 	Update(ID string, updates any) error
 }

@@ -9,7 +9,7 @@ import (
 type Transaction interface {
 	Transactable
 	Create(model.Transaction) (model.Transaction, error)
-	GetID(id string) (model.Transaction, error)
+	GetById(id string) (model.Transaction, error)
 	Update(ID string, updates any) error
 }
 

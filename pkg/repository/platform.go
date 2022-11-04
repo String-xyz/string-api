@@ -19,7 +19,7 @@ type PlaformUpdates struct {
 type Platform interface {
 	Transactable
 	Create(model.Platform) (model.Platform, error)
-	GetID(ID string) (model.Platform, error)
+	GetById(ID string) (model.Platform, error)
 	List(limit int, offset int) ([]model.Platform, error)
 	Update(ID string, updates any) error
 }

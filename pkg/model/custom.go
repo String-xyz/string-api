@@ -4,12 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-
-	"github.com/lib/pq"
 )
 
 type StringMap map[string]string
-type StringArray pq.StringArray
 
 func (sm StringMap) Value() (driver.Value, error) {
 	return json.Marshal(sm)

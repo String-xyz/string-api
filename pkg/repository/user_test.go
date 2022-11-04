@@ -45,7 +45,7 @@ func TestGetUser(t *testing.T) {
 
 	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WillReturnRows(rows).WithArgs(id)
 
-	NewUser(sqlxDB).GetID(id)
+	NewUser(sqlxDB).GetById(id)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting user by id", err)
 	}

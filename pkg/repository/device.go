@@ -9,7 +9,9 @@ import (
 type Device interface {
 	Transactable
 	Create(model.Device) (model.Device, error)
-	GetID(id string) (model.Device, error)
+	GetById(id string) (model.Device, error)
+	GetByUserId(userID string) (model.Device, error)
+	ListByUserId(userID string, imit int, offset int) ([]model.Device, error)
 	Update(ID string, updates any) error
 }
 
