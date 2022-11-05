@@ -9,7 +9,7 @@ import (
 type TransactionUpdates struct {
 	Type               *string         `json:"type" db:"type"`
 	Status             *string         `json:"status" db:"status"`
-	Tags               *types.JSONText `json:"tags" db:"tags"` // TODO: Fix this alongside Unit21 integration
+	Tags               *types.JSONText `json:"tags" db:"tags"`
 	DeviceID           *string         `json:"deviceId" db:"device_id"`
 	IPAddress          *string         `json:"ipAddress" db:"ip_address"`
 	PlatformID         *string         `json:"platformId" db:"platform_id"`
