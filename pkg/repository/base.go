@@ -117,7 +117,7 @@ func (b base[T]) GetById(ID string) (m T, err error) {
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
-	return m, nil
+	return m, err
 }
 
 // Returns the first match of the user's ID

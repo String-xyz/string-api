@@ -71,7 +71,9 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Transaction: repository.NewTransaction(config.DB),
 		TxLeg:       repository.NewTxLeg(config.DB),
 		User:        repository.NewUser(config.DB),
-		// More will follow
+		Instrument:  repository.NewInstrument(config.DB),
+		Device:      repository.NewDevice(config.DB),
+		Location:    repository.NewLocation(config.DB),
 	}
 	service := service.NewTransaction(repos)
 	handler := handler.NewTransaction(e, service)
