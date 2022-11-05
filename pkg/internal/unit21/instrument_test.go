@@ -55,7 +55,7 @@ func TestCreateInstrument(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId).WillReturnRows(mockedUserRow2)
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
-		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, userId)
+		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, userId)
 	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(userId, 100, 0).WillReturnRows(mockedDeviceRow)
 
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "type", "status", "building_number", "unit_number", "street_name", "city", "state", "postal_code", "country"}).
@@ -91,7 +91,7 @@ func TestUpdateInstrument(t *testing.T) {
 	}
 	defer db.Close()
 
-	instrumentId := uuid.NewString()
+	instrumentId := "4c2b64dd-3471-4869-9099-3882882b47cb"
 	userId := uuid.NewString()
 	locationId := uuid.NewString()
 
@@ -119,7 +119,7 @@ func TestUpdateInstrument(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId).WillReturnRows(mockedUserRow2)
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
-		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, userId)
+		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, userId)
 	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(userId, 100, 0).WillReturnRows(mockedDeviceRow)
 
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "type", "status", "building_number", "unit_number", "street_name", "city", "state", "postal_code", "country"}).
