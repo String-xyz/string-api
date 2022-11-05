@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -34,8 +35,15 @@ type TransactionRepos struct {
 	Location    repository.Location
 }
 
+type transactionInstruments struct {
+	StringBankId   string
+	StringWalletId string
+}
+
 type transaction struct {
-	repos TransactionRepos
+	repos        TransactionRepos
+	instruments  transactionInstruments
+	stringUserId string
 }
 
 func (t transaction) New(repos TransactionRepos) Transaction {
@@ -78,6 +86,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 }
 
 func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error) {
+	t.getStringInstrumentsAndUserId()
 	res := model.TransactionReceipt{}
 
 	// Pull chain info needed for execution from repository
@@ -151,7 +160,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Authorize quoted cost on end-user CC and update model status
-	authorizationID, err := t.authCard(e.UserAddress, e.CardToken, e.TotalUSD, processingFeeAsset, db.ID, userId)
+	cardAuthorization, err := t.authCard(e.UserAddress, e.CardToken, e.TotalUSD, processingFeeAsset, db.ID, userId)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -184,7 +193,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	post := postProcessRequest{
 		TxID:               txID,
 		Chain:              chain,
-		AuthorizationID:    authorizationID,
+		AuthorizationID:    cardAuthorization.AuthID,
 		UserAddress:        e.UserAddress,
 		CumulativeValue:    value,
 		QuotedTotal:        e.TotalUSD,
@@ -214,6 +223,14 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	return model.TransactionReceipt{TxID: txID}, nil
+}
+
+func (t *transaction) getStringInstrumentsAndUserId() error {
+	// TODO: Look up our instruments and user ID from db
+	t.instruments.StringBankId = "13438963-f5e7-47c4-a790-ebca3e3bf915"
+	t.instruments.StringWalletId = "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c"
+	t.stringUserId = "0e837b73-55cf-43ff-9b1e-0d8258eec978"
+	return nil
 }
 
 func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
@@ -306,12 +323,52 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func (t transaction) authCard(userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string, userId string) (string, error) {
-	// auth their card
-	log.Printf("cardToken: %s", cardToken)
-	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
+func (t transaction) addCardInstrumentIdIfNew(instrumentID string, userID string, last4 string) error {
+	instrument, err := t.repos.Instrument.GetWallet(instrumentID)  // temporarily using get wallet and storing it there
+	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
+		return common.StringError(err)
+	} else if err == nil && instrument.UserID != "" {
+		return nil // instrument already exists
+	}
+
+	// Create a new instrument
+	instrument = model.Instrument{Type: "card", Status: "authorized", Last4: last4, UserID: userID, PublicKey: instrumentID} // No locationID until fingerprint
+	instrument, err = t.repos.Instrument.Create(instrument)
+	if err != nil {
+		return common.StringError(err)
+	}
+	return nil
+}
+
+func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) {
+	instrument, err := t.repos.Instrument.GetWallet(address)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return "", common.StringError(err)
+	} else if err == nil && instrument.PublicKey == address {
+		return instrument.ID, nil
+	}
+
+	// Create a new instrument
+	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
+	}
+	return instrument.ID, nil
+}
+
+func (t transaction) authCard(userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string, userId string) (AuthorizedCharge, error) {
+	// auth their card
+	auth := AuthorizedCharge{}
+	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
+	if err != nil {
+		return auth, common.StringError(err)
+	}
+
+	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
+	err = t.addCardInstrumentIdIfNew(auth.InstrumentID, userId, auth.Last4)
+	if err != nil {
+		return auth, common.StringError(err)
 	}
 
 	// Create Origin Tx leg
@@ -322,7 +379,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
 		UserID:       userId,
-		InstrumentID: "13438963-f5e7-47c4-a790-ebca3e3bf915", // TODO: Get dynamically
+		InstrumentID: auth.InstrumentID,
 	}
 	origin, err = t.repos.TxLeg.Create(origin)
 	if err != nil {
@@ -343,7 +400,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	u21Repo := unit21.InstrumentRepo{
 		User:     t.repos.User,
 		Device:   t.repos.Device,
-		Location: t.repos.Location,
+		Location: t.repos.Location, // empty until fingerprint integration
 	}
 
 	u21Tx := unit21.NewInstrument(u21Repo)
@@ -379,7 +436,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 		Value:        usd,
 		AssetID:      chargeAsset.ID,
 		UserID:       userId,
-		InstrumentID: "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c", // TODO: Get dynamically
+		InstrumentID: t.instruments.StringWalletId,
 	}
 	send, err = t.repos.TxLeg.Create(send)
 	if err != nil {
@@ -415,8 +472,8 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 		Amount:       usdWei,
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
-		UserID:       userId,                                 // TODO: Get dynamically
-		InstrumentID: "13438963-f5e7-47c4-a790-ebca3e3bf915", // TODO: Get dynamically
+		UserID:       t.stringUserId,
+		InstrumentID: t.instruments.StringBankId,
 	}
 	receipt, err = t.repos.TxLeg.Create(receipt)
 	if err != nil {
@@ -431,7 +488,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 	return nil
 }
 
-func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string, userId string) (float64, error) {
+func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string, recipientId string, userWalletId string) (float64, error) {
 	cost := NewCost(repository.NewCost(nil)) // temporary nil
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -453,8 +510,8 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 		Amount:       wei,
 		Value:        usd,
 		AssetID:      asset.ID,
-		UserID:       userId,                                 // TODO: Get dynamically
-		InstrumentID: "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c", // TODO: Get dynamically
+		UserID:       recipientId,
+		InstrumentID: userWalletId,
 	}
 	send, err = t.repos.TxLeg.Create(send)
 	if err != nil {
@@ -526,13 +583,13 @@ func (t transaction) postProcess(request postProcessRequest) {
 		}
 	}
 
-	// TODO get String UserId here and pass to tenderTransaction
-
-	stringUserId := ""
-
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, request.Chain, request.TxDBID, stringUserId)
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress)
+	if err != nil {
+		// TODO: handle error instead of returning it
+	}
+	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, request.Chain, request.TxDBID, request.userId, recipientWalletId)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}

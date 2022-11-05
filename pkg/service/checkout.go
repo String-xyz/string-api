@@ -40,10 +40,17 @@ func CreateToken(card *tokens.Card) (*tokens.Response, error) {
 	return res, nil
 }
 
-func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string, error) {
+type AuthorizedCharge struct {
+	AuthID       string
+	InstrumentID string
+	Last4        string
+}
+
+func AuthorizeCharge(amount float64, userWallet string, tokenId string) (AuthorizedCharge, error) {
+	res := AuthorizedCharge{}
 	var config, err = getConfig()
 	if err != nil {
-		return "", common.StringError(err)
+		return res, common.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
@@ -59,7 +66,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	}
 	paymentToken, err := CreateToken(&card)
 	if err != nil {
-		return "", common.StringError(err)
+		return res, common.StringError(err)
 	}
 	paymentTokenID := paymentToken.Created.Token
 	if tokenId != "" {
@@ -87,13 +94,20 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	params := checkout.Params{
 		IdempotencyKey: &idempotencyKey,
 	}
-	res, err := client.Request(request, &params)
+	response, err := client.Request(request, &params)
 
 	if err != nil {
-		return "", common.StringError(err)
+		return res, common.StringError(err)
+	}
+
+	// Collect authorization ID and Instrument ID
+	res.AuthID = response.Processed.ID
+	if response.Processed.Source.CardSourceResponse != nil {
+		res.Last4 = response.Processed.Source.CardSourceResponse.Last4
+		res.InstrumentID = response.Processed.Source.CardSourceResponse.ID
 	}
 	// TODO: Create entry for authorization in our DB associated with userWallet
-	return res.Processed.ID, nil
+	return res, nil
 }
 
 func CaptureCharge(amount float64, userWallet string, authorizationID string) (*payments.CapturesResponse, error) {
@@ -116,6 +130,7 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (*
 	if err != nil {
 		return nil, common.StringError(err)
 	}
+
 	// TODO: Create entry for capture in our DB associated with userWallet
 	return res, nil
 }
