@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"strconv"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/jmoiron/sqlx/types"
@@ -27,6 +29,9 @@ type TransactionRepos struct {
 	Transaction repository.Transaction
 	TxLeg       repository.TxLeg
 	User        repository.User
+	Instrument  repository.Instrument
+	Device      repository.Device
+	Location    repository.Location
 }
 
 type transaction struct {
@@ -188,6 +193,25 @@ func (t transaction) Execute(e model.ExecutionRequest) (model.TransactionReceipt
 		preBalance:         preBalance,
 	}
 	go t.postProcess(post)
+
+	// Create Transaction data in Unit21
+	txModel, err := t.repos.Transaction.GetById(db.ID)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+
+	u21Repo := unit21.TransactionRepo{
+		TxLeg: t.repos.TxLeg,
+		User:  t.repos.User,
+		Asset: t.repos.Asset,
+	}
+
+	u21Tx := unit21.NewTransaction(u21Repo)
+	_, err = u21Tx.Create(txModel)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+
 	return model.TransactionReceipt{TxID: txID}, nil
 }
 
@@ -283,6 +307,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 
 func (t transaction) authCard(userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string) (string, error) {
 	// auth their card
+	log.Printf("cardToken: %s", cardToken)
 	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
 	if err != nil {
 		return "", common.StringError(err)
@@ -307,6 +332,25 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	if err != nil {
 		return auth, common.StringError(err)
 	}
+
+	// Send Instrument Data to Unit21
+	instrumentModel, err := t.repos.Instrument.GetById(origin.InstrumentID)
+	if err != nil {
+		return auth, common.StringError(err)
+	}
+
+	u21Repo := unit21.InstrumentRepo{
+		User:     t.repos.User,
+		Device:   t.repos.Device,
+		Location: t.repos.Location,
+	}
+
+	u21Tx := unit21.NewInstrument(u21Repo)
+	_, err = u21Tx.Create(instrumentModel)
+	if err != nil {
+		return auth, common.StringError(err)
+	}
+
 	return auth, nil
 }
 
@@ -517,6 +561,26 @@ func (t transaction) postProcess(request postProcessRequest) {
 		// TODO: Handle error instead of returning it
 	}
 	executor.Close()
+
+	// Update Transaction in Unit21
+	txModel, err := t.repos.Transaction.GetById(request.TxDBID)
+	if err != nil {
+		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
+		// return res, common.StringError(err)
+	}
+
+	u21Repo := unit21.TransactionRepo{
+		TxLeg: t.repos.TxLeg,
+		User:  t.repos.User,
+		Asset: t.repos.Asset,
+	}
+
+	u21Tx := unit21.NewTransaction(u21Repo)
+	_, err = u21Tx.Create(txModel)
+	if err != nil {
+		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
+		// return res, common.StringError(err)
+	}
 }
 
 func floatToFixedString(value float64, decimals int) string {

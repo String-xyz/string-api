@@ -72,6 +72,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	}
 
 	log.Printf("Unit21Id: %s", entity.Unit21Id)
+
 	return entity.Unit21Id, nil
 }
 
@@ -176,7 +177,7 @@ func getCommunications(userId string, contact repository.Contact) (communication
 	// Get user contacts
 	contacts, err := contact.ListByUserId(userId, 100, 0)
 	if err != nil {
-		log.Printf("Failed go get user contacts: %s", err)
+		log.Printf("Failed to get user contacts: %s", err)
 		err = common.StringError(err)
 		return
 	}

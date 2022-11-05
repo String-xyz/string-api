@@ -22,10 +22,12 @@ func create(datatype string, jsonBody any) (body []byte, err error) {
 		log.Printf("Could not encode %s to bytes: %s", datatype, err)
 		return nil, common.StringError(err)
 	}
+	log.Printf("reqBodyBytes: %s", reqBodyBytes)
 
 	bodyReader := bytes.NewReader(reqBodyBytes)
 
 	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
+
 	if err != nil {
 		log.Printf("Could not create request for %s: %s", datatype, err)
 		return nil, common.StringError(err)
