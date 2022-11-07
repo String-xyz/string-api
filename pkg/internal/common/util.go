@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log"
 	"math"
+	"os"
 	"reflect"
 	"strconv"
 
@@ -79,4 +80,17 @@ func KeysAndValues(item interface{}) ([]string, map[string]interface{}) {
 	}
 
 	return keyNames, keyValues
+}
+
+func GetBaseURL() string {
+	baseURL := "http://localhost:5555/"
+	env := os.Getenv("ENV")
+	if env == "dev" {
+		baseURL = "https://app.dev.string-api.xyz/"
+	} else if env == "local" {
+		baseURL = "http://localhost:5555/"
+	} else {
+		baseURL = "https://app.string-api.xyz/"
+	}
+	return baseURL
 }

@@ -32,7 +32,7 @@ func Start(config APIConfig) {
 	platformRoute(config, e)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
-	verificationRoute(config, e)
+	loginRoute(config, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -82,6 +82,7 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 
 func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	repos := service.UserRepos{
+		Auth:       repository.NewAuth(config.Redis, config.DB),
 		User:       repository.NewUser(config.DB),
 		Contact:    repository.NewContact(config.DB),
 		Instrument: repository.NewInstrument(config.DB),
@@ -91,13 +92,14 @@ func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	handler.RegisterRoutes(e.Group("/user"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
-func verificationRoute(config APIConfig, e *echo.Echo) {
+func loginRoute(config APIConfig, e *echo.Echo) {
 	repos := service.UserRepos{
+		Auth:       repository.NewAuth(config.Redis, config.DB),
 		User:       repository.NewUser(config.DB),
 		Contact:    repository.NewContact(config.DB),
 		Instrument: repository.NewInstrument(config.DB),
 	}
 	service := service.NewUser(repos)
-	handler := handler.NewVerification(e, service)
-	handler.RegisterRoutes(e.Group("/verification"))
+	handler := handler.NewLogin(e, service)
+	handler.RegisterRoutes(e.Group("/login"))
 }
