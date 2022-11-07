@@ -83,6 +83,7 @@ type UserRequest struct {
 	MiddleName    string `json:"middleName"`
 	LastName      string `json:"lastName"`
 	Signature     string `json:"signature"`
+	Password      string `json:"password"`
 }
 
 // Can be used for user, instrument, etc

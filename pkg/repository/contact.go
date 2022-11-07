@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
+
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +18,7 @@ type Contact interface {
 	ListByUserId(userID string, imit int, offset int) ([]model.Contact, error)
 	List(limit int, offset int) ([]model.Contact, error)
 	Update(ID string, updates any) error
+	GetByData(data string) (model.Contact, error)
 }
 
 type contact[T any] struct {
@@ -41,5 +45,14 @@ func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 	}
 
 	defer rows.Close()
+	return m, nil
+}
+
+func (u contact[T]) GetByData(data string) (model.Contact, error) {
+	m := model.Contact{}
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", u.table), data)
+	if err != nil && err == sql.ErrNoRows {
+		return m, common.StringError(ErrNotFound)
+	}
 	return m, nil
 }
