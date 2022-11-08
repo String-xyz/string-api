@@ -2,7 +2,6 @@ package service
 
 import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	stringCommon "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
@@ -30,19 +29,19 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 		Type:           c.Type,
 		Authentication: c.Authentication,
 		ApiKey:         hashed,
-		Status:         "initialized",
+		Status:         "pending",
 	}
 
 	plat, err := a.platRepo.Create(m)
 	if err != nil {
-		return model.Platform{}, stringCommon.StringError(err)
+		return model.Platform{}, common.StringError(err)
 	}
 
-	err = a.authRepo.CreateAPIKey(plat.ID, c.Authentication, hashed)
+	err = a.authRepo.CreateAPIKey(plat.ID, c.Authentication, hashed, false)
 	pt := &plat
 	pt.ApiKey = uuiKey
 	if err != nil {
-		return *pt, stringCommon.StringError(err)
+		return *pt, common.StringError(err)
 	}
 
 	return plat, nil

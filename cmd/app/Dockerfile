@@ -5,7 +5,6 @@ LABEL Description="core string api"
 
 EXPOSE 3000
 # Copy over the app files
-COPY ./tmp/app .
+COPY ./main .
 
-
-CMD ["./app"]
+CMD ["./main"]

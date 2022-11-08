@@ -70,7 +70,7 @@ func (AuthStrategyRepo) Create(authType repository.AuthType, m model.AuthStrateg
 	return nil
 }
 
-func (AuthStrategyRepo) CreateAPIKey(entityID string, authType model.AuthType, apiKey string) error {
+func (AuthStrategyRepo) CreateAPIKey(entityID string, authType model.AuthType, apiKey string, persistOnly bool) error {
 	return nil
 }
 
@@ -87,4 +87,14 @@ func (AuthStrategyRepo) CreateAny(key string, val any, expire time.Duration) err
 
 func (AuthStrategyRepo) GetKeyString(key string) (string, error) {
 	return "", nil
+}
+
+func (AuthStrategyRepo) List(limit, offset int) ([]model.AuthStrategy, error) {
+	return []model.AuthStrategy{}, nil
+}
+func (AuthStrategyRepo) ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error) {
+	return []model.AuthStrategy{}, nil
+}
+func (AuthStrategyRepo) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
+	return model.AuthStrategy{}, nil
 }

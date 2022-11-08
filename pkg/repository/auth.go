@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -27,10 +29,13 @@ const (
 type AuthStrategy interface {
 	Create(authType AuthType, m model.AuthStrategy) error
 	CreateAny(key string, val any, expire time.Duration) error
-	CreateAPIKey(entityID string, authType AuthType, apiKey string) error
+	CreateAPIKey(entityID string, authType AuthType, apiKey string, persistOnly bool) error
 	CreateJWTRefresh(key string, val string) error
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
+	List(limit, offset int) ([]model.AuthStrategy, error)
+	ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error)
+	UpdateStatus(ID, status string) (model.AuthStrategy, error)
 }
 
 type auth struct {
@@ -59,7 +64,12 @@ func (a auth) CreateAny(key string, val any, expire time.Duration) error {
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
-func (a auth) CreateAPIKey(entityID string, authType AuthType, key string) error {
+func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persistOnly bool) error {
+	// only insert to postgres and skip redis cache
+	if persistOnly {
+		_, err := a.store.Exec("INSERT INTO auth_strategy(type,data) VALUES($1, $2)", authType, key)
+		return err
+	}
 	m := model.AuthStrategy{
 		EntityID:   entityID,
 		CreatedAt:  time.Now(),
@@ -105,4 +115,33 @@ func (a auth) GetKeyString(key string) (string, error) {
 		return "", common.StringError(err)
 	}
 	return string(m), nil
+}
+
+// List all the available auth_keys on the postgres db
+func (a auth) List(limit, offset int) ([]model.AuthStrategy, error) {
+	list := []model.AuthStrategy{}
+	err := a.store.Select(&list, "SELECT * FROM auth_strategy LIMIT $1 OFFSET $2", limit, offset)
+	if err != nil && err == sql.ErrNoRows {
+		return list, nil
+	}
+	return list, err
+}
+
+// ListByStatus lists all auth_keys with a given status on the postgres db
+func (a auth) ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error) {
+	list := []model.AuthStrategy{}
+	err := a.store.Select(&list, "SELECT * FROM auth_strategy WHERE status = $1 LIMIT $2 OFFSET $3", status, limit, offset)
+	if err != nil && err == sql.ErrNoRows {
+		return list, nil
+	}
+	return list, err
+}
+
+// UpdateStatus updates the status on postgres db and returns the updated row
+func (a auth) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
+	fmt.Println("Status and ID", status, ID)
+	row := a.store.QueryRowx("UPDATE auth_strategy SET status = $2 WHERE id = $1 RETURNING *", ID, status)
+	m := model.AuthStrategy{}
+	err := row.StructScan(&m)
+	return m, err
 }

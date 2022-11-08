@@ -44,10 +44,8 @@ type Auth interface {
 	GenerateJWT(model.User) (JWT, error)
 	LoginPK(UserPKLogin) (JWT, error)
 	Challenge(publicAddres string) (string, error)
-	GenerateAPIKey(model.Platform) error
 	ValidateAPIKey(key string) bool
 	RefreshToken(string)
-	LoginOTP() error
 }
 
 type auth struct {
@@ -80,7 +78,7 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 
 	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
 		EntityID:    user.ID,
-		ContactID:   contact.ID,
+		ContactID:   model.NullableString(contact.ID),
 		CreatedAt:   time.Now(),
 		Type:        string(repository.AuthTypeEmail),
 		EntityType:  string(repository.EntityTypeUser),
@@ -197,14 +195,6 @@ func (a auth) ValidateAPIKey(key string) bool {
 		return false
 	}
 	return authKey.Data == hashed
-}
-
-func (a auth) GenerateAPIKey(m model.Platform) error {
-	return nil
-}
-
-func (a auth) LoginOTP() error {
-	return nil
 }
 
 func (a auth) RefreshToken(token string) {

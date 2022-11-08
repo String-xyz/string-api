@@ -1,0 +1,11 @@
+FROM alpine:3.16.0
+
+LABEL maintainer="Marlon Monroy<marlon@string.xyz>"
+LABEL Description="internal string api"
+
+EXPOSE 3000
+# Copy over the files
+COPY ./main .
+
+
+CMD ["./main"]

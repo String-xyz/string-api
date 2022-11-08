@@ -8,6 +8,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -45,7 +46,9 @@ func TestGetUser(t *testing.T) {
 
 	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WillReturnRows(rows).WithArgs(id)
 
-	NewUser(sqlxDB).GetById(id)
+	user, err := NewUser(sqlxDB).GetById(id)
+	assert.NoError(t, err)
+	assert.Equal(t, id, user.ID)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting user by id", err)
 	}

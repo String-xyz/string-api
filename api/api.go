@@ -29,10 +29,19 @@ func Start(config APIConfig) {
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
-	platformRoute(config, e)
+	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 	verificationRoute(config, e)
+	e.Logger.Fatal(e.Start(":" + config.Port))
+}
+
+func StartInternal(config APIConfig) {
+	e := echo.New()
+	baseMiddleware(config.Logger, e)
+	e.GET("/heartbeat", heartbeat)
+	platformRoute(config, e)
+	AuthAPIKey(config, e, true)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -62,6 +71,13 @@ func platformRoute(config APIConfig, e *echo.Echo) {
 	service := service.NewPlatform(p, c, a)
 	handler := handler.NewPlatform(service)
 	handler.RegisterRoutes(e.Group("/platform"), middleware.BearerAuth())
+}
+
+func AuthAPIKey(config APIConfig, e *echo.Echo, internal bool) {
+	a := repository.NewAuth(config.Redis, config.DB)
+	service := service.NewAPIKeyStrategy(a)
+	handler := handler.NewAuthAPIKey(service, internal)
+	handler.RegisterRoutes(e.Group("/apikey"))
 }
 
 func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
