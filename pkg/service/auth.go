@@ -78,7 +78,7 @@ func (a auth) Register(m UserRegister) (JWT, error) {
 
 	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
 		EntityID:    user.ID,
-		ContactID:   contact.ID,
+		ContactID:   model.NullableString(contact.ID),
 		CreatedAt:   time.Now(),
 		Type:        string(repository.AuthTypeEmail),
 		EntityType:  string(repository.EntityTypeUser),

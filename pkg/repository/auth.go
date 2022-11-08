@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -138,8 +139,9 @@ func (a auth) ListByStatus(limit, offset int, status string) ([]model.AuthStrate
 
 // UpdateStatus updates the status on postgres db and returns the updated row
 func (a auth) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
+	fmt.Println("Status and ID", status, ID)
 	row := a.store.QueryRowx("UPDATE auth_strategy SET status = $2 WHERE id = $1 RETURNING *", ID, status)
 	m := model.AuthStrategy{}
-	err := row.StructScan(m)
+	err := row.StructScan(&m)
 	return m, err
 }

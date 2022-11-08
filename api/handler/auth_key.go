@@ -42,16 +42,18 @@ func (o authAPIKey) List(c echo.Context) error {
 	lg := c.Get("logger").(*zerolog.Logger)
 	body := struct {
 		Status string `query:"status"`
+		Limit  int    `query:"limit"`
+		Offset int    `query:"offset"`
 	}{}
 	err := c.Bind(&body)
 	if err != nil {
 		lg.Err(err).Stack().Msg("authKeys list: bind")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
-	list, err := o.service.List(100, 0, body.Status)
+	list, err := o.service.List(body.Limit, body.Offset, body.Status)
 	if err != nil {
 		lg.Err(err).Stack().Msg("authKeys list")
-		return echo.NewHTTPError(http.StatusInternalServerError, "Register Service Failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, "ApiKey Service Failed")
 	}
 	return c.JSON(http.StatusCreated, list)
 }
@@ -62,9 +64,10 @@ func (o authAPIKey) Approve(c echo.Context) error {
 	}
 	lg := c.Get("logger").(*zerolog.Logger)
 	params := struct {
-		ID string `query:"id"`
+		ID string `param:"id"`
 	}{}
 	err := c.Bind(&params)
+
 	if err != nil {
 		lg.Err(err).Stack().Msg("authKey approve:bind")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")

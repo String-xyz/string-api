@@ -29,7 +29,7 @@ func Start(config APIConfig) {
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
-	AuthAPIKey(config, e, false)
+	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 	verificationRoute(config, e)
@@ -77,7 +77,7 @@ func AuthAPIKey(config APIConfig, e *echo.Echo, internal bool) {
 	a := repository.NewAuth(config.Redis, config.DB)
 	service := service.NewAPIKeyStrategy(a)
 	handler := handler.NewAuthAPIKey(service, internal)
-	handler.RegisterRoutes(e.Group("/apiKey"))
+	handler.RegisterRoutes(e.Group("/apikey"))
 }
 
 func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
