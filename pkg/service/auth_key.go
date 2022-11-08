@@ -8,8 +8,7 @@ import (
 
 type APIKeyStrategy interface {
 	Create() (string, error)
-	List(limit, offset int) ([]model.AuthStrategy, error)
-	ListPending(limit, offset int) ([]model.AuthStrategy, error)
+	List(limit, offset int, status string) ([]model.AuthStrategy, error)
 	Approve(ID string) error
 }
 
@@ -27,12 +26,18 @@ func (g aPIKeyStrategy) Create() (string, error) {
 	return uuiKey, err
 }
 
-func (g aPIKeyStrategy) List(limit, offset int) ([]model.AuthStrategy, error) {
+func (g aPIKeyStrategy) List(limit, offset int, status string) ([]model.AuthStrategy, error) {
+	if status != "" {
+		return g.ListByStatus(limit, offset, status)
+	}
 	return g.repo.List(limit, offset)
 }
 
-func (g aPIKeyStrategy) ListPending(limit, offset int) ([]model.AuthStrategy, error) {
-	return g.repo.ListByStatus(limit, offset, "pending")
+func (g aPIKeyStrategy) ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error) {
+	if limit == 0 {
+		limit = 100
+	}
+	return g.repo.ListByStatus(limit, offset, status)
 }
 
 // Approve updates the APIKey status and creates an entry on redis
