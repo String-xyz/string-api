@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"html"
 	"os"
 	"strings"
 	"time"
@@ -117,6 +118,7 @@ func (u user) Create(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
+	code = html.EscapeString(code) // make sure special characters are browser friendly
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
@@ -219,6 +221,7 @@ func (u user) RequestEmailLogin(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
+	code = html.EscapeString(code) // make sure special characters are browser friendly
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
