@@ -1,5 +1,5 @@
 locals {
-  remote_state_bucket  = "dev-string-terraform-state"
+  remote_state_bucket  = "prod-string-terraform-state"
   backend_region       = "us-west-2"
   vpc_remote_state_key = "vpc.tfstate"
 }
@@ -18,9 +18,9 @@ terraform {
 
   backend "s3" {
     encrypt        = true
-    key            = "internal.tfstate"
-    bucket         = "dev-string-terraform-state"
-    dynamodb_table = "dev-string-terraform-state-lock"
+    key            = "admin-api.tfstate"
+    bucket         = "prod-string-terraform-state"
+    dynamodb_table = "prod-string-terraform-state-lock"
     region         = "us-west-2"
   }
 }

@@ -2,7 +2,7 @@ locals {
   cluster_name       = "admin"
   env                = "dev"
   service_name       = "admin"
-  root_domain        = "dev.string-api.xyz"
+  root_domain        = "string-api.xyz"
   container_port     = "3000"
   origin_id          = "admin-api"
   desired_task_count = "1"
