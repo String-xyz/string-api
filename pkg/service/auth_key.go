@@ -4,7 +4,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/rs/zerolog/log"
 )
 
 type APIKeyStrategy interface {
@@ -28,7 +27,6 @@ func (g aPIKeyStrategy) Create() (string, error) {
 }
 
 func (g aPIKeyStrategy) List(limit, offset int, status string) ([]model.AuthStrategy, error) {
-	log.Info().Int("limit", limit).Int("offset", offset).Str("status", status).Msg("List")
 	if status != "" {
 		return g.ListByStatus(limit, offset, status)
 	}
