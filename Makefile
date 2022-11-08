@@ -8,9 +8,10 @@ SERVICE_TAG=${tag}
 AWS_REGION=us-west-2
 ECR=${AWS_ACCT}.dkr.ecr.us-west-2.amazonaws.com
 ECS_API_REPO=${ECR}/${API}
-INTERNAL_REPO=${ECR}/internal
+INTERNAL_REPO=${ECR}/admin
 
 all: build push deploy
+all-internal: build-internal push-internal deploy-internal
 
 test-envvars:
 	@[ "${env}" ] || ( echo "env var is not set"; exit 1 )
@@ -37,4 +38,4 @@ push-internal:test-envvars
 	docker push $(INTERNAL_REPO):${SERVICE_TAG}
 	
 deploy-internal: test-envvars
-	aws ecs --region $(AWS_REGION) update-service --cluster internal --service internal --force-new-deployment
+	aws ecs --region $(AWS_REGION) update-service --cluster admin --service admin --force-new-deployment
