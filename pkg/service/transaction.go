@@ -323,8 +323,8 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func (t transaction) addCardInstrumentIdIfNew(instrumentID string, userID string, last4 string) (string, error) {
-	instrument, err := t.repos.Instrument.GetWallet(instrumentID)  // temporarily using get wallet and storing it there
+func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string) (string, error) {
+	instrument, err := t.repos.Instrument.GetWallet(fingerprint)   // temporarily using get wallet and storing it there
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
@@ -332,7 +332,7 @@ func (t transaction) addCardInstrumentIdIfNew(instrumentID string, userID string
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "card", Status: "authorized", Last4: last4, UserID: userID, PublicKey: instrumentID} // No locationID until fingerprint
+	instrument = model.Instrument{Type: "card", Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -366,7 +366,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	}
 
 	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
-	instrumentId, err := t.addCardInstrumentIdIfNew(auth.InstrumentID, userId, auth.Last4)
+	instrumentId, err := t.addCardInstrumentIdIfNew(auth.InstrumentFingerprint, userId, auth.Last4)
 	if err != nil {
 		return auth, common.StringError(err)
 	}

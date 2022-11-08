@@ -41,9 +41,9 @@ func CreateToken(card *tokens.Card) (*tokens.Response, error) {
 }
 
 type AuthorizedCharge struct {
-	AuthID       string
-	InstrumentID string
-	Last4        string
+	AuthID                string
+	InstrumentFingerprint string
+	Last4                 string
 }
 
 func AuthorizeCharge(amount float64, userWallet string, tokenId string) (AuthorizedCharge, error) {
@@ -104,7 +104,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (Authori
 	res.AuthID = response.Processed.ID
 	if response.Processed.Source.CardSourceResponse != nil {
 		res.Last4 = response.Processed.Source.CardSourceResponse.Last4
-		res.InstrumentID = response.Processed.Source.CardSourceResponse.ID
+		res.InstrumentFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 	}
 	// TODO: Create entry for authorization in our DB associated with userWallet
 	return res, nil
