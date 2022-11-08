@@ -13,7 +13,7 @@ resource "aws_alb" "alb" {
   internal                   = true
   drop_invalid_header_fields = true
   security_groups            = [aws_security_group.ecs_alb_https_sg.id]
-  subnets                    = data.terraform_remote_state.vpc.outputs.public_subnets
+  subnets                    = data.terraform_remote_state.vpc.outputs.private_subnets
 
   tags = {
     Name = "${local.service_name}-alb"
