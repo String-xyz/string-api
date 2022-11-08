@@ -89,6 +89,14 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	t.getStringInstrumentsAndUserId()
 	res := model.TransactionReceipt{}
 
+	user, err := t.repos.User.GetById(userId)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	if user.ID != userId {
+		return res, common.StringError(errors.New("not logged in"))
+	}
+
 	// Pull chain info needed for execution from repository
 	chain, err := ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
 	if err != nil {
