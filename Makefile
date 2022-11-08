@@ -8,6 +8,7 @@ SERVICE_TAG=${tag}
 AWS_REGION=us-west-2
 ECR=${AWS_ACCT}.dkr.ecr.us-west-2.amazonaws.com
 ECS_API_REPO=${ECR}/${API}
+INTERNAL_REPO=${ECR}/internal
 
 all: build push deploy
 
@@ -25,3 +26,15 @@ push: test-envvars
 
 deploy: test-envvars
 	aws ecs --region $(AWS_REGION) update-service --cluster $(ECS_CLUSTER) --service ${API} --force-new-deployment
+
+build-internal:test-envvars
+	GOOS=linux GOARCH=amd64 go build -o ./cmd/internal/main ./cmd/internal/main.go
+	docker build --platform linux/amd64 -t $(INTERNAL_REPO):${SERVICE_TAG} cmd/internal/
+	rm cmd/internal/main
+
+push-internal:test-envvars
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(INTERNAL_REPO)
+	docker push $(INTERNAL_REPO):${SERVICE_TAG}
+	
+deploy-internal: test-envvars
+	aws ecs --region $(AWS_REGION) update-service --cluster internal --service internal --force-new-deployment

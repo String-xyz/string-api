@@ -44,10 +44,8 @@ type Auth interface {
 	GenerateJWT(model.User) (JWT, error)
 	LoginPK(UserPKLogin) (JWT, error)
 	Challenge(publicAddres string) (string, error)
-	GenerateAPIKey(model.Platform) error
 	ValidateAPIKey(key string) bool
 	RefreshToken(string)
-	LoginOTP() error
 }
 
 type auth struct {
@@ -197,14 +195,6 @@ func (a auth) ValidateAPIKey(key string) bool {
 		return false
 	}
 	return authKey.Data == hashed
-}
-
-func (a auth) GenerateAPIKey(m model.Platform) error {
-	return nil
-}
-
-func (a auth) LoginOTP() error {
-	return nil
 }
 
 func (a auth) RefreshToken(token string) {

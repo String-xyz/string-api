@@ -182,14 +182,15 @@ type Transaction struct {
 
 type AuthStrategy struct {
 	ID            string     `json:"id,omitempty" db:"id"`
-	EntityID      string     `json:"entityId" db:"id"` // for redis use only
-	CreatedAt     time.Time  `json:"createdAt,omitempty" db:"created"`
-	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Status        string     `json:"status" db:"status"`
+	EntityID      string     `json:"entityId"` // for redis use only
 	Type          string     `json:"authType" db:"type"`
 	EntityType    string     `json:"entityType,omitempty"` // for redis use only
 	ContactData   string     `json:"contactData"`          // for redis use only
 	ContactID     string     `json:"contactId" db:"contact_id"`
 	Data          string     `json:"data" data:"data"`
+	CreatedAt     time.Time  `json:"createdAt,omitempty" db:"created"`
+	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 }
 
 func (a AuthStrategy) MarshalBinary() ([]byte, error) {
