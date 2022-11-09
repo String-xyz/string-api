@@ -58,6 +58,22 @@ func (u user) Name(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Name Updated Successfully"})
 }
 
+func (u user) RequestEmailAuthentication(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
+	var body model.UserRequest
+	err := c.Bind(&body)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Bad Request")
+	}
+	userId := c.Get("userId").(string)
+	err = u.Service.RequestEmailAuthentication(body, userId)
+	if err != nil {
+		lg.Err(err).Msg("user name")
+		return c.String(http.StatusBadRequest, "Could Not Send Email Authentication")
+	}
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Authentication Sent"})
+}
+
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
@@ -66,4 +82,5 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.Use(ms...)
 	g.GET("", u.GetStatus)
 	g.POST("/name", u.Name)
+	g.POST("/authenticateEmail", u.RequestEmailAuthentication)
 }
