@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx/types"
+	"github.com/lib/pq"
 )
 
 type TransactionUpdates struct {
@@ -16,7 +17,7 @@ type TransactionUpdates struct {
 	TransactionHash    *string         `json:"transactionHash" db:"transaction_hash"`
 	NetworkID          *string         `json:"networkId" db:"network_id"`
 	NetworkFee         *string         `json:"networkFee" db:"network_fee"`
-	ContractParams     *types.JSONText `json:"contractParameters" db:"contract_params"`
+	ContractParams     *pq.StringArray `json:"contractParameters" db:"contract_params"`
 	ContractFunc       *string         `json:"contractFunc" db:"contract_func"`
 	TransactionAmount  *string         `json:"transactionAmount" db:"transaction_amount"`
 	OriginTxLegID      *string         `json:"originTxLegId" db:"origin_tx_leg_id"`

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,7 +14,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/jmoiron/sqlx/types"
+	"github.com/lib/pq"
 )
 
 type Transaction interface {
@@ -41,9 +40,11 @@ type transactionInstruments struct {
 }
 
 type transaction struct {
-	repos        TransactionRepos
-	instruments  transactionInstruments
-	stringUserId string
+	repos            TransactionRepos
+	instruments      transactionInstruments
+	stringUserId     string
+	stringDeviceId   string
+	stringPlatformId string
 }
 
 func (t transaction) New(repos TransactionRepos) Transaction {
@@ -104,7 +105,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID})
+	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.stringDeviceId, PlatformID: t.stringPlatformId})
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -212,24 +213,6 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 	go t.postProcess(post)
 
-	// Create Transaction data in Unit21
-	txModel, err := t.repos.Transaction.GetById(db.ID)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	u21Repo := unit21.TransactionRepo{
-		TxLeg: t.repos.TxLeg,
-		User:  t.repos.User,
-		Asset: t.repos.Asset,
-	}
-
-	u21Tx := unit21.NewTransaction(u21Repo)
-	_, err = u21Tx.Create(txModel)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
 	return model.TransactionReceipt{TxID: txID}, nil
 }
 
@@ -238,6 +221,8 @@ func (t *transaction) getStringInstrumentsAndUserId() error {
 	t.instruments.StringBankId = "13438963-f5e7-47c4-a790-ebca3e3bf915"
 	t.instruments.StringWalletId = "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c"
 	t.stringUserId = "0e837b73-55cf-43ff-9b1e-0d8258eec978"
+	t.stringDeviceId = "073f5a88-9223-4554-a7ce-11d358123a21"
+	t.stringPlatformId = "54a7e062-4cec-44f3-9d89-99498d0eb6ef"
 	return nil
 }
 
@@ -248,11 +233,9 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	// TODO populate db.DeviceID with info from fingerprint
 	// TODO populate db.IPAddress with info from fingerprint
 	// TODO populate db.PlatformID with UUID of customer
-	bytes, err := json.Marshal(e.CxParams)
-	if err != nil {
-		return model.Asset{}, common.StringError(err)
-	}
-	contractParams := types.JSONText(bytes)
+	// bytes, err := json.Marshal()
+
+	contractParams := pq.StringArray(e.CxParams)
 	m.ContractParams = &contractParams
 	contractFunc := e.CxFunc + e.CxReturn
 	m.ContractFunc = &contractFunc
@@ -605,7 +588,9 @@ func (t transaction) postProcess(request postProcessRequest) {
 	status = "Profit Tendered"
 	updateDB.Status = &status
 	stringFee := floatToFixedString(profit, 6)
-	updateDB.StringFee = &stringFee // string fee is always USD with 6 digits
+	processingFee := floatToFixedString(profit, 6) // TODO: set processingFee based on payment method, and location
+	updateDB.StringFee = &stringFee                // string fee is always USD with 6 digits
+	updateDB.ProcessingFee = &processingFee
 	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
@@ -632,11 +617,10 @@ func (t transaction) postProcess(request postProcessRequest) {
 		// TODO: Handle error instead of returning it
 	}
 	executor.Close()
-
-	// Update Transaction in Unit21
+	// Create Transaction data in Unit21
 	txModel, err := t.repos.Transaction.GetById(request.TxDBID)
 	if err != nil {
-		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
+		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
 		// return res, common.StringError(err)
 	}
 

@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"html"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -118,14 +118,15 @@ func (u user) Create(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	code = html.EscapeString(code) // make sure special characters are browser friendly
+	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
 	subject := "String Email Authentication"
 	to := mail.NewEmail("New String User", email)
 	textContent := "Click the link below to complete your e-mail authentication!"
-	htmlContent := "<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='" + baseURL + "login/email?token=" + code + "' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>"
+	htmlContent := `<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='` + baseURL + `login/email?token=` + code + `' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>`
+
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	_, err = client.Send(message)
@@ -137,6 +138,10 @@ func (u user) Create(request UserRequest) error {
 }
 
 func (u user) ReceiveEmailAuthentication(encrypted string) (JWT, error) {
+	// encrypted, err := url.QueryUnescape(encrypted)
+	// if err != nil {
+	// 	return JWT{}, common.StringError(err)
+	// }
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := common.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
@@ -221,7 +226,7 @@ func (u user) RequestEmailLogin(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	code = html.EscapeString(code) // make sure special characters are browser friendly
+	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
@@ -240,6 +245,10 @@ func (u user) RequestEmailLogin(request UserRequest) error {
 }
 
 func (u user) ReceiveEmailLogin(encrypted string) (JWT, error) {
+	// encrypted, err := url.QueryUnescape(encrypted)
+	// if err != nil {
+	// 	return JWT{}, common.StringError(err)
+	// }
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := common.Decrypt[EmailLogin](encrypted, key)
 	if err != nil {
