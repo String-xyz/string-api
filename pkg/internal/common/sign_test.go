@@ -15,7 +15,6 @@ func SignAndValidateString(t *testing.T) {
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
-
 	valid, err := ValidateEVMSignature(obj1Signed, obj1)
 	assert.NoError(t, err)
 	assert.Equal(t, false, valid)
