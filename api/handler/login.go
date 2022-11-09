@@ -10,10 +10,10 @@ import (
 )
 
 type Login interface {
-	Authenticate(c echo.Context) error // Takes e-mail and wallet addr of user, validates email with twilio
 	Create(c echo.Context) error
-	Request(c echo.Context) error
-	AuthenticateLogin(c echo.Context) error
+	ReceiveEmailAuthentication(c echo.Context) error
+	RequestEmailLogin(c echo.Context) error
+	ReceiveEmailLogin(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
@@ -33,27 +33,27 @@ func (l login) Create(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
-	err = l.Service.Create(body)
+	jwt, err := l.Service.Create(body)
 	if err != nil {
 		lg.Err(err).Msg("user create")
-		return c.String(http.StatusOK, "User Service Failed")
-	}
-	return c.JSON(http.StatusOK, ResultMessage{Status: "User Authentication Sent to Email"})
-}
-
-func (l login) Authenticate(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
-	// Token was provided
-	token := c.QueryParam("token")
-	jwt, err := l.Service.ReceiveEmailAuthentication(token)
-	if err != nil {
-		lg.Err(err).Msg("user authenticate")
-		return c.String(http.StatusBadRequest, "Invalid Token")
+		return c.String(http.StatusBadRequest, "User Service Failed")
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
 
-func (l login) Request(c echo.Context) error {
+func (l login) ReceiveEmailAuthentication(c echo.Context) error {
+	lg := c.Get("logger").(*zerolog.Logger)
+	// Token was provided
+	token := c.QueryParam("token")
+	err := l.Service.ReceiveEmailAuthentication(token)
+	if err != nil {
+		lg.Err(err).Msg("user authenticate")
+		return c.String(http.StatusBadRequest, "Invalid Token")
+	}
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Authenticated"})
+}
+
+func (l login) RequestEmailLogin(c echo.Context) error {
 	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
@@ -63,12 +63,12 @@ func (l login) Request(c echo.Context) error {
 	err = l.Service.RequestEmailLogin(body)
 	if err != nil {
 		lg.Err(err).Msg("user login")
-		return c.String(http.StatusOK, "User Service Failed")
+		return c.String(http.StatusBadRequest, "User Service Failed")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "User Login Sent to Email"})
 }
 
-func (l login) AuthenticateLogin(c echo.Context) error {
+func (l login) ReceiveEmailLogin(c echo.Context) error {
 	lg := c.Get("logger").(*zerolog.Logger)
 	// Token was provided
 	token := c.QueryParam("token")
@@ -86,8 +86,8 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	}
 	l.Group = g
 	g.Use(ms...)
-	g.GET("/email", l.Authenticate)
+	g.GET("/email", l.ReceiveEmailAuthentication)
 	g.POST("/new", l.Create)
-	g.POST("/request", l.Request)
-	g.GET("", l.AuthenticateLogin)
+	g.POST("/request", l.RequestEmailLogin)
+	g.GET("", l.ReceiveEmailLogin)
 }

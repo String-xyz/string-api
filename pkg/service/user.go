@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -21,7 +20,7 @@ type UserRequest = model.UserRequest
 type EmailVerification struct {
 	Timestamp int64
 	Email     string
-	Wallet    string
+	UserID    string
 }
 type EmailLogin struct {
 	Timestamp int64
@@ -37,11 +36,12 @@ type UserRepos struct {
 
 type User interface {
 	GetStatus(request UserRequest) (model.UserOnboardingStatus, error) // If wallet addr is associated with user, return current state of their onboarding
-	Create(request UserRequest) error                                  // Receive new wallet addr, email, signature and send verification email
-	ReceiveEmailAuthentication(encrypted string) (JWT, error)          // Decrypts query and validates e-mail, wallet of user
-	Name(request UserRequest) error                                    // Takes name and wallet addr of user, associates name with wallet addr
-	RequestEmailLogin(request UserRequest) error                       // Takes wallet addr of user and sends login email
-	ReceiveEmailLogin(encrypted string) (JWT, error)                   // Decrypts query and logs user in, returning JWT
+	Create(request UserRequest) (JWT, error)                           // Receive new wallet addr, email, signature and send verification email
+	RequestEmailAuthentication(request UserRequest, userId string) error
+	ReceiveEmailAuthentication(encrypted string) error // Decrypts query and validates e-mail, wallet of user
+	Name(request UserRequest) error                    // Takes name and wallet addr of user, associates name with wallet addr
+	RequestEmailLogin(request UserRequest) error       // Takes wallet addr of user and sends login email
+	ReceiveEmailLogin(encrypted string) (JWT, error)   // Decrypts query and logs user in, returning JWT
 }
 
 type user struct {
@@ -73,48 +73,82 @@ func (u user) GetStatus(request UserRequest) (model.UserOnboardingStatus, error)
 	return res, common.StringError(errors.New("not found"))
 }
 
-func (u user) Create(request UserRequest) error {
+func (u user) Create(request UserRequest) (JWT, error) {
 	addr := request.WalletAddress
 	if addr == "" {
-		return common.StringError(errors.New("no wallet address provided"))
-	}
-	email := request.EmailAddress
-	if email == "" {
-		return common.StringError(errors.New("no email provided"))
+		return JWT{}, common.StringError(errors.New("no wallet address provided"))
 	}
 	signature := request.Signature
 	if signature == "" {
-		return common.StringError(errors.New("no signature provided"))
+		return JWT{}, common.StringError(errors.New("no signature provided"))
 	}
 
 	// Make sure wallet does not already exist
 	instrument, err := u.repos.Instrument.GetWallet(addr)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
-		return common.StringError(err)
+		return JWT{}, common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
-		return common.StringError(errors.New("wallet already associated with user"))
+		return JWT{}, common.StringError(errors.New("wallet already associated with user"))
 	} else if err == nil && instrument.PublicKey == addr {
-		return common.StringError(errors.New("wallet already exists"))
+		return JWT{}, common.StringError(errors.New("wallet already exists"))
 	}
 
 	// Make sure address is a wallet and not a smart contract
 	if !common.IsWallet(addr) {
-		return common.StringError(errors.New("address provided is not a valid wallet"))
+		return JWT{}, common.StringError(errors.New("address provided is not a valid wallet"))
 	}
 
 	// Verify signature
 	valid, err := common.ValidateExternalEVMSignature(request.Signature, addr, addr) // they signed their own address.
 	// it's like writing your name on your hand and then xeroxing it
 	if err != nil {
-		return common.StringError(err)
+		return JWT{}, common.StringError(err)
 	}
 	if !valid {
-		return common.StringError(errors.New("signature invalid"))
+		return JWT{}, common.StringError(errors.New("signature invalid"))
+	}
+
+	// Initialize a new user
+	user := model.User{Type: "string-user", Status: "unverified"} // Validated status pertains to specific instrument
+	user, err = u.repos.User.Create(user)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// Create a new wallet instrument and associate it with the new user
+	instrument = model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument, err = u.repos.Instrument.Create(instrument)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	jwt, err := u.generateJWT(user)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	return jwt, nil
+}
+
+func (u user) RequestEmailAuthentication(request UserRequest, userId string) error {
+	email := request.EmailAddress
+	if email == "" {
+		return common.StringError(errors.New("no email provided"))
+	}
+
+	user, err := u.repos.User.GetById(userId)
+	if err != nil || user.ID != userId {
+		return common.StringError(errors.New("invalid or expired JWT"))
+	}
+
+	contact, _ := u.repos.Contact.GetByData(email)
+	if contact.Status == "validated" {
+		return common.StringError(errors.New("email is already authenticated"))
 	}
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, Wallet: addr}, key)
+	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserID: userId}, key)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -137,54 +171,23 @@ func (u user) Create(request UserRequest) error {
 	return nil
 }
 
-func (u user) ReceiveEmailAuthentication(encrypted string) (JWT, error) {
-	// encrypted, err := url.QueryUnescape(encrypted)
-	// if err != nil {
-	// 	return JWT{}, common.StringError(err)
-	// }
+func (u user) ReceiveEmailAuthentication(encrypted string) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := common.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return common.StringError(err)
 	}
 
 	// Wait for up to 15 minutes, final timeout TBD
 	now := time.Now().Unix()
 	if now-received.Timestamp > (60 * 15) {
-		return JWT{}, common.StringError(errors.New("link expired"))
+		return common.StringError(errors.New("link expired"))
 	}
 
-	fmt.Printf("\nTIMESTAMP OK")
-
-	// Initialize a new user
-	user := model.User{Type: "string-user", Status: "unverified"} // Validated status pertains to specific instrument
-	user, err = u.repos.User.Create(user)
-	if err != nil {
-		return JWT{}, common.StringError(err)
-	}
-
-	fmt.Printf("\nCREATED NEW USER")
-
-	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: received.Wallet, UserID: user.ID}
-	instrument, err = u.repos.Instrument.Create(instrument)
-	if err != nil {
-		return JWT{}, common.StringError(err)
-	}
-
-	fmt.Printf("\nCREATED WALLET")
-
-	contact := model.Contact{UserID: user.ID, Type: "email", Status: "validated", Data: received.Email}
+	contact := model.Contact{UserID: received.UserID, Type: "email", Status: "validated", Data: received.Email}
 	contact, _ = u.repos.Contact.Create(contact)
 
-	jwt, err := u.generateJWT(user)
-	if err != nil {
-		return JWT{}, common.StringError(err)
-	}
-
-	fmt.Printf("\nCREATED JWT")
-
-	return jwt, nil
+	return nil
 }
 
 func (u user) Name(request UserRequest) error {

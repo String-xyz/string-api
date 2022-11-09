@@ -32,7 +32,7 @@ func (t transaction) Transact(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	userId := c.Get("userId").(string)
-	res, err := t.Service.Execute(body, userId) // TODO: pass in userId and use it
+	res, err := t.Service.Execute(body, userId)
 	if err != nil {
 		lg.Err(err).Msg("transaction execute")
 		return c.String(http.StatusOK, "Execute Service Failed")
