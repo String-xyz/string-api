@@ -1,7 +1,6 @@
 package service
 
 import (
-	"net/mail"
 	"os"
 	"regexp"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRegister = model.UserRegister
@@ -39,88 +37,18 @@ type AuthValidator interface {
 }
 
 type Auth interface {
-	Register(UserRegister) (JWT, error)
-	LoginEmail(UserLoginEmail) (JWT, error)
 	GenerateJWT(model.User) (JWT, error)
-	LoginPK(UserPKLogin) (JWT, error)
 	Challenge(publicAddres string) (string, error)
 	ValidateAPIKey(key string) bool
 	RefreshToken(string)
 }
 
 type auth struct {
-	authRepo    repository.AuthStrategy
-	userRepo    repository.User
-	contactRepo repository.Contact
+	authRepo repository.AuthStrategy
 }
 
-func NewAuth(a repository.AuthStrategy, u repository.User, c repository.Contact) Auth {
-	return &auth{a, u, c}
-}
-
-// Register registers an user with authentication (email/password)
-// this is a rudimentary implementation of onboarding, will later have proper
-// onboarding process.
-func (a auth) Register(m UserRegister) (JWT, error) {
-	tx := a.userRepo.MustBegin()
-	user, err := a.userRepo.Create(model.User{FirstName: m.FirstName, LastName: m.LastName, Status: "registered", Type: "client"})
-	if err != nil {
-		a.userRepo.Rollback()
-		return JWT{}, common.StringError(err)
-	}
-	a.contactRepo.SetTx(tx)
-	defer a.contactRepo.Reset()
-	contact, err := a.contactRepo.Create(model.Contact{UserID: user.ID, Data: m.Email})
-	if err != nil {
-		a.userRepo.Rollback()
-		return JWT{}, common.StringError(err)
-	}
-
-	err = a.authRepo.Create(repository.AuthTypeEmail, model.AuthStrategy{
-		EntityID:    user.ID,
-		ContactID:   model.NullableString(contact.ID),
-		CreatedAt:   time.Now(),
-		Type:        string(repository.AuthTypeEmail),
-		EntityType:  string(repository.EntityTypeUser),
-		Data:        m.Password,
-		ContactData: contact.Data,
-	})
-
-	if err != nil {
-		a.userRepo.Rollback()
-		return JWT{}, common.StringError(err)
-	}
-
-	err = a.contactRepo.Commit()
-	if err != nil {
-		return JWT{}, common.StringError(err)
-	}
-
-	// // Share with Unit21
-	// entityRepo := unit21.NewEntity(a.userRepo, a.contactRepo)
-	// _, err = entityRepo.Create(user) // Discard Unit21 ID
-	// if err != nil {
-	// 	return JWT{}, common.StringError(err)
-	// }
-
-	return a.GenerateJWT(user)
-}
-
-func (a auth) LoginEmail(login UserLoginEmail) (JWT, error) {
-	_, err := mail.ParseAddress(login.Email)
-	if err != nil {
-		return JWT{}, errors.Wrap(err, "invalid email")
-	}
-	m, err := a.authRepo.Get(login.Email)
-	if err != nil {
-		return JWT{}, err
-	}
-	err = bcrypt.CompareHashAndPassword([]byte(m.Data), []byte(login.Password))
-	if err != nil {
-		return JWT{}, errors.Wrap(err, "invalid or wrong password")
-	}
-
-	return a.GenerateJWT(model.User{ID: m.EntityID})
+func NewAuth(a repository.AuthStrategy) Auth {
+	return &auth{a}
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
@@ -152,32 +80,6 @@ func (a auth) Validate(token string) (bool, error) {
 		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 	return t.Valid, err
-}
-
-func (a auth) LoginPK(login UserPKLogin) (JWT, error) {
-	if !hexRegex.MatchString(login.PublicAddress) {
-		return JWT{}, errors.New("invalid address")
-	}
-	if login.Signature == "" {
-		return JWT{}, errors.New("invalid signature")
-	}
-	nonce, err := a.authRepo.GetKeyString(login.PublicAddress)
-	if err != nil {
-		return JWT{}, err
-	}
-
-	recoveredAddr, err := common.RecoverAddress(nonce, login.Signature)
-	if login.PublicAddress != recoveredAddr.Hex() {
-		return JWT{}, err
-	}
-
-	newNonce := uuid.NewString()
-	err = a.authRepo.CreateAny(login.PublicAddress, newNonce, time.Minute*10)
-	if err != nil {
-		return JWT{}, err
-	}
-
-	return a.GenerateJWT(model.User{ID: login.PublicAddress})
 }
 
 func (a auth) Challenge(publicAddress string) (string, error) {

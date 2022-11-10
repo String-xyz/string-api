@@ -56,9 +56,7 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
 	a := repository.NewAuth(config.Redis, config.DB)
-	u := repository.NewUser(config.DB)
-	c := repository.NewContact(config.DB)
-	service := service.NewAuth(a, u, c)
+	service := service.NewAuth(a)
 	handler := handler.NewAuth(service)
 	handler.RegisterRoutes(e.Group("/auth"))
 	return service

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -82,6 +83,11 @@ func (u user) Create(request UserRequest) (JWT, error) {
 	if signature == "" {
 		return JWT{}, common.StringError(errors.New("no signature provided"))
 	}
+	sig, err := common.EVMSign(addr)
+	if err != nil {
+		//
+	}
+	fmt.Printf("\n\n\nsig: %+v", sig)
 
 	// Make sure wallet does not already exist
 	instrument, err := u.repos.Instrument.GetWallet(addr)

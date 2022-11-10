@@ -222,7 +222,7 @@ func (t *transaction) getStringInstrumentsAndUserId() error {
 	t.instruments.StringWalletId = "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c"
 	t.stringUserId = "0e837b73-55cf-43ff-9b1e-0d8258eec978"
 	t.stringDeviceId = "073f5a88-9223-4554-a7ce-11d358123a21"
-	t.stringPlatformId = "e2724c34-51f6-4eb9-a219-8fb6fb3cbb17"
+	t.stringPlatformId = "54a7e062-4cec-44f3-9d89-99498d0eb6ef"
 	return nil
 }
 
