@@ -1,13 +1,14 @@
 package service
 
 import (
-	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -29,10 +30,12 @@ type EmailLogin struct {
 }
 
 type UserRepos struct {
-	Auth       repository.AuthStrategy
-	User       repository.User
-	Contact    repository.Contact
-	Instrument repository.Instrument
+	Auth         repository.AuthStrategy
+	User         repository.User
+	Contact      repository.Contact
+	Instrument   repository.Instrument
+	Device       repository.Device
+	UserPlatform repository.UserPlatform
 }
 
 type User interface {
@@ -83,11 +86,6 @@ func (u user) Create(request UserRequest) (JWT, error) {
 	if signature == "" {
 		return JWT{}, common.StringError(errors.New("no signature provided"))
 	}
-	sig, err := common.EVMSign(addr)
-	if err != nil {
-		//
-	}
-	fmt.Printf("\n\n\nsig: %+v", sig)
 
 	// Make sure wallet does not already exist
 	instrument, err := u.repos.Instrument.GetWallet(addr)
@@ -132,6 +130,8 @@ func (u user) Create(request UserRequest) (JWT, error) {
 	if err != nil {
 		return JWT{}, common.StringError(err)
 	}
+
+	go u.createUnit21Entity(user)
 
 	return jwt, nil
 }
@@ -214,6 +214,9 @@ func (u user) Name(request UserRequest) error {
 	if err != nil {
 		return common.StringError(err)
 	}
+
+	go u.updateUnit21Entity(user)
+
 	return nil
 }
 
@@ -279,6 +282,9 @@ func (u user) ReceiveEmailLogin(encrypted string) (JWT, error) {
 	if err != nil {
 		return JWT{}, common.StringError(err)
 	}
+
+	go u.updateUnit21Entity(user)
+
 	return jwt, nil
 }
 
@@ -306,4 +312,34 @@ func (u user) generateJWT(m model.User) (JWT, error) {
 		return JWT{}, common.StringError(err)
 	}
 	return *t, nil
+}
+
+func (u user) createUnit21Entity(user model.User) {
+	// Createing a User Entity in Unit21
+	u21Repo := unit21.EntityRepos{
+		Device:       u.repos.Device,
+		Contact:      u.repos.Contact,
+		UserPlatform: u.repos.UserPlatform,
+	}
+
+	u21Entity := unit21.NewEntity(u21Repo)
+	_, err := u21Entity.Create(user)
+	if err != nil {
+		log.Printf("Error creating Entity in Unit21: %s", err)
+	}
+}
+
+func (u user) updateUnit21Entity(user model.User) {
+	// Createing a User Entity in Unit21
+	u21Repo := unit21.EntityRepos{
+		Device:       u.repos.Device,
+		Contact:      u.repos.Contact,
+		UserPlatform: u.repos.UserPlatform,
+	}
+
+	u21Entity := unit21.NewEntity(u21Repo)
+	_, err := u21Entity.Update(user)
+	if err != nil {
+		log.Printf("Error updating Entity in Unit21: %s", err)
+	}
 }

@@ -53,9 +53,9 @@ func TestCreateEntity(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
-		device:       repository.NewDevice(sqlxDB),
-		contact:      repository.NewContact(sqlxDB),
-		userPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:       repository.NewDevice(sqlxDB),
+		Contact:      repository.NewContact(sqlxDB),
+		UserPlatform: repository.NewUserPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)
@@ -109,9 +109,9 @@ func TestUpdateEntity(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
-		device:       repository.NewDevice(sqlxDB),
-		contact:      repository.NewContact(sqlxDB),
-		userPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:       repository.NewDevice(sqlxDB),
+		Contact:      repository.NewContact(sqlxDB),
+		UserPlatform: repository.NewUserPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)
@@ -147,9 +147,9 @@ func TestAddInstruments(t *testing.T) {
 	}
 
 	repos := EntityRepos{
-		device:       repository.NewDevice(sqlxDB),
-		contact:      repository.NewContact(sqlxDB),
-		userPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:       repository.NewDevice(sqlxDB),
+		Contact:      repository.NewContact(sqlxDB),
+		UserPlatform: repository.NewUserPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)

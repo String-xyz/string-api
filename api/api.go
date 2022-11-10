@@ -96,10 +96,12 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 
 func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	repos := service.UserRepos{
-		Auth:       repository.NewAuth(config.Redis, config.DB),
-		User:       repository.NewUser(config.DB),
-		Contact:    repository.NewContact(config.DB),
-		Instrument: repository.NewInstrument(config.DB),
+		Auth:         repository.NewAuth(config.Redis, config.DB),
+		User:         repository.NewUser(config.DB),
+		Contact:      repository.NewContact(config.DB),
+		Instrument:   repository.NewInstrument(config.DB),
+		Device:       repository.NewDevice(config.DB),
+		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
 	service := service.NewUser(repos)
 	handler := handler.NewUser(e, service)
@@ -108,10 +110,12 @@ func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 
 func loginRoute(config APIConfig, e *echo.Echo) {
 	repos := service.UserRepos{
-		Auth:       repository.NewAuth(config.Redis, config.DB),
-		User:       repository.NewUser(config.DB),
-		Contact:    repository.NewContact(config.DB),
-		Instrument: repository.NewInstrument(config.DB),
+		Auth:         repository.NewAuth(config.Redis, config.DB),
+		User:         repository.NewUser(config.DB),
+		Contact:      repository.NewContact(config.DB),
+		Instrument:   repository.NewInstrument(config.DB),
+		Device:       repository.NewDevice(config.DB),
+		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
 	service := service.NewUser(repos)
 	handler := handler.NewLogin(e, service)
