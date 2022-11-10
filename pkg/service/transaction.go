@@ -350,14 +350,13 @@ func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) 
 
 func (t transaction) authCard(userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string, userId string) (AuthorizedCharge, error) {
 	// auth their card
-	auth := AuthorizedCharge{}
 	auth, err := AuthorizeCharge(usd, userWallet, cardToken)
 	if err != nil {
 		return auth, common.StringError(err)
 	}
 
 	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
-	instrumentId, err := t.addCardInstrumentIdIfNew(auth.InstrumentFingerprint, userId, auth.Last4)
+	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, userId, auth.Last4)
 	if err != nil {
 		return auth, common.StringError(err)
 	}
