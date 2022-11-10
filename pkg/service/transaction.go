@@ -381,23 +381,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 		return auth, common.StringError(err)
 	}
 
-	// Send Instrument Data to Unit21
-	instrumentModel, err := t.repos.Instrument.GetById(origin.InstrumentID)
-	if err != nil {
-		return auth, common.StringError(err)
-	}
-
-	u21Repo := unit21.InstrumentRepo{
-		User:     t.repos.User,
-		Device:   t.repos.Device,
-		Location: t.repos.Location, // empty until fingerprint integration
-	}
-
-	u21Tx := unit21.NewInstrument(u21Repo)
-	_, err = u21Tx.Create(instrumentModel)
-	if err != nil {
-		return auth, common.StringError(err)
-	}
+	go t.createUnit21Instrument(origin.InstrumentID)
 
 	return auth, nil
 }
@@ -639,4 +623,25 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 func floatToFixedString(value float64, decimals int) string {
 	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
+}
+
+func (t transaction) createUnit21Instrument(instrumentId string) {
+	// Send Instrument Data to Unit21
+	instrument, err := t.repos.Instrument.GetById(instrumentId)
+	if err != nil {
+		fmt.Printf("Error creating new instrument in Unit21 -- can't get instrument model")
+		return
+	}
+
+	u21Repo := unit21.InstrumentRepo{
+		User:     t.repos.User,
+		Device:   t.repos.Device,
+		Location: t.repos.Location, // empty until fingerprint integration
+	}
+
+	u21Tx := unit21.NewInstrument(u21Repo)
+	_, err = u21Tx.Create(instrument)
+	if err != nil {
+		fmt.Printf("Error creating new instrument in Unit21")
+	}
 }
