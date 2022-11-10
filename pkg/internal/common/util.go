@@ -83,14 +83,5 @@ func KeysAndValues(item interface{}) ([]string, map[string]interface{}) {
 }
 
 func GetBaseURL() string {
-	baseURL := "http://localhost:5555/"
-	env := os.Getenv("ENV")
-	if env == "dev" {
-		baseURL = "https://app.dev.string-api.xyz/"
-	} else if env == "local" {
-		baseURL = "http://localhost:5555/"
-	} else {
-		baseURL = "https://app.string-api.xyz/"
-	}
-	return baseURL
+	return os.Getenv("BASE_URL")
 }
