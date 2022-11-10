@@ -33,6 +33,7 @@ func Start(config APIConfig) {
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 	loginRoute(config, e)
+<<<<<<< HEAD
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -42,6 +43,8 @@ func StartInternal(config APIConfig) {
 	e.GET("/heartbeat", heartbeat)
 	platformRoute(config, e)
 	AuthAPIKey(config, e, true)
+=======
+>>>>>>> 25edcd7f05e444d7c9e9fe53552f8179fd7e54d1
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
