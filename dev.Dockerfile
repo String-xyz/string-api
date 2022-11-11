@@ -15,4 +15,11 @@ RUN go mod download
 RUN curl -fLo install.sh https://raw.githubusercontent.com/cosmtrek/air/master/install.sh \
 	&& chmod +x install.sh && sh install.sh && cp ./bin/air /bin/air
 
-CMD air
+# install goose for db migrations
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+# will run from an entrypoint.sh file
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
