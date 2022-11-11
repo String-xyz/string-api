@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log"
 	"math"
+	"os"
 	"reflect"
 	"strconv"
 
@@ -79,4 +80,8 @@ func KeysAndValues(item interface{}) ([]string, map[string]interface{}) {
 	}
 
 	return keyNames, keyValues
+}
+
+func GetBaseURL() string {
+	return os.Getenv("BASE_URL")
 }

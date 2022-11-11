@@ -15,9 +15,9 @@ type Instrument interface {
 }
 
 type InstrumentRepo struct {
-	user     repository.User
-	device   repository.Device
-	location repository.Location
+	User     repository.User
+	Device   repository.Device
+	Location repository.Location
 }
 
 type instrument struct {
@@ -29,26 +29,25 @@ func NewInstrument(r InstrumentRepo) Instrument {
 }
 
 func (i instrument) Create(instrument model.Instrument) (unit21Id string, err error) {
-
-	source, err := getSource(instrument.UserID, i.repo.user)
+	source, err := getSource(instrument.UserID, i.repo.User)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	entities, err := getEntities(instrument.UserID, i.repo.user)
+	entities, err := getEntities(instrument.UserID, i.repo.User)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.device)
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.Device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID.String, i.repo.location)
+	locationData, err := getLocationData(instrument.LocationID.String, i.repo.Location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
@@ -73,25 +72,25 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 
 func (i instrument) Update(instrument model.Instrument) (unit21Id string, err error) {
 
-	source, err := getSource(instrument.UserID, i.repo.user)
+	source, err := getSource(instrument.UserID, i.repo.User)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	entities, err := getEntities(instrument.UserID, i.repo.user)
+	entities, err := getEntities(instrument.UserID, i.repo.User)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.device)
+	digitalData, err := getInstrumentDigitalData(instrument.UserID, i.repo.Device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	locationData, err := getLocationData(instrument.LocationID.String, i.repo.location)
+	locationData, err := getLocationData(instrument.LocationID.String, i.repo.Location)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 instrument location: %s", err)
 		return "", common.StringError(err)
@@ -115,8 +114,12 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 	return u21Response.Unit21Id, nil
 }
 
-func getSource(userID string, userRepo repository.User) (source string, err error) {
-	user, err := userRepo.GetById(userID)
+func getSource(userId string, userRepo repository.User) (source string, err error) {
+	if userId == "" {
+		log.Printf("No userId defined")
+		return
+	}
+	user, err := userRepo.GetById(userId)
 	if err != nil {
 		log.Printf("Failed go get user contacts: %s", err)
 		return "", common.StringError(err)
@@ -128,8 +131,12 @@ func getSource(userID string, userRepo repository.User) (source string, err erro
 	return "external", nil
 }
 
-func getEntities(userID string, userRepo repository.User) (entity instrumentEntity, err error) {
-	user, err := userRepo.GetById(userID)
+func getEntities(userId string, userRepo repository.User) (entity instrumentEntity, err error) {
+	if userId == "" {
+		log.Printf("No userId defined")
+		return
+	}
+	user, err := userRepo.GetById(userId)
 	if err != nil {
 		log.Printf("Failed go get user contacts: %s", err)
 		err = common.StringError(err)
@@ -137,7 +144,7 @@ func getEntities(userID string, userRepo repository.User) (entity instrumentEnti
 	}
 
 	entity = instrumentEntity{
-		EntityId:       userID,
+		EntityId:       userId,
 		RelationshipId: "",
 		EntityType:     user.Type,
 	}
@@ -145,6 +152,10 @@ func getEntities(userID string, userRepo repository.User) (entity instrumentEnti
 }
 
 func getInstrumentDigitalData(userId string, deviceRepo repository.Device) (digitalData instrumentDigitalData, err error) {
+	if userId == "" {
+		log.Printf("No userId defined")
+		return
+	}
 	devices, err := deviceRepo.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user devices: %s", err)
@@ -159,8 +170,12 @@ func getInstrumentDigitalData(userId string, deviceRepo repository.Device) (digi
 	return
 }
 
-func getLocationData(locationID string, locationRepo repository.Location) (locationData instrumentLocationData, err error) {
-	location, err := locationRepo.GetById(locationID)
+func getLocationData(locationId string, locationRepo repository.Location) (locationData instrumentLocationData, err error) {
+	if locationId == "" {
+		log.Printf("No locationId defined")
+		return
+	}
+	location, err := locationRepo.GetById(locationId)
 	if err != nil {
 		log.Printf("Failed go get instrument location: %s", err)
 		err = common.StringError(err)

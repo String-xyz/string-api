@@ -2,6 +2,7 @@ package unit21
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -15,9 +16,9 @@ type Transaction interface {
 }
 
 type TransactionRepo struct {
-	txLeg repository.TxLeg
-	user  repository.User
-	asset repository.Asset
+	TxLeg repository.TxLeg
+	User  repository.User
+	Asset repository.Asset
 }
 
 type transaction struct {
@@ -30,7 +31,7 @@ func NewTransaction(r TransactionRepo) Transaction {
 
 func (i transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
+	transactionData, err := getTransactionData(transaction, i.repo.User, i.repo.Asset, i.repo.TxLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
@@ -50,12 +51,13 @@ func (i transaction) Create(transaction model.Transaction) (unit21Id string, err
 	}
 
 	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+
 	return u21Response.Unit21Id, nil
 }
 
 func (i transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
+	transactionData, err := getTransactionData(transaction, i.repo.User, i.repo.Asset, i.repo.TxLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
@@ -93,16 +95,16 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		return
 	}
 
-	receiverType, err := getSource(receiverData.UserID, userRepo)
+	senderType, err := getSource(senderData.UserID, userRepo)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction receiver user source: %s", err)
+		log.Printf("Failed to gather Unit21 transaction sender user source: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	senderType, err := getSource(senderData.UserID, userRepo)
+	receiverType, err := getSource(receiverData.UserID, userRepo)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction sender user source: %s", err)
+		log.Printf("Failed to gather Unit21 transaction receiver user source: %s", err)
 		err = common.StringError(err)
 		return
 	}
@@ -155,6 +157,10 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		err = common.StringError(err)
 		return
 	}
+
+	fmt.Printf("senderAsset: %+v\n", senderAsset)
+	log.Printf("senderAsset.Name: %s", senderAsset.Name)
+	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
 
 	txData = transactionData{
 		Amount:               amount,

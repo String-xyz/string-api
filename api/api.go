@@ -32,7 +32,7 @@ func Start(config APIConfig) {
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
-	verificationRoute(config, e)
+	loginRoute(config, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -56,9 +56,7 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
 	a := repository.NewAuth(config.Redis, config.DB)
-	u := repository.NewUser(config.DB)
-	c := repository.NewContact(config.DB)
-	service := service.NewAuth(a, u, c)
+	service := service.NewAuth(a)
 	handler := handler.NewAuth(service)
 	handler.RegisterRoutes(e.Group("/auth"))
 	return service
@@ -87,7 +85,9 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Transaction: repository.NewTransaction(config.DB),
 		TxLeg:       repository.NewTxLeg(config.DB),
 		User:        repository.NewUser(config.DB),
-		// More will follow
+		Instrument:  repository.NewInstrument(config.DB),
+		Device:      repository.NewDevice(config.DB),
+		Location:    repository.NewLocation(config.DB),
 	}
 	service := service.NewTransaction(repos)
 	handler := handler.NewTransaction(e, service)
@@ -96,22 +96,28 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 
 func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	repos := service.UserRepos{
-		User:       repository.NewUser(config.DB),
-		Contact:    repository.NewContact(config.DB),
-		Instrument: repository.NewInstrument(config.DB),
+		Auth:         repository.NewAuth(config.Redis, config.DB),
+		User:         repository.NewUser(config.DB),
+		Contact:      repository.NewContact(config.DB),
+		Instrument:   repository.NewInstrument(config.DB),
+		Device:       repository.NewDevice(config.DB),
+		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
 	service := service.NewUser(repos)
 	handler := handler.NewUser(e, service)
 	handler.RegisterRoutes(e.Group("/user"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
-func verificationRoute(config APIConfig, e *echo.Echo) {
+func loginRoute(config APIConfig, e *echo.Echo) {
 	repos := service.UserRepos{
-		User:       repository.NewUser(config.DB),
-		Contact:    repository.NewContact(config.DB),
-		Instrument: repository.NewInstrument(config.DB),
+		Auth:         repository.NewAuth(config.Redis, config.DB),
+		User:         repository.NewUser(config.DB),
+		Contact:      repository.NewContact(config.DB),
+		Instrument:   repository.NewInstrument(config.DB),
+		Device:       repository.NewDevice(config.DB),
+		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
 	service := service.NewUser(repos)
-	handler := handler.NewVerification(e, service)
-	handler.RegisterRoutes(e.Group("/verification"))
+	handler := handler.NewLogin(e, service)
+	handler.RegisterRoutes(e.Group("/login"))
 }
