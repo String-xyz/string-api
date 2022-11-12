@@ -22,9 +22,9 @@ type Entity interface {
 }
 
 type EntityRepos struct {
-	device       repository.Device
-	contact      repository.Contact
-	userPlatform repository.UserPlatform
+	Device       repository.Device
+	Contact      repository.Contact
+	UserPlatform repository.UserPlatform
 }
 
 type entity struct {
@@ -40,25 +40,26 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := getCommunications(user.ID, e.repo.contact)
+	communications, err := getCommunications(user.ID, e.repo.Contact)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity communications: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getEntityDigitalData(user.ID, e.repo.device)
+	digitalData, err := getEntityDigitalData(user.ID, e.repo.Device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	customData, err := getCustomData(user.ID, e.repo.userPlatform)
+	customData, err := getCustomData(user.ID, e.repo.UserPlatform)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity customData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	body, err := create("entities", mapUserToEntity(user, communications, digitalData, customData))
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/entities/create"
+	body, err := u21Call(url, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		return "", common.StringError(err)
@@ -72,6 +73,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 	}
 
 	log.Printf("Unit21Id: %s", entity.Unit21Id)
+
 	return entity.Unit21Id, nil
 }
 
@@ -80,28 +82,31 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := getCommunications(user.ID, e.repo.contact)
+	communications, err := getCommunications(user.ID, e.repo.Contact)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity communications: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	digitalData, err := getEntityDigitalData(user.ID, e.repo.device)
+	digitalData, err := getEntityDigitalData(user.ID, e.repo.Device)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	customData, err := getCustomData(user.ID, e.repo.userPlatform)
+	customData, err := getCustomData(user.ID, e.repo.UserPlatform)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity customData: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	body, err := update("entities", user.ID, mapUserToEntity(user, communications, digitalData, customData))
+	orgName := os.Getenv("UNIT21_ORG_NAME")
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + user.ID + "/update"
+	body, err := u21Call(url, mapUserToEntity(user, communications, digitalData, customData))
+
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		err = common.StringError(err)
@@ -176,7 +181,7 @@ func getCommunications(userId string, contact repository.Contact) (communication
 	// Get user contacts
 	contacts, err := contact.ListByUserId(userId, 100, 0)
 	if err != nil {
-		log.Printf("Failed go get user contacts: %s", err)
+		log.Printf("Failed to get user contacts: %s", err)
 		err = common.StringError(err)
 		return
 	}

@@ -50,9 +50,9 @@ func TestCreateInstrument(t *testing.T) {
 	mock.ExpectQuery(`SELECT \* FROM location WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
 	repo := InstrumentRepo{
-		user:     repository.NewUser(sqlxDB),
-		device:   repository.NewDevice(sqlxDB),
-		location: repository.NewLocation(sqlxDB),
+		User:     repository.NewUser(sqlxDB),
+		Device:   repository.NewDevice(sqlxDB),
+		Location: repository.NewLocation(sqlxDB),
 	}
 
 	u21Instrument := NewInstrument(repo)
@@ -101,9 +101,9 @@ func TestUpdateInstrument(t *testing.T) {
 	mock.ExpectQuery(`SELECT \* FROM location WHERE id = (.+) AND 'deactivated_at' IS NOT NULL`).WithArgs().WillReturnRows(mockedLocationRow)
 
 	repo := InstrumentRepo{
-		user:     repository.NewUser(sqlxDB),
-		device:   repository.NewDevice(sqlxDB),
-		location: repository.NewLocation(sqlxDB),
+		User:     repository.NewUser(sqlxDB),
+		Device:   repository.NewDevice(sqlxDB),
+		Location: repository.NewLocation(sqlxDB),
 	}
 
 	u21Instrument := NewInstrument(repo)

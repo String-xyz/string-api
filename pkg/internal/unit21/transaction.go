@@ -2,7 +2,9 @@ package unit21
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -10,14 +12,15 @@ import (
 )
 
 type Transaction interface {
+	Evaluate(transaction model.Transaction) (pass bool, err error)
 	Create(transaction model.Transaction) (unit21Id string, err error)
 	Update(transaction model.Transaction) (unit21Id string, err error)
 }
 
 type TransactionRepo struct {
-	txLeg repository.TxLeg
-	user  repository.User
-	asset repository.Asset
+	TxLeg repository.TxLeg
+	User  repository.User
+	Asset repository.Asset
 }
 
 type transaction struct {
@@ -28,15 +31,45 @@ func NewTransaction(r TransactionRepo) Transaction {
 	return &transaction{repo: r}
 }
 
+func (i transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
+
+	transactionData, err := getTransactionData(transaction, i.repo.User, i.repo.Asset, i.repo.TxLeg)
+	if err != nil {
+		log.Printf("Failed to gather Unit21 transaction source: %s", err)
+		return false, common.StringError(err)
+	}
+	url := "https://rtr." + os.Getenv("UNIT21_ENV") + ".unit21.com/evaluate"
+	body, err := u21Call(url, mapToUnit21Event(transaction, transactionData))
+
+	if err != nil {
+		log.Printf("Unit21 Transaction evaluate failed: %s", err)
+		return false, common.StringError(err)
+	}
+
+	// var u21Response *createEventResponse
+	var response any
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.Printf("Reading body failed: %s", err)
+		return false, common.StringError(err)
+	}
+	log.Printf("unit21 evaluate response: %+v", response)
+
+	// log.Printf("Unit21Id: %s")
+
+	return true, nil
+}
+
 func (i transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
+	transactionData, err := getTransactionData(transaction, i.repo.User, i.repo.Asset, i.repo.TxLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	body, err := create("events", mapToUnit21Event(transaction, transactionData))
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
+	body, err := u21Call(url, mapToUnit21Event(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -50,18 +83,22 @@ func (i transaction) Create(transaction model.Transaction) (unit21Id string, err
 	}
 
 	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+
 	return u21Response.Unit21Id, nil
 }
 
 func (i transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
 
-	transactionData, err := getTransactionData(transaction, i.repo.user, i.repo.asset, i.repo.txLeg)
+	transactionData, err := getTransactionData(transaction, i.repo.User, i.repo.Asset, i.repo.TxLeg)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
 	}
 
-	body, err := update("events", transaction.ID, mapToUnit21Event(transaction, transactionData))
+	orgName := os.Getenv("UNIT21_ORG_NAME")
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
+	body, err := u21Call(url, mapToUnit21Event(transaction, transactionData))
+
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -93,16 +130,16 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		return
 	}
 
-	receiverType, err := getSource(receiverData.UserID, userRepo)
+	senderType, err := getSource(senderData.UserID, userRepo)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction receiver user source: %s", err)
+		log.Printf("Failed to gather Unit21 transaction sender user source: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	senderType, err := getSource(senderData.UserID, userRepo)
+	receiverType, err := getSource(receiverData.UserID, userRepo)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction sender user source: %s", err)
+		log.Printf("Failed to gather Unit21 transaction receiver user source: %s", err)
 		err = common.StringError(err)
 		return
 	}
@@ -155,6 +192,10 @@ func getTransactionData(transaction model.Transaction, userRepo repository.User,
 		err = common.StringError(err)
 		return
 	}
+
+	fmt.Printf("senderAsset: %+v\n", senderAsset)
+	log.Printf("senderAsset.Name: %s", senderAsset.Name)
+	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
 
 	txData = transactionData{
 		Amount:               amount,
