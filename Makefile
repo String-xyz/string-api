@@ -18,8 +18,9 @@ test-envvars:
 	@[ "${tag}" ] || ( echo "env tag is not set"; exit 1 )
 
 build: test-envvars
-	GOOS=linux GOARCH=amd64 go build -o ./tmp/app ./cmd/app/main.go
-	docker build --platform linux/amd64 -t $(ECS_API_REPO):${SERVICE_TAG} .
+	GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
+	docker build --platform linux/amd64 -t $(ECS_API_REPO):${SERVICE_TAG} cmd/app/
+	rm cmd/app/main
 
 push: test-envvars
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECS_API_REPO)
