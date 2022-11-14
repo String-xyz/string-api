@@ -5,7 +5,6 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 type Auth interface {
@@ -15,7 +14,6 @@ type Auth interface {
 
 type auth struct {
 	service service.Auth
-	logger  *zerolog.Logger
 }
 
 func NewAuth(service service.Auth) Auth {
@@ -34,7 +32,7 @@ func (o auth) NonceChallenge(c echo.Context) error {
 
 	nonce, err := o.service.Challenge(param.PublicAddress)
 	if err != nil {
-		o.logger.Err(err).Msg("auth challenge")
+		LogStringError(c, err, "auth: nonce challenge")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Nonce Challenge Service Failed")
 	}
 

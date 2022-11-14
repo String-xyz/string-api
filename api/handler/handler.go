@@ -6,7 +6,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 type Transaction interface {
@@ -25,7 +24,6 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.ExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
@@ -34,7 +32,7 @@ func (t transaction) Transact(c echo.Context) error {
 	userId := c.Get("userId").(string)
 	res, err := t.Service.Execute(body, userId)
 	if err != nil {
-		lg.Err(err).Msg("transaction execute")
+		LogStringError(c, err, "transact: execute")
 		return c.String(http.StatusOK, "Execute Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
@@ -42,7 +40,6 @@ func (t transaction) Transact(c echo.Context) error {
 
 func (t transaction) Quote(c echo.Context) error {
 	var body model.TransactionRequest
-	lg := c.Get("logger").(*zerolog.Logger)
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Bad request")
@@ -50,7 +47,7 @@ func (t transaction) Quote(c echo.Context) error {
 	// userId := c.Get("userId").(string)
 	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil {
-		lg.Err(err).Msg("transaction quote")
+		LogStringError(c, err, "transact: quote")
 		return c.String(http.StatusOK, "Quote Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)

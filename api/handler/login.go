@@ -6,7 +6,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 type Login interface {
@@ -27,54 +26,51 @@ func NewLogin(route *echo.Echo, service service.User) Login {
 }
 
 func (l login) Create(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
+		LogStringError(c, err, "login: create bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	jwt, err := l.Service.Create(body)
 	if err != nil {
-		lg.Err(err).Msg("user create")
+		LogStringError(c, err, "login: create")
 		return c.String(http.StatusBadRequest, "User Service Failed")
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
 
 func (l login) ReceiveEmailAuthentication(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
-	// Token was provided
 	token := c.QueryParam("token")
 	err := l.Service.ReceiveEmailAuthentication(token)
 	if err != nil {
-		lg.Err(err).Msg("user authenticate")
+		LogStringError(c, err, "login: receive email authentication")
 		return c.String(http.StatusBadRequest, "Invalid Token")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Authenticated"})
 }
 
 func (l login) RequestEmailLogin(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
+		LogStringError(c, err, "login: request email login bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	err = l.Service.RequestEmailLogin(body)
 	if err != nil {
-		lg.Err(err).Msg("user login")
+		LogStringError(c, err, "login: request email login")
 		return c.String(http.StatusBadRequest, "User Service Failed")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "User Login Sent to Email"})
 }
 
 func (l login) ReceiveEmailLogin(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	// Token was provided
 	token := c.QueryParam("token")
 	jwt, err := l.Service.ReceiveEmailLogin(token)
 	if err != nil {
-		lg.Err(err).Msg("user authenticate")
+		LogStringError(c, err, "login: receive email login")
 		return c.String(http.StatusBadRequest, "Invalid Token")
 	}
 	return c.JSON(http.StatusOK, jwt)

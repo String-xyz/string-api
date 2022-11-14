@@ -23,6 +23,7 @@ func main() {
 	}
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
 	lg := zerolog.New(os.Stdout)
 	// setup api

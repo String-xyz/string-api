@@ -12,7 +12,7 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	obj1 := "Your Public Key Here"
+	obj1 := "0x44A4b9E2A69d86BA382a511f845CbF2E31286770"
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
