@@ -2,7 +2,6 @@ package unit21
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -193,10 +192,6 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		err = common.StringError(err)
 		return
 	}
-
-	fmt.Printf("senderAsset: %+v\n", senderAsset)
-	log.Printf("senderAsset.Name: %s", senderAsset.Name)
-	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
 
 	txData = transactionData{
 		Amount:               amount,
