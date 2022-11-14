@@ -40,26 +40,26 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := getCommunications(user.ID, e.repo.Contact)
+	communications, err := e.getCommunications(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity communications: %s", err)
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := getEntityDigitalData(user.ID, e.repo.Device)
+	digitalData, err := e.getEntityDigitalData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		return "", common.StringError(err)
 	}
 
-	customData, err := getCustomData(user.ID, e.repo.UserPlatform)
+	customData, err := e.getCustomData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity customData: %s", err)
 		return "", common.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/entities/create"
-	body, err := u21Call(url, mapUserToEntity(user, communications, digitalData, customData))
+	body, err := u21Post(url, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
 		return "", common.StringError(err)
@@ -82,21 +82,21 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := getCommunications(user.ID, e.repo.Contact)
+	communications, err := e.getCommunications(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity communications: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	digitalData, err := getEntityDigitalData(user.ID, e.repo.Device)
+	digitalData, err := e.getEntityDigitalData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		err = common.StringError(err)
 		return
 	}
 
-	customData, err := getCustomData(user.ID, e.repo.UserPlatform)
+	customData, err := e.getCustomData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity customData: %s", err)
 		err = common.StringError(err)
@@ -105,7 +105,7 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + user.ID + "/update"
-	body, err := u21Call(url, mapUserToEntity(user, communications, digitalData, customData))
+	body, err := u21Put(url, mapUserToEntity(user, communications, digitalData, customData))
 
 	if err != nil {
 		log.Printf("Unit21 Entity create failed: %s", err)
@@ -177,9 +177,9 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	return
 }
 
-func getCommunications(userId string, contact repository.Contact) (communications entityCommunication, err error) {
+func (e entity) getCommunications(userId string) (communications entityCommunication, err error) {
 	// Get user contacts
-	contacts, err := contact.ListByUserId(userId, 100, 0)
+	contacts, err := e.repo.Contact.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user contacts: %s", err)
 		err = common.StringError(err)
@@ -198,8 +198,8 @@ func getCommunications(userId string, contact repository.Contact) (communication
 	return
 }
 
-func getEntityDigitalData(userId string, device repository.Device) (deviceData entityDigitalData, err error) {
-	devices, err := device.ListByUserId(userId, 100, 0)
+func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalData, err error) {
+	devices, err := e.repo.Device.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user devices: %s", err)
 		err = common.StringError(err)
@@ -214,8 +214,8 @@ func getEntityDigitalData(userId string, device repository.Device) (deviceData e
 	return
 }
 
-func getCustomData(userId string, userPlatform repository.UserPlatform) (customData entityCustomData, err error) {
-	devices, err := userPlatform.ListByUserId(userId, 100, 0)
+func (e entity) getCustomData(userId string) (customData entityCustomData, err error) {
+	devices, err := e.repo.UserPlatform.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user platforms: %s", err)
 		err = common.StringError(err)
