@@ -517,7 +517,7 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 	wei := floatToFixedString(trueEth, int(asset.Decimals))
 	usd := floatToFixedString(quotedTotal, 6)
 	destination := model.TxLeg{
-		Timestamp:    time.Now(),   // null? Should be updated when the tx occurs
+		Timestamp:    time.Now(),   // updated based on *when the transaction occured* not time.Now()
 		Amount:       wei,          // Should be the amount of the asset received by the user
 		Value:        usd,          // The value of the asset received by the user
 		AssetID:      asset.ID,     // the asset received by the user
