@@ -32,7 +32,9 @@ func Start(config APIConfig) {
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
-	loginRoute(config, e)
+
+	geofencingService := service.NewGeofencing()
+	loginRoute(config, geofencingService, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -108,7 +110,7 @@ func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	handler.RegisterRoutes(e.Group("/user"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
-func loginRoute(config APIConfig, e *echo.Echo) {
+func loginRoute(config APIConfig, geofencingService service.Geofencing, e *echo.Echo) {
 	repos := service.UserRepos{
 		Auth:         repository.NewAuth(config.Redis, config.DB),
 		User:         repository.NewUser(config.DB),
@@ -119,5 +121,5 @@ func loginRoute(config APIConfig, e *echo.Echo) {
 	}
 	service := service.NewUser(repos)
 	handler := handler.NewLogin(e, service)
-	handler.RegisterRoutes(e.Group("/login"))
+	handler.RegisterRoutes(e.Group("/login"), middleware.Georestrict(geofencingService))
 }

@@ -83,6 +83,30 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 	return echoMiddleware.KeyAuthWithConfig(config)
 }
 
+func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			/* Get Ip from request */
+			// ip := c.Request().Header.Get("ip") // only for development
+			// ip := "174.211.227.97"
+			ip := c.RealIP()
+
+			// check if location ip is restricted
+			isRestricted, err := service.IsRestricted(ip)
+
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, "error")
+			}
+
+			if isRestricted {
+				return c.JSON(http.StatusForbidden, "Error: Forbidden")
+			}
+
+			return next(c)
+		}
+	}
+}
+
 func Tracer() echo.MiddlewareFunc {
 	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
 }
