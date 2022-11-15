@@ -1,5 +1,17 @@
 version: '3.8'
 services:
+  string-api:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    container_name: string-api
+    ports:
+      - 5555:5555
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./:/app
   db:
     image: postgres:14.1-alpine
     restart: always
@@ -8,7 +20,7 @@ services:
       - POSTGRES_PASSWORD=string_password
     ports:
       - '5432:5432'
-    volumes: 
+    volumes:
       - db:/var/lib/postgresql/data
   redis:
     image: redis:7.0-alpine
@@ -16,7 +28,7 @@ services:
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-    volumes: 
+    volumes:
       - redis:/data
 volumes:
   db:
