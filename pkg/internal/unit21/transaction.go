@@ -2,6 +2,7 @@ package unit21
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -31,7 +32,6 @@ func NewTransaction(r TransactionRepo) Transaction {
 }
 
 func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
-
 	transactionData, err := t.getTransactionData(transaction)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
@@ -61,8 +61,8 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 }
 
 func (t transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
-
 	transactionData, err := t.getTransactionData(transaction)
+
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return "", common.StringError(err)
@@ -88,7 +88,6 @@ func (t transaction) Create(transaction model.Transaction) (unit21Id string, err
 }
 
 func (t transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
-
 	transactionData, err := t.getTransactionData(transaction)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
@@ -192,6 +191,10 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		err = common.StringError(err)
 		return
 	}
+
+	fmt.Printf("senderAsset: %+v\n", senderAsset)
+	log.Printf("senderAsset.Name: %s", senderAsset.Name)
+	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
 
 	txData = transactionData{
 		Amount:               amount,

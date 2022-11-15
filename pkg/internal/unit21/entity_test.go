@@ -19,7 +19,6 @@ func TestCreateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	entityId := uuid.NewString()
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
@@ -27,6 +26,7 @@ func TestCreateEntity(t *testing.T) {
 	}
 	defer db.Close()
 
+	entityId := uuid.NewString()
 	user := model.User{
 		ID:            entityId,
 		CreatedAt:     time.Now(),
@@ -40,14 +40,17 @@ func TestCreateEntity(t *testing.T) {
 		LastName:      "User",
 	}
 
-	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "type", "status", "data"}).AddRow(uuid.NewString(), entityId, time.Now(), time.Now(), time.Now(), "email", "verified", "test@gmail.com")
-	mock.ExpectQuery(`SELECT \* FROM contact WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedContactRow)
+	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
+		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com")
+	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
 
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
-	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
+		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, entityId)
+	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedDeviceRow)
 
-	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
+	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).
+		AddRow(entityId, uuid.NewString())
+	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
 		Device:       repository.NewDevice(sqlxDB),
@@ -71,8 +74,6 @@ func TestUpdateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	// choose an older entity so we can update it
-	entityId := "d8451ddd-6116-4b62-9072-0e8b63a843f1"
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
@@ -80,27 +81,32 @@ func TestUpdateEntity(t *testing.T) {
 	}
 	defer db.Close()
 
+	// choose an older entity so we can update it
+	entityId := "d8451ddd-6116-4b62-9072-0e8b63a843f1"
 	user := model.User{
 		ID:            entityId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
 		Type:          "User",
-		Status:        "Updated", // changing from Onboarded
+		Status:        "Onboarded",
 		Tags:          nil,
 		FirstName:     "Test",
-		MiddleName:    "Another", // changing from A
+		MiddleName:    "A",
 		LastName:      "User",
 	}
 
-	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "created_at", "updated_at", "last_authenticated_at", "type", "status", "data"}).AddRow(uuid.NewString(), entityId, time.Now(), time.Now(), time.Now(), "email", "verified", "test@gmail.com")
-	mock.ExpectQuery(`SELECT \* FROM contact WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedContactRow)
+	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
+		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com")
+	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
 
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_used_at", "validated_at", "type", "description", "fingerprint", "ip_addresses", "user_id"}).AddRow(uuid.NewString(), time.Now(), time.Now(), time.Now(), time.Now(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"192.0.1.1"}, uuid.NewString())
-	mock.ExpectQuery(`SELECT \* FROM device WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedDeviceRow)
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
+		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, entityId)
+	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedDeviceRow)
 
-	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery(`SELECT \* FROM user_platform WHERE user_id = (.+) LIMIT (.+) OFFSET (.+)`).WithArgs().WillReturnRows(mockedUserPlatformRow)
+	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).
+		AddRow(entityId, uuid.NewString())
+	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
 		Device:       repository.NewDevice(sqlxDB),
@@ -125,14 +131,15 @@ func TestAddInstruments(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	entityId := "44142758-f015-4f79-a004-e554b0641480" //previous created test user
-	var instrumentIds []string
 	db, _, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
 		t.Fatalf("error %s was not expected when opening stub db", err)
 	}
 	defer db.Close()
+
+	entityId := "44142758-f015-4f79-a004-e554b0641480" //previous created test user
+	var instrumentIds []string
 
 	// mock new instrumentIds
 	for i := 1; i <= 10; i++ {

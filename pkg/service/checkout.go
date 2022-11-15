@@ -26,24 +26,30 @@ func convertAmount(amount float64) uint64 {
 	return uint64(math.Round(amount * 100))
 }
 
-func CreateToken(card *tokens.Card) (*tokens.Response, error) {
-	var config, err = getConfig()
+func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
+	config, err := getConfig()
 	if err != nil {
 		return nil, common.StringError(err)
 	}
 	client := tokens.NewClient(*config)
 
-	res, err := client.Request(&tokens.Request{Card: card})
+	token, err = client.Request(&tokens.Request{Card: card})
 	if err != nil {
-		return res, common.StringError(err)
+		return token, common.StringError(err)
 	}
-	return res, nil
+	return token, nil
 }
 
-func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string, error) {
-	var config, err = getConfig()
+type AuthorizedCharge struct {
+	AuthID              string
+	CheckoutFingerprint string
+	Last4               string
+}
+
+func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth AuthorizedCharge, err error) {
+	config, err := getConfig()
 	if err != nil {
-		return "", common.StringError(err)
+		return auth, common.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
@@ -59,7 +65,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	}
 	paymentToken, err := CreateToken(&card)
 	if err != nil {
-		return "", common.StringError(err)
+		return auth, common.StringError(err)
 	}
 	paymentTokenID := paymentToken.Created.Token
 	if tokenId != "" {
@@ -87,17 +93,24 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (string,
 	params := checkout.Params{
 		IdempotencyKey: &idempotencyKey,
 	}
-	res, err := client.Request(request, &params)
+	response, err := client.Request(request, &params)
 
 	if err != nil {
-		return "", common.StringError(err)
+		return auth, common.StringError(err)
+	}
+
+	// Collect authorization ID and Instrument ID
+	auth.AuthID = response.Processed.ID
+	if response.Processed.Source.CardSourceResponse != nil {
+		auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
+		auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 	}
 	// TODO: Create entry for authorization in our DB associated with userWallet
-	return res.Processed.ID, nil
+	return auth, nil
 }
 
-func CaptureCharge(amount float64, userWallet string, authorizationID string) (*payments.CapturesResponse, error) {
-	var config, err = getConfig()
+func CaptureCharge(amount float64, userWallet string, authorizationID string) (capture *payments.CapturesResponse, err error) {
+	config, err := getConfig()
 	if err != nil {
 		return nil, common.StringError(err)
 	}
@@ -112,10 +125,11 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (*
 	request := payments.CapturesRequest{
 		Amount: usd,
 	}
-	res, err := client.Captures(authorizationID, &request, &params)
+	capture, err = client.Captures(authorizationID, &request, &params)
 	if err != nil {
 		return nil, common.StringError(err)
 	}
+
 	// TODO: Create entry for capture in our DB associated with userWallet
-	return res, nil
+	return capture, nil
 }

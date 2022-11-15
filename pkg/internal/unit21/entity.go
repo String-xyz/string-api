@@ -46,6 +46,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 		return "", common.StringError(err)
 	}
 
+
 	digitalData, err := e.getEntityDigitalData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
@@ -81,7 +82,7 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
-
+  
 	communications, err := e.getCommunications(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity communications: %s", err)
@@ -89,12 +90,14 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 		return
 	}
 
+
 	digitalData, err := e.getEntityDigitalData(user.ID)
 	if err != nil {
 		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
 		err = common.StringError(err)
 		return
 	}
+
 
 	customData, err := e.getCustomData(user.ID)
 	if err != nil {
