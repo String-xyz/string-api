@@ -2,13 +2,13 @@
 -- +goose Up
 -------------------------------------------------------------------------
 -- STRING_USER ----------------------------------------------------------
-INSERT INTO string_user (id, created_at, updated_at, type, status, tags, first_name, middle_name, last_name)
-VALUES ('0e837b73-55cf-43ff-9b1e-0d8258eec978', '2022-10-19 00:17:01.837572+00', '2022-10-19 00:17:01.837572+00', 'Developer', 'Developing', '{}', 'Deve', '', 'Loper');
+INSERT INTO string_user (id, created_at, updated_at, type, status, tags, first_name, last_name)
+VALUES ('0e837b73-55cf-43ff-9b1e-0d8258eec978', '2022-10-19 00:17:01.837572+00', '2022-10-19 00:17:01.837572+00', 'Developer', 'Developing', '{}', 'Deve', 'Loper');
 
 -------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
-INSERT INTO device (id, created_at, updated_at, last_used_at, validated_at, type, description, fingerprint, user_id)
-VALUES ('073f5a88-9223-4554-a7ce-11d358123a21', '2022-10-19 00:23:10.405595+00', '2022-10-19 00:23:10.405595+00', '2022-10-19 00:17:01.837572+00', '2022-10-19 00:17:01.837572+00', '', 'Developer Laptop', '', '0e837b73-55cf-43ff-9b1e-0d8258eec978');
+INSERT INTO device (id, created_at, updated_at, last_used_at, validated_at, description, user_id)
+VALUES ('073f5a88-9223-4554-a7ce-11d358123a21', '2022-10-19 00:23:10.405595+00', '2022-10-19 00:23:10.405595+00', '2022-10-19 00:17:01.837572+00', '2022-10-19 00:17:01.837572+00', 'Developer Laptop', '0e837b73-55cf-43ff-9b1e-0d8258eec978');
 
 -------------------------------------------------------------------------
 -- INSTRUMENT -----------------------------------------------------------
@@ -37,7 +37,7 @@ INSERT INTO asset (id, created_at, updated_at, name, description, decimals, is_c
 VALUES ('19611d0e-a42f-4cee-a35a-b34eb5c08a7f', '2022-10-14 20:17:06.460812+00', '2022-10-15 02:41:02.270712+00', 'AVAX', 'Avalanche', 18, TRUE, 'cd42c066-554c-42ad-994b-48fed371931c', 'avalanche-2'),
 ('c06986d8-cc2c-4cdc-9728-16a45698b3e7', '2022-10-14 20:17:06.460812+00', '2022-10-15 02:41:02.270712+00', 'MATIC', 'Matic', 18, TRUE, '6cea71b3-b287-4680-ad9d-e631d0bc84ba', 'matic-network'),
 ('3ef72571-c2e1-4ca3-991c-0df17cef7535', '2022-10-14 20:17:06.460812+00', '2022-10-15 02:41:02.270712+00', 'ETH', 'Ethereum', 18, TRUE, '60a02818-4e7d-4b84-b673-e2376fdbfbf9', 'ethereum'),
-('bc376c3a-6481-49d0-83ef-34ba80937ba8', '2022-10-18 03:59:05.042924+00', '2022-10-18 03:59:05.042924+00', 'USD', 'United States Dollar', 6, FALSE, null, '');
+('bc376c3a-6481-49d0-83ef-34ba80937ba8', '2022-10-18 03:59:05.042924+00', '2022-10-18 03:59:05.042924+00', 'USD', 'United States Dollar', 6, FALSE, null, null);
 
 
 -------------------------------------------------------------------------
