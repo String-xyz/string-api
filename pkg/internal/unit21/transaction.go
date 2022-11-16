@@ -37,7 +37,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return false, common.StringError(err)
 	}
-	url := "https://rtr." + os.Getenv("UNIT21_ENV") + ".unit21.com/evaluate"
+	url := "https://rtr.sandbox2.unit21.com/evaluate" // will need to be hardcoded for production
 	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
 
 	if err != nil {
