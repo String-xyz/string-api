@@ -7,34 +7,95 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/String-xyz/string-api/pkg/store"
 )
 
+const A_DAY_IN_NANOSEC = 84600000000000
+
 type Geofencing interface {
-	IsRestricted(ip string) (bool, error)
+	IsAllowed(ip string) (bool, error)
+	getLocationDataFromRedis(ip string) (locationData, error)
+	getLocationDataFromAPI(ip string) (locationData, error)
+	setLocationDataInRedis(ip string, locationData locationData) error
 }
 
 type geofencing struct {
+	redis store.RedisStore
 }
 
-func NewGeofencing() Geofencing {
-	return &geofencing{}
+func NewGeofencing(redis store.RedisStore) Geofencing {
+	return &geofencing{redis}
 }
 
-type data struct {
-	Ip             string `json:'ip`
-	Type           string `json:'type'`
-	Continent_name string `json:'continent_name'`
-	Country_code   string `json:'country_code'`
-	Region_code    string `json:'region_code'`
-	Region_name    string `json:'region_name'`
+type locationData struct {
+	Ip           string `json:'ip`
+	Country_code string `json:'country_code'`
+	Region_code  string `json:'region_code'`
+	Region_name  string `json:'region_name'`
 }
 
-func (c geofencing) IsRestricted(ip string) (bool, error) {
+func (c geofencing) IsAllowed(ip string) (bool, error) {
 	fmt.Println("Client Ip Address: ", ip)
+	locationData, err := c.getLocationDataFromRedis(ip)
 
+	/* if not found in cache, get it from the api then set the value to api's response*/
+	if err != nil {
+		locationData, err = c.getLocationDataFromAPI(ip)
+		if err != nil {
+			// TODO: log error
+			return false, err
+		}
+
+		err = c.setLocationDataInRedis(ip, locationData)
+		if err != nil { // TODO: log error
+			// TODO: log error
+			return false, err
+		}
+	}
+
+	isAllowed := isRegionAllowed(locationData)
+	if isAllowed {
+		fmt.Println("✅ Location: " + locationData.Region_name + " - Ip: " + ip)
+
+	} else {
+		fmt.Println("❌ Location: " + locationData.Region_name + " - Ip: " + ip)
+	}
+
+	return isAllowed, nil
+}
+
+func (c geofencing) setLocationDataInRedis(ip string, locationData locationData) error {
+	locationDataStr, err := json.Marshal(locationData)
+	if err != nil {
+		return err
+	}
+
+	return c.redis.Set("ip:"+ip, locationDataStr, A_DAY_IN_NANOSEC)
+}
+
+func (c geofencing) getLocationDataFromRedis(ip string) (locationData, error) {
+	cachedData, err := c.redis.Get("ip:" + ip)
+	locationData := locationData{}
+
+	if cachedData == nil {
+		return locationData, err
+	}
+	err = json.Unmarshal(cachedData, &locationData)
+	if err != nil {
+		return locationData, err
+	}
+
+	if locationData.Ip != ip {
+		return locationData, fmt.Errorf("ip not found in cache")
+	}
+
+	return locationData, err
+}
+
+func (c geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
 	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("LOCATION_API_KEY")
 
-	/* ---------- Get Data from API ---------- */
 	res, getErr := http.Get(url)
 	if getErr != nil {
 		log.Fatal(getErr)
@@ -49,22 +110,17 @@ func (c geofencing) IsRestricted(ip string) (bool, error) {
 	// convert the body to type string
 	fmt.Println(string(body))
 
-	data_obj := data{}
+	data_obj := locationData{}
 
 	// unmarshal the json into our struct
 	jsonErr := json.Unmarshal(body, &data_obj)
 	if jsonErr != nil {
 		log.Fatal(jsonErr)
 	}
-	/* END ---------- Get Data from API ---------- END */
 
-	if data_obj.Country_code != "US" || data_obj.Region_code == "NY" {
-		msg := "❌ Location: " + data_obj.Region_name + " - Ip: " + ip
-		fmt.Println(msg)
-		return true, nil
-	} else {
-		msg := "✅ Location: " + data_obj.Region_name + " - Ip: " + ip
-		fmt.Println(msg)
-		return false, nil
-	}
+	return data_obj, nil
+}
+
+func isRegionAllowed(locationData locationData) bool {
+	return locationData.Country_code == "US" && locationData.Region_code != "NY"
 }

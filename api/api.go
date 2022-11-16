@@ -33,7 +33,7 @@ func Start(config APIConfig) {
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 
-	geofencingService := service.NewGeofencing()
+	geofencingService := service.NewGeofencing(config.Redis)
 	loginRoute(config, geofencingService, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
