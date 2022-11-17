@@ -60,6 +60,51 @@ data "aws_iam_policy_document" "task_policy" {
 
 }
 
+data "aws_iam_policy_document" "ecs_service_scaling" {
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "application-autoscaling:*",
+      "ecs:DescribeServices",
+      "ecs:UpdateService",
+      "cloudwatch:DescribeAlarms",
+      "cloudwatch:PutMetricAlarm",
+      "cloudwatch:DeleteAlarms",
+      "cloudwatch:DescribeAlarmHistory",
+      "cloudwatch:DescribeAlarms",
+      "cloudwatch:DescribeAlarmsForMetric",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "cloudwatch:PutMetricAlarm",
+      "cloudwatch:DisableAlarmActions",
+      "cloudwatch:EnableAlarmActions",
+      "iam:CreateServiceLinkedRole",
+      "sns:CreateTopic",
+      "sns:Subscribe",
+      "sns:Get*",
+      "sns:List*"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "ecs_service_scaling" {
+  name = "ecs-to-scaling"
+  path = "/"
+  description = "Allow ecs service scaling"
+  policy = data.aws_iam_policy_document.ecs_service_scaling.json
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_service_scaling" {
+  role = aws_iam_role.task_ecs_role.name
+  policy_arn = aws_iam_policy.ecs_service_scaling.arn
+}
+
 resource "aws_iam_role_policy" "task_ecs_policy" {
   name   = "${local.env}-${local.service_name}-task-ecs-policy"
   role   = aws_iam_role.task_ecs_role.id
