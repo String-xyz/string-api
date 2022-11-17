@@ -1,18 +1,13 @@
 package common
 
 import (
-	"errors"
-	"fmt"
-	"runtime"
+	"github.com/pkg/errors"
 )
 
-func StringError(err error) error {
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(2, pc)
-	frames := runtime.CallersFrames(pc[:n])
-	frame, _ := frames.Next()
-	trace := fmt.Sprintf("[%s:%d %s]", frame.File, frame.Line, frame.Function)
-	msg := err.Error() + ": " + trace
-	res := errors.New(msg)
-	return res
+func StringError(err error, optionalMsg ...string) error {
+	concat := ""
+	for _, msgs := range optionalMsg {
+		concat += msgs + " "
+	}
+	return errors.Wrap(err, concat)
 }

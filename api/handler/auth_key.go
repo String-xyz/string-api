@@ -26,10 +26,9 @@ func NewAuthAPIKey(service service.APIKeyStrategy, internal bool) AuthAPIKey {
 }
 
 func (o authAPIKey) Create(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	key, err := o.service.Create()
 	if err != nil {
-		lg.Err(err).Stack().Msg("authKey approve:create")
+		LogStringError(c, err, "authKey approve: create")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.JSON(http.StatusOK, map[string]string{"apiKey": key})
@@ -39,7 +38,6 @@ func (o authAPIKey) List(c echo.Context) error {
 	if !o.isInternal {
 		return c.String(http.StatusMethodNotAllowed, "Not Allowed")
 	}
-	lg := c.Get("logger").(*zerolog.Logger)
 	body := struct {
 		Status string `query:"status"`
 		Limit  int    `query:"limit"`
@@ -47,12 +45,12 @@ func (o authAPIKey) List(c echo.Context) error {
 	}{}
 	err := c.Bind(&body)
 	if err != nil {
-		lg.Err(err).Stack().Msg("authKeys list: bind")
+		LogStringError(c, err, "authKey list: bind")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 	list, err := o.service.List(body.Limit, body.Offset, body.Status)
 	if err != nil {
-		lg.Err(err).Stack().Msg("authKeys list")
+		LogStringError(c, err, "authKey list")
 		return echo.NewHTTPError(http.StatusInternalServerError, "ApiKey Service Failed")
 	}
 	return c.JSON(http.StatusCreated, list)
@@ -62,19 +60,18 @@ func (o authAPIKey) Approve(c echo.Context) error {
 	if !o.isInternal {
 		return c.String(http.StatusMethodNotAllowed, "Not Allowed")
 	}
-	lg := c.Get("logger").(*zerolog.Logger)
 	params := struct {
 		ID string `param:"id"`
 	}{}
 	err := c.Bind(&params)
 
 	if err != nil {
-		lg.Err(err).Stack().Msg("authKey approve:bind")
+		LogStringError(c, err, "authKey approve: bind")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	err = o.service.Approve(params.ID)
 	if err != nil {
-		lg.Err(err).Stack().Msg("authKey approve:approve")
+		LogStringError(c, err, "authKey approve: approve")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.String(http.StatusOK, "Success")

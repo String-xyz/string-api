@@ -6,7 +6,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 type User interface {
@@ -29,46 +28,46 @@ func NewUser(route *echo.Echo, service service.User) User {
 }
 
 func (u user) GetStatus(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
+		LogStringError(c, err, "user: get status bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	res, err := u.Service.GetStatus(body)
 	if err != nil {
-		lg.Err(err).Msg("user getstatus")
+		LogStringError(c, err, "user: get status")
 		return c.String(http.StatusNotFound, "User Not Found")
 	}
 	return c.JSON(http.StatusOK, res)
 }
 
 func (u user) Name(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
+		LogStringError(c, err, "user: name bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	err = u.Service.Name(body)
 	if err != nil {
-		lg.Err(err).Msg("user name")
+		LogStringError(c, err, "user: name")
 		return c.String(http.StatusBadRequest, "Could Not Update Name")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Name Updated Successfully"})
 }
 
 func (u user) RequestEmailAuthentication(c echo.Context) error {
-	lg := c.Get("logger").(*zerolog.Logger)
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
+		LogStringError(c, err, "user: request email authentication bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
 	userId := c.Get("userId").(string)
 	err = u.Service.RequestEmailAuthentication(body, userId)
 	if err != nil {
-		lg.Err(err).Msg("user name")
+		LogStringError(c, err, "user: request email authentication")
 		return c.String(http.StatusBadRequest, "Could Not Send Email Authentication")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Authentication Sent"})
