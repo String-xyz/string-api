@@ -16,7 +16,6 @@ const A_DAY_IN_NANOSEC = 84600000000000
 type Geofencing interface {
 	IsAllowed(ip string) (bool, error)
 	getLocationDataFromRedis(ip string) (locationData, error)
-	getLocationDataFromAPI(ip string) (locationData, error)
 	setLocationDataInRedis(ip string, locationData locationData) error
 }
 
@@ -29,10 +28,10 @@ func NewGeofencing(redis store.RedisStore) Geofencing {
 }
 
 type locationData struct {
-	Ip           string `json:'ip'`
-	Country_code string `json:'country_code'`
-	Region_code  string `json:'region_code'`
-	Region_name  string `json:'region_name'`
+	Ip          string `json:"ip"`
+	CountryCode string `json:"country_code"`
+	RegionCode  string `json:"region_code"`
+	RegionName  string `json:"region_name"`
 }
 
 func (g geofencing) IsAllowed(ip string) (bool, error) {
@@ -40,7 +39,7 @@ func (g geofencing) IsAllowed(ip string) (bool, error) {
 
 	/* if not found in cache, get it from the api then set the value to api's response*/
 	if err != nil {
-		locationData, err = g.getLocationDataFromAPI(ip)
+		locationData, err = getLocationDataFromAPI(ip)
 		if err != nil {
 			return false, common.StringError(err)
 		}
@@ -60,7 +59,7 @@ func (c geofencing) setLocationDataInRedis(ip string, locationData locationData)
 		return common.StringError(err)
 	}
 
-	err = c.redis.Set("ip:"+ip, locationDataStr, A_DAY_IN_NANOSEC)
+	err = c.redis.Set("location-ip"+ip, locationDataStr, A_DAY_IN_NANOSEC)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -68,7 +67,7 @@ func (c geofencing) setLocationDataInRedis(ip string, locationData locationData)
 }
 
 func (g geofencing) getLocationDataFromRedis(ip string) (locationData, error) {
-	cachedData, err := g.redis.Get("ip:" + ip)
+	cachedData, err := g.redis.Get("location-ip" + ip)
 	if err != nil {
 		return locationData{}, common.StringError(err)
 	}
@@ -83,14 +82,10 @@ func (g geofencing) getLocationDataFromRedis(ip string) (locationData, error) {
 		return locationData, common.StringError(err)
 	}
 
-	if locationData.Ip != ip {
-		return locationData, common.StringError(errors.New("ip not found in cache"))
-	}
-
 	return locationData, nil
 }
 
-func (g geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
+func getLocationDataFromAPI(ip string) (locationData, error) {
 	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("LOCATION_API_KEY")
 
 	res, err := http.Get(url)
@@ -113,7 +108,7 @@ func (g geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
 		return locationData{}, common.StringError(err)
 	}
 
-	if dataObj.Ip != ip || dataObj.Country_code == "" || dataObj.Region_code == "" {
+	if dataObj.Ip != ip || dataObj.CountryCode == "" || dataObj.RegionCode == "" {
 		return locationData{}, common.StringError(errors.New(" 4 invalid location data from api"))
 	}
 
@@ -121,5 +116,5 @@ func (g geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
 }
 
 func isRegionAllowed(locationData locationData) bool {
-	return locationData.Country_code == "US" && locationData.Region_code != "NY"
+	return locationData.CountryCode == "US" && locationData.RegionCode != "NY"
 }
