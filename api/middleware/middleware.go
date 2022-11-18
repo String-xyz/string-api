@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -89,16 +88,12 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			/* Get Ip from request */
 			ip := c.RealIP()
-			fmt.Println("⚠️ ip: ", ip)
 
 			// check if location ip is restricted
 			isAllowed, err := service.IsAllowed(ip)
-
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, "error")
-			}
-
-			if !isAllowed {
+			// in case of error, what we should do? allow or deny?
+			// For now we are denying
+			if err != nil || !isAllowed {
 				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
 			}
 

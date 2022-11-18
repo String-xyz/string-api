@@ -2,13 +2,13 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/store"
+	"github.com/pkg/errors"
 )
 
 const A_DAY_IN_NANOSEC = 84600000000000
@@ -29,96 +29,95 @@ func NewGeofencing(redis store.RedisStore) Geofencing {
 }
 
 type locationData struct {
-	Ip           string `json:'ip`
+	Ip           string `json:'ip'`
 	Country_code string `json:'country_code'`
 	Region_code  string `json:'region_code'`
 	Region_name  string `json:'region_name'`
 }
 
-func (c geofencing) IsAllowed(ip string) (bool, error) {
-	fmt.Println("Client Ip Address: ", ip)
-	locationData, err := c.getLocationDataFromRedis(ip)
+func (g geofencing) IsAllowed(ip string) (bool, error) {
+	locationData, err := g.getLocationDataFromRedis(ip)
 
 	/* if not found in cache, get it from the api then set the value to api's response*/
 	if err != nil {
-		locationData, err = c.getLocationDataFromAPI(ip)
+		locationData, err = g.getLocationDataFromAPI(ip)
 		if err != nil {
-			// TODO: log error
-			return false, err
+			return false, common.StringError(err)
 		}
 
-		err = c.setLocationDataInRedis(ip, locationData)
-		if err != nil { // TODO: log error
-			// TODO: log error
-			return false, err
+		err = g.setLocationDataInRedis(ip, locationData)
+		if err != nil {
+			return false, common.StringError(err)
 		}
 	}
 
-	isAllowed := isRegionAllowed(locationData)
-	if isAllowed {
-		fmt.Println("✅ Location: " + locationData.Region_name + " - Ip: " + ip)
-
-	} else {
-		fmt.Println("❌ Location: " + locationData.Region_name + " - Ip: " + ip)
-	}
-
-	return isAllowed, nil
+	return isRegionAllowed(locationData), nil
 }
 
 func (c geofencing) setLocationDataInRedis(ip string, locationData locationData) error {
 	locationDataStr, err := json.Marshal(locationData)
 	if err != nil {
-		return err
+		return common.StringError(err)
 	}
 
-	return c.redis.Set("ip:"+ip, locationDataStr, A_DAY_IN_NANOSEC)
+	err = c.redis.Set("ip:"+ip, locationDataStr, A_DAY_IN_NANOSEC)
+	if err != nil {
+		return common.StringError(err)
+	}
+	return nil
 }
 
-func (c geofencing) getLocationDataFromRedis(ip string) (locationData, error) {
-	cachedData, err := c.redis.Get("ip:" + ip)
+func (g geofencing) getLocationDataFromRedis(ip string) (locationData, error) {
+	cachedData, err := g.redis.Get("ip:" + ip)
+	if err != nil {
+		return locationData{}, common.StringError(err)
+	}
+
 	locationData := locationData{}
 
 	if cachedData == nil {
-		return locationData, err
+		return locationData, common.StringError(err)
 	}
 	err = json.Unmarshal(cachedData, &locationData)
 	if err != nil {
-		return locationData, err
+		return locationData, common.StringError(err)
 	}
 
 	if locationData.Ip != ip {
-		return locationData, fmt.Errorf("ip not found in cache")
+		return locationData, common.StringError(errors.New("ip not found in cache"))
 	}
 
-	return locationData, err
+	return locationData, nil
 }
 
-func (c geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
+func (g geofencing) getLocationDataFromAPI(ip string) (locationData, error) {
 	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("LOCATION_API_KEY")
 
-	res, getErr := http.Get(url)
-	if getErr != nil {
-		log.Fatal(getErr)
+	res, err := http.Get(url)
+	if err != nil {
+		return locationData{}, common.StringError(err)
 	}
 
 	// read the response body
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
-		log.Fatal(readErr)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+
+		return locationData{}, common.StringError(err)
 	}
 
-	// convert the body to type string
-	fmt.Println(string(body))
-
-	data_obj := locationData{}
+	dataObj := locationData{}
 
 	// unmarshal the json into our struct
-	jsonErr := json.Unmarshal(body, &data_obj)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
+	err = json.Unmarshal(body, &dataObj)
+	if err != nil {
+		return locationData{}, common.StringError(err)
 	}
 
-	return data_obj, nil
+	if dataObj.Ip != ip || dataObj.Country_code == "" || dataObj.Region_code == "" {
+		return locationData{}, common.StringError(errors.New(" 4 invalid location data from api"))
+	}
+
+	return dataObj, nil
 }
 
 func isRegionAllowed(locationData locationData) bool {
