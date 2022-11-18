@@ -26,34 +26,36 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) {
 	e := echo.New()
-	baseMiddleware(config.Logger, e)
+	geofencingService := service.NewGeofencing(config.Redis)
+	baseMiddleware(config.Logger, geofencingService, e)
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
 
-	geofencingService := service.NewGeofencing(config.Redis)
-	loginRoute(config, geofencingService, e)
+	loginRoute(config, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
 func StartInternal(config APIConfig) {
 	e := echo.New()
-	baseMiddleware(config.Logger, e)
+	geofencingService := service.NewGeofencing(config.Redis)
+	baseMiddleware(config.Logger, geofencingService, e)
 	e.GET("/heartbeat", heartbeat)
 	platformRoute(config, e)
 	AuthAPIKey(config, e, true)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
-func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
+func baseMiddleware(logger *zerolog.Logger, geofencingService service.Geofencing, e *echo.Echo) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Tracer())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
 	e.Use(middleware.LogRequest())
+	e.Use(middleware.Georestrict(geofencingService))
 }
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
@@ -110,7 +112,7 @@ func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	handler.RegisterRoutes(e.Group("/user"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
-func loginRoute(config APIConfig, geofencingService service.Geofencing, e *echo.Echo) {
+func loginRoute(config APIConfig, e *echo.Echo) {
 	repos := service.UserRepos{
 		Auth:         repository.NewAuth(config.Redis, config.DB),
 		User:         repository.NewUser(config.DB),
@@ -121,5 +123,5 @@ func loginRoute(config APIConfig, geofencingService service.Geofencing, e *echo.
 	}
 	service := service.NewUser(repos)
 	handler := handler.NewLogin(e, service)
-	handler.RegisterRoutes(e.Group("/login"), middleware.Georestrict(geofencingService))
+	handler.RegisterRoutes(e.Group("/login"))
 }
