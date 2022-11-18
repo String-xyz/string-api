@@ -109,6 +109,10 @@ locals {
         {
           name  = "COINGECKO_API_URL"
           value = "https://api.coingecko.com/api/v3/"
+        },
+        { 
+          name = "BASE_URL"
+          value = "https://api.string-api.xyz/"
         }
       ],
       logConfiguration = {
