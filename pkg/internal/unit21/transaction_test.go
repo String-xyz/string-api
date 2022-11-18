@@ -91,7 +91,7 @@ func TestEvaluateTransaction(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new transaction added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestCreateTransaction(t *testing.T) {
@@ -171,7 +171,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new transaction added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestUpdateTransaction(t *testing.T) {
@@ -251,5 +251,5 @@ func TestUpdateTransaction(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new transaction added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }

@@ -75,7 +75,7 @@ func TestCreateInstrument(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new instrument added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestUpdateInstrument(t *testing.T) {
@@ -137,5 +137,5 @@ func TestUpdateInstrument(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new instrument added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }

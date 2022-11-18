@@ -65,7 +65,7 @@ func TestCreateEntity(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new entity added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestUpdateEntity(t *testing.T) {
@@ -121,7 +121,7 @@ func TestUpdateEntity(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new entity added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestAddInstruments(t *testing.T) {
@@ -156,5 +156,5 @@ func TestAddInstruments(t *testing.T) {
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new entity added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
