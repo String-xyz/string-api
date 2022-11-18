@@ -1,7 +1,6 @@
 package unit21
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -62,7 +61,6 @@ func TestCreateEntity(t *testing.T) {
 
 	u21EntityId, err := u21Entity.Create(user)
 	assert.NoError(t, err)
-	log.Printf("u21EntityId: %s", u21EntityId)
 	assert.Greater(t, len([]rune(u21EntityId)), 0)
 
 	//validate response from Unit21
@@ -119,7 +117,6 @@ func TestUpdateEntity(t *testing.T) {
 	// update in u21
 	u21EntityId, err := u21Entity.Update(user)
 	assert.NoError(t, err)
-	log.Printf("u21EntityId: %s", u21EntityId)
 	assert.Greater(t, len([]rune(u21EntityId)), 0)
 
 	//validate response from Unit21

@@ -1,7 +1,6 @@
 package unit21
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -88,7 +87,6 @@ func TestEvaluateTransaction(t *testing.T) {
 
 	pass, err := u21Transaction.Evaluate(transaction)
 	assert.NoError(t, err)
-	log.Printf("u21TransactionId: %+v", pass)
 	assert.True(t, pass)
 
 	//validate response from Unit21
@@ -169,7 +167,6 @@ func TestCreateTransaction(t *testing.T) {
 
 	u21TransactionId, err := u21Transaction.Create(transaction)
 	assert.NoError(t, err)
-	log.Printf("u21TransactionId: %s", u21TransactionId)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
 	//validate response from Unit21
@@ -250,7 +247,6 @@ func TestUpdateTransaction(t *testing.T) {
 
 	u21TransactionId, err := u21Transaction.Update(transaction)
 	assert.NoError(t, err)
-	log.Printf("u21TransactionId: %s", u21TransactionId)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
 	//validate response from Unit21

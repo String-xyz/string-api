@@ -2,7 +2,6 @@ package unit21
 
 import (
 	"database/sql"
-	"log"
 	"testing"
 	"time"
 
@@ -72,7 +71,6 @@ func TestCreateInstrument(t *testing.T) {
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 	assert.NoError(t, err)
-	log.Printf("u21InstrumentId: %s", u21InstrumentId)
 	assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 
 	//validate response from Unit21
@@ -135,7 +133,6 @@ func TestUpdateInstrument(t *testing.T) {
 
 	u21InstrumentId, err := u21Instrument.Update(instrument)
 	assert.NoError(t, err)
-	log.Printf("u21InstrumentId: %s", u21InstrumentId)
 	assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 
 	//validate response from Unit21
