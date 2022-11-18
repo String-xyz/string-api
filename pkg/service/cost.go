@@ -122,7 +122,7 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float32, uniqueEntri
 
 func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	cacheName := "usd_value_" + coin
-	cacheObject, err := GetObjectFromCache[CostCache](c.redis, cacheName)
+	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil && errors.Cause(err).Error() != "redis: nil" {
 		return 0.0, common.StringError(err)
 	}
@@ -132,7 +132,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 		if err != nil {
 			return 0, common.StringError(err)
 		}
-		err = PutObjectInCache(c.redis, cacheName, cacheObject)
+		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
 			return 0.0, common.StringError(err)
 		}
@@ -143,7 +143,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 
 func (c cost) lookupGas(network string) (float64, error) {
 	cacheName := "gas_price_" + network
-	cacheObject, err := GetObjectFromCache[CostCache](c.redis, cacheName)
+	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
 		return 0.0, common.StringError(err)
 	}
@@ -153,7 +153,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 		if err != nil {
 			return 0, common.StringError(err)
 		}
-		err = PutObjectInCache(c.redis, cacheName, cacheObject)
+		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
 			return 0.0, common.StringError(err)
 		}
