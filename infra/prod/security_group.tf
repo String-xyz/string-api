@@ -56,7 +56,7 @@ resource "aws_security_group" "ecs_task_sg" {
 
 # Give access to DB through Security group rule
 data "aws_security_group" "rds" {
-  name   = "${local.env}-string-write-master-client-rds"
+  name   = "pg-cluster-20221103192516479600000004"
   vpc_id = data.terraform_remote_state.vpc.outputs.id
 }
 

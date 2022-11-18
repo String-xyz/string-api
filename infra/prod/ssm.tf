@@ -10,10 +10,6 @@ data "aws_ssm_parameter" "user_jwt_secret" {
   name = "user-jwt-secret"
 }
 
-data "aws_ssm_parameter" "customer_jwt_secret" {
-  name = "customer-jwt-secret"
-}
-
 data "aws_ssm_parameter" "checkout_public_key" {
   name = "checkout-public-key"
 }
@@ -43,7 +39,7 @@ data "aws_ssm_parameter" "db_name" {
 }
 
 data "aws_ssm_parameter" "db_host" {
-  name = "string-write-db-host-url"
+  name = "pg-cluster-write-host-url"
 }
 
 data "aws_ssm_parameter" "redis_auth_token" {
