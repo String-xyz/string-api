@@ -25,7 +25,6 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 	bodyReader := bytes.NewReader(reqBodyBytes)
 
-
 	req, err := http.NewRequest(http.MethodPut, url, bodyReader)
 	if err != nil {
 		log.Printf("Could not create request for %s: %s", url, err)
@@ -65,7 +64,7 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 func u21Post(url string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
-
+	log.Printf("jsonBody: %+v", jsonBody)
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
 		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)

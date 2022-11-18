@@ -33,14 +33,16 @@ func TestCreateEntity(t *testing.T) {
 		DeactivatedAt: nil,
 		Type:          "User",
 		Status:        "Onboarded",
-		Tags:          nil,
+		Tags:          model.StringMap{"platform": "Activision Blizzard"},
 		FirstName:     "Test",
 		MiddleName:    "A",
 		LastName:      "User",
 	}
 
+	t.Logf("n\nUserId in test: %+v", entityId)
+
 	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
-		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com")
+		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com").AddRow(uuid.NewString(), entityId, "phone", "verified", "+12345678910")
 	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
