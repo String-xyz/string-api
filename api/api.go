@@ -89,7 +89,7 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Device:      repository.NewDevice(config.DB),
 		Location:    repository.NewLocation(config.DB),
 	}
-	service := service.NewTransaction(repos)
+	service := service.NewTransaction(repos, config.Redis)
 	handler := handler.NewTransaction(e, service)
 	handler.RegisterRoutes(e.Group("/transact"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }

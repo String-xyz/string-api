@@ -15,13 +15,14 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/lib/pq"
 )
 
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
 	Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error)
-	New(repos TransactionRepos) Transaction
+	New(repos TransactionRepos, redis store.RedisStore) Transaction
 }
 
 type TransactionRepos struct {
@@ -42,18 +43,19 @@ type transactionInstruments struct {
 
 type transaction struct {
 	repos            TransactionRepos
+	redis            store.RedisStore
 	instruments      transactionInstruments
 	stringUserId     string
 	stringDeviceId   string
 	stringPlatformId string
 }
 
-func (t transaction) New(repos TransactionRepos) Transaction {
-	return &transaction{repos: repos}
+func (t transaction) New(repos TransactionRepos, redis store.RedisStore) Transaction {
+	return &transaction{repos: repos, redis: redis}
 }
 
-func NewTransaction(repos TransactionRepos) Transaction {
-	return &transaction{repos: repos}
+func NewTransaction(repos TransactionRepos, redis store.RedisStore) Transaction {
+	return &transaction{repos: repos, redis: redis}
 }
 
 func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
@@ -70,7 +72,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 		return res, common.StringError(err)
 	}
 
-	estimateUSD, _, err := testTransaction(executor, d, chain, true)
+	estimateUSD, _, err := t.testTransaction(executor, d, chain, true)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -135,7 +137,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := testTransaction(executor, e.TransactionRequest, chain, false)
+	estimateUSD, estimateETH, err := t.testTransaction(executor, e.TransactionRequest, chain, false)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -249,16 +251,16 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	return asset, nil
 }
 
-func testTransaction(executor Executor, t model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, float64, error) {
+func (t transaction) testTransaction(executor Executor, r model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, float64, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
-		CxAddr:     t.CxAddr,
-		CxFunc:     t.CxFunc,
-		CxReturn:   t.CxReturn,
-		CxParams:   t.CxParams,
-		TxValue:    t.TxValue,
-		TxGasLimit: t.TxGasLimit,
+		CxAddr:     r.CxAddr,
+		CxFunc:     r.CxFunc,
+		CxReturn:   r.CxReturn,
+		CxParams:   r.CxParams,
+		TxValue:    r.TxValue,
+		TxGasLimit: r.TxGasLimit,
 	}
 	// Estimate value and gas of Tx request
 	estimateEVM, err := executor.Estimate(call)
@@ -276,7 +278,7 @@ func testTransaction(executor Executor, t model.TransactionRequest, chain Chain,
 	if err != nil {
 		return res, eth, common.StringError(err)
 	}
-	cost := NewCost(repository.NewCost(nil))
+	cost := NewCost(t.redis)
 	estimationParams := EstimationParams{
 		ChainID:    chainID,
 		CostETH:    estimateEVM.Value,
@@ -464,7 +466,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 }
 
 func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string, recipientId string, userWalletId string) (float64, error) {
-	cost := NewCost(repository.NewCost(nil)) // temporary nil
+	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(chain.CoingeckoName, trueEth)
