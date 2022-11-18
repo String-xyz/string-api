@@ -126,7 +126,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	if err != nil && errors.Cause(err).Error() != "redis: nil" {
 		return 0.0, common.StringError(err)
 	}
-	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6) {
+	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
 		if err != nil {

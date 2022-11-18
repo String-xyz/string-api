@@ -20,7 +20,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 
 	tracer, ok := errors.Cause(err).(stackTracer)
 	if !ok {
-		panic("error does not implement stackTracer")
+		fmt.Printf("Warning: error does not implement stackTracer\n%+v\n", err)
 	}
 	cause := errors.Cause(err)
 
