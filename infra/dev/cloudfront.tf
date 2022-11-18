@@ -1,7 +1,7 @@
 resource "aws_cloudfront_distribution" "this" {
-  enabled             = true
-  is_ipv6_enabled     = true
-  aliases             = ["string-api.${local.root_domain}", "www.string-api.${local.root_domain}"]
+  enabled         = true
+  is_ipv6_enabled = true
+  aliases         = ["string-api.${local.root_domain}", "www.string-api.${local.root_domain}"]
 
   origin {
     domain_name = aws_alb.alb.dns_name
@@ -14,12 +14,13 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-    restrictions {
-        geo_restriction {
-        restriction_type = "none"
-        locations = ["US"]
-     }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+      locations        = [""]
+    }
   }
+
 
   default_cache_behavior {
     target_origin_id = local.origin_id
@@ -29,7 +30,7 @@ resource "aws_cloudfront_distribution" "this" {
 
     forwarded_values {
       query_string = true
-      headers      = ["X-Forwarded-For", "Host","X-Api-Key"]
+      headers      = ["X-Forwarded-For", "Host", "X-Api-Key"]
       cookies {
         forward = "all"
       }
