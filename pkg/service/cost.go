@@ -134,7 +134,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0.0, common.StringError(err)
+			return 0, common.StringError(err)
 		}
 	}
 
