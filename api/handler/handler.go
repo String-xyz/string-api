@@ -34,7 +34,7 @@ func (t transaction) Transact(c echo.Context) error {
 	res, err := t.Service.Execute(body, userId)
 	if err != nil {
 		LogStringError(c, err, "transact: execute")
-		return c.String(http.StatusOK, "Execute Service Failed")
+		return c.String(http.StatusInternalServerError, "Execute Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -51,7 +51,7 @@ func (t transaction) Quote(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "The requested blockchain operation will revert")
 	} else if err != nil {
 		LogStringError(c, err, "transact: quote")
-		return c.String(http.StatusOK, "Quote Service Failed")
+		return c.String(http.StatusInternalServerError, "Quote Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
 }
