@@ -165,7 +165,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := common.GetJson(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
@@ -190,7 +190,7 @@ func (c cost) owlracle(network string) (float64, error) {
 		os.Getenv("OWLRACLE_API_KEY") +
 		"&accept=100"
 	var res OwlracleJSON
-	err := common.GetJson(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
