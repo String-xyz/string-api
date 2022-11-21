@@ -141,7 +141,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
 	if err != nil {
 		// Execution Will Revert!
-		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, nil
+		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, stringCommon.StringError(err)
 	}
 	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
 type Transaction interface {
@@ -46,7 +47,9 @@ func (t transaction) Quote(c echo.Context) error {
 	}
 	// userId := c.Get("userId").(string)
 	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
-	if err != nil {
+	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
+		return c.String(http.StatusBadRequest, "The requested blockchain operation will revert")
+	} else if err != nil {
 		LogStringError(c, err, "transact: quote")
 		return c.String(http.StatusOK, "Quote Service Failed")
 	}
