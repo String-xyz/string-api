@@ -18,7 +18,7 @@ func TestCreateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
 		t.Fatalf("error %s was not expected when opening stub db", err)
@@ -39,7 +39,7 @@ func TestCreateEntity(t *testing.T) {
 		LastName:      "User",
 	}
 
-	t.Logf("n\nUserId in test: %+v", entityId)
+	t.Logf("\n\nUserId in test: %+v", entityId)
 
 	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
 		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com").AddRow(uuid.NewString(), entityId, "phone", "verified", "+12345678910")
