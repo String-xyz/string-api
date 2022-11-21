@@ -145,7 +145,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 	cacheName := "gas_price_" + network
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
-		return 0.0, common.StringError(err)
+		return 0, common.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(1.6, 6) {
 		cacheObject.Timestamp = time.Now().Unix()
@@ -155,7 +155,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0.0, common.StringError(err)
+			return 0, common.StringError(err)
 		}
 	}
 
