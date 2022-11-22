@@ -117,7 +117,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 }
 
 func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntries uint32) int64 {
-	return int64(float64(60000) / (rateLimitPerMinute * float64(uniqueEntries)))
+	return int64(float64(60*rateLimitPerMinute) / rateLimitPerMinute)
 }
 
 func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
