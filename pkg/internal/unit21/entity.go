@@ -1,14 +1,9 @@
 package unit21
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -127,49 +122,17 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 // https://docs.unit21.ai/reference/add_instruments
 func (e entity) AddInstruments(entityId string, instrumentIds []string) (err error) {
-	apiKey := os.Getenv("UNIT21_API_KEY")
 	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := os.Getenv("UNIT21_URL") + orgName + "/entities/" + entityId + "/add-instruments"
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + entityId + "/add-instruments"
 
 	instruments := make(map[string][]string)
 	instruments["instrument_ids"] = instrumentIds
-	reqBodyBytes, err := json.Marshal(instruments)
+
+	body, err := u21Put(url, instruments)
 	if err != nil {
-		log.Printf("Could not encode instrumentIds to bytes: %s", err)
-		return common.StringError(err)
-	}
-
-	bodyReader := bytes.NewReader(reqBodyBytes)
-
-	req, err := http.NewRequest(http.MethodPut, url, bodyReader)
-	if err != nil {
-		log.Printf("Could not create request for instrumentIds: %s", err)
-		return common.StringError(err)
-	}
-
-	req.Header.Add("accept", "application/json")
-	req.Header.Add("content-type", "application/json")
-	req.Header.Add("u21-key", apiKey)
-
-	client := http.Client{Timeout: 10 * time.Second}
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Printf("Request failed to create instrumentIds: %s", err)
-		return common.StringError(err)
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Printf("Error extracting return body from instrumentIds add request: %s", err)
-		return common.StringError(err)
-	}
-	if res.StatusCode != 200 {
-		log.Printf("Request failed to create instrumentIds: %s", fmt.Sprint(res.StatusCode))
-		err = fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body))
-		return common.StringError(err)
+		log.Printf("Unit21 Entity Add Instruments failed: %s", err)
+		err = common.StringError(err)
+		return
 	}
 
 	log.Printf("String of body from response: %s", string(body))
@@ -179,7 +142,6 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 
 func (e entity) getCommunications(userId string) (communications entityCommunication, err error) {
 	// Get user contacts
-	log.Printf("\n\nUserId in getCommunications: %+v", userId)
 	contacts, err := e.repo.Contact.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user contacts: %s", err)
@@ -189,13 +151,12 @@ func (e entity) getCommunications(userId string) (communications entityCommunica
 
 	// Convert contact structs to an entity communication struct
 	for _, contact := range contacts {
-		if contact.Type == "Email" {
+		if contact.Type == "email" {
 			communications.Emails = append(communications.Emails, contact.Data)
-		} else if contact.Type == "Phone" {
+		} else if contact.Type == "phone" {
 			communications.Phones = append(communications.Phones, contact.Data)
 		}
 	}
-	log.Printf("communication: %s", communications)
 	return
 }
 
@@ -211,7 +172,6 @@ func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalDat
 		deviceData.IpAddresses = append(deviceData.IpAddresses, device.IpAddresses...)
 		deviceData.ClientFingerprints = append(deviceData.ClientFingerprints, device.Fingerprint)
 	}
-	log.Printf("deviceData: %s", deviceData)
 	return
 }
 

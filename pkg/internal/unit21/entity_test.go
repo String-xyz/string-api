@@ -39,8 +39,6 @@ func TestCreateEntity(t *testing.T) {
 		LastName:      "User",
 	}
 
-	t.Logf("\n\nUserId in test: %+v", entityId)
-
 	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
 		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com").AddRow(uuid.NewString(), entityId, "phone", "verified", "+12345678910")
 	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
@@ -74,7 +72,7 @@ func TestUpdateEntity(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
 		t.Fatalf("error %s was not expected when opening stub db", err)
@@ -97,7 +95,7 @@ func TestUpdateEntity(t *testing.T) {
 	}
 
 	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
-		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com")
+		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com").AddRow(uuid.NewString(), entityId, "phone", "verified", "+12345678910")
 	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
@@ -130,7 +128,7 @@ func TestAddInstruments(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	db, _, err := sqlmock.New()
+	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	if err != nil {
 		t.Fatalf("error %s was not expected when opening stub db", err)
