@@ -86,7 +86,7 @@ func (g geofencing) getLocation(ip string) (GeoLocation, error) {
 }
 
 func getLocationFromAPI(ip string) (GeoLocation, error) {
-	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("LOCATION_API_KEY")
+	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("IPSTACK_API_KEY")
 
 	res, err := http.Get(url)
 	if err != nil {
