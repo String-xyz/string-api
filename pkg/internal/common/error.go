@@ -9,5 +9,11 @@ func StringError(err error, optionalMsg ...string) error {
 	for _, msgs := range optionalMsg {
 		concat += msgs + " "
 	}
+
+	if errors.Cause(err) == nil || errors.Cause(err) == err {
+		// fmt.Printf("\nWARNING: Error does not implement StackTracer\n")
+		return errors.Wrap(errors.New(err.Error()), concat)
+	}
+
 	return errors.Wrap(err, concat)
 }
