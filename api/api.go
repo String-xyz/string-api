@@ -26,8 +26,12 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) {
 	e := echo.New()
+	baseMiddleware(config.Logger, e)
+
+	// not internal middlewares
 	geofencingService := service.NewGeofencing(config.Redis)
-	baseMiddleware(config.Logger, geofencingService, e)
+	e.Use(middleware.Georestrict(geofencingService))
+
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
 	AuthAPIKey(config, e, true)
@@ -40,22 +44,20 @@ func Start(config APIConfig) {
 
 func StartInternal(config APIConfig) {
 	e := echo.New()
-	geofencingService := service.NewGeofencing(config.Redis)
-	baseMiddleware(config.Logger, geofencingService, e)
+	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	platformRoute(config, e)
 	AuthAPIKey(config, e, true)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
-func baseMiddleware(logger *zerolog.Logger, geofencingService service.Geofencing, e *echo.Echo) {
+func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Tracer())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
 	e.Use(middleware.LogRequest())
-	e.Use(middleware.Georestrict(geofencingService))
 }
 
 func authRoute(config APIConfig, e *echo.Echo) service.Auth {
