@@ -25,6 +25,8 @@ type redisStore struct {
 	client *redis.Client
 }
 
+const REDIS_NOT_FOUND_ERROR = "redis: nil"
+
 func redisConf() *redis.Options {
 	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 	var tlsCf *tls.Config

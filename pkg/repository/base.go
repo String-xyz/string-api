@@ -86,7 +86,7 @@ func (b *base[T]) Commit() error {
 	if err != nil {
 		common.StringError(err)
 	}
-	return nil
+	return err
 }
 
 func (b *base[T]) SetTx(t Queryable) {
@@ -107,7 +107,7 @@ func (b base[T]) List(limit int, offset int) (list []T, err error) {
 
 	err = b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s LIMIT $1 OFFSET $2", b.table), limit, offset)
 	if err == sql.ErrNoRows {
-		return list, nil
+		return list, err
 	}
 	return list, err
 }
@@ -126,7 +126,7 @@ func (b base[T]) GetByUserId(userID string) (m T, err error) {
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
-	return m, nil
+	return m, err
 }
 
 func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error) {
@@ -136,11 +136,12 @@ func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error)
 	}
 	err := b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userID, limit, offset)
 	if err == sql.ErrNoRows {
-		return list, nil
+		return list, common.StringError(err)
 	}
 	if err != nil {
 		return list, common.StringError(err)
 	}
+
 	return list, nil
 }
 
@@ -154,7 +155,7 @@ func (b base[T]) Update(ID string, updates any) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	return nil
+	return err
 }
 
 func (b base[T]) Select(model interface{}, query string, params ...interface{}) error {

@@ -27,11 +27,17 @@ func heartbeat(c echo.Context) error {
 func Start(config APIConfig) {
 	e := echo.New()
 	baseMiddleware(config.Logger, e)
+
+	// not internal middlewares
+	geofencingService := service.NewGeofencing(config.Redis)
+	e.Use(middleware.Georestrict(geofencingService))
+
 	e.GET("/heartbeat", heartbeat)
 	authService := authRoute(config, e)
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
+
 	loginRoute(config, e)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }

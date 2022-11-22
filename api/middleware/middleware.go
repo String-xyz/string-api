@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -81,6 +82,29 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 		},
 	}
 	return echoMiddleware.KeyAuthWithConfig(config)
+}
+
+func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			/* Get Ip from request */
+			ip := c.RealIP()
+
+			// check if location ip is restricted
+			isAllowed, err := service.IsAllowed(ip)
+			// in case of error, what we should do? allow or deny?
+			// For now we are denying
+			if err != nil || !isAllowed {
+				if err != nil {
+					// TODO: Move the common.go file to the upper level
+					handler.LogStringError(c, err, "Error in georestrict middleware")
+				}
+				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
+			}
+
+			return next(c)
+		}
+	}
 }
 
 func Tracer() echo.MiddlewareFunc {

@@ -1,7 +1,6 @@
 package unit21
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -14,6 +13,86 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestEvaluateTransaction(t *testing.T) {
+	err := godotenv.Load("../../../.env")
+	assert.NoError(t, err)
+
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	if err != nil {
+		t.Fatalf("error %s was not expected when opening stub db", err)
+	}
+	defer db.Close()
+
+	transactionId := uuid.NewString()
+	OriginTxLegID := uuid.NewString()
+	DestinationTxLegID := uuid.NewString()
+	userId1 := uuid.NewString()
+	userId2 := uuid.NewString()
+	assetId1 := uuid.NewString()
+	assetId2 := uuid.NewString()
+	networkId := uuid.NewString()
+	instrumentId1 := uuid.NewString()
+	instrumentId2 := uuid.NewString()
+
+	transaction := model.Transaction{
+		ID:                 transactionId,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+		Type:               "fiat-to-crypto",
+		Status:             "Completed",
+		Tags:               map[string]string{},
+		DeviceID:           uuid.NewString(),
+		IPAddress:          "187.25.24.128",
+		PlatformID:         uuid.NewString(),
+		TransactionHash:    "",
+		NetworkID:          networkId,
+		NetworkFee:         "100000000",
+		ContractParams:     pq.StringArray{},
+		ContractFunc:       "mintTo()",
+		TransactionAmount:  "1000000000",
+		OriginTxLegID:      OriginTxLegID,
+		ReceiptTxLegID:     uuid.NewString(),
+		ResponseTxLegID:    uuid.NewString(),
+		DestinationTxLegID: DestinationTxLegID,
+		ProcessingFee:      "1000000",
+		ProcessingFeeAsset: uuid.NewString(),
+		StringFee:          "1000000",
+	}
+
+	mockedTxLegRow1 := sqlmock.NewRows([]string{"id", "timestamp", "amount", "value", "asset_id", "user_id", "instrument_id"}).
+		AddRow(OriginTxLegID, time.Now(), "1000000", "1000000", assetId1, userId1, instrumentId1)
+	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(OriginTxLegID).WillReturnRows(mockedTxLegRow1)
+
+	mockedTxLegRow2 := sqlmock.NewRows([]string{"id", "timestamp", "amount", "value", "asset_id", "user_id", "instrument_id"}).
+		AddRow(DestinationTxLegID, time.Now(), "1", "10000000", assetId2, userId2, instrumentId2)
+	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(DestinationTxLegID).WillReturnRows(mockedTxLegRow2)
+
+	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
+		AddRow(assetId1, "USD", "fiat USD", 6, false, networkId, "self")
+	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
+
+	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
+		AddRow(assetId2, "Noose The Goose", "Noose the Goose NFT", 0, true, networkId, "joepegs.com")
+	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
+
+	repo := TransactionRepo{
+		TxLeg: repository.NewTxLeg((sqlxDB)),
+		User:  repository.NewUser(sqlxDB),
+		Asset: repository.NewAsset(sqlxDB),
+	}
+
+	u21Transaction := NewTransaction(repo)
+
+	pass, err := u21Transaction.Evaluate(transaction)
+	assert.NoError(t, err)
+	assert.True(t, pass)
+
+	//validate response from Unit21
+	//check Unit21 dashboard for new transaction added
+	// TODO: mock call to client once it's manually tested
+}
 
 func TestCreateTransaction(t *testing.T) {
 	err := godotenv.Load("../../../.env")
@@ -70,14 +149,6 @@ func TestCreateTransaction(t *testing.T) {
 		AddRow(DestinationTxLegID, time.Now(), "1", "10000000", assetId2, userId2, instrumentId2)
 	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(DestinationTxLegID).WillReturnRows(mockedTxLegRow2)
 
-	mockedUserRow1 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId1, "User", "Onboarded", `{"kyc_level": "1", "platform": "mortal kombat"}`, "Daemon", "", "Targaryan")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId1).WillReturnRows(mockedUserRow1)
-
-	mockedUserRow2 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId2, "User", "Onboarded", `{"kyc_level": "1", "platform": "space invaders"}`, "Toph", "", "Bei Fong")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId2).WillReturnRows(mockedUserRow2)
-
 	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
 		AddRow(assetId1, "USD", "fiat USD", 6, false, networkId, "self")
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
@@ -87,7 +158,7 @@ func TestCreateTransaction(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
 
 	repo := TransactionRepo{
-		TxLeg: repository.NewTxLeg((sqlxDB)),
+		TxLeg: repository.NewTxLeg(sqlxDB),
 		User:  repository.NewUser(sqlxDB),
 		Asset: repository.NewAsset(sqlxDB),
 	}
@@ -96,12 +167,11 @@ func TestCreateTransaction(t *testing.T) {
 
 	u21TransactionId, err := u21Transaction.Create(transaction)
 	assert.NoError(t, err)
-	log.Printf("u21TransactionId: %s", u21TransactionId)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new transaction added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
 
 func TestUpdateTransaction(t *testing.T) {
@@ -159,14 +229,6 @@ func TestUpdateTransaction(t *testing.T) {
 		AddRow(DestinationTxLegID, time.Now(), "1", "10000000", assetId2, userId2, instrumentId2)
 	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(DestinationTxLegID).WillReturnRows(mockedTxLegRow2)
 
-	mockedUserRow1 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId1, "User", "Onboarded", `{"kyc_level": "1", "platform": "mortal kombat"}`, "Daemon", "", "Targaryan")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId1).WillReturnRows(mockedUserRow1)
-
-	mockedUserRow2 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId2, "User", "Onboarded", `{"kyc_level": "1", "platform": "space invaders"}`, "Toph", "", "Bei Fong")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(userId2).WillReturnRows(mockedUserRow2)
-
 	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
 		AddRow(assetId1, "USD", "fiat USD", 6, false, networkId, "self")
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
@@ -185,10 +247,9 @@ func TestUpdateTransaction(t *testing.T) {
 
 	u21TransactionId, err := u21Transaction.Update(transaction)
 	assert.NoError(t, err)
-	log.Printf("u21TransactionId: %s", u21TransactionId)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
 	//validate response from Unit21
 	//check Unit21 dashboard for new transaction added
-	// todo: mock call to client once it's manually tested
+	// TODO: mock call to client once it's manually tested
 }
