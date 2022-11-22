@@ -1,14 +1,14 @@
 package service
 
 import (
-	"errors"
 	"math/big"
 	"os"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/String-xyz/string-api/pkg/store"
+	"github.com/pkg/errors"
 )
 
 type EstimationParams struct {
@@ -35,25 +35,30 @@ type OwlracleJSON struct {
 	} `json:"speeds"`
 }
 
+type CostCache struct {
+	Timestamp int64   `json:"timestamp"`
+	Value     float64 `json:"value"`
+}
+
 type Cost interface {
 	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
-	New(repo repository.Cost) Cost
+	New(redis store.RedisStore) Cost
 	LookupUSD(coin string, quantity float64) (float64, error)
 }
 
 type cost struct {
-	repository repository.Cost // cached token and gas costs
+	redis store.RedisStore // cached token and gas costs
 }
 
-func (c cost) New(repo repository.Cost) Cost {
+func (c cost) New(redis store.RedisStore) Cost {
 	return &cost{
-		repository: repo,
+		redis: redis,
 	}
 }
 
-func NewCost(repo repository.Cost) Cost {
+func NewCost(redis store.RedisStore) Cost {
 	return &cost{
-		repository: repo,
+		redis: redis,
 	}
 }
 
@@ -111,32 +116,56 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	}, nil
 }
 
-func (c cost) getExternalAPICallInterval(rateLimitPerMinute float32, uniqueEntries uint32) float32 {
-	return (float32(uniqueEntries*60000) / rateLimitPerMinute)
+func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntries uint32) int64 {
+	return int64(float64(60*rateLimitPerMinute) / rateLimitPerMinute)
 }
 
 func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
-	// DB under construction
-	res, err := c.coingeckoUSD(coin, 1)
-	if err != nil {
-		return 0, common.StringError(err)
+	cacheName := "usd_value_" + coin
+	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
+	if err != nil && errors.Cause(err).Error() != "redis: nil" {
+		return 0.0, common.StringError(err)
 	}
-	return res * quantity, nil
+	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
+		cacheObject.Timestamp = time.Now().Unix()
+		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
+		if err != nil {
+			return 0, common.StringError(err)
+		}
+		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
+		if err != nil {
+			return 0, common.StringError(err)
+		}
+	}
+
+	return cacheObject.Value * quantity, nil
 }
 
 func (c cost) lookupGas(network string) (float64, error) {
-	// DB under construction
-	res, err := c.owlracle(network)
+	cacheName := "gas_price_" + network
+	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
-	return res, nil
+	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(1.6, 6) {
+		cacheObject.Timestamp = time.Now().Unix()
+		cacheObject.Value, err = c.owlracle(network)
+		if err != nil {
+			return 0, common.StringError(err)
+		}
+		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
+		if err != nil {
+			return 0, common.StringError(err)
+		}
+	}
+
+	return cacheObject.Value, nil
 }
 
 func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := common.GetJson(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
@@ -161,7 +190,7 @@ func (c cost) owlracle(network string) (float64, error) {
 		os.Getenv("OWLRACLE_API_KEY") +
 		"&accept=100"
 	var res OwlracleJSON
-	err := common.GetJson(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}

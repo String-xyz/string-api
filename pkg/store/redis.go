@@ -9,7 +9,6 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/go-redis/redis/v8"
-	"github.com/pkg/errors"
 )
 
 type RedisStore interface {
@@ -62,20 +61,24 @@ func NewRedisStore() RedisStore {
 func (r redisStore) Delete(id string) error {
 	_, err := r.client.Del(r.client.Context(), id).Result()
 	if err != nil {
-		return common.StringError(errors.Wrap(err, "unable to delete"))
+		return common.StringError(err)
 	}
 	return nil
 }
 
 func (r redisStore) Get(id string) ([]byte, error) {
 	ctx := context.Background()
-	return r.client.Get(ctx, id).Bytes()
+	bytes, err := r.client.Get(ctx, id).Bytes()
+	if err != nil {
+		return nil, common.StringError(err)
+	}
+	return bytes, nil
 }
 
 func (r redisStore) Set(id string, value any, expire time.Duration) error {
 	ctx := context.Background()
 	if err := r.client.Set(ctx, id, value, expire).Err(); err != nil {
-		return common.StringError(errors.Wrap(err, "failed to save value to redis"))
+		return common.StringError(err)
 	}
 	return nil
 }
@@ -83,7 +86,7 @@ func (r redisStore) Set(id string, value any, expire time.Duration) error {
 func (r redisStore) HSet(key string, data map[string]interface{}) error {
 	ctx := context.Background()
 	if err := r.client.HSet(ctx, key, data).Err(); err != nil {
-		return common.StringError(errors.Wrap(err, "failed to save array to redis"))
+		return common.StringError(err, "failed to save array to redis")
 	}
 
 	return nil

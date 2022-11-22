@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func LogError(c echo.Context, err error, handlerMsg string) {
@@ -20,7 +21,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 
 	tracer, ok := errors.Cause(err).(stackTracer)
 	if !ok {
-		panic("error does not implement stackTracer")
+		log.Warn().Str("error", err.Error()).Msg("error does not implement stack trace")
 	}
 	cause := errors.Cause(err)
 

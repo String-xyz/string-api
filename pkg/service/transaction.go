@@ -15,13 +15,14 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/lib/pq"
 )
 
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
 	Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error)
-	New(repos TransactionRepos) Transaction
+	New(repos TransactionRepos, redis store.RedisStore) Transaction
 }
 
 type TransactionRepos struct {
@@ -42,18 +43,19 @@ type transactionInstruments struct {
 
 type transaction struct {
 	repos            TransactionRepos
+	redis            store.RedisStore
 	instruments      transactionInstruments
 	stringUserId     string
 	stringDeviceId   string
 	stringPlatformId string
 }
 
-func (t transaction) New(repos TransactionRepos) Transaction {
-	return &transaction{repos: repos}
+func (t transaction) New(repos TransactionRepos, redis store.RedisStore) Transaction {
+	return &transaction{repos: repos, redis: redis}
 }
 
-func NewTransaction(repos TransactionRepos) Transaction {
-	return &transaction{repos: repos}
+func NewTransaction(repos TransactionRepos, redis store.RedisStore) Transaction {
+	return &transaction{repos: repos, redis: redis}
 }
 
 func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
@@ -288,7 +290,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	if err != nil {
 		return res, eth, common.StringError(err)
 	}
-	cost := NewCost(repository.NewCost(nil))
+	cost := NewCost(t.redis)
 	estimationParams := EstimationParams{
 		ChainID:    chainID,
 		CostETH:    estimateEVM.Value,
@@ -498,7 +500,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 
 // TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
 func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string, recipientId string, userWalletId string) (float64, error) {
-	cost := NewCost(repository.NewCost(nil)) // temporary nil
+	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
 	trueEth := common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(chain.CoingeckoName, trueEth)
