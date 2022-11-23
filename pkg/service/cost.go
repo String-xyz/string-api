@@ -42,18 +42,11 @@ type CostCache struct {
 
 type Cost interface {
 	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
-	New(redis store.RedisStore) Cost
 	LookupUSD(coin string, quantity float64) (float64, error)
 }
 
 type cost struct {
 	redis store.RedisStore // cached token and gas costs
-}
-
-func (c cost) New(redis store.RedisStore) Cost {
-	return &cost{
-		redis: redis,
-	}
 }
 
 func NewCost(redis store.RedisStore) Cost {
