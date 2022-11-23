@@ -34,7 +34,6 @@ type CallEstimate struct {
 }
 
 type Executor interface {
-	New() Executor
 	Initialize(RPC string) error
 	Initiate(call ContractCall) (string, *big.Int, error)
 	Estimate(call ContractCall) (CallEstimate, error)
@@ -47,10 +46,6 @@ type Executor interface {
 type executor struct {
 	client *w3.Client
 	geth   *ethclient.Client
-}
-
-func (e executor) New() Executor {
-	return &executor{}
 }
 
 func NewExecutor() Executor {

@@ -22,7 +22,6 @@ import (
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
 	Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error)
-	New(repos TransactionRepos, redis store.RedisStore) Transaction
 }
 
 type TransactionRepos struct {
@@ -48,10 +47,6 @@ type transaction struct {
 	stringUserId     string
 	stringDeviceId   string
 	stringPlatformId string
-}
-
-func (t transaction) New(repos TransactionRepos, redis store.RedisStore) Transaction {
-	return &transaction{repos: repos, redis: redis}
 }
 
 func NewTransaction(repos TransactionRepos, redis store.RedisStore) Transaction {
