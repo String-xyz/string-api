@@ -13,7 +13,7 @@ var tagsMesage = map[string]string{
 	"email":    "must be a valid email",
 	"gte":      "must be greater or equal to",
 	"gt":       "must be at least",
-	"numeric":  "must a valid numeric value",
+	"numeric":  "must be a valid numeric value",
 }
 
 type InvalidParamError struct {
@@ -50,7 +50,6 @@ func New() *Validator {
 
 // ExtractErrorParams loops over the errors returned by a validation
 // this is the simpliest validation, we at some point will want to extend it
-// to a more per `field` validation to send clear error messages.
 func ExtractErrorParams(err error) InvalidParams {
 	params := InvalidParams{}
 	if _, ok := err.(*validator.InvalidValidationError); ok {
@@ -71,7 +70,6 @@ func ExtractErrorParams(err error) InvalidParams {
 	return params
 }
 
-// this can we quite extended but for now it should be enough to give a start
 func message(f validator.FieldError) string {
 	message := tagsMesage[f.Tag()]
 	if strings.HasPrefix(f.Tag(), "g") {
