@@ -27,6 +27,7 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) {
 	e := echo.New()
+	e.Validator = validator.New()
 	baseMiddleware(config.Logger, e)
 
 	// not internal middlewares
