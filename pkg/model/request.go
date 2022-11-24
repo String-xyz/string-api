@@ -78,9 +78,9 @@ type UserPKLogin struct {
 }
 
 type UserRequest struct {
-	WalletAddress string `json:"walletAddress"`
-	EmailAddress  string `json:"emailAddress"`
-	FirstName     string `json:"firstName"`
+	WalletAddress string `json:"walletAddress" validate:"require"`
+	EmailAddress  string `json:"emailAddress" validate:"require,email"`
+	FirstName     string `json:"firstName" validate:"require"`
 	MiddleName    string `json:"middleName"`
 	LastName      string `json:"lastName"`
 	Signature     string `json:"signature"`

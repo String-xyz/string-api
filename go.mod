@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/checkout/checkout-sdk-go v0.0.22
 	github.com/ethereum/go-ethereum v1.10.25
+	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.2
@@ -17,6 +18,7 @@ require (
 	github.com/lmittmann/w3 v0.9.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.28.0
+	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/stretchr/testify v1.8.0
 	github.com/twilio/twilio-go v1.1.0
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
@@ -40,6 +42,8 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -50,6 +54,7 @@ require (
 	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -59,7 +64,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/tsdb v0.7.1 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
-	github.com/sendgrid/sendgrid-go v3.12.0+incompatible // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
