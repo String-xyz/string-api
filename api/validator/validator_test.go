@@ -97,3 +97,15 @@ func TestMissingAge(t *testing.T) {
 	bt, _ := json.Marshal(ExtractErrorParams(err))
 	t.Log(string(bt))
 }
+
+func TestInvalidNumeric(t *testing.T) {
+	v := New()
+	js := `{"email":"marlon@string.xyz", "name":"marlon", "age":"string"}`
+	ts := tester{}
+	err := json.Unmarshal([]byte(js), &ts)
+	assert.Error(t, err)
+	err = v.Validate(ts)
+	assert.Error(t, err)
+	bt, _ := json.Marshal(ExtractErrorParams(err))
+	t.Log(string(bt))
+}
