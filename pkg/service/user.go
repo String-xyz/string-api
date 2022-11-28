@@ -175,10 +175,14 @@ func (u user) RequestEmailAuthentication(request UserRequest, userId string) err
 	}
 
 	// Wait for up to 15 minutes, final timeout TBD
-	now := time.Now().Unix()
+	now, lastPolled := time.Now().Unix(), time.Now().Unix()
 	until := now + (60 * 15)
 	for now < until {
 		now = time.Now().Unix()
+		if now-lastPolled < 3 {
+			continue // throttle following logic in 3 second interval
+		}
+		lastPolled = now
 		contact, err := u.repos.Contact.GetByData(email)
 		if err != nil && errors.Cause(err).Error() != "not found" {
 			return common.StringError(err)
