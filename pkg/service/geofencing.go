@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -35,7 +36,7 @@ type GeoLocation struct {
 }
 
 func (g geofencing) IsAllowed(ip string) (bool, error) {
-	return true, nil // "The Data returned by the external location service is invalid"
+	// return true, nil // "The Data returned by the external location service is invalid"
 	location, err := g.getLocation(ip)
 
 	/* if not found in cache, get it from the api then set the value to api's response*/
@@ -88,6 +89,7 @@ func (g geofencing) getLocation(ip string) (GeoLocation, error) {
 
 func getLocationFromAPI(ip string) (GeoLocation, error) {
 	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("IPSTACK_API_KEY")
+	fmt.Printf("\nRequest URL = %+v", url)
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -110,6 +112,9 @@ func getLocationFromAPI(ip string) (GeoLocation, error) {
 	}
 
 	if dataObj.Ip != ip || dataObj.CountryCode == "" || dataObj.RegionCode == "" {
+		fmt.Printf("\nIP = %+v", dataObj.Ip)
+		fmt.Printf("\nCC = %+v", dataObj.CountryCode)
+		fmt.Printf("\nRC = %+v", dataObj.RegionCode)
 		return GeoLocation{}, common.StringError(errors.New("The Data returned by the external location service is invalid"))
 	}
 
