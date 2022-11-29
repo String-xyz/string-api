@@ -14,9 +14,13 @@ import (
 func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	tracer.Start()
 
-	defer tracer.Stop()
+	env := os.Getenv("ENV")
+	if env != "local" {
+		tracer.Start()
+		defer tracer.Stop()
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		panic("no port!")
