@@ -34,9 +34,17 @@ func (l login) Create(c echo.Context) error {
 	}
 	jwt, err := l.Service.Create(body)
 	if err != nil {
-		LogStringError(c, err, "login: receive walet login")
+		LogStringError(c, err, "login: receive wallet login")
 		return c.String(http.StatusBadRequest, "Invalid Payload")
 	}
+
+	// set jwt in cookie
+	err = SetJWTCookie(c, jwt)
+	if err != nil {
+		LogStringError(c, err, "login: Create: SetJWTCookie")
+		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Something went wrong"})
+	}
+
 	return c.JSON(http.StatusOK, jwt)
 }
 
@@ -74,9 +82,17 @@ func (l login) ReceiveWalletLogin(c echo.Context) error {
 	}
 	jwt, err := l.Service.ReceiveWalletLogin(body)
 	if err != nil {
-		LogStringError(c, err, "login: receive walet login")
+		LogStringError(c, err, "login: receive wallet login")
 		return c.String(http.StatusBadRequest, "Invalid Payload")
 	}
+
+	// set jwt in cookie
+	err = SetJWTCookie(c, jwt)
+	if err != nil {
+		LogStringError(c, err, "login: ReceiveEmailLogin: SetJWTCookie")
+		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Something went wrong"})
+	}
+
 	return c.JSON(http.StatusOK, jwt)
 }
 
