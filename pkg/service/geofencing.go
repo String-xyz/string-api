@@ -35,6 +35,7 @@ type GeoLocation struct {
 }
 
 func (g geofencing) IsAllowed(ip string) (bool, error) {
+	// return true, nil // "The Data returned by the external location service is invalid"
 	location, err := g.getLocation(ip)
 
 	/* if not found in cache, get it from the api then set the value to api's response*/

@@ -70,7 +70,7 @@ func (u user) RequestEmailAuthentication(c echo.Context) error {
 		LogStringError(c, err, "user: request email authentication")
 		return c.String(http.StatusBadRequest, "Could Not Send Email Authentication")
 	}
-	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Authentication Sent"})
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Authentication Received"})
 }
 
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
