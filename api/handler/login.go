@@ -89,5 +89,5 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.GET("/email", l.ReceiveEmailAuthentication)
 	g.POST("/new", l.Create)
 	g.POST("/request", l.RequestWalletLogin)
-	g.GET("", l.ReceiveWalletLogin)
+	g.POST("", l.ReceiveWalletLogin)
 }
