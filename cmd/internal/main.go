@@ -15,10 +15,9 @@ func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 
-	ddEnabled := os.Getenv("DATADOG_ENABLED")
-	if ddEnabled == "true" {
+	env := os.Getenv("ENV")
+	if env != "local" {
 		tracer.Start()
-
 		defer tracer.Stop()
 	}
 
