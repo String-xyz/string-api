@@ -80,6 +80,7 @@ func (l login) ReceiveWalletLogin(c echo.Context) error {
 		LogStringError(c, err, "login: receive wallet login bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
+
 	jwt, err := l.Service.ReceiveWalletLogin(body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login")
