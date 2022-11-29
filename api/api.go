@@ -5,6 +5,7 @@ import (
 
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
+	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -26,6 +27,7 @@ func heartbeat(c echo.Context) error {
 
 func Start(config APIConfig) {
 	e := echo.New()
+	e.Validator = validator.New()
 	baseMiddleware(config.Logger, e)
 
 	// not internal middlewares
@@ -44,6 +46,7 @@ func Start(config APIConfig) {
 
 func StartInternal(config APIConfig) {
 	e := echo.New()
+	e.Validator = validator.New()
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 	platformRoute(config, e)

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -27,10 +28,12 @@ func NewLogin(route *echo.Echo, service service.User) Login {
 
 func (l login) Create(c echo.Context) error {
 	var body model.UserRequest
-	err := c.Bind(&body)
-	if err != nil {
+	if err := c.Bind(&body); err != nil {
 		LogStringError(c, err, "login: create bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
+	}
+	if err := c.Validate(body); err != nil {
+		return c.JSON(http.StatusBadRequest, validator.ExtractErrorParams(err))
 	}
 	jwt, err := l.Service.Create(body)
 	if err != nil {

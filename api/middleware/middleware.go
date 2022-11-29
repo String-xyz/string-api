@@ -84,6 +84,10 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 	return echoMiddleware.KeyAuthWithConfig(config)
 }
 
+func Tracer() echo.MiddlewareFunc {
+	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
+}
+
 func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -105,8 +109,4 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-}
-
-func Tracer() echo.MiddlewareFunc {
-	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
 }
