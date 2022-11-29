@@ -59,7 +59,6 @@ func RequestID() echo.MiddlewareFunc {
 }
 
 func BearerAuth() echo.MiddlewareFunc {
-	// TODO: Get jwt from cookie
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:JWTCookie",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
