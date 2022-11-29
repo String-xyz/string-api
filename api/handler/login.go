@@ -12,8 +12,8 @@ import (
 type Login interface {
 	Create(c echo.Context) error
 	ReceiveEmailAuthentication(c echo.Context) error
-	RequestEmailLogin(c echo.Context) error
-	ReceiveEmailLogin(c echo.Context) error
+	RequestWalletLogin(c echo.Context) error
+	ReceiveWalletLogin(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
@@ -53,28 +53,32 @@ func (l login) ReceiveEmailAuthentication(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Authenticated"})
 }
 
-func (l login) RequestEmailLogin(c echo.Context) error {
+func (l login) RequestWalletLogin(c echo.Context) error {
 	var body model.UserRequest
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "login: request email login bind")
+		LogStringError(c, err, "login: request wallet login bind")
 		return c.String(http.StatusBadRequest, "Bad Request")
 	}
-	err = l.Service.RequestEmailLogin(body)
+	payload, err := l.Service.RequestWalletLogin(body)
 	if err != nil {
-		LogStringError(c, err, "login: request email login")
+		LogStringError(c, err, "login: request wallet login")
 		return c.String(http.StatusBadRequest, "User Service Failed")
 	}
-	return c.JSON(http.StatusOK, ResultMessage{Status: "User Login Sent to Email"})
+	return c.JSON(http.StatusOK, payload)
 }
 
-func (l login) ReceiveEmailLogin(c echo.Context) error {
-	// Token was provided
-	token := c.QueryParam("token")
-	jwt, err := l.Service.ReceiveEmailLogin(token)
+func (l login) ReceiveWalletLogin(c echo.Context) error {
+	var body model.WalletSignaturePayload
+	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "login: receive email login")
-		return c.String(http.StatusBadRequest, "Invalid Token")
+		LogStringError(c, err, "login: receive wallet login bind")
+		return c.String(http.StatusBadRequest, "Bad Request")
+	}
+	jwt, err := l.Service.ReceiveWalletLogin(body)
+	if err != nil {
+		LogStringError(c, err, "login: receive walet login")
+		return c.String(http.StatusBadRequest, "Invalid Payload")
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
@@ -87,6 +91,6 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.Use(ms...)
 	g.GET("/email", l.ReceiveEmailAuthentication)
 	g.POST("/new", l.Create)
-	g.POST("/request", l.RequestEmailLogin)
-	g.GET("", l.ReceiveEmailLogin)
+	g.POST("/request", l.RequestWalletLogin)
+	g.POST("", l.ReceiveWalletLogin)
 }
