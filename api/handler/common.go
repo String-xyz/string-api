@@ -35,7 +35,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 
 func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie := new(http.Cookie)
-	cookie.Name = "jwt"
+	cookie.Name = "JWTCookie"
 	cookie.Value = jwt.Token
 	cookie.HttpOnly = true
 	cookie.Expires = jwt.ExpAt
