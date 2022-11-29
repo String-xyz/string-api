@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	service "github.com/String-xyz/string-api/pkg/service"
 
@@ -39,10 +40,14 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Value = jwt.Token
 	cookie.HttpOnly = true
 	cookie.Expires = jwt.ExpAt
-	// cookie.Secure = true
+	cookie.Secure = isProduction() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
+}
+
+func isProduction() bool {
+	return os.Getenv("ENV") == "production"
 }
 
 type HttpError struct {
