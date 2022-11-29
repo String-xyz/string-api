@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var tagsMesage = map[string]string{
+var tagsMessage = map[string]string{
 	"required": "is required",
 	"email":    "must be a valid email",
 	"gte":      "must be greater or equal to",
@@ -49,7 +49,7 @@ func New() *Validator {
 }
 
 // ExtractErrorParams loops over the errors returned by a validation
-// this is the simpliest validation, we at some point will want to extend it
+// this is the simplest validation, we at some point will want to extend it
 func ExtractErrorParams(err error) InvalidParams {
 	params := InvalidParams{}
 	if _, ok := err.(*validator.InvalidValidationError); ok {
@@ -71,7 +71,7 @@ func ExtractErrorParams(err error) InvalidParams {
 }
 
 func message(f validator.FieldError) string {
-	message := tagsMesage[f.Tag()]
+	message := tagsMessage[f.Tag()]
 	if strings.HasPrefix(f.Tag(), "g") {
 		return fmt.Sprintf("%v %s %s", f.Value(), message, f.Param())
 	}
