@@ -1,8 +1,6 @@
 package handler
 
 import (
-	b64 "encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -36,48 +34,15 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 }
 
 func SetJWTCookie(c echo.Context, jwt service.JWT) error {
-	// 1. Marshall
-	stringJWT, err := json.Marshal(jwt)
-	if err != nil {
-		return err // TODO: use StringError(err)
-	}
-
-	// 2. base64 encode to avoid loosing bytes
-	encodedJWT := b64.StdEncoding.EncodeToString(stringJWT)
-
-	// 3. Create and set cookie
 	cookie := new(http.Cookie)
 	cookie.Name = "jwt"
-	cookie.Value = encodedJWT
+	cookie.Value = jwt.Token
 	cookie.HttpOnly = true
 	cookie.Expires = jwt.ExpAt
+	// cookie.Secure = true
 	c.SetCookie(cookie)
 
 	return nil
-}
-
-func ReadJWTCookie(c echo.Context) (service.JWT, error) {
-	jwt := service.JWT{}
-
-	// 1. get cookie
-	cookie, err := c.Cookie("jwt")
-	if err != nil {
-		return jwt, err // TODO: use StringError(err)
-	}
-
-	// 2. decode
-	decodedJWT, _ := b64.StdEncoding.DecodeString(cookie.Value)
-	if err != nil {
-		return jwt, err // TODO: use StringError(err)
-	}
-
-	// 3. unmarshal
-	err = json.Unmarshal(decodedJWT, &jwt)
-	if err != nil {
-		return jwt, err // TODO: use StringError(err)
-	}
-
-	return jwt, nil
 }
 
 type HttpError struct {
