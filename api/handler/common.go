@@ -39,7 +39,9 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Name = "JWTCookie"
 	cookie.Value = jwt.Token
 	cookie.HttpOnly = true
-	cookie.Expires = jwt.ExpAt
+	cookie.Expires = jwt.ExpAt     // we want the cookie to expire at the same time as the token
+	cookie.SameSite = 2            // Lax
+	cookie.Path = "/"              // Sen cookie in every sub path request
 	cookie.Secure = isProduction() // in production allow https only
 	c.SetCookie(cookie)
 
