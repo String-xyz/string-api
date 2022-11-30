@@ -41,7 +41,7 @@ func (l login) Create(c echo.Context) error {
 	// set jwt in cookie
 	err = SetJWTCookie(c, jwt)
 	if err != nil {
-		LogStringError(c, err, "login create set jwt cookie")
+		LogStringError(c, err, "login: create set jwt cookie")
 		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Something went wrong"})
 	}
 
