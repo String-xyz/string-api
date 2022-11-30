@@ -90,7 +90,7 @@ func (l login) ReceiveWalletLogin(c echo.Context) error {
 	// set jwt in cookie
 	err = SetJWTCookie(c, jwt)
 	if err != nil {
-		LogStringError(c, err, "login: receive email login set jwt cookie")
+		LogStringError(c, err, "login: receive email set jwt cookie")
 		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Something went wrong"})
 	}
 
