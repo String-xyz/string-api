@@ -256,22 +256,22 @@ func verifyWalletAuthentication(request model.WalletSignaturePayload) error {
 	// Verify users signature
 	valid, err := common.ValidateExternalEVMSignature(request.Signature, request.Address, preUserSignature)
 	if err != nil {
-		common.StringError(err)
+		return common.StringError(err)
 	}
 	if !valid {
-		common.StringError(errors.New("user signature invalid"))
+		return common.StringError(errors.New("user signature invalid"))
 	}
 	// Verify nonce
 	valid, err = common.ValidateEVMSignature(request.Nonce, preAPISignature)
 	if err != nil {
-		common.StringError(err)
+		return common.StringError(err)
 	}
 	if !valid {
-		common.StringError(errors.New("nonce invalid"))
+		return common.StringError(errors.New("nonce invalid"))
 	}
 	// Verify timestamp not expired
 	if time.Now().Unix()-request.Timestamp > (60 * 15) {
-		common.StringError(errors.New("login payload expired"))
+		return common.StringError(errors.New("login payload expired"))
 	}
 	return nil
 }
