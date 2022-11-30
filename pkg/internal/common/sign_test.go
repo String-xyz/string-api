@@ -17,7 +17,7 @@ func TestSignAndValidateString(t *testing.T) {
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
-	fmt.Printf("\nPublic Key Signature: %+v", obj1Signed)
+	fmt.Printf("\nPublic Key Signature: %+v\n", obj1Signed)
 	valid, err := ValidateEVMSignature(obj1Signed, obj1)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
@@ -36,7 +36,7 @@ func TestSignAndValidateStruct(t *testing.T) {
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
-	fmt.Printf("\nLogin Signature: %+v", obj1Signed)
+	fmt.Printf("\nLogin Signature: %+v\n", obj1Signed)
 	valid, err := ValidateExternalEVMSignature(obj1Signed, obj1.Address, obj1)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)

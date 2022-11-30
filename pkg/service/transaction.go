@@ -336,7 +336,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	if !valid {
 		return false, common.StringError(errors.New("verifyQuote: invalid signature"))
 	}
-	if newEstimate.Timestamp-e.Timestamp > 20000 {
+	if newEstimate.Timestamp-e.Timestamp > 20 {
 		return false, common.StringError(errors.New("verifyQuote: quote expired"))
 	}
 	if newEstimate.TotalUSD > e.TotalUSD {

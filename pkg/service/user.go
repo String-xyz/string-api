@@ -40,7 +40,7 @@ type UserRepos struct {
 
 type User interface {
 	GetStatus(request UserRequest) (model.UserOnboardingStatus, error) // If wallet addr is associated with user, return current state of their onboarding
-	Create(request UserRequest) (JWT, error)                           // Receive new wallet addr, email, signature and send verification email
+	Create(request model.WalletSignaturePayload) (JWT, error)          // Receive new wallet addr, email, signature and send verification email
 	RequestEmailAuthentication(request UserRequest, userId string) error
 	ReceiveEmailAuthentication(encrypted string) error // Decrypts query and validates e-mail, wallet of user
 	Name(request UserRequest) error                    // Takes name and wallet addr of user, associates name with wallet addr
@@ -77,14 +77,10 @@ func (u user) GetStatus(request UserRequest) (model.UserOnboardingStatus, error)
 	return res, common.StringError(errors.New("not found"))
 }
 
-func (u user) Create(request UserRequest) (JWT, error) {
-	addr := request.WalletAddress
+func (u user) Create(request model.WalletSignaturePayload) (JWT, error) {
+	addr := request.Address
 	if addr == "" {
 		return JWT{}, common.StringError(errors.New("no wallet address provided"))
-	}
-	signature := request.Signature
-	if signature == "" {
-		return JWT{}, common.StringError(errors.New("no signature provided"))
 	}
 
 	// Make sure wallet does not already exist
@@ -102,14 +98,10 @@ func (u user) Create(request UserRequest) (JWT, error) {
 		return JWT{}, common.StringError(errors.New("address provided is not a valid wallet"))
 	}
 
-	// Verify signature
-	valid, err := common.ValidateExternalEVMSignature(request.Signature, addr, addr) // they signed their own address.
-	// it's like writing your name on your hand and then xeroxing it
+	// Verify payload integrity
+	err = verifyWalletAuthentication(request)
 	if err != nil {
 		return JWT{}, common.StringError(err)
-	}
-	if !valid {
-		return JWT{}, common.StringError(errors.New("signature invalid"))
 	}
 
 	// Initialize a new user
@@ -245,29 +237,18 @@ func (u user) RequestWalletLogin(request UserRequest) (model.WalletSignaturePayl
 	if addr == "" {
 		return res, common.StringError(errors.New("no wallet address provided"))
 	}
-	// Ensure wallet is registered and associated with a user
-	instrument, err := u.repos.Instrument.GetWallet(addr)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	if instrument.UserID == "" {
-		return res, common.StringError(errors.New("wallet not associated with user"))
-	}
-	_, err = u.repos.User.GetById(instrument.UserID)
-	if err != nil {
-		return res, common.StringError(err)
-	}
 	// Generate our side of payload
 	res.Address = addr
 	res.Timestamp = time.Now().Unix()
-	res.Nonce, err = common.EVMSign(res)
+	nonce, err := common.EVMSign(res)
 	if err != nil {
 		return res, common.StringError(err)
 	}
+	res.Nonce = nonce
 	return res, nil
 }
 
-func (u user) ReceiveWalletLogin(request model.WalletSignaturePayload) (JWT, error) {
+func verifyWalletAuthentication(request model.WalletSignaturePayload) error {
 	preUserSignature := request
 	preUserSignature.Signature = ""
 	preAPISignature := preUserSignature
@@ -275,22 +256,30 @@ func (u user) ReceiveWalletLogin(request model.WalletSignaturePayload) (JWT, err
 	// Verify users signature
 	valid, err := common.ValidateExternalEVMSignature(request.Signature, request.Address, preUserSignature)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return common.StringError(err)
 	}
 	if !valid {
-		return JWT{}, common.StringError(errors.New("user signature invalid"))
+		return common.StringError(errors.New("user signature invalid"))
 	}
 	// Verify nonce
 	valid, err = common.ValidateEVMSignature(request.Nonce, preAPISignature)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return common.StringError(err)
 	}
 	if !valid {
-		return JWT{}, common.StringError(errors.New("nonce invalid"))
+		return common.StringError(errors.New("nonce invalid"))
 	}
 	// Verify timestamp not expired
 	if time.Now().Unix()-request.Timestamp > (60 * 15) {
-		return JWT{}, common.StringError(errors.New("login payload expired"))
+		return common.StringError(errors.New("login payload expired"))
+	}
+	return nil
+}
+
+func (u user) ReceiveWalletLogin(request model.WalletSignaturePayload) (JWT, error) {
+	err := verifyWalletAuthentication(request)
+	if err != nil {
+		return JWT{}, common.StringError(err)
 	}
 
 	// Verify user is registered to this wallet address
