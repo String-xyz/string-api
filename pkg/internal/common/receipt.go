@@ -50,7 +50,7 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 		"<br>Please visit us at string.xyz.  Should you need to reach us, please contact us at <a href='mailto:support@string.xyz'>support@string.xyz</a>." +
 		"<br><br>Consumer Fraud Warning" +
 		"<br>If you feel you have been the victim of a scam you can contact the FTC at 1-877-FTC-HELP (382-4357)" +
-		"<br>or online at <a href='www.ftc.gov'>www.ftc.gov</a> (link is external); or the COnsume Financial Protection Bureau (CFPB) at 1-855-411-CFPB (2372)" +
+		"<br>or online at <a href='www.ftc.gov'>www.ftc.gov</a> (link is external); or the Consumer Financial Protection Bureau (CFPB) at 1-855-411-CFPB (2372)" +
 		"<br>or online at <a href='www.consumerfinance.gov'>www.consumerfinance.gov</a>"
 	return StringifyEmailReceipt(emailReceipt{Header: header, Body: body, Footer: footer})
 }
