@@ -29,6 +29,7 @@ func (t transaction) Transact(c echo.Context) error {
 	var body model.ExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
+                LogStringError(c, err, "transact: execute bind")
 		return httpError.BadRequestError(c)
 	}
 	userId := c.Get("userId").(string)
