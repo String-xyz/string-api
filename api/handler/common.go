@@ -2,6 +2,10 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
+	service "github.com/String-xyz/string-api/pkg/service"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -28,4 +32,26 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	st := tracer.StackTrace()
 	fmt.Printf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
 	LogError(c, cause, handlerMsg)
+}
+
+func SetJWTCookie(c echo.Context, jwt service.JWT) error {
+	cookie := new(http.Cookie)
+	cookie.Name = "StringJWT"
+	cookie.Value = jwt.Token
+	cookie.HttpOnly = true
+	cookie.Expires = jwt.ExpAt     // we want the cookie to expire at the same time as the token
+	cookie.SameSite = http.SameSiteLaxMode
+	cookie.Path = "/"              // Send cookie in every sub path request
+	cookie.Secure = isProduction() // in production allow https only
+	c.SetCookie(cookie)
+
+	return nil
+}
+
+func isProduction() bool {
+	return os.Getenv("ENV") == "production"
+}
+
+type HttpError struct {
+	Error string `json:"error"`
 }

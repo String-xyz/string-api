@@ -35,23 +35,23 @@ type GeoLocation struct {
 }
 
 func (g geofencing) IsAllowed(ip string) (bool, error) {
-	return true, nil // "The Data returned by the external location service is invalid"
-	location, err := g.getLocation(ip)
+	// location, err := g.getLocation(ip)
 
-	/* if not found in cache, get it from the api then set the value to api's response*/
-	if err != nil {
-		location, err = getLocationFromAPI(ip)
-		if err != nil {
-			return false, common.StringError(err)
-		}
+	// /* if not found in cache, get it from the api then set the value to api's response*/
+	// if err != nil {
+	// 	location, err = getLocationFromAPI(ip)
+	// 	if err != nil {
+	// 		return false, common.StringError(err)
+	// 	}
 
-		err = g.setLocation(ip, location)
-		if err != nil {
-			return false, common.StringError(err)
-		}
-	}
+	// 	err = g.setLocation(ip, location)
+	// 	if err != nil {
+	// 		return false, common.StringError(err)
+	// 	}
+	// }
 
-	return isRegionAllowed(location), nil
+	// return isRegionAllowed(location), nil
+	return true, nil
 }
 
 func (c geofencing) setLocation(ip string, location GeoLocation) error {
