@@ -33,6 +33,7 @@ type TransactionRepos struct {
 	Instrument  repository.Instrument
 	Device      repository.Device
 	Location    repository.Location
+	Contact     repository.Contact
 }
 
 type transactionInstruments struct {
@@ -212,10 +213,10 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	post := postProcessRequest{
 		TxID:               txID,
 		Chain:              chain,
-		AuthorizationID:    cardAuthorization.AuthID,
+		Authorization:      cardAuthorization,
 		UserAddress:        e.UserAddress,
 		CumulativeValue:    value,
-		QuotedTotal:        e.TotalUSD,
+		Quote:              e.Quote,
 		TxDBID:             db.ID,
 		processingFeeAsset: processingFeeAsset,
 		preBalance:         preBalance,
@@ -535,11 +536,11 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 type postProcessRequest struct {
 	TxID               string
 	Chain              Chain
-	AuthorizationID    string
+	Authorization      AuthorizedCharge
 	UserAddress        string
 	CumulativeGas      uint64
 	CumulativeValue    *big.Int
-	QuotedTotal        float64
+	Quote              model.Quote
 	TxDBID             string
 	processingFeeAsset model.Asset
 	preBalance         float64
@@ -595,7 +596,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 	if err != nil {
 		// TODO: handle error instead of returning it
 	}
-	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.QuotedTotal, request.Chain, request.TxDBID, request.userId, recipientWalletId)
+	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.Quote.TotalUSD, request.Chain, request.TxDBID, request.userId, recipientWalletId)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -612,7 +613,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 	}
 
 	// charge the users CC
-	err = t.chargeCard(request.UserAddress, request.AuthorizationID, request.QuotedTotal, request.processingFeeAsset, request.TxDBID, request.userId)
+	err = t.chargeCard(request.UserAddress, request.Authorization.AuthID, request.Quote.TotalUSD, request.processingFeeAsset, request.TxDBID, request.userId)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -651,6 +652,51 @@ func (t transaction) postProcess(request postProcessRequest) {
 		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
 		// return res, common.StringError(err)
 	}
+
+	// send email receipt
+	err = t.sendEmailReceipt(request)
+	if err != nil {
+		log.Printf("Error sending email receipt to user: %s", err)
+	}
+}
+
+func (t transaction) sendEmailReceipt(request postProcessRequest) error {
+	user, err := t.repos.User.GetById(request.userId)
+	if err != nil {
+		log.Printf("Error getting user from repo: %s", err)
+		return err
+	}
+	contact, err := t.repos.Contact.GetByUserId(request.userId)
+	if err != nil {
+		log.Printf("Error getting user contact from repo: %s", err)
+		return err
+	}
+	receiptParams := common.ReceiptGenerationParams{
+		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
+		CustomerName:      user.FirstName, // + " " + user.MiddleName + " " + user.LastName
+		StringPaymentId:   request.TxDBID,
+		PaymentDescriptor: "STRNG*STRNG-DEMO NFT", // TODO: retrieve dynamically
+		TransactionDate:   time.Now().Format(time.RFC1123),
+	}
+	receiptBody := [][2]string{
+		{"Transaction ID", request.TxID},
+		{"Destination Wallet", request.UserAddress},
+		{"Payment Descriptor", receiptParams.PaymentDescriptor},
+		{"Payment Method", request.Authorization.Issuer + " " + request.Authorization.Last4},
+		{"Platform", "String Demo"},         // TODO: retrieve dynamically
+		{"Item Ordered", "String Demo NFT"}, // TODO: retrieve dynamically
+		{"Token ID", "1234"},                // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Subtotal", common.FloatToUSDString(request.Quote.BaseUSD + request.Quote.TokenUSD)},
+		{"Network Fee:", common.FloatToUSDString(request.Quote.GasUSD)},
+		{"Processing Fee", common.FloatToUSDString(request.Quote.ServiceUSD)},
+		{"Total Charge", common.FloatToUSDString(request.Quote.TotalUSD)},
+	}
+	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+	if err != nil {
+		log.Printf("Error sending email receipt to user: %s", err)
+		return err
+	}
+	return nil
 }
 
 func floatToFixedString(value float64, decimals int) string {

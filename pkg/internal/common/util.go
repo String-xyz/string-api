@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -84,4 +85,8 @@ func KeysAndValues(item interface{}) ([]string, map[string]interface{}) {
 
 func GetBaseURL() string {
 	return os.Getenv("BASE_URL")
+}
+
+func FloatToUSDString(amount float64) string {
+	return fmt.Sprintf("USD $%.2f", math.Round(amount*100)/100)
 }

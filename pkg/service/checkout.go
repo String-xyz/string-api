@@ -44,6 +44,7 @@ type AuthorizedCharge struct {
 	AuthID              string
 	CheckoutFingerprint string
 	Last4               string
+	Issuer              string
 }
 
 func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth AuthorizedCharge, err error) {
@@ -103,6 +104,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 	auth.AuthID = response.Processed.ID
 	if response.Processed.Source.CardSourceResponse != nil {
 		auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
+		auth.Issuer = response.Processed.Source.Issuer
 		auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 	}
 	// TODO: Create entry for authorization in our DB associated with userWallet
