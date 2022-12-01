@@ -31,12 +31,18 @@ func (l login) Create(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login bind")
-		return httpError.InvalidPayloadError(c)
+		return httpError.BadRequestError(c)
 	}
+
+	if err := c.Validate(body); err != nil {
+		LogStringError(c, err, "login: receive wallet login validate")
+		return httpError.InvalidPayloadError(c, err)
+	}
+
 	jwt, err := l.Service.Create(body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login")
-		return httpError.InvalidPayloadError(c) // TODO: This error is redundant. Refactor after adding body validation
+		return httpError.InternalError(c)
 	}
 
 	// set jwt in cookie

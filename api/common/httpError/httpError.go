@@ -3,16 +3,19 @@ package httpError
 import (
 	"net/http"
 
+	validator "github.com/String-xyz/string-api/api/validator"
 	"github.com/labstack/echo/v4"
 )
 
 type JSONError struct {
 	Message string `json:"message"`
 	Code    string `json:"code"`
+	Details any    `json:"details"`
 }
 
-func InvalidPayloadError(c echo.Context) error {
-	return c.JSON(http.StatusBadRequest, JSONError{Message: "Invalid Payload", Code: "INVALID_PAYLOAD"})
+func InvalidPayloadError(c echo.Context, err error) error {
+	errorParams := validator.ExtractErrorParams(err)
+	return c.JSON(http.StatusBadRequest, JSONError{Message: "Invalid Payload", Code: "INVALID_PAYLOAD", Details: errorParams})
 }
 
 func InternalError(c echo.Context) error {
