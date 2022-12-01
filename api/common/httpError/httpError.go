@@ -1,0 +1,32 @@
+package httpError
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+type JSONError struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
+func InvalidPayloadError(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, JSONError{Message: "Invalid Payload", Code: "INVALID_PAYLOAD"})
+}
+
+func InternalError(c echo.Context) error {
+	return c.JSON(http.StatusInternalServerError, JSONError{Message: "Something went wrong", Code: "INTERNAL_SERVER"})
+}
+
+func BadRequestError(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, JSONError{Message: "Bad Request"})
+}
+
+func NotFoundError(c echo.Context) error {
+	return c.JSON(http.StatusNotFound, JSONError{Message: "Resource Not Found"})
+}
+
+func NotAllowedError(c echo.Context) error {
+	return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: "Not Allowed"})
+}
