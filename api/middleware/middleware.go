@@ -60,6 +60,7 @@ func RequestID() echo.MiddlewareFunc {
 
 func BearerAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
+		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
 			var claims = &service.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
