@@ -671,9 +671,13 @@ func (t transaction) sendEmailReceipt(request postProcessRequest) error {
 		log.Printf("Error getting user contact from repo: %s", err)
 		return err
 	}
+	name := user.FirstName // + " " + user.MiddleName + " " + user.LastName
+	if name == "" {
+		name = "User"
+	}
 	receiptParams := common.ReceiptGenerationParams{
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
-		CustomerName:      user.FirstName, // + " " + user.MiddleName + " " + user.LastName
+		CustomerName:      name,
 		StringPaymentId:   request.TxDBID,
 		PaymentDescriptor: "STRNG*STRNG-DEMO NFT", // TODO: retrieve dynamically
 		TransactionDate:   time.Now().Format(time.RFC1123),
