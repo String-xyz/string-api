@@ -224,7 +224,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 	go t.postProcess(post)
 
-	return model.TransactionReceipt{TxID: chain.Explorer + "/tx/" + txID}, nil
+	return model.TransactionReceipt{TxID: txID, TxURL: chain.Explorer + "/tx/" + txID}, nil
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() error {
