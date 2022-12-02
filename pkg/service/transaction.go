@@ -224,7 +224,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 	go t.postProcess(post)
 
-	return model.TransactionReceipt{TxID: txID}, nil
+	return model.TransactionReceipt{TxID: chain.Explorer + "/tx/" + txID}, nil
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() error {
@@ -679,8 +679,8 @@ func (t transaction) sendEmailReceipt(request postProcessRequest) error {
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	receiptBody := [][2]string{
-		{"Transaction ID", request.TxID},
-		{"Destination Wallet", request.UserAddress},
+		{"Transaction ID", "<a href='" + request.Chain.Explorer + "/tx/" + request.TxID + "'>" + request.TxID + "</a>"},
+		{"Destination Wallet", "<a href='" + request.Chain.Explorer + "/address/" + request.UserAddress + "'>" + request.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", request.Authorization.Issuer + " " + request.Authorization.Last4},
 		{"Platform", "String Demo"},         // TODO: retrieve dynamically

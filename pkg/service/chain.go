@@ -8,6 +8,7 @@ import (
 type Chain struct {
 	ChainID       uint64
 	RPC           string
+	Explorer      string
 	CoingeckoName string
 	OwlracleName  string
 	StringFee     float64
@@ -32,5 +33,5 @@ func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo reposit
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}
-	return Chain{ChainID: chainId, RPC: network.RPCUrl, CoingeckoName: asset.ValueOracle.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.ID}, nil
+	return Chain{ChainID: chainId, RPC: network.RPCUrl, Explorer: network.ExplorerUrl, CoingeckoName: asset.ValueOracle.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.ID}, nil
 }
