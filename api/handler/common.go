@@ -26,6 +26,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	tracer, ok := errors.Cause(err).(stackTracer)
 	if !ok {
 		log.Warn().Str("error", err.Error()).Msg("error does not implement stack trace")
+		return
 	}
 	cause := errors.Cause(err)
 
