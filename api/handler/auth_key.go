@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	httpError "github.com/String-xyz/string-api/api/common/httpError"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -37,7 +36,7 @@ func (o authAPIKey) Create(c echo.Context) error {
 
 func (o authAPIKey) List(c echo.Context) error {
 	if !o.isInternal {
-		return httpError.NotAllowedError(c)
+		return NotAllowedError(c)
 	}
 	body := struct {
 		Status string `query:"status"`
@@ -59,7 +58,7 @@ func (o authAPIKey) List(c echo.Context) error {
 
 func (o authAPIKey) Approve(c echo.Context) error {
 	if !o.isInternal {
-		return httpError.NotAllowedError(c)
+		return NotAllowedError(c)
 	}
 	params := struct {
 		ID string `param:"id"`

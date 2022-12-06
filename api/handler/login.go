@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	httpError "github.com/String-xyz/string-api/api/common/httpError"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -31,25 +30,25 @@ func (l login) Create(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
 		LogStringError(c, err, "login: receive wallet login validate")
-		return httpError.InvalidPayloadError(c, err)
+		return InvalidPayloadError(c, err)
 	}
 
 	jwt, err := l.Service.Create(body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 
 	// set jwt in cookie
 	err = SetJWTCookie(c, jwt)
 	if err != nil {
 		LogStringError(c, err, "login: create set jwt cookie")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, jwt)
@@ -60,7 +59,7 @@ func (l login) ReceiveEmailAuthentication(c echo.Context) error {
 	err := l.Service.ReceiveEmailAuthentication(token)
 	if err != nil {
 		LogStringError(c, err, "login: receive email authentication")
-		return c.JSON(http.StatusBadRequest, httpError.JSONError{Message: "Invalid Token"})
+		return c.JSON(http.StatusBadRequest, JSONError{Message: "Invalid Token"})
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Authenticated"})
 }
@@ -70,12 +69,12 @@ func (l login) RequestWalletLogin(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 	payload, err := l.Service.RequestWalletLogin(body)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, payload)
 }
@@ -85,20 +84,20 @@ func (l login) ReceiveWalletLogin(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 
 	jwt, err := l.Service.ReceiveWalletLogin(body)
 	if err != nil {
 		LogStringError(c, err, "login: receive wallet login")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 
 	// set jwt in cookie
 	err = SetJWTCookie(c, jwt)
 	if err != nil {
 		LogStringError(c, err, "login: receive email set jwt cookie")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, jwt)

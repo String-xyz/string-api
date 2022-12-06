@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/String-xyz/string-api/api/common/httpError"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -33,12 +32,12 @@ func (u user) GetStatus(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user: get status bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 	res, err := u.Service.GetStatus(body)
 	if err != nil {
 		LogStringError(c, err, "user: get status")
-		return httpError.NotFoundError(c)
+		return NotFoundError(c)
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -48,12 +47,12 @@ func (u user) Name(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user: name bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 	err = u.Service.Name(body)
 	if err != nil {
 		LogStringError(c, err, "user: name")
-		return c.JSON(http.StatusBadRequest, httpError.JSONError{Message: "Could Not Update Name"})
+		return c.JSON(http.StatusBadRequest, JSONError{Message: "Could Not Update Name"})
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Name Updated Successfully"})
 }
@@ -63,13 +62,13 @@ func (u user) RequestEmailAuthentication(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user: request email authentication bind")
-		return httpError.BadRequestError(c)
+		return BadRequestError(c)
 	}
 	userId := c.Get("userId").(string)
 	err = u.Service.RequestEmailAuthentication(body, userId)
 	if err != nil {
 		LogStringError(c, err, "user: request email authentication")
-		return c.JSON(http.StatusBadRequest, httpError.JSONError{Message: "Could Not Send Email Authentication"})
+		return c.JSON(http.StatusBadRequest, JSONError{Message: "Could Not Send Email Authentication"})
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Authentication Received"})
 }

@@ -1,4 +1,4 @@
-package httpError
+package handler
 
 import (
 	"net/http"

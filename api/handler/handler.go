@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/String-xyz/string-api/api/common/httpError"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -29,14 +28,14 @@ func (t transaction) Transact(c echo.Context) error {
 	var body model.ExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
-                LogStringError(c, err, "transact: execute bind")
-		return httpError.BadRequestError(c)
+		LogStringError(c, err, "transact: execute bind")
+		return BadRequestError(c)
 	}
 	userId := c.Get("userId").(string)
 	res, err := t.Service.Execute(body, userId)
 	if err != nil {
 		LogStringError(c, err, "transact: execute")
-		return httpError.InternalError(c)
+		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -45,16 +44,16 @@ func (t transaction) Quote(c echo.Context) error {
 	var body model.TransactionRequest
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
-                LogStringError(c, err, "transact: quote bind")
-		return httpError.BadRequestError(c)
+		LogStringError(c, err, "transact: quote bind")
+		return BadRequestError(c)
 	}
 	// userId := c.Get("userId").(string)
 	res, err := t.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
-		return c.JSON(http.StatusBadRequest, httpError.JSONError{Message: "The requested blockchain operation will revert"})
+		return c.JSON(http.StatusBadRequest, JSONError{Message: "The requested blockchain operation will revert"})
 	} else if err != nil {
 		LogStringError(c, err, "transact: quote")
-		return c.JSON(http.StatusInternalServerError, httpError.JSONError{Message: "Quote Service Failed"})
+		return c.JSON(http.StatusInternalServerError, JSONError{Message: "Quote Service Failed"})
 	}
 	return c.JSON(http.StatusOK, res)
 }
