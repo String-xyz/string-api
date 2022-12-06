@@ -42,7 +42,7 @@ func (l login) NoncePayload(c echo.Context) error {
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
-		return InternalError(c)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "unable process payload to sign"})
 	}
 	return c.JSON(http.StatusOK, payload)
 }
