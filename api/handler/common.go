@@ -26,6 +26,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	tracer, ok := errors.Cause(err).(stackTracer)
 	if !ok {
 		log.Warn().Str("error", err.Error()).Msg("error does not implement stack trace")
+		return
 	}
 	cause := errors.Cause(err)
 
@@ -39,7 +40,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Name = "StringJWT"
 	cookie.Value = jwt.Token
 	cookie.HttpOnly = true
-	cookie.Expires = jwt.ExpAt     // we want the cookie to expire at the same time as the token
+	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = http.SameSiteLaxMode
 	cookie.Path = "/"              // Send cookie in every sub path request
 	cookie.Secure = isProduction() // in production allow https only
@@ -50,8 +51,4 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 
 func isProduction() bool {
 	return os.Getenv("ENV") == "production"
-}
-
-type HttpError struct {
-	Error string `json:"error"`
 }

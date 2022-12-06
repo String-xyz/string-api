@@ -36,7 +36,7 @@ func (o authAPIKey) Create(c echo.Context) error {
 
 func (o authAPIKey) List(c echo.Context) error {
 	if !o.isInternal {
-		return c.String(http.StatusMethodNotAllowed, "Not Allowed")
+		return NotAllowedError(c)
 	}
 	body := struct {
 		Status string `query:"status"`
@@ -58,7 +58,7 @@ func (o authAPIKey) List(c echo.Context) error {
 
 func (o authAPIKey) Approve(c echo.Context) error {
 	if !o.isInternal {
-		return c.String(http.StatusMethodNotAllowed, "Not Allowed")
+		return NotAllowedError(c)
 	}
 	params := struct {
 		ID string `param:"id"`
@@ -74,7 +74,7 @@ func (o authAPIKey) Approve(c echo.Context) error {
 		LogStringError(c, err, "authKey approve: approve")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
-	return c.String(http.StatusOK, "Success")
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Success"})
 }
 
 func (o authAPIKey) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
