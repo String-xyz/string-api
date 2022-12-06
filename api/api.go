@@ -35,7 +35,15 @@ func Start(config APIConfig) {
 	e.Use(middleware.Georestrict(geofencingService))
 
 	e.GET("/heartbeat", heartbeat)
-	authService := authRoute(config, e)
+	repos := service.UserRepos{
+		Auth:         repository.NewAuth(config.Redis, config.DB),
+		User:         repository.NewUser(config.DB),
+		Contact:      repository.NewContact(config.DB),
+		Instrument:   repository.NewInstrument(config.DB),
+		Device:       repository.NewDevice(config.DB),
+		UserPlatform: repository.NewUserPlatform(config.DB),
+	}
+	authService := service.NewAuth(repos)
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
@@ -63,28 +71,20 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.LogRequest())
 }
 
-func authRoute(config APIConfig, e *echo.Echo) service.Auth {
-	a := repository.NewAuth(config.Redis, config.DB)
-	service := service.NewAuth(a)
-	handler := handler.NewAuth(service)
-	handler.RegisterRoutes(e.Group("/auth"))
-	return service
-}
-
 func platformRoute(config APIConfig, e *echo.Echo) {
 	p := repository.NewPlatform(config.DB)
 	a := repository.NewAuth(config.Redis, config.DB)
 	c := repository.NewContact(config.DB)
 	service := service.NewPlatform(p, c, a)
 	handler := handler.NewPlatform(service)
-	handler.RegisterRoutes(e.Group("/platform"), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/platforms"), middleware.BearerAuth())
 }
 
 func AuthAPIKey(config APIConfig, e *echo.Echo, internal bool) {
 	a := repository.NewAuth(config.Redis, config.DB)
 	service := service.NewAPIKeyStrategy(a)
 	handler := handler.NewAuthAPIKey(service, internal)
-	handler.RegisterRoutes(e.Group("/apikey"))
+	handler.RegisterRoutes(e.Group("/apikeys"))
 }
 
 func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
@@ -101,7 +101,7 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 	}
 	service := service.NewTransaction(repos, config.Redis)
 	handler := handler.NewTransaction(e, service)
-	handler.RegisterRoutes(e.Group("/transact"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/transactions"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
 func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
@@ -113,9 +113,10 @@ func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Device:       repository.NewDevice(config.DB),
 		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
-	service := service.NewUser(repos)
-	handler := handler.NewUser(e, service)
-	handler.RegisterRoutes(e.Group("/user"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
+	user := service.NewUser(repos)
+	verification := service.NewVerification(repos.Contact, repos.User)
+	handler := handler.NewUser(e, user, verification)
+	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
 
 func loginRoute(config APIConfig, e *echo.Echo) {
@@ -127,7 +128,8 @@ func loginRoute(config APIConfig, e *echo.Echo) {
 		Device:       repository.NewDevice(config.DB),
 		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
-	service := service.NewUser(repos)
+
+	service := service.NewAuth(repos)
 	handler := handler.NewLogin(e, service)
 	handler.RegisterRoutes(e.Group("/login"))
 }

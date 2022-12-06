@@ -1,6 +1,7 @@
 package service
 
 import (
+	netmail "net/mail"
 	"os"
 	"regexp"
 	"strings"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -32,23 +32,65 @@ type JWTClaims struct {
 	jwt.StandardClaims
 }
 
-type AuthValidator interface {
-	Validate(string) (bool, error)
-}
-
 type Auth interface {
+	// PayloadToSign returns a payload to be sign by a wallet
+	// to authenticate an user, the payload expires in 15 minutes
+	PayloadToSign(walletAdress string) (model.WalletSignaturePayload, error)
+
+	// VerifySignedPayload receives a signed payload from the user and verifies the signature
+	// if signaure is valid it returns a JWT to authenticate the user
+	VerifySignedPayload(model.WalletSignaturePayload) (JWT, error)
+
 	GenerateJWT(model.User) (JWT, error)
-	Challenge(publicAddres string) (string, error)
 	ValidateAPIKey(key string) bool
-	RefreshToken(string)
 }
 
 type auth struct {
-	authRepo repository.AuthStrategy
+	repos UserRepos
 }
 
-func NewAuth(a repository.AuthStrategy) Auth {
-	return &auth{a}
+// reusing UserRepos here
+func NewAuth(r UserRepos) Auth {
+	return &auth{r}
+}
+
+func (a auth) PayloadToSign(walletAddress string) (model.WalletSignaturePayload, error) {
+	res := model.WalletSignaturePayload{}
+	if !hexRegex.MatchString(walletAddress) {
+		return res, common.StringError(errors.New("missing or invalid address"))
+	}
+	res.Address = walletAddress
+	res.Timestamp = time.Now().Unix()
+	nonce, err := common.EVMSign(res)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	res.Nonce = nonce
+	return res, nil
+}
+
+func (a auth) VerifySignedPayload(request model.WalletSignaturePayload) (JWT, error) {
+	err := verifyWalletAuthentication(request)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// Verify user is registered to this wallet address
+	instrument, err := a.repos.Instrument.GetWallet(request.Address)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+	user, err := a.repos.User.GetById(instrument.UserID)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// Create the JWT
+	jwt, err := a.GenerateJWT(user)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+	return jwt, nil
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
@@ -57,7 +99,7 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
 		IssuedAt:     time.Now(),
-		ExpAt:        time.Now().Add(time.Hour * 24),
+		ExpAt:        time.Now().Add(time.Minute * 15),
 		RefreshToken: refreshToken,
 	}
 
@@ -71,10 +113,10 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 		return *t, err
 	}
 	t.Token = signed
-	return *t, a.authRepo.CreateJWTRefresh(common.ToSha256(refreshToken), m.ID)
+	return *t, a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.ID)
 }
 
-func (a auth) Validate(token string) (bool, error) {
+func (a auth) ValidateJWT(token string) (bool, error) {
 	var claims = &JWTClaims{}
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
@@ -82,25 +124,48 @@ func (a auth) Validate(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) Challenge(publicAddress string) (string, error) {
-	if !hexRegex.MatchString(publicAddress) {
-		return "", errors.New("invalid address")
-	}
-	nonce := uuid.NewString()
-	return nonce, a.authRepo.CreateAny(publicAddress, nonce, time.Minute*10)
-}
-
 func (a auth) ValidateAPIKey(key string) bool {
 	hashed := common.ToSha256(key)
-	authKey, err := a.authRepo.Get(hashed)
+	authKey, err := a.repos.Auth.Get(hashed)
 	if err != nil {
 		return false
 	}
 	return authKey.Data == hashed
 }
 
-func (a auth) RefreshToken(token string) {
-	//stra, err := a.authRepo.Get(common.ToSha256(token))
+func verifyWalletAuthentication(request model.WalletSignaturePayload) error {
+	preUserSignature := request
+	preUserSignature.Signature = ""
+	preAPISignature := preUserSignature
+	preAPISignature.Nonce = ""
+	// Verify users signature
+	valid, err := common.ValidateExternalEVMSignature(request.Signature, request.Address, preUserSignature)
+	if err != nil {
+		return common.StringError(err)
+	}
+	if !valid {
+		return common.StringError(errors.New("user signature invalid"))
+	}
+	// Verify nonce
+	valid, err = common.ValidateEVMSignature(request.Nonce, preAPISignature)
+	if err != nil {
+		return common.StringError(err)
+	}
+	if !valid {
+		return common.StringError(errors.New("nonce invalid"))
+	}
+	// Verify timestamp(15 mins) not expired
+	timestamp := time.Unix(request.Timestamp, 0)
+	if timestamp.Add(15 * time.Minute).After(time.Now()) {
+		return common.StringError(errors.New("login payload expired"))
+	}
+	return nil
+}
+
+// Use native mail package to check if email a valid email
+func validEmail(email string) bool {
+	_, err := netmail.ParseAddress(email)
+	return err == nil
 }
 
 func uuidWithoutHyphens() string {

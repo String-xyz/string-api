@@ -1,0 +1,44 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/labstack/echo/v4"
+)
+
+type Verification interface {
+	// VerifyEmail receives payload from an email link sent previsouly
+	// it creates a contact and sets the email as verified
+	// this is a public endpoint since is called outside of a platform
+	VerifyEmail(c echo.Context) error
+	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
+}
+
+type verification struct {
+	service service.Verification
+	group   *echo.Group
+}
+
+func NewVerification(route *echo.Echo, service service.Verification) Verification {
+	return &verification{service, nil}
+}
+
+func (v verification) VerifyEmail(c echo.Context) error {
+	token := c.QueryParam("token")
+	err := v.service.VerifyEmail(token)
+	if err != nil {
+		LogStringError(c, err, "verification: email verification")
+		return c.String(http.StatusBadRequest, "Invalid or malformed token")
+	}
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
+}
+
+func (v verification) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
+	if g == nil {
+		panic("No group attached to the verification handler")
+	}
+	v.group = g
+	g.Use(ms...)
+	g.GET("", v.VerifyEmail)
+}
