@@ -37,15 +37,16 @@ type Platform struct {
 
 // See NETWORK in Migrations 0001
 type Network struct {
-	ID         string    `json:"id" db:"id"`
-	CreatedAt  time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt  time.Time `json:"updatedAt" db:"updated_at"`
-	Name       string    `json:"name" db:"name"`
-	NetworkID  uint64    `json:"networkId" db:"network_id"`
-	ChainID    uint64    `json:"chainId" db:"chain_id"`
-	GasTokenID string    `json:"gasTokenId" db:"gas_token_id"`
-	GasOracle  string    `json:"gasOracle" db:"gas_oracle"`
-	RPCUrl     string    `json:"rpcUrl" db:"rpc_url"`
+	ID          string    `json:"id" db:"id"`
+	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
+	Name        string    `json:"name" db:"name"`
+	NetworkID   uint64    `json:"networkId" db:"network_id"`
+	ChainID     uint64    `json:"chainId" db:"chain_id"`
+	GasTokenID  string    `json:"gasTokenId" db:"gas_token_id"`
+	GasOracle   string    `json:"gasOracle" db:"gas_oracle"`
+	RPCUrl      string    `json:"rpcUrl" db:"rpc_url"`
+	ExplorerUrl string    `json:"explorerUrl" db:"explorer_url"`
 }
 
 // See ASSET in Migrations 0001

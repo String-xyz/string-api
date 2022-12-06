@@ -29,9 +29,9 @@ func TestSignAndValidateStruct(t *testing.T) {
 
 	// Paste the JSON output properties from wallet login request here
 	obj1 := model.WalletSignaturePayload{
-		Address:   "0xYourAddressHere",
-		Timestamp: 123456789,
-		Nonce:     "0xNonceGoesHere",
+		Address:   "0xPasteYourAddressHere",
+		Timestamp: 1010101010,
+		Nonce:     "0xPasteNonceHere",
 	}
 
 	obj1Signed, err := EVMSign(obj1)

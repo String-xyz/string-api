@@ -97,6 +97,7 @@ func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
 		Instrument:  repository.NewInstrument(config.DB),
 		Device:      repository.NewDevice(config.DB),
 		Location:    repository.NewLocation(config.DB),
+		Contact:     repository.NewContact(config.DB),
 	}
 	service := service.NewTransaction(repos, config.Redis)
 	handler := handler.NewTransaction(e, service)

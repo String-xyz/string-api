@@ -37,5 +37,6 @@ type TransactionRequest struct {
 }
 
 type TransactionReceipt struct {
-	TxID string `json:"txID"`
+	TxID  string `json:"txID"`
+	TxURL string `json:"txUrl"`
 }

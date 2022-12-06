@@ -18,13 +18,13 @@ VALUES ('13438963-f5e7-47c4-a790-ebca3e3bf915', '2022-10-19 00:53:36.538289+00',
 
 -------------------------------------------------------------------------
 -- NETWORK --------------------------------------------------------------
-INSERT INTO network (id, created_at, updated_at, name, network_id, chain_id, gas_token_id, gas_oracle, rpc_url)
-VALUES ('ea34e526-ec6e-4f2b-89b4-acc08db80d63', '2022-10-14 20:18:09.555645+00', '2022-10-14 20:18:09.555645+00', 'Fuji Testnet', '43113', '43113', '19611d0e-a42f-4cee-a35a-b34eb5c08a7f', 'avax', 'https://api.avax-test.network/ext/bc/C/rpc'), 
-('b21d6cd6-5d8a-49a6-bac6-e6323316dc01', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Goerli Testnet', '5', '5', '3ef72571-c2e1-4ca3-991c-0df17cef7535', 'eth', 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'),
-('6cea71b3-b287-4680-ad9d-e631d0bc84ba', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Polygon Mainnet', '137', '137', 'c06986d8-cc2c-4cdc-9728-16a45698b3e7', 'poly', 'https://rpc-mainnet.matic.quiknode.pro'),
-('cd42c066-554c-42ad-994b-48fed371931c', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Avalanche Mainnet', '43114', '43114', '19611d0e-a42f-4cee-a35a-b34eb5c08a7f', 'avax', 'https://api.avax.network/ext/bc/C/rpc'),
-('491d46e2-18e0-45ec-8209-faf0ec5d278c', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Mumbai Testnet', '80001', '80001', 'c06986d8-cc2c-4cdc-9728-16a45698b3e7', 'poly', 'https://matic-mumbai.chainstacklabs.com'),
-('60a02818-4e7d-4b84-b673-e2376fdbfbf9', '2022-10-14 20:41:39.962327+00', '2022-10-30 01:07:37.237054+00', 'Ethereum Mainnet', '1', '1', '3ef72571-c2e1-4ca3-991c-0df17cef7535', 'eth', 'https://rpc.ankr.com/eth');
+INSERT INTO network (id, created_at, updated_at, name, network_id, chain_id, gas_token_id, gas_oracle, rpc_url, explorer_url)
+VALUES ('ea34e526-ec6e-4f2b-89b4-acc08db80d63', '2022-10-14 20:18:09.555645+00', '2022-10-14 20:18:09.555645+00', 'Fuji Testnet', '43113', '43113', '19611d0e-a42f-4cee-a35a-b34eb5c08a7f', 'avax', 'https://api.avax-test.network/ext/bc/C/rpc', 'https://testnet.snowtrace.io'), 
+('b21d6cd6-5d8a-49a6-bac6-e6323316dc01', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Goerli Testnet', '5', '5', '3ef72571-c2e1-4ca3-991c-0df17cef7535', 'eth', 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161', 'https://goerli.etherscan.io'),
+('6cea71b3-b287-4680-ad9d-e631d0bc84ba', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Polygon Mainnet', '137', '137', 'c06986d8-cc2c-4cdc-9728-16a45698b3e7', 'poly', 'https://rpc-mainnet.matic.quiknode.pro', 'https://polygonscan.com'),
+('cd42c066-554c-42ad-994b-48fed371931c', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Avalanche Mainnet', '43114', '43114', '19611d0e-a42f-4cee-a35a-b34eb5c08a7f', 'avax', 'https://api.avax.network/ext/bc/C/rpc', 'https://snowtrace.io'),
+('491d46e2-18e0-45ec-8209-faf0ec5d278c', '2022-10-14 20:41:39.962327+00', '2022-10-14 20:41:39.962327+00', 'Mumbai Testnet', '80001', '80001', 'c06986d8-cc2c-4cdc-9728-16a45698b3e7', 'poly', 'https://matic-mumbai.chainstacklabs.com', 'https://mumbai.polygonscan.com/'),
+('60a02818-4e7d-4b84-b673-e2376fdbfbf9', '2022-10-14 20:41:39.962327+00', '2022-10-30 01:07:37.237054+00', 'Ethereum Mainnet', '1', '1', '3ef72571-c2e1-4ca3-991c-0df17cef7535', 'eth', 'https://rpc.ankr.com/eth', 'https://etherscan.io/');
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------

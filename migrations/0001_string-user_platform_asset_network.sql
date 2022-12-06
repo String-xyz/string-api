@@ -70,7 +70,8 @@ CREATE TABLE network (
   chain_id TEXT NOT NULL, -- might actually be big.Int
   gas_token_id UUID DEFAULT NULL, -- INDEX CREATED BELOW
   gas_oracle TEXT DEFAULT '', -- the name of the network in oracle (i.e. in owlracle)
-  rpc_url TEXT DEFAULT '' -- The RPC used to access the network (ie "https://mainnet.infura.io/v3")
+  rpc_url TEXT DEFAULT '', -- The RPC used to access the network (ie "https://mainnet.infura.io/v3")
+  explorer_url TEXT DEFAULT '' -- The Block Explorer URL used to view transactions and entities in the browser
 );
 CREATE OR REPLACE TRIGGER update_network_updated_at
     BEFORE UPDATE
