@@ -35,13 +35,17 @@ func (u user) Create(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user:create user bind")
-		return c.JSON(http.StatusBadRequest, HttpError{Error: "Missing or invalid body"})
+		return BadRequestError(c)
+	}
+
+	if err := c.Validate(body); err != nil {
+		return InvalidPayloadError(c, err)
 	}
 
 	jwt, err := u.userService.Create(body)
 	if err != nil {
 		LogStringError(c, err, "user: creating user")
-		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Error creating user"})
+		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, jwt)
 }
@@ -49,16 +53,17 @@ func (u user) Create(c echo.Context) error {
 func (u user) Status(c echo.Context) error {
 	valid, userId := validUserID(IDParam(c), c)
 	if !valid {
-		return c.JSON(http.StatusUnauthorized, HttpError{Error: "Unauthorized"})
+		return Unauthorized(c)
 	}
 	walletAddress := c.QueryParam("walletAddress")
 	if walletAddress == "" {
-		return c.JSON(http.StatusBadRequest, HttpError{Error: "Missing or invalid walletAddress"})
+		return BadRequestError(c, "Missing or invalid walletAddress")
 	}
+
 	status, err := u.userService.GetStatus(userId, walletAddress)
 	if err != nil {
 		LogStringError(c, err, "user: get status")
-		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Error getting status"})
+		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, status)
 }
@@ -68,13 +73,14 @@ func (u user) Update(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user: update bind")
-		return c.String(http.StatusBadRequest, "Bad Request")
+		return BadRequestError(c)
 	}
 	err = u.userService.Update(body)
 	if err != nil {
 		LogStringError(c, err, "user: update")
-		return c.String(http.StatusBadRequest, "Error updating user")
+		return InternalError(c)
 	}
+
 	return c.JSON(http.StatusOK, ResultMessage{Status: "User updated successfully"})
 }
 
@@ -84,13 +90,15 @@ func (u user) VerifyEmail(c echo.Context) error {
 	_, userId := validUserID(IDParam(c), c)
 	email := c.QueryParam("email")
 	if email == "" {
-		return c.JSON(http.StatusBadRequest, HttpError{Error: "Missing or invalid email"})
+		return BadRequestError(c, "Missing or invalid email")
 	}
+
 	err := u.verificationService.SendEmailVerification(userId, email)
 	if err != nil {
 		LogStringError(c, err, "user: email verification")
-		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Could not send email verification"})
+		return InternalError(c, "Unable to send email verification")
 	}
+
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email verification sent"})
 }
 

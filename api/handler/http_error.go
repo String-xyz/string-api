@@ -46,3 +46,10 @@ func NotAllowedError(c echo.Context, message ...string) error {
 	}
 	return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: "Not Allowed", Code: "NOT_ALLOWED"})
 }
+
+func Unauthorized(c echo.Context, message ...string) error {
+	if len(message) > 0 {
+		return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: strings.Join(message, " "), Code: "UNAUTHORIZED"})
+	}
+	return c.JSON(http.StatusUnauthorized, JSONError{Message: "Unauthorized", Code: "UNAUTHORIZED"})
+}
