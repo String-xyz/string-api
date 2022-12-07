@@ -29,7 +29,7 @@ func (v verification) VerifyEmail(c echo.Context) error {
 	err := v.service.VerifyEmail(token)
 	if err != nil {
 		LogStringError(c, err, "verification: email verification")
-		return c.String(http.StatusBadRequest, "Invalid or malformed token")
+		return c.JSON(http.StatusBadRequest, HttpError{Error: "Invalid or malformed token"})
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
 }

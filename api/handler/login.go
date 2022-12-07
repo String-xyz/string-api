@@ -30,12 +30,12 @@ func NewLogin(route *echo.Echo, service service.Auth) Login {
 func (l login) NoncePayload(c echo.Context) error {
 	walletAddress := c.QueryParam("walletAddress")
 	if walletAddress == "" {
-		return BadRequestError(c, "walletAddress must be provided")
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "WalletAddress must be provided"})
 	}
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Unable process payload to sign"})
+		return c.JSON(http.StatusInternalServerError, HttpError{Error: "Unable process payload to sign"})
 	}
 	return c.JSON(http.StatusOK, payload)
 }
@@ -44,14 +44,14 @@ func (l login) VerifySignature(c echo.Context) error {
 	var body model.WalletSignaturePayload
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "login: receive wallet login bind")
-		return BadRequestError(c)
+		LogStringError(c, err, "login: verifying signature")
+		return c.JSON(http.StatusBadRequest, HttpError{Error: "Invalid or missing body"})
 	}
 
 	jwt, err := l.Service.VerifySignedPayload(body)
 	if err != nil {
-		LogStringError(c, err, "login: receive wallet login")
-		return InternalError(c)
+		LogStringError(c, err, "login: receive walet login")
+		return c.String(http.StatusBadRequest, "Invalid Payload")
 	}
 	// set jwt in cookie
 	err = SetJWTCookie(c, jwt)
