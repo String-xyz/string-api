@@ -39,7 +39,7 @@ type Auth interface {
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signaure is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(model.WalletSignaturePayload) (JWT, error)
+	VerifySignedPayload(model.WalletSignaturePayload) (UserCreateResponse, error)
 
 	GenerateJWT(model.User) (JWT, error)
 	ValidateAPIKey(key string) bool
@@ -69,28 +69,29 @@ func (a auth) PayloadToSign(walletAddress string) (model.WalletSignaturePayload,
 	return res, nil
 }
 
-func (a auth) VerifySignedPayload(request model.WalletSignaturePayload) (JWT, error) {
+func (a auth) VerifySignedPayload(request model.WalletSignaturePayload) (UserCreateResponse, error) {
+	resp := UserCreateResponse{}
 	err := verifyWalletAuthentication(request)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWallet(request.Address)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 	user, err := a.repos.User.GetById(instrument.UserID)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// Create the JWT
 	jwt, err := a.GenerateJWT(user)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
-	return jwt, nil
+	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis

@@ -52,12 +52,17 @@ func (u User) Update(request service.UserUpdates) error {
 // Auth Service Stub
 type Auth struct {
 	WalletSignedPayload model.WalletSignaturePayload
+	UserCreateResponse  service.UserCreateResponse
 	JWT                 service.JWT
 	Error               error
 }
 
 func (a *Auth) SetWalletSignedPayload(m model.WalletSignaturePayload) {
 	a.WalletSignedPayload = m
+}
+
+func (a *Auth) SetUserCreateResponse(resp service.UserCreateResponse) {
+	a.UserCreateResponse = resp
 }
 
 func (a *Auth) SetJWT(jwt service.JWT) {
@@ -72,8 +77,8 @@ func (a Auth) PayloadToSign(walletAdress string) (model.WalletSignaturePayload, 
 	return a.WalletSignedPayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(model.WalletSignaturePayload) (service.JWT, error) {
-	return a.JWT, a.Error
+func (a Auth) VerifySignedPayload(model.WalletSignaturePayload) (service.UserCreateResponse, error) {
+	return a.UserCreateResponse, a.Error
 }
 
 func (a Auth) GenerateJWT(model.User) (service.JWT, error) {

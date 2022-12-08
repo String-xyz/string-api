@@ -54,18 +54,18 @@ func (l login) VerifySignature(c echo.Context) error {
 		return InvalidPayloadError(c, err)
 	}
 
-	jwt, err := l.Service.VerifySignedPayload(body)
+	resp, err := l.Service.VerifySignedPayload(body)
 	if err != nil {
 		LogStringError(c, err, "login: verify signature")
 		return c.String(http.StatusBadRequest, "Invalid Payload")
 	}
 	// set jwt in cookie
-	err = SetJWTCookie(c, jwt)
+	err = SetJWTCookie(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "login: receive email set jwt cookie")
 		return InternalError(c)
 	}
-	return c.JSON(http.StatusOK, jwt)
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {

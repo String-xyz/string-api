@@ -44,7 +44,7 @@ func TestStatus200LoginVerifySignature(t *testing.T) {
 	e := echo.New()
 	e.Validator = validator.New()
 	body := model.WalletSignaturePayload{
-		Address:   testNonceWalletAddress,
+		Address:   testWalletAddress,
 		Nonce:     testNonce,
 		Signature: testSignature,
 		Timestamp: time.Now().Unix(),
