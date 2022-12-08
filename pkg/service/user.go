@@ -20,9 +20,9 @@ type EmailVerification struct {
 	UserID    string
 }
 
-type EmailLogin struct {
-	Timestamp int64
-	UserID    string
+type UserCreateResponse struct {
+	JWT  JWT        `json:"authToken"`
+	User model.User `json:"user"`
 }
 
 type UserRepos struct {
@@ -42,7 +42,7 @@ type User interface {
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
-	Create(request model.WalletSignaturePayload) (JWT, error)
+	Create(request model.WalletSignaturePayload) (UserCreateResponse, error)
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
@@ -77,55 +77,56 @@ func (u user) GetStatus(ID, walletAddress string) (model.UserOnboardingStatus, e
 	return res, common.StringError(errors.New("not found"))
 }
 
-func (u user) Create(request model.WalletSignaturePayload) (JWT, error) {
+func (u user) Create(request model.WalletSignaturePayload) (UserCreateResponse, error) {
 	addr := request.Address
+	resp := UserCreateResponse{}
 	if addr == "" {
-		return JWT{}, common.StringError(errors.New("no wallet address provided"))
+		return resp, common.StringError(errors.New("no wallet address provided"))
 	}
 
 	// Make sure wallet does not already exist
 	instrument, err := u.repos.Instrument.GetWallet(addr)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
-		return JWT{}, common.StringError(errors.New("wallet already associated with user"))
+		return resp, common.StringError(errors.New("wallet already associated with user"))
 	} else if err == nil && instrument.PublicKey == addr {
-		return JWT{}, common.StringError(errors.New("wallet already exists"))
+		return resp, common.StringError(errors.New("wallet already exists"))
 	}
 
 	// Make sure address is a wallet and not a smart contract
 	if !common.IsWallet(addr) {
-		return JWT{}, common.StringError(errors.New("address provided is not a valid wallet"))
+		return resp, common.StringError(errors.New("address provided is not a valid wallet"))
 	}
 
 	// Verify payload integrity
 	err = verifyWalletAuthentication(request)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// Initialize a new user
 	user := model.User{Type: "string-user", Status: "unverified"} // Validated status pertains to specific instrument
 	user, err = u.repos.User.Create(user)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// Create a new wallet instrument and associate it with the new user
 	instrument = model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	jwt, err := NewAuth(u.repos).GenerateJWT(user)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	go u.createUnit21Entity(user)
 
-	return jwt, nil
+	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
 func (u user) Update(request UserUpdates) error {

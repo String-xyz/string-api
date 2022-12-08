@@ -42,12 +42,12 @@ func (u user) Create(c echo.Context) error {
 		return InvalidPayloadError(c, err)
 	}
 
-	jwt, err := u.userService.Create(body)
+	resp, err := u.userService.Create(body)
 	if err != nil {
 		LogStringError(c, err, "user: creating user")
 		return InternalError(c)
 	}
-	return c.JSON(http.StatusOK, jwt)
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (u user) Status(c echo.Context) error {

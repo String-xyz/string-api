@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/test/stubs"
 	"github.com/labstack/echo/v4"
@@ -16,8 +18,14 @@ import (
 
 func TestStatus200CreateUser(t *testing.T) {
 	e := echo.New()
+	e.Validator = validator.New()
 
-	body := model.WalletSignaturePayload{}
+	body := model.WalletSignaturePayload{
+		Address:   testWalletAddress,
+		Nonce:     testNonce,
+		Signature: testSignature,
+		Timestamp: time.Now().Unix(),
+	}
 	jsonBody, err := json.Marshal(body)
 	assert.NoError(t, err)
 
@@ -57,8 +65,14 @@ func TestStatus200GetUserStatus(t *testing.T) {
 
 func TestStatus200UserUpdate(t *testing.T) {
 	e := echo.New()
+	e.Validator = validator.New()
 
-	body := model.UpdateUserName{}
+	body := model.UpdateUserName{
+		FirstName:     "Testor",
+		MiddleName:    "Testy",
+		LastName:      "Tester",
+		WalletAddress: testWalletAddress,
+	}
 	jsonBody, err := json.Marshal(body)
 	assert.NoError(t, err)
 

@@ -75,5 +75,8 @@ func message(f validator.FieldError) string {
 	if strings.HasPrefix(f.Tag(), "g") {
 		return fmt.Sprintf("%v %s %s", f.Value(), message, f.Param())
 	}
+	if message == "" {
+		return "Some fields are missing or invalid, please provide all required data"
+	}
 	return fmt.Sprintf("%s %s", f.Field(), message)
 }

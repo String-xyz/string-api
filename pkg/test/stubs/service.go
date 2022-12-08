@@ -25,7 +25,7 @@ func (v Verification) VerifyEmail(encrypted string) error {
 // User Service Stub
 type User struct {
 	UserOnboardingStatus model.UserOnboardingStatus
-	JWT                  service.JWT
+	UserCreateResponse   service.UserCreateResponse
 	Error                error
 }
 
@@ -33,16 +33,16 @@ func (u *User) SetOnboardinStatus(m model.UserOnboardingStatus) {
 	u.UserOnboardingStatus = m
 }
 
-func (u *User) SetJWT(jwt service.JWT) {
-	u.JWT = jwt
+func (u *User) SetResponse(resp service.UserCreateResponse) {
+	u.UserCreateResponse = resp
 }
 
 func (u User) GetStatus(ID string, walletAddress string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
 
-func (u User) Create(request model.WalletSignaturePayload) (service.JWT, error) {
-	return service.JWT{}, u.Error
+func (u User) Create(request model.WalletSignaturePayload) (service.UserCreateResponse, error) {
+	return u.UserCreateResponse, u.Error
 }
 
 func (u User) Update(request service.UserUpdates) error {
