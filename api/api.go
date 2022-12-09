@@ -47,6 +47,7 @@ func Start(config APIConfig) {
 
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
+	quoteRoute(config, authService, e)
 	userRoute(config, authService, e)
 	loginRoute(config, e)
 	verificationRoute(config, e)
@@ -144,4 +145,21 @@ func verificationRoute(config APIConfig, e *echo.Echo) {
 	verification := service.NewVerification(contact, user)
 	handler := handler.NewVerification(e, verification)
 	handler.RegisterRoutes(e.Group("/verification"))
+}
+
+func quoteRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
+	repos := service.TransactionRepos{
+		Asset:       repository.NewAsset(config.DB),
+		Network:     repository.NewNetwork(config.DB),
+		Transaction: repository.NewTransaction(config.DB),
+		TxLeg:       repository.NewTxLeg(config.DB),
+		User:        repository.NewUser(config.DB),
+		Instrument:  repository.NewInstrument(config.DB),
+		Device:      repository.NewDevice(config.DB),
+		Location:    repository.NewLocation(config.DB),
+		Contact:     repository.NewContact(config.DB),
+	}
+	service := service.NewTransaction(repos, config.Redis)
+	handler := handler.NewQuote(e, service)
+	handler.RegisterRoutes(e.Group("/quotes"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
 }
