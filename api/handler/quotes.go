@@ -27,7 +27,7 @@ func (q quote) Quote(c echo.Context) error {
 	var body model.TransactionRequest
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
-		LogStringError(c, err, "transact: quote bind")
+		LogStringError(c, err, "quote: quote bind")
 		return BadRequestError(c)
 	}
 	// userId := c.Get("userId").(string)
