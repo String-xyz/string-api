@@ -55,12 +55,8 @@ func (u user) Status(c echo.Context) error {
 	if !valid {
 		return Unauthorized(c)
 	}
-	walletAddress := c.QueryParam("walletAddress")
-	if walletAddress == "" {
-		return BadRequestError(c, "Missing or invalid walletAddress")
-	}
 
-	status, err := u.userService.GetStatus(userId, walletAddress)
+	status, err := u.userService.GetStatus(userId)
 	if err != nil {
 		LogStringError(c, err, "user: get status")
 		return InternalError(c)

@@ -44,10 +44,7 @@ func TestStatus200CreateUser(t *testing.T) {
 func TestStatus200GetUserStatus(t *testing.T) {
 	e := echo.New()
 
-	q := make(url.Values)
-	q.Set("walletAddress", "walletAddress")
-
-	request := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)

@@ -36,8 +36,7 @@ type UserRepos struct {
 
 type User interface {
 	//GetStatus returns the onboarding status of an user
-	// you must provide an user id and a valid wallet address associated to the user
-	GetStatus(ID string, walletAddress string) (model.UserOnboardingStatus, error)
+	GetStatus(userID string) (model.UserOnboardingStatus, error)
 
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
@@ -57,23 +56,19 @@ func NewUser(repos UserRepos) User {
 	return &user{repos: repos}
 }
 
-func (u user) GetStatus(ID, walletAddress string) (model.UserOnboardingStatus, error) {
+func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
 	res := model.UserOnboardingStatus{Status: "not found"}
-	if walletAddress == "" {
-		return res, common.StringError(errors.New("no wallet address provided"))
-	}
-	instrument, err := u.repos.Instrument.GetWallet(walletAddress)
+
+	user, err := u.repos.User.GetById(userID)
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	associatedUser, err := u.repos.User.GetById(instrument.UserID)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	if associatedUser.Status != "" {
-		res.Status = associatedUser.Status
+
+	if user.Status != "" {
+		res.Status = user.Status
 		return res, nil
 	}
+
 	return res, common.StringError(errors.New("not found"))
 }
 

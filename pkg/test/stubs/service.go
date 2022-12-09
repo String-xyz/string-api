@@ -37,7 +37,7 @@ func (u *User) SetResponse(resp service.UserCreateResponse) {
 	u.UserCreateResponse = resp
 }
 
-func (u User) GetStatus(ID string, walletAddress string) (model.UserOnboardingStatus, error) {
+func (u User) GetStatus(ID string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
 
