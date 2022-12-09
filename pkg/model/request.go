@@ -73,10 +73,9 @@ type UserRequest struct {
 }
 
 type UpdateUserName struct {
-	FirstName     string `json:"firstName" db:"first_name" validate:"required"`
-	MiddleName    string `json:"middleName" db:"middle_name" validate:"required"`
-	LastName      string `json:"lastName" db:"last_name" validate:"required"`
-	WalletAddress string `json:"walletAddress" validate:"required"`
+	FirstName  string `json:"firstName" db:"first_name" validate:"required"`
+	MiddleName string `json:"middleName" db:"middle_name" validate:"required"`
+	LastName   string `json:"lastName" db:"last_name" validate:"required"`
 }
 
 type ContactUpdates struct {

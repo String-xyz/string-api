@@ -71,13 +71,14 @@ func (u user) Update(c echo.Context) error {
 		LogStringError(c, err, "user: update bind")
 		return BadRequestError(c)
 	}
-	err = u.userService.Update(body)
+	_, userId := validUserID(IDParam(c), c)
+	user, err := u.userService.Update(userId, body)
 	if err != nil {
 		LogStringError(c, err, "user: update")
 		return InternalError(c)
 	}
 
-	return c.JSON(http.StatusOK, ResultMessage{Status: "User updated successfully"})
+	return c.JSON(http.StatusOK, user)
 }
 
 // VerifyEmail send an email with a link, the user must click on the link for the email to be verified

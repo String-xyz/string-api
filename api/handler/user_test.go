@@ -65,10 +65,9 @@ func TestStatus200UserUpdate(t *testing.T) {
 	e.Validator = validator.New()
 
 	body := model.UpdateUserName{
-		FirstName:     "Testor",
-		MiddleName:    "Testy",
-		LastName:      "Tester",
-		WalletAddress: testWalletAddress,
+		FirstName:  "Testor",
+		MiddleName: "Testy",
+		LastName:   "Tester",
 	}
 	jsonBody, err := json.Marshal(body)
 	assert.NoError(t, err)
@@ -79,6 +78,7 @@ func TestStatus200UserUpdate(t *testing.T) {
 	c := e.NewContext(request, rec)
 	c.SetParamNames("id")
 	c.SetParamValues("userId")
+	c.Set("userId", "userId")
 
 	handler := NewUser(nil, stubs.User{}, stubs.Verification{})
 	handler.RegisterRoutes(e.Group("/users"))

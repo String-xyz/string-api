@@ -26,6 +26,7 @@ func (v Verification) VerifyEmail(encrypted string) error {
 type User struct {
 	UserOnboardingStatus model.UserOnboardingStatus
 	UserCreateResponse   service.UserCreateResponse
+	User                 model.User
 	Error                error
 }
 
@@ -37,6 +38,10 @@ func (u *User) SetResponse(resp service.UserCreateResponse) {
 	u.UserCreateResponse = resp
 }
 
+func (u *User) SetUser(user model.User) {
+	u.User = user
+}
+
 func (u User) GetStatus(ID string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
@@ -45,8 +50,8 @@ func (u User) Create(request model.WalletSignaturePayload) (service.UserCreateRe
 	return u.UserCreateResponse, u.Error
 }
 
-func (u User) Update(request service.UserUpdates) error {
-	return u.Error
+func (u User) Update(userID string, request service.UserUpdates) (model.User, error) {
+	return u.User, u.Error
 }
 
 // Auth Service Stub

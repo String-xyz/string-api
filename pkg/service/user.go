@@ -45,7 +45,7 @@ type User interface {
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
-	Update(request UserUpdates) error
+	Update(userID string, request UserUpdates) (model.User, error)
 }
 
 type user struct {
@@ -124,28 +124,16 @@ func (u user) Create(request model.WalletSignaturePayload) (UserCreateResponse, 
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (u user) Update(request UserUpdates) error {
-	addr := request.WalletAddress
-	instrument, err := u.repos.Instrument.GetWallet(addr)
-	if err != nil {
-		return common.StringError(err)
-	}
-	if instrument.UserID == "" {
-		return common.StringError(errors.New("wallet not associated with user"))
-	}
-	user, err := u.repos.User.GetById(instrument.UserID)
-	if err != nil {
-		return common.StringError(err)
-	}
+func (u user) Update(userID string, request UserUpdates) (model.User, error) {
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}
-	err = u.repos.User.Update(user.ID, updates)
+	user, err := u.repos.User.Update(userID, updates)
 	if err != nil {
-		return common.StringError(err)
+		return user, common.StringError(err)
 	}
 
 	go u.updateUnit21Entity(user)
 
-	return nil
+	return user, nil
 }
 
 func (u user) createUnit21Entity(user model.User) {
