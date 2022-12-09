@@ -44,11 +44,13 @@ func Start(config APIConfig) {
 		UserPlatform: repository.NewUserPlatform(config.DB),
 	}
 	authService := service.NewAuth(repos)
+
 	AuthAPIKey(config, e, true)
 	transactRoute(config, authService, e)
 	userRoute(config, authService, e)
-
 	loginRoute(config, e)
+	verificationRoute(config, e)
+
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -132,4 +134,14 @@ func loginRoute(config APIConfig, e *echo.Echo) {
 	service := service.NewAuth(repos)
 	handler := handler.NewLogin(e, service)
 	handler.RegisterRoutes(e.Group("/login"))
+}
+
+func verificationRoute(config APIConfig, e *echo.Echo) {
+
+	user := repository.NewUser(config.DB)
+	contact := repository.NewContact(config.DB)
+
+	verification := service.NewVerification(contact, user)
+	handler := handler.NewVerification(e, verification)
+	handler.RegisterRoutes(e.Group("/verification"))
 }
