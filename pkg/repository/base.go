@@ -14,6 +14,20 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+type Repositories struct {
+	Auth         AuthStrategy
+	User         User
+	Contact      Contact
+	Instrument   Instrument
+	Device       Device
+	UserPlatform UserPlatform
+	Asset        Asset
+	Network      Network
+	Transaction  Transaction
+	TxLeg        TxLeg
+	Location     Location
+}
+
 type Queryable interface {
 	sqlx.Ext
 	sqlx.ExecerContext
