@@ -9,6 +9,7 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -46,11 +47,11 @@ type Auth interface {
 }
 
 type auth struct {
-	repos UserRepos
+	repos repository.Repositories
 }
 
 // reusing UserRepos here
-func NewAuth(r UserRepos) Auth {
+func NewAuth(r repository.Repositories) Auth {
 	return &auth{r}
 }
 

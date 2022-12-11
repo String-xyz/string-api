@@ -42,7 +42,7 @@ type transactionInstruments struct {
 }
 
 type transaction struct {
-	repos            TransactionRepos
+	repos            repository.Repositories
 	redis            store.RedisStore
 	instruments      transactionInstruments
 	stringUserId     string
@@ -50,7 +50,7 @@ type transaction struct {
 	stringPlatformId string
 }
 
-func NewTransaction(repos TransactionRepos, redis store.RedisStore) Transaction {
+func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
 	return &transaction{repos: repos, redis: redis}
 }
 

@@ -25,15 +25,6 @@ type UserCreateResponse struct {
 	User model.User `json:"user"`
 }
 
-type UserRepos struct {
-	Auth         repository.AuthStrategy
-	User         repository.User
-	Contact      repository.Contact
-	Instrument   repository.Instrument
-	Device       repository.Device
-	UserPlatform repository.UserPlatform
-}
-
 type User interface {
 	//GetStatus returns the onboarding status of an user
 	GetStatus(userID string) (model.UserOnboardingStatus, error)
@@ -49,10 +40,10 @@ type User interface {
 }
 
 type user struct {
-	repos UserRepos
+	repos repository.Repositories
 }
 
-func NewUser(repos UserRepos) User {
+func NewUser(repos repository.Repositories) User {
 	return &user{repos: repos}
 }
 
@@ -118,6 +109,8 @@ func (u user) Create(request model.WalletSignaturePayload) (UserCreateResponse, 
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	// deviceService.RegisterNewUserDevice()
 
 	go u.createUnit21Entity(user)
 
