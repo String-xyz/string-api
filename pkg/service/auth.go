@@ -35,11 +35,11 @@ type JWTClaims struct {
 type Auth interface {
 	// PayloadToSign returns a payload to be sign by a wallet
 	// to authenticate an user, the payload expires in 15 minutes
-	PayloadToSign(walletAdress string) (model.WalletSignaturePayload, error)
+	PayloadToSign(walletAdress string) (string, error)
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signaure is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(model.WalletSignaturePayload) (UserCreateResponse, error)
+	VerifySignedPayload(model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
 	GenerateJWT(model.User) (JWT, error)
 	ValidateAPIKey(key string) bool
@@ -54,30 +54,35 @@ func NewAuth(r UserRepos) Auth {
 	return &auth{r}
 }
 
-func (a auth) PayloadToSign(walletAddress string) (model.WalletSignaturePayload, error) {
-	res := model.WalletSignaturePayload{}
+func (a auth) PayloadToSign(walletAddress string) (string, error) {
+	payload := model.WalletSignaturePayload{}
 	if !hexRegex.MatchString(walletAddress) {
-		return res, common.StringError(errors.New("missing or invalid address"))
+		return "", common.StringError(errors.New("missing or invalid address"))
 	}
-	res.Address = walletAddress
-	res.Timestamp = time.Now().Unix()
-	nonce, err := common.EVMSign(res)
+	payload.Address = walletAddress
+	payload.Timestamp = time.Now().Unix()
+	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	encrypted, err := common.Encrypt(payload, key)
 	if err != nil {
-		return res, common.StringError(err)
+		return "", common.StringError(err)
 	}
-	res.Nonce = nonce
-	return res, nil
+	return encrypted, nil
 }
 
-func (a auth) VerifySignedPayload(request model.WalletSignaturePayload) (UserCreateResponse, error) {
+func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
-	err := verifyWalletAuthentication(request)
+	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+	err = verifyWalletAuthentication(request)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWallet(request.Address)
+	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -134,30 +139,23 @@ func (a auth) ValidateAPIKey(key string) bool {
 	return authKey.Data == hashed
 }
 
-func verifyWalletAuthentication(request model.WalletSignaturePayload) error {
-	preUserSignature := request
-	preUserSignature.Signature = ""
-	preAPISignature := preUserSignature
-	preAPISignature.Nonce = ""
+func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
+	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	preSignedPayload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	if err != nil {
+		return common.StringError(err)
+	}
 	// Verify users signature
-	valid, err := common.ValidateExternalEVMSignature(request.Signature, request.Address, preUserSignature)
+	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, request.Nonce)
 	if err != nil {
 		return common.StringError(err)
 	}
 	if !valid {
 		return common.StringError(errors.New("user signature invalid"))
 	}
-	// Verify nonce
-	valid, err = common.ValidateEVMSignature(request.Nonce, preAPISignature)
-	if err != nil {
-		return common.StringError(err)
-	}
-	if !valid {
-		return common.StringError(errors.New("nonce invalid"))
-	}
 
 	// Verify timestamp is not expired past 15 minutes
-	if time.Now().Unix() > request.Timestamp+(15*60) {
+	if time.Now().Unix() > preSignedPayload.Timestamp+(15*60) {
 		return common.StringError(errors.New("login payload expired"))
 	}
 

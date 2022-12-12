@@ -1,6 +1,7 @@
 package service
 
 import (
+	"os"
 	"strings"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -41,7 +42,7 @@ type User interface {
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
-	Create(request model.WalletSignaturePayload) (UserCreateResponse, error)
+	Create(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
@@ -72,9 +73,15 @@ func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
 	return res, common.StringError(errors.New("not found"))
 }
 
-func (u user) Create(request model.WalletSignaturePayload) (UserCreateResponse, error) {
-	addr := request.Address
+func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
+	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
+	addr := payload.Address
 	if addr == "" {
 		return resp, common.StringError(errors.New("no wallet address provided"))
 	}
