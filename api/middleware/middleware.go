@@ -39,10 +39,13 @@ func LogRequest() echo.MiddlewareFunc {
 		LogStatus:    true,
 		LogRequestID: true,
 		LogLatency:   true,
+		LogMethod:    true,
+		LogHost:      true,
 		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
 			logger := c.Get("logger").(*zerolog.Logger)
 			logger.Info().
 				Str("URI", v.URI).
+				Str("Method", v.Method).
 				Int("status", v.Status).
 				Str("requestId", v.RequestID).
 				Str("host", v.Host).

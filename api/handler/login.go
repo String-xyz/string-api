@@ -9,98 +9,63 @@ import (
 )
 
 type Login interface {
-	Create(c echo.Context) error
-	ReceiveEmailAuthentication(c echo.Context) error
-	RequestWalletLogin(c echo.Context) error
-	ReceiveWalletLogin(c echo.Context) error
+	// NoncePayload send the user a nonce payload to be signed for authentication/login purpose
+	// User must provide a valid wallet address
+	NoncePayload(c echo.Context) error
+
+	//VerifySignature receives the signed noncePaylod and verifies the signature to authenticate the user.
+	VerifySignature(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
 type login struct {
-	Service service.User
+	Service service.Auth
 	Group   *echo.Group
 }
 
-func NewLogin(route *echo.Echo, service service.User) Login {
+func NewLogin(route *echo.Echo, service service.Auth) Login {
 	return &login{service, nil}
 }
 
-func (l login) Create(c echo.Context) error {
-	var body model.WalletSignaturePayload
-	err := c.Bind(&body)
-	if err != nil {
-		LogStringError(c, err, "login: receive wallet login bind")
-		return BadRequestError(c)
+func (l login) NoncePayload(c echo.Context) error {
+	walletAddress := c.QueryParam("walletAddress")
+	if walletAddress == "" {
+		return BadRequestError(c, "WalletAddress must be provided")
 	}
 
-	if err := c.Validate(body); err != nil {
-		LogStringError(c, err, "login: receive wallet login validate")
-		return InvalidPayloadError(c, err)
-	}
-
-	jwt, err := l.Service.Create(body)
-	if err != nil {
-		LogStringError(c, err, "login: receive wallet login")
-		return InternalError(c)
-	}
-
-	// set jwt in cookie
-	err = SetJWTCookie(c, jwt)
-	if err != nil {
-		LogStringError(c, err, "login: create set jwt cookie")
-		return InternalError(c)
-	}
-
-	return c.JSON(http.StatusOK, jwt)
-}
-
-func (l login) ReceiveEmailAuthentication(c echo.Context) error {
-	token := c.QueryParam("token")
-	err := l.Service.ReceiveEmailAuthentication(token)
-	if err != nil {
-		LogStringError(c, err, "login: receive email authentication")
-		return c.JSON(http.StatusBadRequest, JSONError{Message: "Invalid Token"})
-	}
-	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Authenticated"})
-}
-
-func (l login) RequestWalletLogin(c echo.Context) error {
-	var body model.UserRequest
-	err := c.Bind(&body)
-	if err != nil {
-		LogStringError(c, err, "login: request wallet login bind")
-		return BadRequestError(c)
-	}
-	payload, err := l.Service.RequestWalletLogin(body)
+	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
 		return InternalError(c)
 	}
+
 	return c.JSON(http.StatusOK, payload)
 }
 
-func (l login) ReceiveWalletLogin(c echo.Context) error {
+func (l login) VerifySignature(c echo.Context) error {
 	var body model.WalletSignaturePayload
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "login: receive wallet login bind")
+		LogStringError(c, err, "login: binding body")
 		return BadRequestError(c)
 	}
 
-	jwt, err := l.Service.ReceiveWalletLogin(body)
-	if err != nil {
-		LogStringError(c, err, "login: receive wallet login")
-		return InternalError(c)
+	if err := c.Validate(body); err != nil {
+		return InvalidPayloadError(c, err)
 	}
 
+	resp, err := l.Service.VerifySignedPayload(body)
+	if err != nil {
+		LogStringError(c, err, "login: verify signature")
+		return BadRequestError(c, "Invalid Payload")
+	}
 	// set jwt in cookie
-	err = SetJWTCookie(c, jwt)
+	err = SetJWTCookie(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "login: receive email set jwt cookie")
 		return InternalError(c)
 	}
-
-	return c.JSON(http.StatusOK, jwt)
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
@@ -109,8 +74,6 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	}
 	l.Group = g
 	g.Use(ms...)
-	g.GET("/email", l.ReceiveEmailAuthentication)
-	g.POST("/new", l.Create)
-	g.POST("/request", l.RequestWalletLogin)
-	g.POST("", l.ReceiveWalletLogin)
+	g.GET("", l.NoncePayload)
+	g.POST("/sign", l.VerifySignature)
 }

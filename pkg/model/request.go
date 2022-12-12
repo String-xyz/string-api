@@ -7,6 +7,9 @@ import (
 	"github.com/lib/pq"
 )
 
+type EntityType string
+type AuthType string
+
 type TransactionUpdates struct {
 	Type               *string         `json:"type" db:"type"`
 	Status             *string         `json:"status" db:"status"`
@@ -37,11 +40,6 @@ type UserRegister struct {
 	Password   string `json:"password"`
 }
 
-type CreatePlatform struct {
-	Type           string   `json:"type"`
-	Authentication AuthType `json:"authentication" db:"authentication"`
-}
-
 type UserEmailLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -57,11 +55,39 @@ type UserUpdates struct {
 	LastName      *string         `json:"lastName" db:"last_name"`
 }
 
+type UserPKLogin struct {
+	PublicAddress string `json:"publicAddress"`
+	Signature     string `json:"signature"`
+	Nonce         string `json:"nonce"`
+}
+
+// Can be used for user, instrument, etc
+type UserRequest struct {
+	WalletAddress string `json:"walletAddress" validate:"required"`
+	EmailAddress  string `json:"emailAddress" validate:"required,email"`
+	FirstName     string `json:"firstName" validate:"required"`
+	MiddleName    string `json:"middleName"`
+	LastName      string `json:"lastName"`
+	Signature     string `json:"signature,omitempty"`
+	Password      string `json:"password,omitempty"`
+}
+
+type UpdateUserName struct {
+	FirstName  string `json:"firstName" db:"first_name" validate:"required"`
+	MiddleName string `json:"middleName" db:"middle_name" validate:"required"`
+	LastName   string `json:"lastName" db:"last_name" validate:"required"`
+}
+
 type ContactUpdates struct {
 	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
 	Type          *string    `json:"type" db:"type"`
 	Status        *string    `json:"status" db:"status"`
 	Data          *string    `json:"data" db:"data"`
+}
+
+type CreatePlatform struct {
+	Type           string   `json:"type"`
+	Authentication AuthType `json:"authentication" db:"authentication"`
 }
 
 type PlaformContactUpdates struct {
@@ -71,32 +97,6 @@ type PlaformContactUpdates struct {
 	Data          *string    `json:"data" db:"data"`
 }
 
-type UserPKLogin struct {
-	PublicAddress string `json:"publicAddress"`
-	Signature     string `json:"signature"`
-	Nonce         string `json:"nonce"`
-}
-
-type UserRequest struct {
-	WalletAddress string `json:"walletAddress" validate:"required"`
-	EmailAddress  string `json:"emailAddress" validate:"required,email"`
-	FirstName     string `json:"firstName" validate:"required"`
-	MiddleName    string `json:"middleName"`
-	LastName      string `json:"lastName"`
-	Signature     string `json:"signature"`
-	Password      string `json:"password"`
-}
-
-// Can be used for user, instrument, etc
 type UpdateStatus struct {
 	Status *string `json:"status" db:"status"`
 }
-
-type UpdateUserName struct {
-	FirstName  string `json:"firstName" db:"first_name"`
-	MiddleName string `json:"middleName" db:"middle_name"`
-	LastName   string `json:"lastName" db:"last_name"`
-}
-
-type EntityType string
-type AuthType string
