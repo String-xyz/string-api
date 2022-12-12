@@ -137,7 +137,7 @@ func (u user) createUnit21Entity(user model.User) {
 		UserPlatform: u.repos.UserPlatform,
 	}
 
-	u21Entity := unit21.NewEntity(u21Repo)
+	u21Entity := unit21.NewEntity(u21Repo) // TODO: Make it an injected dependency
 	_, err := u21Entity.Create(user)
 	if err != nil {
 		log.Err(err).Msg("Error creating Entity in Unit21")
