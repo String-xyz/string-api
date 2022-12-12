@@ -6,7 +6,6 @@ type Services struct {
 	// Chain      Chain    // TODO: Make this service instantiable
 	// Checkout   Checkout // TODO: Make this service instantiable
 	Cost       Cost
-	Device     Device
 	Executor   Executor
 	Geofencing Geofencing
 	Platform   Platform

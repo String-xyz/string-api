@@ -32,7 +32,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	Auth := service.NewAuth(repos)
 	ApiKey := service.NewAPIKeyStrategy(repos.Auth)
 	Cost := service.NewCost(config.Redis)
-	Device := service.NewDeviceService()
 	Executor := service.NewExecutor()
 	Geofencing := service.NewGeofencing(config.Redis)
 
@@ -51,7 +50,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Auth:         Auth,
 		ApiKey:       ApiKey,
 		Cost:         Cost,
-		Device:       Device,
 		Executor:     Executor,
 		Geofencing:   Geofencing,
 		Platform:     Platform,
