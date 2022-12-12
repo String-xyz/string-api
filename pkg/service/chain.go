@@ -1,3 +1,5 @@
+// TODO: Make this service instantiable
+
 package service
 
 import (

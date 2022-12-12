@@ -22,12 +22,11 @@ type Verification interface {
 }
 
 type verification struct {
-	contact repository.Contact
-	user    repository.User
+	repos repository.Repositories
 }
 
-func NewVerification(contact repository.Contact, user repository.User) Verification {
-	return &verification{contact: contact, user: user}
+func NewVerification(repos repository.Repositories) Verification {
+	return &verification{repos}
 }
 
 func (v verification) SendEmailVerification(userID, email string) error {
@@ -35,12 +34,12 @@ func (v verification) SendEmailVerification(userID, email string) error {
 		return common.StringError(errors.New("missing or invalid email"))
 	}
 
-	user, err := v.user.GetById(userID)
+	user, err := v.repos.User.GetById(userID)
 	if err != nil || user.ID != userID {
 		return common.StringError(errors.New("invalid or expired JWT"))
 	}
 
-	contact, _ := v.contact.GetByData(email)
+	contact, _ := v.repos.Contact.GetByData(email)
 	if contact.Status == "validated" {
 		return common.StringError(errors.New("email is already authenticated"))
 	}
@@ -76,7 +75,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 			continue // throttle following logic in 3 second interval
 		}
 		lastPolled = now
-		contact, err := v.contact.GetByData(email)
+		contact, err := v.repos.Contact.GetByData(email)
 		if err != nil && errors.Cause(err).Error() != "not found" {
 			return common.StringError(err)
 		} else if err == nil && contact.Data == email {
@@ -99,6 +98,6 @@ func (v verification) VerifyEmail(encrypted string) error {
 		return common.StringError(errors.New("link expired"))
 	}
 	contact := model.Contact{UserID: received.UserID, Type: "email", Status: "validated", Data: received.Email}
-	contact, _ = v.contact.Create(contact)
+	contact, _ = v.repos.Contact.Create(contact)
 	return nil
 }

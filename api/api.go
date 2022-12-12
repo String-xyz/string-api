@@ -6,7 +6,6 @@ import (
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 	"github.com/String-xyz/string-api/api/validator"
-	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
@@ -35,22 +34,18 @@ func Start(config APIConfig) {
 	e.Use(middleware.Georestrict(geofencingService))
 
 	e.GET("/heartbeat", heartbeat)
-	repos := service.UserRepos{
-		Auth:         repository.NewAuth(config.Redis, config.DB),
-		User:         repository.NewUser(config.DB),
-		Contact:      repository.NewContact(config.DB),
-		Instrument:   repository.NewInstrument(config.DB),
-		Device:       repository.NewDevice(config.DB),
-		UserPlatform: repository.NewUserPlatform(config.DB),
-	}
-	authService := service.NewAuth(repos)
 
-	AuthAPIKey(config, e, true)
-	transactRoute(config, authService, e)
-	quoteRoute(config, authService, e)
-	userRoute(config, authService, e)
-	loginRoute(config, e)
-	verificationRoute(config, e)
+	// initialize route dependencies
+	repos := NewRepos(config)
+	services := NewServices(config, repos)
+
+	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
+	AuthAPIKey(services, e, true)
+	transactRoute(services, e)
+	quoteRoute(services, e)
+	userRoute(services, e)
+	loginRoute(services, e)
+	verificationRoute(services, e)
 
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -60,8 +55,14 @@ func StartInternal(config APIConfig) {
 	e.Validator = validator.New()
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
-	platformRoute(config, e)
-	AuthAPIKey(config, e, true)
+
+	// initialize route dependencies
+	repos := NewRepos(config)
+	services := NewServices(config, repos)
+
+	// initialize routes - A route group only needs access to the services layer. It doesn't need access to the repos layer
+	platformRoute(services, e)
+	AuthAPIKey(services, e, true)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -74,91 +75,37 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.LogRequest())
 }
 
-func platformRoute(config APIConfig, e *echo.Echo) {
-	p := repository.NewPlatform(config.DB)
-	a := repository.NewAuth(config.Redis, config.DB)
-	c := repository.NewContact(config.DB)
-	service := service.NewPlatform(p, c, a)
-	handler := handler.NewPlatform(service)
+func platformRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewPlatform(services.Platform)
 	handler.RegisterRoutes(e.Group("/platforms"), middleware.BearerAuth())
 }
 
-func AuthAPIKey(config APIConfig, e *echo.Echo, internal bool) {
-	a := repository.NewAuth(config.Redis, config.DB)
-	service := service.NewAPIKeyStrategy(a)
-	handler := handler.NewAuthAPIKey(service, internal)
+func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
+	handler := handler.NewAuthAPIKey(services.ApiKey, internal)
 	handler.RegisterRoutes(e.Group("/apikeys"))
 }
 
-func transactRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
-	repos := service.TransactionRepos{
-		Asset:       repository.NewAsset(config.DB),
-		Network:     repository.NewNetwork(config.DB),
-		Transaction: repository.NewTransaction(config.DB),
-		TxLeg:       repository.NewTxLeg(config.DB),
-		User:        repository.NewUser(config.DB),
-		Instrument:  repository.NewInstrument(config.DB),
-		Device:      repository.NewDevice(config.DB),
-		Location:    repository.NewLocation(config.DB),
-		Contact:     repository.NewContact(config.DB),
-	}
-	service := service.NewTransaction(repos, config.Redis)
-	handler := handler.NewTransaction(e, service)
-	handler.RegisterRoutes(e.Group("/transactions"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
+func transactRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewTransaction(e, services.Transaction)
+	handler.RegisterRoutes(e.Group("/transactions"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
 }
 
-func userRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
-	repos := service.UserRepos{
-		Auth:         repository.NewAuth(config.Redis, config.DB),
-		User:         repository.NewUser(config.DB),
-		Contact:      repository.NewContact(config.DB),
-		Instrument:   repository.NewInstrument(config.DB),
-		Device:       repository.NewDevice(config.DB),
-		UserPlatform: repository.NewUserPlatform(config.DB),
-	}
-	user := service.NewUser(repos)
-	verification := service.NewVerification(repos.Contact, repos.User)
-	handler := handler.NewUser(e, user, verification)
-	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
+func userRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewUser(e, services.User, services.Verification)
+	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
 }
 
-func loginRoute(config APIConfig, e *echo.Echo) {
-	repos := service.UserRepos{
-		Auth:         repository.NewAuth(config.Redis, config.DB),
-		User:         repository.NewUser(config.DB),
-		Contact:      repository.NewContact(config.DB),
-		Instrument:   repository.NewInstrument(config.DB),
-		Device:       repository.NewDevice(config.DB),
-		UserPlatform: repository.NewUserPlatform(config.DB),
-	}
-
-	service := service.NewAuth(repos)
-	handler := handler.NewLogin(e, service)
+func loginRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewLogin(e, services.Auth)
 	handler.RegisterRoutes(e.Group("/login"))
 }
 
-func verificationRoute(config APIConfig, e *echo.Echo) {
-	user := repository.NewUser(config.DB)
-	contact := repository.NewContact(config.DB)
-
-	verification := service.NewVerification(contact, user)
-	handler := handler.NewVerification(e, verification)
+func verificationRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewVerification(e, services.Verification)
 	handler.RegisterRoutes(e.Group("/verification"))
 }
 
-func quoteRoute(config APIConfig, auth service.Auth, e *echo.Echo) {
-	repos := service.TransactionRepos{
-		Asset:       repository.NewAsset(config.DB),
-		Network:     repository.NewNetwork(config.DB),
-		Transaction: repository.NewTransaction(config.DB),
-		TxLeg:       repository.NewTxLeg(config.DB),
-		User:        repository.NewUser(config.DB),
-		Instrument:  repository.NewInstrument(config.DB),
-		Device:      repository.NewDevice(config.DB),
-		Location:    repository.NewLocation(config.DB),
-		Contact:     repository.NewContact(config.DB),
-	}
-	service := service.NewTransaction(repos, config.Redis)
-	handler := handler.NewQuote(e, service)
-	handler.RegisterRoutes(e.Group("/quotes"), middleware.APIKeyAuth(auth), middleware.BearerAuth())
+func quoteRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewQuote(e, services.Transaction)
+	handler.RegisterRoutes(e.Group("/quotes"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
 }
