@@ -138,7 +138,6 @@ func loginRoute(config APIConfig, e *echo.Echo) {
 }
 
 func verificationRoute(config APIConfig, e *echo.Echo) {
-
 	user := repository.NewUser(config.DB)
 	contact := repository.NewContact(config.DB)
 

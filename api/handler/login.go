@@ -57,7 +57,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	resp, err := l.Service.VerifySignedPayload(body)
 	if err != nil {
 		LogStringError(c, err, "login: verify signature")
-		return c.String(http.StatusBadRequest, "Invalid Payload")
+		return BadRequestError(c, "Invalid Payload")
 	}
 	// set jwt in cookie
 	err = SetJWTCookie(c, resp.JWT)
