@@ -23,11 +23,12 @@ type ResultMessage struct {
 type user struct {
 	userService         service.User
 	verificationService service.Verification
+	deviceService       service.Device
 	Group               *echo.Group
 }
 
-func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Verification) User {
-	return &user{userSrv, verificationSrv, nil}
+func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Verification, deviceService service.Device) User {
+	return &user{userSrv, verificationSrv, deviceService, nil}
 }
 
 func (u user) Create(c echo.Context) error {
@@ -42,6 +43,7 @@ func (u user) Create(c echo.Context) error {
 		return InvalidPayloadError(c, err)
 	}
 
+	// u.deviceService.IsDeviceAllowed()
 	resp, err := u.userService.Create(body)
 	if err != nil {
 		LogStringError(c, err, "user: creating user")

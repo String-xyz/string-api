@@ -91,7 +91,7 @@ func transactRoute(services service.Services, e *echo.Echo) {
 }
 
 func userRoute(services service.Services, e *echo.Echo) {
-	handler := handler.NewUser(e, services.User, services.Verification)
+	handler := handler.NewUser(e, services.User, services.Verification, services.Device)
 	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
 }
 

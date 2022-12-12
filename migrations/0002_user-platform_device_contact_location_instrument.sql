@@ -22,7 +22,6 @@ CREATE TABLE device (
   type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   description TEXT DEFAULT '',
   fingerprint TEXT DEFAULT '',
-  ip_addresses TEXT[] DEFAULT NULL,
   user_id UUID NOT NULL REFERENCES string_user (id)
 );
 
@@ -31,6 +30,8 @@ CREATE OR REPLACE TRIGGER update_device_updated_at
     ON device
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE UNIQUE INDEX device_fingerprint_idx ON device(fingerprint);
 
 -------------------------------------------------------------------------
 -- CONTACT ---------------------------------------------------------------

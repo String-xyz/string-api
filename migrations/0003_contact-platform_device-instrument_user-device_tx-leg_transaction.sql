@@ -20,6 +20,15 @@ CREATE TABLE device_instrument (
 CREATE UNIQUE INDEX device_instrument_device_id_instrument_id_idx ON device_instrument(device_id, instrument_id);
 
 -------------------------------------------------------------------------
+-- USER_DEVICE -----------------------------------------------------
+CREATE TABLE user_device (
+  user_id UUID REFERENCES string_user (id),
+  device_id UUID REFERENCES device (id)
+);
+
+CREATE UNIQUE INDEX user_device_user_id_device_id_idx ON user_device(user_id, device_id);
+
+-------------------------------------------------------------------------
 -- TX_LEG ---------------------------------------------------------------
 CREATE TABLE tx_leg (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(), -- unique identifier for the TX leg which we generate
@@ -99,6 +108,10 @@ DROP TABLE IF EXISTS transaction;
 -- TX_LEG ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_tx_leg_updated_at ON tx_leg;
 DROP TABLE IF EXISTS tx_leg;
+
+-------------------------------------------------------------------------
+-- USER_DEVICE -----------------------------------------------------
+DROP TABLE IF EXISTS user_device;
 
 -------------------------------------------------------------------------
 -- DEVICE_INSTRUMENT ----------------------------------------------------
