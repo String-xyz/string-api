@@ -13,11 +13,11 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	obj1 := "Your Public Key Here"
+	obj1 := "Your String Here"
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
-	fmt.Printf("\nPublic Key Signature: %+v\n", obj1Signed)
+	fmt.Printf("\nString Signature: %+v\n", obj1Signed)
 	valid, err := ValidateEVMSignature(obj1Signed, obj1)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
@@ -27,7 +27,7 @@ func TestSignAndValidateStruct(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	// Paste the JSON output properties from wallet login request here
+	// Paste the JSON output properties from whatever struct here
 	obj1 := model.WalletSignaturePayload{
 		Address:   "0xPasteYourAddressHere",
 		Timestamp: 1010101010,
@@ -35,7 +35,7 @@ func TestSignAndValidateStruct(t *testing.T) {
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)
-	fmt.Printf("\nLogin Signature: %+v\n", obj1Signed)
+	fmt.Printf("\nStruct Signature: %+v\n", obj1Signed)
 	valid, err := ValidateExternalEVMSignature(obj1Signed, obj1.Address, obj1)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
