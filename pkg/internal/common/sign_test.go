@@ -31,7 +31,6 @@ func TestSignAndValidateStruct(t *testing.T) {
 	obj1 := model.WalletSignaturePayload{
 		Address:   "0xPasteYourAddressHere",
 		Timestamp: 1010101010,
-		Nonce:     "0xPasteNonceHere",
 	}
 
 	obj1Signed, err := EVMSign(obj1)
