@@ -23,6 +23,7 @@ type Repositories struct {
 	UserPlatform UserPlatform
 	Asset        Asset
 	Network      Network
+	Platform     Platform
 	Transaction  Transaction
 	TxLeg        TxLeg
 	Location     Location

@@ -13,13 +13,11 @@ type Platform interface {
 }
 
 type platform struct {
-	platRepo    repository.Platform
-	contactRepo repository.Contact
-	authRepo    repository.AuthStrategy
+	repos repository.Repositories
 }
 
-func NewPlatform(p repository.Platform, c repository.Contact, a repository.AuthStrategy) Platform {
-	return &platform{p, c, a}
+func NewPlatform(repos repository.Repositories) Platform {
+	return &platform{repos}
 }
 
 func (a platform) Create(c CreatePlatform) (model.Platform, error) {
@@ -32,12 +30,12 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 		Status:         "pending",
 	}
 
-	plat, err := a.platRepo.Create(m)
+	plat, err := a.repos.Platform.Create(m)
 	if err != nil {
 		return model.Platform{}, common.StringError(err)
 	}
 
-	err = a.authRepo.CreateAPIKey(plat.ID, c.Authentication, hashed, false)
+	err = a.repos.Auth.CreateAPIKey(plat.ID, c.Authentication, hashed, false)
 	pt := &plat
 	pt.ApiKey = uuiKey
 	if err != nil {
