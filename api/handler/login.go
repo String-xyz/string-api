@@ -59,7 +59,9 @@ func (l login) VerifySignature(c echo.Context) error {
 		LogStringError(c, err, "login: verify signature")
 		return BadRequestError(c, "Invalid Payload")
 	}
-
+   if err := c.Validate(body); err != nil {
+		return InvalidPayloadError(c, err)
+	}
 	// set jwt in cookie
 	err = SetJWTCookie(c, resp.JWT)
 	if err != nil {
