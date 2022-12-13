@@ -31,7 +31,7 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 }
 
 func (u user) Create(c echo.Context) error {
-	var body model.WalletSignaturePayload
+	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "user:create user bind")

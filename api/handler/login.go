@@ -43,7 +43,7 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
-	var body model.WalletSignaturePayload
+	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: binding body")
