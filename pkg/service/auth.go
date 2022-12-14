@@ -20,7 +20,7 @@ type UserLoginEmail = model.UserEmailLogin
 type UserPKLogin = model.UserPKLogin
 
 type SignablePayload struct {
-	Payload string `json:"payload"`
+	Nonce string `json:"payload"`
 }
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
@@ -73,7 +73,7 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	if err != nil {
 		return signable, common.StringError(err)
 	}
-	return SignablePayload{Payload: encrypted}, nil
+	return SignablePayload{encrypted}, nil
 }
 
 func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
