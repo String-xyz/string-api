@@ -20,7 +20,7 @@ type UserLoginEmail = model.UserEmailLogin
 type UserPKLogin = model.UserPKLogin
 
 type SignablePayload struct {
-	Nonce string `json:"payload"`
+	Nonce string `json:"nonce"`
 }
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
