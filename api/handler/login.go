@@ -39,7 +39,7 @@ func (l login) NoncePayload(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	return c.JSON(http.StatusOK, payload)
+	return c.JSON(http.StatusOK, map[string]string{"encodedPayload": payload})
 }
 
 func (l login) VerifySignature(c echo.Context) error {
