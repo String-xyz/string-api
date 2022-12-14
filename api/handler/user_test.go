@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -20,11 +19,9 @@ func TestStatus200CreateUser(t *testing.T) {
 	e := echo.New()
 	e.Validator = validator.New()
 
-	body := model.WalletSignaturePayload{
-		Address:   testWalletAddress,
+	body := model.WalletSignaturePayloadSigned{
 		Nonce:     testNonce,
 		Signature: testSignature,
-		Timestamp: time.Now().Unix(),
 	}
 	jsonBody, err := json.Marshal(body)
 	assert.NoError(t, err)
