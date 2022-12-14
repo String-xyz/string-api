@@ -46,7 +46,7 @@ func (u User) GetStatus(ID string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
 
-func (u User) Create(request model.WalletSignaturePayload) (service.UserCreateResponse, error) {
+func (u User) Create(request model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
 	return u.UserCreateResponse, u.Error
 }
 
@@ -56,14 +56,14 @@ func (u User) Update(userID string, request service.UserUpdates) (model.User, er
 
 // Auth Service Stub
 type Auth struct {
-	WalletSignedPayload model.WalletSignaturePayload
-	UserCreateResponse  service.UserCreateResponse
-	JWT                 service.JWT
-	Error               error
+	SignablePayload    service.SignablePayload
+	UserCreateResponse service.UserCreateResponse
+	JWT                service.JWT
+	Error              error
 }
 
-func (a *Auth) SetWalletSignedPayload(m model.WalletSignaturePayload) {
-	a.WalletSignedPayload = m
+func (a *Auth) SetWalletSignedPayload(m service.SignablePayload) {
+	a.SignablePayload = m
 }
 
 func (a *Auth) SetUserCreateResponse(resp service.UserCreateResponse) {
@@ -78,11 +78,11 @@ func (a *Auth) SetError(e error) {
 	a.Error = e
 }
 
-func (a Auth) PayloadToSign(walletAdress string) (model.WalletSignaturePayload, error) {
-	return a.WalletSignedPayload, a.Error
+func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error) {
+	return a.SignablePayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(model.WalletSignaturePayload) (service.UserCreateResponse, error) {
+func (a Auth) VerifySignedPayload(model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
 	return a.UserCreateResponse, a.Error
 }
 
