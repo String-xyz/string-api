@@ -28,8 +28,8 @@ func NewAsset(db *sqlx.DB) Asset {
 func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
 	m := model.Asset{}
 	rows, err := a.store.NamedQuery(`
-		INSERT INTO asset (name) 
-		VALUES(:name) 	RETURNING *`, insert)
+		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle) 
+		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle) 	RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}

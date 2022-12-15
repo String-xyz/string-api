@@ -74,8 +74,8 @@ type Device struct {
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
 	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
-	ValidatedAt   time.Time      `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt time.Time      `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	ValidatedAt   *time.Time     `json:"validatedAt" db:"validated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type          string         `json:"type" db:"type"`
 	Description   string         `json:"description" db:"description"`
 	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
