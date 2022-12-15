@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -116,10 +115,10 @@ func main() {
 
 	// Devices, pointless
 	/*deviceDeveloper*/
-	_, err = repos.Device.Create(model.Device{LastUsedAt: time.Now(), Type: "Admin", Description: "Developer Laptop", UserID: userString.ID})
-	if err != nil {
-		panic(err)
-	}
+	// _, err = repos.Device.Create(model.Device{LastUsedAt: time.Now(), Type: "Admin", Description: "Developer Laptop", UserID: userString.ID})
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
@@ -134,10 +133,10 @@ func main() {
 
 	// Platforms, pointless
 	/*platformDeveloper*/
-	_, err = repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Developer", Authentication: "Email"})
-	if err != nil {
-		panic(err)
-	}
+	// _, err = repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Developer", Authentication: "Email"})
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 }
 
