@@ -134,7 +134,8 @@ func dataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	/*instrumentDeveloperWallet*/ _, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	/*instrumentDeveloperWallet*/
+	_, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
@@ -251,7 +252,8 @@ func mockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	/*instrumentDeveloperWallet*/ _, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	/*instrumentDeveloperWallet*/
+	_, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
