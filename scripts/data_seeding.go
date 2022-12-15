@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -13,7 +14,7 @@ import (
 )
 
 // Set this!
-const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286770"
+const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286771"
 
 func main() {
 	// Initialize repos
@@ -113,12 +114,12 @@ func main() {
 		panic(err)
 	}
 
-	// Devices, pointless
+	// Devices, this is used in TX LEG
 	/*deviceDeveloper*/
-	// _, err = repos.Device.Create(model.Device{LastUsedAt: time.Now(), Type: "Admin", Description: "Developer Laptop", UserID: userString.ID})
-	// if err != nil {
-	// 	panic(err)
-	// }
+	_, err = repos.Device.Create(model.Device{LastUsedAt: time.Now(), Type: "Admin", Description: "Developer Laptop", UserID: userString.ID})
+	if err != nil {
+		panic(err)
+	}
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
