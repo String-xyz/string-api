@@ -17,7 +17,10 @@ import (
 const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286771"
 
 func main() {
-	env := os.Args[1]
+	var env string
+	if len(os.Args) > 1 {
+		env = os.Args[1]
+	}
 	if env == "local" {
 		fmt.Printf("\n\nSeeding Mock Data")
 		mockSeeding()
