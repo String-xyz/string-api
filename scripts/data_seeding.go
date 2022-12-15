@@ -91,7 +91,8 @@ func dataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	/*assetUSD*/ _, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
+	/*assetUSD*/
+	_, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
 	if err != nil {
 		panic(err)
 	}
@@ -202,7 +203,8 @@ func mockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	/*assetUSD*/ _, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
+	/*assetUSD*/
+	_, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
 	if err != nil {
 		panic(err)
 	}
