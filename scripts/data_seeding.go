@@ -17,11 +17,12 @@ import (
 const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286771"
 
 func main() {
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	env := os.Getenv("ENV")
+	env := os.Args[1]
 	if env == "local" {
+		fmt.Printf("\n\nSeeding Mock Data")
 		mockSeeding()
 	} else {
+		fmt.Printf("\n\nSeeding Production Data")
 		dataSeeding()
 	}
 }
@@ -126,7 +127,7 @@ func dataSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Merchant Account", Status: "Live", Network: "Checkout.com", UserID: userString.ID})
+	_, err = repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
@@ -243,7 +244,7 @@ func mockSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Merchant Account", Status: "Live", Network: "Checkout.com", UserID: userString.ID})
+	_, err = repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
