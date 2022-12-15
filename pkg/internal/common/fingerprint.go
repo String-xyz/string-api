@@ -2,10 +2,11 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -31,6 +32,11 @@ type FPVisitIpLocation struct {
 		Name string `json:"name"`
 	} `json:"city"`
 
+	Coutry struct {
+		Code string `json:"code"`
+		Name string `json:"name"`
+	} `json:"country"`
+
 	Continent struct {
 		Code string `json:"code"`
 		Name string `json:"name"`
@@ -49,8 +55,8 @@ type FPVisitorVisit struct {
 	RequestID  string            `json:"requestId"`
 	Incognito  bool              `json:"incognito"`
 	LinkedId   string            `json:"linkedId"`
-	Time       time.Time         `json:"time"`
-	Timestamp  time.Time         `json:"timestamp"`
+	Time       string            `json:"time"`
+	Timestamp  int64             `json:"timestamp"`
 	URL        string            `json:"url"`
 	IP         string            `json:"ip"`
 	IPLocation FPVisitIpLocation `json:"ipLocation"`
@@ -69,28 +75,46 @@ type HTTPConfig struct {
 	Timeout time.Duration
 }
 
-type Fingerprint struct {
-	apiKey  string
-	client  HTTPClient
-	baseURL string
+type FPVisitorOpts struct {
+	Limit     int
+	RequestID string
+	LinkedID  string
 }
 
 func NewHTTPClient(config HTTPConfig) HTTPClient {
 	return &http.Client{Timeout: config.Timeout}
 }
 
-func NewFingerprint(client HTTPClient) *Fingerprint {
-	apiKey := os.Getenv("FINGERPRINT_API_KEY")
-	return &Fingerprint{client: client, apiKey: apiKey, baseURL: "https://api.fpjs.io/"}
+type FingerprintClient interface {
+	// GetVisitorByID get the fingerprint visitor by its id
+	// it returns the most up to date information for the  visitor
+	// The limit should always be 1 so we can get the latest information
+	GetVisitorByID(VisitorID string, opts FPVisitorOpts) (FPVisitor, error)
+	Request(method, url string, body io.Reader) (*http.Request, error)
 }
 
-func (f Fingerprint) GetVisitorByID(visitonID string) (FPVisitor, error) {
+type fingerprint struct {
+	apiKey  string
+	client  HTTPClient
+	baseURL string
+}
+
+func NewFingerprint(client HTTPClient) FingerprintClient {
+	apiKey := os.Getenv("FINGERPRINT_API_KEY")
+	return &fingerprint{client: client, apiKey: apiKey, baseURL: "https://api.fpjs.io/"}
+}
+
+func (f fingerprint) GetVisitorByID(visitonID string, opts FPVisitorOpts) (FPVisitor, error) {
 	m := FPVisitor{}
-	r, err := http.NewRequest(http.MethodGet, f.pathWithKey("visitors/"+visitonID), nil)
+	r, err := f.Request(http.MethodGet, f.baseURL+"visitors/"+visitonID, nil)
 	if err != nil {
 		return m, err
 	}
-	r.Header.Add("Accept", "application/json")
+
+	q := f.optionsToQuery(opts)
+	if len(q) > 0 {
+		r.URL.RawQuery = q.Encode()
+	}
 	res, err := f.client.Do(r)
 	if err != nil {
 		return m, err
@@ -105,8 +129,28 @@ func (f Fingerprint) GetVisitorByID(visitonID string) (FPVisitor, error) {
 	return parseJSON[FPVisitor](body)
 }
 
-func (f Fingerprint) pathWithKey(path string) string {
-	return fmt.Sprintf("%s%s?api_key=%s", f.baseURL, path, f.apiKey)
+func (f fingerprint) Request(method, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	req.Header.Add("Auth-API-Key", f.apiKey)
+	req.Header.Add("Accept", "application/json")
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
+	return req, err
+}
+
+func (f fingerprint) optionsToQuery(opts FPVisitorOpts) url.Values {
+	q := url.Values{}
+	if opts.Limit != 0 {
+		q.Add("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.RequestID != "" {
+		q.Add("request_id", opts.RequestID)
+	}
+	if opts.LinkedID != "" {
+		q.Add("linked_id", opts.LinkedID)
+	}
+	return q
 }
 
 func parseJSON[T any](b []byte) (T, error) {
