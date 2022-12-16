@@ -100,3 +100,7 @@ type PlaformContactUpdates struct {
 type UpdateStatus struct {
 	Status *string `json:"status" db:"status"`
 }
+
+type NetworkUpdates struct {
+	GasTokenID *string `json:"gasTokenId" db:"gas_token_id"`
+}

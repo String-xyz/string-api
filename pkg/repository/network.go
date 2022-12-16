@@ -28,14 +28,14 @@ func NewNetwork(db *sqlx.DB) Network {
 func (n network[T]) Create(insert model.Network) (model.Network, error) {
 	m := model.Network{}
 	rows, err := n.store.NamedQuery(`
-		INSERT INTO network (name) 
-		VALUES(:name) 	RETURNING *`, insert)
-
-	defer rows.Close()
+		INSERT INTO network (name, network_id, chain_id, gas_oracle, rpc_url, explorer_url) 
+		VALUES(:name, :network_id, :chain_id, :gas_oracle, :rpc_url, :explorer_url) 	RETURNING *`, insert)
 
 	if err != nil {
 		return m, common.StringError(err)
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		err = rows.StructScan(&m)
