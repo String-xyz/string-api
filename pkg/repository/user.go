@@ -74,7 +74,7 @@ func (u user[T]) Update(ID string, updates any) (model.User, error) {
 
 func (u user[T]) GetByType(label string) (model.User, error) {
 	m := model.User{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE type = $1", u.table), label)
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE type = $1 LIMIT 1", u.table), label)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	} else if err != nil {
