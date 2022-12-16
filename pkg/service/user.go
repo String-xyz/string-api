@@ -147,6 +147,7 @@ func (u user) createUserData(addr, visitorID, requstID string) (model.User, erro
 	if _, err := u.repos.Device.Create(model.Device{
 		Fingerprint: visitorID,
 		UserID:      user.ID,
+		Type:        visitor.OsType,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
 	}); err != nil {
 		u.repos.Device.Rollback()
