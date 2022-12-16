@@ -70,7 +70,7 @@ func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error
 
 func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Merchant Account'", i.table), userId)
+	err := i.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Bank Account'", i.table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	} else if err != nil {

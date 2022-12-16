@@ -25,8 +25,8 @@ func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, err
 	m := model.Transaction{}
 	// TODO: Add platform_id once it becomes available
 	rows, err := t.store.NamedQuery(`
-		INSERT INTO transaction (status, network_id, device_id)
-		VALUES(:status, :network_id, :device_id) 	RETURNING id`, insert)
+		INSERT INTO transaction (status, network_id, device_id, platform_id)
+		VALUES(:status, :network_id, :device_id, :platform_id) 	RETURNING id`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}

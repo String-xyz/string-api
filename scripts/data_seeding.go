@@ -260,12 +260,12 @@ func mockSeeding() {
 		panic(err)
 	}
 
-	// Platforms, pointless
+	// Platforms, placeholder
 	/*platformDeveloper*/
-	// _, err = repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Developer", Authentication: "Email"})
-	// if err != nil {
-	// 	panic(err)
-	// }
+	_, err = repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
+	if err != nil {
+		panic(err)
+	}
 
 }
 

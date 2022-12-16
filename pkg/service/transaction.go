@@ -37,11 +37,11 @@ type TransactionRepos struct {
 }
 
 type InternalIds struct {
-	StringBankId   string
-	StringWalletId string
-	stringUserId   string
-	stringDeviceId string
-	// stringPlatformId string
+	StringBankId     string `json:"stringBankId" db:"string_bank_id"`
+	StringWalletId   string `json:"stringWalletId" db:"string_wallet_id"`
+	StringUserId     string `json:"stringUserId" db:"string_user_id"`
+	StringDeviceId   string `json:"stringDeviceId" db:"string_device_id"`
+	StringPlatformId string `json:"stringPlatformId" db:"string_platform_id"` // temporary
 }
 
 type transaction struct {
@@ -86,8 +86,11 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 }
 
 func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error) {
-	t.getStringInstrumentsAndUserId()
 	res := model.TransactionReceipt{}
+	err := t.getStringInstrumentsAndUserId()
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
 	user, err := t.repos.User.GetById(userId)
 	if err != nil {
@@ -104,7 +107,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.ids.stringDeviceId /*, PlatformID: t.uuids.stringPlatformId*/})
+	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.ids.StringDeviceId, PlatformID: t.ids.StringPlatformId})
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -477,7 +480,7 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 		Amount:       usdWei,
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
-		UserID:       t.ids.stringUserId,
+		UserID:       t.ids.StringUserId,
 		InstrumentID: t.ids.StringBankId,
 	}
 	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)

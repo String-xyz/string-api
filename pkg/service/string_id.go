@@ -33,14 +33,21 @@ func GetStringIds(repos repository.Repositories, redis store.RedisStore) (Intern
 			return empty, common.StringError(err)
 		}
 
-		ids = InternalIds{
-			stringUserId:   user.ID,
-			stringDeviceId: device.ID,
-			// stringPlatformId: "",
-			StringBankId:   bank.ID,
-			StringWalletId: wallet.ID,
+		platform, err := repos.Platform.GetByApiKey("Internal")
+		if err != nil {
+			return empty, common.StringError(err)
 		}
+
+		ids = InternalIds{
+			StringUserId:     user.ID,
+			StringDeviceId:   device.ID,
+			StringPlatformId: platform.ID, // temporary
+			StringBankId:     bank.ID,
+			StringWalletId:   wallet.ID,
+		}
+
 		err = store.PutObjectInCache(redis, "internal_ids", ids)
+
 		if err != nil {
 			return empty, common.StringError(err)
 		}
