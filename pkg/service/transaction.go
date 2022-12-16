@@ -36,18 +36,18 @@ type TransactionRepos struct {
 	Contact     repository.Contact
 }
 
-type transactionInstruments struct {
+type InternalUUIDs struct {
 	StringBankId   string
 	StringWalletId string
+	stringUserId   string
+	stringDeviceId string
+	// stringPlatformId string
 }
 
 type transaction struct {
-	repos            repository.Repositories
-	redis            store.RedisStore
-	instruments      transactionInstruments
-	stringUserId     string
-	stringDeviceId   string
-	stringPlatformId string
+	repos repository.Repositories
+	redis store.RedisStore
+	uuids InternalUUIDs
 }
 
 func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
@@ -104,7 +104,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.stringDeviceId, PlatformID: t.stringPlatformId})
+	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.uuids.stringDeviceId /*, PlatformID: t.uuids.stringPlatformId*/})
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -228,12 +228,11 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() error {
-	// TODO: Look up our instruments and user ID from db
-	t.instruments.StringBankId = "13438963-f5e7-47c4-a790-ebca3e3bf915"
-	t.instruments.StringWalletId = "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c"
-	t.stringUserId = "0e837b73-55cf-43ff-9b1e-0d8258eec978"
-	t.stringDeviceId = "073f5a88-9223-4554-a7ce-11d358123a21"
-	t.stringPlatformId = "54a7e062-4cec-44f3-9d89-99498d0eb6ef"
+	uuids, err := GetStringUUIDs(t.repos, t.redis)
+	if err != nil {
+		return common.StringError(err)
+	}
+	t.uuids = uuids
 	return nil
 }
 
@@ -442,7 +441,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 		Value:        usd,
 		AssetID:      chargeAsset.ID,
 		UserID:       userId,
-		InstrumentID: t.instruments.StringWalletId,
+		InstrumentID: t.uuids.StringWalletId,
 	}
 	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
 	if err != nil {
@@ -478,8 +477,8 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 		Amount:       usdWei,
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
-		UserID:       t.stringUserId,
-		InstrumentID: t.instruments.StringBankId,
+		UserID:       t.uuids.stringUserId,
+		InstrumentID: t.uuids.StringBankId,
 	}
 	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
 	if err != nil {
