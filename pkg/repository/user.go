@@ -77,6 +77,8 @@ func (u user[T]) GetByType(label string) (model.User, error) {
 	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE type = $1", u.table), label)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
+	} else if err != nil {
+		return m, common.StringError(err)
 	}
 	return m, nil
 }

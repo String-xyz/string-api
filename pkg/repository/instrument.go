@@ -51,6 +51,8 @@ func (i instrument[T]) GetWallet(addr string) (model.Instrument, error) {
 	err := i.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE public_key = $1", i.table), addr)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
+	} else if err != nil {
+		return m, common.StringError(err)
 	}
 	return m, nil
 }
@@ -60,6 +62,8 @@ func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error
 	err := i.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Crypto Wallet'", i.table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
+	} else if err != nil {
+		return m, common.StringError(err)
 	}
 	return m, nil
 }
@@ -69,6 +73,8 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 	err := i.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Merchant Account'", i.table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
+	} else if err != nil {
+		return m, common.StringError(err)
 	}
 	return m, nil
 }

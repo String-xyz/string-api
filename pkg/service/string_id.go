@@ -6,13 +6,13 @@ import (
 	"github.com/String-xyz/string-api/pkg/store"
 )
 
-func GetStringUUIDs(repos repository.Repositories, redis store.RedisStore) (InternalUUIDs, error) {
-	empty := InternalUUIDs{}
-	uuids, err := store.GetObjectFromCache[InternalUUIDs](redis, "internal_uuids")
+func GetStringIds(repos repository.Repositories, redis store.RedisStore) (InternalIds, error) {
+	empty := InternalIds{}
+	ids, err := store.GetObjectFromCache[InternalIds](redis, "internal_ids")
 	if err != nil {
 		return empty, common.StringError(err)
 	}
-	if uuids == empty {
+	if ids == empty {
 		user, err := repos.User.GetByType("Internal")
 		if err != nil {
 			return empty, common.StringError(err)
@@ -22,22 +22,28 @@ func GetStringUUIDs(repos repository.Repositories, redis store.RedisStore) (Inte
 		if err != nil {
 			return empty, common.StringError(err)
 		}
+
 		bank, err := repos.Instrument.GetBankByUserId(user.ID)
 		if err != nil {
 			return empty, common.StringError(err)
 		}
+
 		wallet, err := repos.Instrument.GetWalletByUserId(user.ID)
 		if err != nil {
 			return empty, common.StringError(err)
 		}
-		uuids = InternalUUIDs{
+
+		ids = InternalIds{
 			stringUserId:   user.ID,
 			stringDeviceId: device.ID,
 			// stringPlatformId: "",
 			StringBankId:   bank.ID,
 			StringWalletId: wallet.ID,
 		}
-		store.PutObjectInCache(redis, "internal_uuids", uuids)
+		err = store.PutObjectInCache(redis, "internal_ids", ids)
+		if err != nil {
+			return empty, common.StringError(err)
+		}
 	}
-	return uuids, nil
+	return ids, nil
 }

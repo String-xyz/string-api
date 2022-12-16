@@ -36,7 +36,7 @@ type TransactionRepos struct {
 	Contact     repository.Contact
 }
 
-type InternalUUIDs struct {
+type InternalIds struct {
 	StringBankId   string
 	StringWalletId string
 	stringUserId   string
@@ -47,7 +47,7 @@ type InternalUUIDs struct {
 type transaction struct {
 	repos repository.Repositories
 	redis store.RedisStore
-	uuids InternalUUIDs
+	ids   InternalIds
 }
 
 func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
@@ -104,7 +104,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.uuids.stringDeviceId /*, PlatformID: t.uuids.stringPlatformId*/})
+	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.ids.stringDeviceId /*, PlatformID: t.uuids.stringPlatformId*/})
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -228,11 +228,11 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() error {
-	uuids, err := GetStringUUIDs(t.repos, t.redis)
+	ids, err := GetStringIds(t.repos, t.redis)
 	if err != nil {
 		return common.StringError(err)
 	}
-	t.uuids = uuids
+	t.ids = ids
 	return nil
 }
 
@@ -441,7 +441,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 		Value:        usd,
 		AssetID:      chargeAsset.ID,
 		UserID:       userId,
-		InstrumentID: t.uuids.StringWalletId,
+		InstrumentID: t.ids.StringWalletId,
 	}
 	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
 	if err != nil {
@@ -477,8 +477,8 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 		Amount:       usdWei,
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
-		UserID:       t.uuids.stringUserId,
-		InstrumentID: t.uuids.StringBankId,
+		UserID:       t.ids.stringUserId,
+		InstrumentID: t.ids.StringBankId,
 	}
 	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
 	if err != nil {
