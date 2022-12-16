@@ -10,24 +10,24 @@ import (
 	"time"
 )
 
-type FPVistionBrowerDetails struct {
-	BrowerName           string `json:"browserName"`
-	BroweserMajorVersion string `json:"browserMajorVersion"`
-	BrowserFullVersion   string `json:"browserFullVersion"`
-	OS                   string `json:"os"`
-	OSVersion            string `json:"osVersion"`
-	Device               string `json:"device"`
-	UserAgent            string `json:"userAgent"`
+type FPVistionBrowserDetails struct {
+	BrowserName         string `json:"browserName"`
+	BrowserMajorVersion string `json:"browserMajorVersion"`
+	BrowserFullVersion  string `json:"browserFullVersion"`
+	OS                  string `json:"os"`
+	OSVersion           string `json:"osVersion"`
+	Device              string `json:"device"`
+	UserAgent           string `json:"userAgent"`
 }
 
 type FPVisitIpLocation struct {
-	AccuracyRadius int                    `json:"accuracyRadius"`
-	Latitude       float64                `json:"latitude"`
-	Longitude      float64                `json:"longitude"`
-	PostalCode     string                 `json:"postalCode"`
-	Timezone       string                 `json:"timezone"`
-	VisitorFound   bool                   `json:"visitorFound"`
-	BrowserDetails FPVistionBrowerDetails `json:"browserDetails"`
+	AccuracyRadius int                     `json:"accuracyRadius"`
+	Latitude       float64                 `json:"latitude"`
+	Longitude      float64                 `json:"longitude"`
+	PostalCode     string                  `json:"postalCode"`
+	Timezone       string                  `json:"timezone"`
+	VisitorFound   bool                    `json:"visitorFound"`
+	BrowserDetails FPVistionBrowserDetails `json:"browserDetails"`
 	City           struct {
 		Name string `json:"name"`
 	} `json:"city"`
@@ -104,9 +104,9 @@ func NewFingerprint(client HTTPClient) FingerprintClient {
 	return &fingerprint{client: client, apiKey: apiKey, baseURL: "https://api.fpjs.io/"}
 }
 
-func (f fingerprint) GetVisitorByID(visitonID string, opts FPVisitorOpts) (FPVisitor, error) {
+func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVisitor, error) {
 	m := FPVisitor{}
-	r, err := f.Request(http.MethodGet, f.baseURL+"visitors/"+visitonID, nil)
+	r, err := f.Request(http.MethodGet, f.baseURL+"visitors/"+visitorID, nil)
 	if err != nil {
 		return m, err
 	}

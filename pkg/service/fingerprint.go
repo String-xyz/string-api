@@ -5,7 +5,6 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/repository"
 )
 
 type FPClient common.FingerprintClient
@@ -17,27 +16,21 @@ func NewHTTPClient(config HTTPConfig) HTTPClient {
 	return common.NewHTTPClient(common.HTTPConfig(config))
 }
 
-func NewFingerPrintClient(client HTTPClient) FPClient {
+func NewFingerprintClient(client HTTPClient) FPClient {
 	return common.NewFingerprint(client)
 }
 
 type Fingerprint interface {
-	// ValidateDevice uses Fingerprint client to fetch the visitor by a visitorId and requestId
-	// this function look up for an associated device as well and attemps to update it
-	// Note - the device needs to be associated with an user
-	ValidateDevice(ID string, requestID string, userID string) (FPVisitor, error)
-
 	//GetVisitor fetches the visitor data by id, it does not validate if the device is the database
 	GetVisitor(ID string, request string) (FPVisitor, error)
 }
 
 type fingerprint struct {
-	client     FPClient
-	deviceRepo repository.Device
+	client FPClient
 }
 
-func NewFingerprint(client FPClient, repo repository.Device) Fingerprint {
-	return &fingerprint{client, repo}
+func NewFingerprint(client FPClient) Fingerprint {
+	return &fingerprint{client}
 }
 
 func (f fingerprint) GetVisitor(ID, requestID string) (FPVisitor, error) {
@@ -49,31 +42,10 @@ func (f fingerprint) GetVisitor(ID, requestID string) (FPVisitor, error) {
 	return f.hydrateVisitor(visitor)
 }
 
-func (f fingerprint) ValidateDevice(ID, requestID, userID string) (FPVisitor, error) {
-	visitor, err := f.client.GetVisitorByID(ID, common.FPVisitorOpts{Limit: 1, RequestID: requestID})
-	if err != nil {
-		return FPVisitor{}, common.StringError(err)
-	}
-
-	return f.hydrateVisitor(visitor)
-}
-
-// Look up the device by fingerprint ID and return a bool indicating if is found
-// it disregards the error and threats it has not found.
-func (f fingerprint) getDevice(ID string) (model.Device, bool) {
-	m, err := f.deviceRepo.GetByFingerprint(ID)
-	return m, err == nil
-}
-
-func (f fingerprint) updateDevice(m FPVisitor) error {
-	return nil
-}
-
-func (f fingerprint) validateLocation(device model.Device, visitor FPVisitor) bool {
-	return true
-}
-
 func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error) {
+	// the check on the lenght here (> 1) is needed since we are always checking the latest visit
+	// of the user, if we at some point want to return all the visit, we will need to create a different
+	// hydration method.
 	if len(visitor.Visits) == 0 || len(visitor.Visits) > 1 {
 		return FPVisitor{}, common.StringError(errors.New("visitor history does not match"))
 	}
@@ -88,7 +60,9 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 		VisitorID:  visitor.ID,
 		Country:    visit.IPLocation.Coutry.Code,
 		State:      state.ISOCode,
+		IPAddress:  visit.IP,
 		Timestamp:  visit.Timestamp,
 		Confidence: visit.IPLocation.Confidence.Score,
+		OsType:     visit.IPLocation.BrowserDetails.OS,
 	}, nil
 }

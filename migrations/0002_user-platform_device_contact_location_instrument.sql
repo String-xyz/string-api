@@ -32,7 +32,7 @@ CREATE OR REPLACE TRIGGER update_device_updated_at
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
-CREATE INDEX device_fingerprint_id_idx ON device(fingerprint);
+CREATE UNIQUE INDEX device_fingerprint_id_idx ON device(fingerprint);
 -------------------------------------------------------------------------
 -- CONTACT ---------------------------------------------------------------
 CREATE TABLE contact (

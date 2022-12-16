@@ -8,6 +8,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -41,11 +42,13 @@ type User interface {
 }
 
 type user struct {
-	repos repository.Repositories
+	repos       repository.Repositories
+	auth        Auth
+	fingerprint Fingerprint
 }
 
-func NewUser(repos repository.Repositories) User {
-	return &user{repos: repos}
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint) User {
+	return &user{repos, auth, fprint}
 }
 
 func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
@@ -93,35 +96,68 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	}
 
 	// Verify payload integrity
-	err = verifyWalletAuthentication(request)
-	if err != nil {
+	if err := verifyWalletAuthentication(request); err != nil {
 		return resp, common.StringError(err)
 	}
 
-	// Initialize a new user
-	user := model.User{Type: "string-user", Status: "unverified"} // Validated status pertains to specific instrument
-	user, err = u.repos.User.Create(user)
+	user, err := u.createUserData(addr, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
 	if err != nil {
-		return resp, common.StringError(err)
+		return resp, err
 	}
 
-	// Create a new wallet instrument and associate it with the new user
-	instrument = model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
-	instrument, err = u.repos.Instrument.Create(instrument)
-	if err != nil {
-		return resp, common.StringError(err)
-	}
-
-	jwt, err := NewAuth(u.repos).GenerateJWT(user)
+	jwt, err := u.auth.GenerateJWT(user)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 
 	// deviceService.RegisterNewUserDevice()
-
 	go u.createUnit21Entity(user)
 
 	return UserCreateResponse{JWT: jwt, User: user}, nil
+}
+
+func (u user) createUserData(addr, visitorID, requstID string) (model.User, error) {
+	tx := u.repos.User.MustBegin()
+	u.repos.Instrument.SetTx(tx)
+	u.repos.Device.SetTx(tx)
+
+	defer u.repos.User.Reset(u.repos.Instrument, u.repos.Device)
+	// Initialize a new user
+	// Validated status pertains to specific instrument
+	user := model.User{Type: "string-user", Status: "unverified"}
+	user, err := u.repos.User.Create(user)
+	if err != nil {
+		u.repos.User.Rollback()
+		return user, common.StringError(err)
+	}
+	// Create a new wallet instrument and associate it with the new user
+	instrument := model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument, err = u.repos.Instrument.Create(instrument)
+	if err != nil {
+		u.repos.Instrument.Rollback()
+		return user, common.StringError(err)
+	}
+
+	visitor, err := u.fingerprint.GetVisitor(visitorID, requstID)
+	if err != nil {
+		u.repos.Instrument.Rollback()
+		return user, err
+	}
+
+	if _, err := u.repos.Device.Create(model.Device{
+		Fingerprint: visitorID,
+		UserID:      user.ID,
+		IpAddresses: pq.StringArray{visitor.IPAddress},
+	}); err != nil {
+		u.repos.Device.Rollback()
+		return user, err
+	}
+
+	if err := u.repos.Device.Commit(); err != nil {
+		return user, common.StringError(errors.New("error commiting transaction"))
+	}
+
+	return user, nil
 }
 
 func (u user) Update(userID string, request UserUpdates) (model.User, error) {

@@ -47,7 +47,7 @@ func (d device[T]) Create(insert model.Device) (model.Device, error) {
 
 func (d device[T]) GetByFingerprint(fingerprintID string) (model.Device, error) {
 	m := model.Device{}
-	err := d.store.Get(&m, "SELECT * FROM device WHERE fingerprint = $1", fingerprintID)
+	err := d.store.Get(&m, "SELECT * FROM device WHERE fingerprint = $1 LIMIT 1", fingerprintID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}
