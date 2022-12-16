@@ -365,7 +365,7 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 	return instrument.ID, nil
 }
 
-func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) {
+func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (string, error) {
 	instrument, err := t.repos.Instrument.GetWallet(address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", common.StringError(err)
@@ -374,7 +374,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) 
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -594,7 +594,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress)
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress, request.userId)
 	if err != nil {
 		// TODO: handle error instead of returning it
 	}
