@@ -36,18 +36,18 @@ type TransactionRepos struct {
 	Contact     repository.Contact
 }
 
-type transactionInstruments struct {
-	StringBankId   string
-	StringWalletId string
+type InternalIds struct {
+	StringBankId     string `json:"stringBankId" db:"string_bank_id"`
+	StringWalletId   string `json:"stringWalletId" db:"string_wallet_id"`
+	StringUserId     string `json:"stringUserId" db:"string_user_id"`
+	StringDeviceId   string `json:"stringDeviceId" db:"string_device_id"`
+	StringPlatformId string `json:"stringPlatformId" db:"string_platform_id"` // temporary
 }
 
 type transaction struct {
-	repos            repository.Repositories
-	redis            store.RedisStore
-	instruments      transactionInstruments
-	stringUserId     string
-	stringDeviceId   string
-	stringPlatformId string
+	repos repository.Repositories
+	redis store.RedisStore
+	ids   InternalIds
 }
 
 func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
@@ -86,8 +86,11 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 }
 
 func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.TransactionReceipt, error) {
-	t.getStringInstrumentsAndUserId()
 	res := model.TransactionReceipt{}
+	err := t.getStringInstrumentsAndUserId()
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
 	user, err := t.repos.User.GetById(userId)
 	if err != nil {
@@ -104,7 +107,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 	}
 
 	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.stringDeviceId, PlatformID: t.stringPlatformId})
+	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: t.ids.StringDeviceId, PlatformID: t.ids.StringPlatformId})
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -228,12 +231,11 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string) (model.Tra
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() error {
-	// TODO: Look up our instruments and user ID from db
-	t.instruments.StringBankId = "13438963-f5e7-47c4-a790-ebca3e3bf915"
-	t.instruments.StringWalletId = "ab6a2d66-ad4c-43f4-adf9-c0cd3282492c"
-	t.stringUserId = "0e837b73-55cf-43ff-9b1e-0d8258eec978"
-	t.stringDeviceId = "073f5a88-9223-4554-a7ce-11d358123a21"
-	t.stringPlatformId = "54a7e062-4cec-44f3-9d89-99498d0eb6ef"
+	ids, err := GetStringIds(t.repos, t.redis)
+	if err != nil {
+		return common.StringError(err)
+	}
+	t.ids = ids
 	return nil
 }
 
@@ -363,7 +365,7 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 	return instrument.ID, nil
 }
 
-func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) {
+func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (string, error) {
 	instrument, err := t.repos.Instrument.GetWallet(address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", common.StringError(err)
@@ -372,7 +374,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string) (string, error) 
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -442,7 +444,7 @@ func (t transaction) initiateTransaction(executor Executor, e model.ExecutionReq
 		Value:        usd,
 		AssetID:      chargeAsset.ID,
 		UserID:       userId,
-		InstrumentID: t.instruments.StringWalletId,
+		InstrumentID: t.ids.StringWalletId,
 	}
 	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
 	if err != nil {
@@ -478,8 +480,8 @@ func (t transaction) chargeCard(userWallet string, authorizationID string, usd f
 		Amount:       usdWei,
 		Value:        usdWei,
 		AssetID:      chargeAsset.ID,
-		UserID:       t.stringUserId,
-		InstrumentID: t.instruments.StringBankId,
+		UserID:       t.ids.StringUserId,
+		InstrumentID: t.ids.StringBankId,
 	}
 	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
 	if err != nil {
@@ -592,7 +594,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress)
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress, request.userId)
 	if err != nil {
 		// TODO: handle error instead of returning it
 	}
