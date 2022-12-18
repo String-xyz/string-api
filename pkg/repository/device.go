@@ -29,8 +29,9 @@ func NewDevice(db *sqlx.DB) Device {
 func (d device[T]) Create(insert model.Device) (model.Device, error) {
 	m := model.Device{}
 	rows, err := d.store.NamedQuery(`
-		INSERT INTO device (last_used_at, type, description, user_id) 
-		VALUES(:last_used_at, :type, :description, :user_id) 	RETURNING *`, insert)
+		INSERT INTO device (last_used_at, type, description, user_id, fingerprint, ip_addresses) 
+		VALUES(:last_used_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
+		RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
 	}

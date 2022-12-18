@@ -38,7 +38,6 @@ func (f fingerprint) GetVisitor(ID, requestID string) (FPVisitor, error) {
 	if err != nil {
 		return FPVisitor{}, common.StringError(err)
 	}
-
 	return f.hydrateVisitor(visitor)
 }
 

@@ -121,7 +121,7 @@ DROP TABLE IF EXISTS contact;
 -------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_device_updated_at ON device;
-DROP INDEX IF EXISTS device_fingerprint_id_idx ON device;
+DROP INDEX IF EXISTS device_fingerprint_id_idx;
 DROP TABLE IF EXISTS device;
 
 -------------------------------------------------------------------------

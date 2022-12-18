@@ -160,7 +160,3 @@ func parseJSON[T any](b []byte) (T, error) {
 	}
 	return r, nil
 }
-
-func toJSON(T any) ([]byte, error) {
-	return json.Marshal(T)
-}
