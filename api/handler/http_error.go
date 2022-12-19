@@ -47,6 +47,13 @@ func NotAllowedError(c echo.Context, message ...string) error {
 	return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: "Not Allowed", Code: "NOT_ALLOWED"})
 }
 
+func Unprocessable(c echo.Context, message ...string) error {
+	if len(message) > 0 {
+		return c.JSON(http.StatusUnprocessableEntity, JSONError{Message: strings.Join(message, " "), Code: "UNPROCESSABLE_ENTITY"})
+	}
+	return c.JSON(http.StatusUnprocessableEntity, JSONError{Message: "Unable to process entity", Code: "UNPROCESSABLE_ENTITY"})
+}
+
 func Unauthorized(c echo.Context, message ...string) error {
 	if len(message) > 0 {
 		return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: strings.Join(message, " "), Code: "UNAUTHORIZED"})
