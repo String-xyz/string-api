@@ -3,6 +3,7 @@ package service
 import (
 	"os"
 	"strings"
+	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
@@ -143,12 +144,14 @@ func (u user) createUserData(addr, visitorID, requestID string) (model.User, err
 		u.repos.Instrument.Rollback()
 		return user, err
 	}
+
 	if _, err := u.repos.Device.Create(model.Device{
 		Fingerprint: visitorID,
 		UserID:      user.ID,
 		Type:        visitor.Type,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
 		Description: visitor.UserAgent,
+		LastUsedAt:  time.Now(),
 	}); err != nil {
 		u.repos.Device.Rollback()
 		return user, err
