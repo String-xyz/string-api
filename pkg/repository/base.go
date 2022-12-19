@@ -97,7 +97,6 @@ func (b *base[T]) Rollback() {
 func (b *base[T]) Commit() error {
 	t := b.store.(*sqlx.Tx)
 	err := t.Commit()
-	b.Reset()
 	if err != nil {
 		common.StringError(err)
 	}
@@ -105,6 +104,7 @@ func (b *base[T]) Commit() error {
 }
 
 func (b *base[T]) SetTx(t Queryable) {
+	b.db = b.store
 	b.store = t
 }
 

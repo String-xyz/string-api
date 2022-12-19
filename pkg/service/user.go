@@ -154,7 +154,7 @@ func (u user) createUserData(addr, visitorID, requstID string) (model.User, erro
 		return user, err
 	}
 
-	if err := u.repos.Device.Commit(); err != nil {
+	if err := u.repos.User.Commit(); err != nil {
 		return user, common.StringError(errors.New("error commiting transaction"))
 	}
 
