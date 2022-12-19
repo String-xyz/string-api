@@ -8,4 +8,5 @@ type FPVisitor struct {
 	Timestamp  int64
 	Confidence float64
 	OsType     string
+	UserAgent  string
 }

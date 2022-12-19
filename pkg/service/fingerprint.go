@@ -63,5 +63,6 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 		Timestamp:  visit.Timestamp,
 		Confidence: visit.IPLocation.Confidence.Score,
 		OsType:     visit.IPLocation.BrowserDetails.OS,
+		UserAgent:  visit.IPLocation.BrowserDetails.UserAgent,
 	}, nil
 }

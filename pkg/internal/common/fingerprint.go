@@ -2,12 +2,15 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type FPVistionBrowserDetails struct {
@@ -110,7 +113,9 @@ func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVis
 	if err != nil {
 		return m, err
 	}
-
+	if ok := f.checkStatus(r.Response.StatusCode); !ok {
+		return m, errors.New(fmt.Sprintf("fingerprint API called failed with status: %d", r.Response.StatusCode))
+	}
 	q := f.optionsToQuery(opts)
 	if len(q) > 0 {
 		r.URL.RawQuery = q.Encode()
@@ -127,6 +132,10 @@ func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVis
 	}
 
 	return parseJSON[FPVisitor](body)
+}
+
+func (f fingerprint) checkStatus(status int) bool {
+	return status >= 200 && status < 300
 }
 
 func (f fingerprint) Request(method, url string, body io.Reader) (*http.Request, error) {

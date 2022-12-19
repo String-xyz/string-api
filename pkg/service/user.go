@@ -116,7 +116,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (u user) createUserData(addr, visitorID, requstID string) (model.User, error) {
+func (u user) createUserData(addr, visitorID, requestID string) (model.User, error) {
 	tx := u.repos.User.MustBegin()
 	u.repos.Instrument.SetTx(tx)
 	u.repos.Device.SetTx(tx)
@@ -138,7 +138,7 @@ func (u user) createUserData(addr, visitorID, requstID string) (model.User, erro
 		return user, common.StringError(err)
 	}
 
-	visitor, err := u.fingerprint.GetVisitor(visitorID, requstID)
+	visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
 	if err != nil {
 		u.repos.Instrument.Rollback()
 		return user, err
