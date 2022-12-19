@@ -104,7 +104,8 @@ type fingerprint struct {
 
 func NewFingerprint(client HTTPClient) FingerprintClient {
 	apiKey := os.Getenv("FINGERPRINT_API_KEY")
-	return &fingerprint{client: client, apiKey: apiKey, baseURL: "https://api.fpjs.io/"}
+	baseURL := os.Getenv("FINGERPRINT_API_URL")
+	return &fingerprint{client: client, apiKey: apiKey, baseURL: baseURL}
 }
 
 func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVisitor, error) {
