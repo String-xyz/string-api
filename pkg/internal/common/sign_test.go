@@ -13,7 +13,7 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	obj1 := "Your String Here"
+	obj1 := "pQMKYH49XTudqO4+h8iujjbfGNuq0krDKHb4ETRoyIRUQbnElEHoPr4axJMkcMpUdKpcHbXzCgQxD3LBjS+qdK8qnw24UtY+NBtLz7UeOpB0wljslNM2UfJnhAJIDaw="
 
 	obj1Signed, err := EVMSign(obj1)
 	assert.NoError(t, err)

@@ -7,6 +7,6 @@ type FPVisitor struct {
 	IPAddress  string
 	Timestamp  int64
 	Confidence float64
-	OsType     string
+	Type       string
 	UserAgent  string
 }

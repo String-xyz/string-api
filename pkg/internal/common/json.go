@@ -51,3 +51,11 @@ func GetJsonGeneric(url string, target interface{}) error {
 	}
 	return nil
 }
+
+func parseJSON[T any](b []byte) (T, error) {
+	var r T
+	if err := json.Unmarshal(b, &r); err != nil {
+		return r, err
+	}
+	return r, nil
+}

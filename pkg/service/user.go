@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -143,12 +144,13 @@ func (u user) createUserData(addr, visitorID, requestID string) (model.User, err
 		u.repos.Instrument.Rollback()
 		return user, err
 	}
-
+	fmt.Printf("Visitor %+v\n", visitor)
 	if _, err := u.repos.Device.Create(model.Device{
 		Fingerprint: visitorID,
 		UserID:      user.ID,
-		Type:        visitor.OsType,
+		Type:        visitor.Type,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
+		Description: visitor.UserAgent,
 	}); err != nil {
 		u.repos.Device.Rollback()
 		return user, err

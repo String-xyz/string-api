@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,14 +23,14 @@ type FPVistionBrowserDetails struct {
 }
 
 type FPVisitIpLocation struct {
-	AccuracyRadius int                     `json:"accuracyRadius"`
-	Latitude       float64                 `json:"latitude"`
-	Longitude      float64                 `json:"longitude"`
-	PostalCode     string                  `json:"postalCode"`
-	Timezone       string                  `json:"timezone"`
-	VisitorFound   bool                    `json:"visitorFound"`
-	BrowserDetails FPVistionBrowserDetails `json:"browserDetails"`
-	City           struct {
+	AccuracyRadius int     `json:"accuracyRadius"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
+	PostalCode     string  `json:"postalCode"`
+	Timezone       string  `json:"timezone"`
+	VisitorFound   bool    `json:"visitorFound"`
+
+	City struct {
 		Name string `json:"name"`
 	} `json:"city"`
 
@@ -55,14 +54,15 @@ type FPVisitIpLocation struct {
 }
 
 type FPVisitorVisit struct {
-	RequestID  string            `json:"requestId"`
-	Incognito  bool              `json:"incognito"`
-	LinkedId   string            `json:"linkedId"`
-	Time       string            `json:"time"`
-	Timestamp  int64             `json:"timestamp"`
-	URL        string            `json:"url"`
-	IP         string            `json:"ip"`
-	IPLocation FPVisitIpLocation `json:"ipLocation"`
+	RequestID      string                  `json:"requestId"`
+	Incognito      bool                    `json:"incognito"`
+	LinkedId       string                  `json:"linkedId"`
+	Time           string                  `json:"time"`
+	Timestamp      int64                   `json:"timestamp"`
+	URL            string                  `json:"url"`
+	IP             string                  `json:"ip"`
+	IPLocation     FPVisitIpLocation       `json:"ipLocation"`
+	BrowserDetails FPVistionBrowserDetails `json:"browserDetails"`
 }
 
 type FPVisitor struct {
@@ -113,9 +113,6 @@ func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVis
 	if err != nil {
 		return m, err
 	}
-	if ok := f.checkStatus(r.Response.StatusCode); !ok {
-		return m, errors.New(fmt.Sprintf("fingerprint API called failed with status: %d", r.Response.StatusCode))
-	}
 	q := f.optionsToQuery(opts)
 	if len(q) > 0 {
 		r.URL.RawQuery = q.Encode()
@@ -124,13 +121,15 @@ func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVis
 	if err != nil {
 		return m, err
 	}
-
+	if ok := f.checkStatus(res.StatusCode); !ok {
+		return m, errors.New(fmt.Sprintf("fingerprint API called failed with status: %d", res.StatusCode))
+	}
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		return m, err
 	}
-
+	fmt.Printf("Visitor %+v\n", string(body))
 	return parseJSON[FPVisitor](body)
 }
 
@@ -160,12 +159,4 @@ func (f fingerprint) optionsToQuery(opts FPVisitorOpts) url.Values {
 		q.Add("linked_id", opts.LinkedID)
 	}
 	return q
-}
-
-func parseJSON[T any](b []byte) (T, error) {
-	var r T
-	if err := json.Unmarshal(b, &r); err != nil {
-		return r, err
-	}
-	return r, nil
 }
