@@ -123,14 +123,13 @@ func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVis
 		return m, err
 	}
 	if ok := f.checkStatus(res.StatusCode); !ok {
-		return m, errors.New(fmt.Sprintf("fingerprint API called failed with status: %d", res.StatusCode))
+		return m, errors.New(fmt.Sprintf("fingerprint API call failed with status: %d", res.StatusCode))
 	}
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		return m, err
 	}
-	fmt.Printf("Visitor %+v\n", string(body))
 	return parseJSON[FPVisitor](body)
 }
 
