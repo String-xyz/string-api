@@ -30,7 +30,8 @@ func (t transaction) Transact(c echo.Context) error {
 		return BadRequestError(c)
 	}
 	userId := c.Get("userId").(string)
-	res, err := t.Service.Execute(body, userId)
+	deviceId := c.Get("deviceId").(string)
+	res, err := t.Service.Execute(body, userId, deviceId)
 	if err != nil {
 		LogStringError(c, err, "transact: execute")
 		return InternalError(c)

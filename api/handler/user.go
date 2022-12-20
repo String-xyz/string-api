@@ -103,7 +103,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 		return InternalError(c, "Unable to send email verification")
 	}
 
-	return c.JSON(http.StatusOK, ResultMessage{Status: "Email verification sent"})
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Verified"})
 }
 
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
