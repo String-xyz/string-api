@@ -41,6 +41,7 @@ CREATE TABLE contact (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_authenticated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  validated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- enum: [phone, email, etc...] to be defined at struct level in Go
   status TEXT DEFAULT '', -- enum: [primary, inactive] to be defined at struct level in Go
   data TEXT DEFAULT '', -- the contact information

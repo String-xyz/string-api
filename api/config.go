@@ -34,7 +34,11 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	httpClient := service.NewHTTPClient(service.HTTPConfig{Timeout: time.Duration(30) * time.Second})
 	client := service.NewFingerprintClient(httpClient)
 	fingerprint := service.NewFingerprint(client)
-	auth := service.NewAuth(repos, fingerprint)
+	// we don't need to pass in the entire repos struct, just the ones we need
+	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User}
+	verification := service.NewVerification(verificationRepos)
+
+	auth := service.NewAuth(repos, fingerprint, verification)
 	apiKey := service.NewAPIKeyStrategy(repos.Auth)
 	cost := service.NewCost(config.Redis)
 	executor := service.NewExecutor()
@@ -46,10 +50,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 
 	transaction := service.NewTransaction(repos, config.Redis)
 	user := service.NewUser(repos, auth, fingerprint)
-
-	// we don't need to pass in the entire repos struct, just the ones we need
-	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User}
-	verification := service.NewVerification(verificationRepos)
 
 	return service.Services{
 		Auth:         auth,

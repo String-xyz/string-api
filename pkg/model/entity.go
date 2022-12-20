@@ -90,6 +90,7 @@ type Contact struct {
 	CreatedAt           time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt           time.Time  `json:"updatedAt" db:"updated_at"`
 	LastAuthenticatedAt *time.Time `json:"lastAuthenticatedAt" db:"last_authenticated_at"`
+	ValidatedAt         *time.Time `json:"validatedAt" db:"validated_at"`
 	DeactivatedAt       *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type                string     `json:"type" db:"type"`
 	Status              string     `json:"status" db:"status"`

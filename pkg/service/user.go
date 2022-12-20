@@ -17,12 +17,6 @@ import (
 type UserRequest = model.UserRequest
 type UserUpdates = model.UpdateUserName
 
-type EmailVerification struct {
-	Timestamp int64
-	Email     string
-	UserID    string
-}
-
 type UserCreateResponse struct {
 	JWT  JWT        `json:"authToken"`
 	User model.User `json:"user"`
@@ -64,7 +58,6 @@ func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
 		res.Status = user.Status
 		return res, nil
 	}
-
 	return res, common.StringError(errors.New("not found"))
 }
 
