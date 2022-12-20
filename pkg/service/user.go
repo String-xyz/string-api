@@ -101,12 +101,12 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 		return resp, common.StringError(err)
 	}
 
-	user, err := u.createUserData(addr, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	user, device, err := u.createUserData(addr, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
 	if err != nil {
 		return resp, err
 	}
 
-	jwt, err := u.auth.GenerateJWT(user)
+	jwt, err := u.auth.GenerateJWT(device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -117,7 +117,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (u user) createUserData(addr, visitorID, requestID string) (model.User, error) {
+func (u user) createUserData(addr, visitorID, requestID string) (model.User, model.Device, error) {
 	tx := u.repos.User.MustBegin()
 	u.repos.Instrument.SetTx(tx)
 	u.repos.Device.SetTx(tx)
@@ -129,39 +129,40 @@ func (u user) createUserData(addr, visitorID, requestID string) (model.User, err
 	user, err := u.repos.User.Create(user)
 	if err != nil {
 		u.repos.User.Rollback()
-		return user, common.StringError(err)
+		return user, model.Device{}, common.StringError(err)
 	}
 	// Create a new wallet instrument and associate it with the new user
 	instrument := model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
-		return user, common.StringError(err)
+		return user, model.Device{}, common.StringError(err)
 	}
 
 	visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
 	if err != nil {
 		u.repos.Instrument.Rollback()
-		return user, err
+		return user, model.Device{}, err // is this intentionally not common.StringError?
 	}
 
-	if _, err := u.repos.Device.Create(model.Device{
+	device, err := u.repos.Device.Create(model.Device{
 		Fingerprint: visitorID,
 		UserID:      user.ID,
 		Type:        visitor.Type,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
 		Description: visitor.UserAgent,
 		LastUsedAt:  time.Now(),
-	}); err != nil {
+	})
+	if err != nil {
 		u.repos.Device.Rollback()
-		return user, err
+		return user, model.Device{}, err // is this intentionally not common.StringError?
 	}
 
 	if err := u.repos.User.Commit(); err != nil {
-		return user, common.StringError(errors.New("error commiting transaction"))
+		return user, model.Device{}, common.StringError(errors.New("error commiting transaction"))
 	}
 
-	return user, nil
+	return user, device, nil
 }
 
 func (u user) Update(userID string, request UserUpdates) (model.User, error) {

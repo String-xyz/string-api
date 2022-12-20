@@ -29,7 +29,8 @@ type JWT struct {
 }
 
 type JWTClaims struct {
-	ID string
+	UserId   string
+	DeviceId string
 	jwt.StandardClaims
 }
 
@@ -42,7 +43,7 @@ type Auth interface {
 	// if signaure is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
-	GenerateJWT(model.User) (JWT, error)
+	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
 }
 
@@ -85,9 +86,11 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	if err := a.deviceExists(request.Fingerprint.VisitorID); err != nil {
+	device, err := a.getDeviceIfExists(request.Fingerprint.VisitorID)
+	if err != nil {
 		return resp, common.StringError(errors.New("unknown device"))
 	}
+
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
 	if err != nil {
@@ -99,20 +102,24 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	// Create the JWT
-	jwt, err := a.GenerateJWT(user)
+	jwt, err := a.GenerateJWT(device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (a auth) deviceExists(visitorID string) error {
-	_, err := a.repos.Device.GetByFingerprint(visitorID)
-	return err
+func (a auth) getDeviceIfExists(visitorID string) (model.Device, error) {
+	device, err := a.repos.Device.GetByFingerprint(visitorID)
+	// Right now we want to return an error if not found
+	if err != nil {
+		return model.Device{}, common.StringError(err)
+	}
+	return device, nil
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
-func (a auth) GenerateJWT(m model.User) (JWT, error) {
+func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
@@ -121,7 +128,8 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 		RefreshToken: refreshToken,
 	}
 
-	claims.ID = m.ID
+	claims.DeviceId = m.ID
+	claims.UserId = m.UserID
 	claims.ExpiresAt = t.ExpAt.Unix()
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
@@ -131,7 +139,7 @@ func (a auth) GenerateJWT(m model.User) (JWT, error) {
 		return *t, err
 	}
 	t.Token = signed
-	return *t, a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.ID)
+	return *t, a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
 }
 
 func (a auth) ValidateJWT(token string) (bool, error) {

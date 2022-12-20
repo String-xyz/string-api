@@ -56,7 +56,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	}
 
 	resp, err := l.Service.VerifySignedPayload(body)
-	if err != nil && !strings.Contains(err.Error(), "unknown device") {
+	if err != nil && strings.Contains(err.Error(), "unknown device") {
 		return Unprocessable(c)
 	}
 	if err != nil {

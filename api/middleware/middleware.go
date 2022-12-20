@@ -69,7 +69,8 @@ func BearerAuth() echo.MiddlewareFunc {
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
 				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 			})
-			c.Set("userId", claims.ID)
+			c.Set("userId", claims.UserId)
+			c.Set("deviceId", claims.DeviceId)
 			return t, err
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
