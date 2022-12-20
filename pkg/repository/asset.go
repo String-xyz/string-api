@@ -49,3 +49,12 @@ func (a asset[T]) GetName(name string) (model.Asset, error) {
 	}
 	return m, nil
 }
+
+func (a asset[T]) GetById(ID string) (model.Asset, error) {
+	m := model.Asset{}
+	err := a.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1", a.table), ID)
+	if err != nil && err == sql.ErrNoRows {
+		return m, common.StringError(ErrNotFound)
+	}
+	return m, err
+}
