@@ -19,8 +19,8 @@ type Contact interface {
 	List(limit int, offset int) ([]model.Contact, error)
 	Update(ID string, updates any) error
 	GetByData(data string) (model.Contact, error)
-	//GetByUserIdStatus gets a contact with the user id and status
-	GetByUserIdStatus(userID string, status string) (model.Contact, error)
+	//GetByUserIdAndStatus gets a contact with the user id and status
+	GetByUserIdAndStatus(userID string, status string) (model.Contact, error)
 }
 
 type contact[T any] struct {
@@ -59,11 +59,12 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 	return m, nil
 }
 
-func (u contact[T]) GetByUserIdStatus(userID, status string) (model.Contact, error) {
+func (u contact[T]) GetByUserIdAndStatus(userID, status string) (model.Contact, error) {
 	m := model.Contact{}
 	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1 AND status = $2 LIMIT 1", u.table), userID, status)
 	if err != nil && err == sql.ErrNoRows {
-		return m, common.StringError(ErrNotFound)
+		return m, ErrNotFound
 	}
-	return m, nil
+	return m, common.StringError(err)
+
 }

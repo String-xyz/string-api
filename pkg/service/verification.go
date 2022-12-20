@@ -102,7 +102,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 }
 
 func (v verification) SendDeviceVerification(userID, deviceID, deviceDescription string) error {
-	email, err := v.repos.Contact.GetByUserIdStatus(userID, "validated")
+	email, err := v.repos.Contact.GetByUserIdAndStatus(userID, "validated")
 	if err != nil {
 		return err
 	}
