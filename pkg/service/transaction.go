@@ -40,7 +40,6 @@ type InternalIds struct {
 	StringBankId     string `json:"stringBankId" db:"string_bank_id"`
 	StringWalletId   string `json:"stringWalletId" db:"string_wallet_id"`
 	StringUserId     string `json:"stringUserId" db:"string_user_id"`
-	StringDeviceId   string `json:"stringDeviceId" db:"string_device_id"`
 	StringPlatformId string `json:"stringPlatformId" db:"string_platform_id"` // temporary
 }
 

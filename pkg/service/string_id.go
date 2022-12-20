@@ -18,11 +18,6 @@ func GetStringIds(repos repository.Repositories, redis store.RedisStore) (Intern
 			return empty, common.StringError(err)
 		}
 
-		device, err := repos.Device.GetByUserId(user.ID)
-		if err != nil {
-			return empty, common.StringError(err)
-		}
-
 		bank, err := repos.Instrument.GetBankByUserId(user.ID)
 		if err != nil {
 			return empty, common.StringError(err)
@@ -40,7 +35,6 @@ func GetStringIds(repos repository.Repositories, redis store.RedisStore) (Intern
 
 		ids = InternalIds{
 			StringUserId:     user.ID,
-			StringDeviceId:   device.ID,
 			StringPlatformId: platform.ID, // temporary
 			StringBankId:     bank.ID,
 			StringWalletId:   wallet.ID,
