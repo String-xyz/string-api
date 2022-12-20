@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	str "strconv"
+
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -38,17 +40,17 @@ func (o authAPIKey) List(c echo.Context) error {
 	if !o.isInternal {
 		return NotAllowedError(c)
 	}
-	body := struct {
-		Status string `query:"status"`
-		Limit  int    `query:"limit"`
-		Offset int    `query:"offset"`
-	}{}
-	err := c.Bind(&body)
+	status := c.QueryParam("status")
+	limit, err := str.Atoi(c.QueryParam("limit"))
 	if err != nil {
-		LogStringError(c, err, "authKey list: bind")
-		return echo.NewHTTPError(http.StatusBadRequest)
+		limit = 100
 	}
-	list, err := o.service.List(body.Limit, body.Offset, body.Status)
+	offset, err := str.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		offset = 0
+	}
+
+	list, err := o.service.List(limit, offset, status)
 	if err != nil {
 		LogStringError(c, err, "authKey list")
 		return echo.NewHTTPError(http.StatusInternalServerError, "ApiKey Service Failed")
