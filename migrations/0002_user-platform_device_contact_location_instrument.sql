@@ -32,6 +32,7 @@ CREATE OR REPLACE TRIGGER update_device_updated_at
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
+CREATE UNIQUE INDEX device_fingerprint_id_idx ON device(fingerprint);
 -------------------------------------------------------------------------
 -- CONTACT ---------------------------------------------------------------
 CREATE TABLE contact (
@@ -120,6 +121,7 @@ DROP TABLE IF EXISTS contact;
 -------------------------------------------------------------------------
 -- DEVICE ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_device_updated_at ON device;
+DROP INDEX IF EXISTS device_fingerprint_id_idx;
 DROP TABLE IF EXISTS device;
 
 -------------------------------------------------------------------------

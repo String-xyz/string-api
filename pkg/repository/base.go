@@ -71,7 +71,7 @@ type Transactable interface {
 	SetTx(t Queryable)
 	// Reset changes the store back to *sqlx.DB from *sqlx.Tx
 	// Useful when there are many repos using the same *sqlx.Tx
-	Reset(b ...base[any])
+	Reset(b ...Transactable)
 }
 
 type base[T any] struct {
@@ -97,7 +97,6 @@ func (b *base[T]) Rollback() {
 func (b *base[T]) Commit() error {
 	t := b.store.(*sqlx.Tx)
 	err := t.Commit()
-	b.Reset()
 	if err != nil {
 		common.StringError(err)
 	}
@@ -105,10 +104,11 @@ func (b *base[T]) Commit() error {
 }
 
 func (b *base[T]) SetTx(t Queryable) {
+	b.db = b.store
 	b.store = t
 }
 
-func (b *base[T]) Reset(repos ...base[any]) {
+func (b *base[T]) Reset(repos ...Transactable) {
 	b.store = b.db
 	for _, v := range repos {
 		v.Reset()

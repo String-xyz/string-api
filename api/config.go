@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/service"
 )
@@ -29,32 +31,35 @@ func NewRepos(config APIConfig) repository.Repositories {
  * Not every service needs access to all of the repos, so we can pass in only the ones it needs. This will make it easier to test
  */
 func NewServices(config APIConfig, repos repository.Repositories) service.Services {
-	Auth := service.NewAuth(repos)
-	ApiKey := service.NewAPIKeyStrategy(repos.Auth)
-	Cost := service.NewCost(config.Redis)
-	Executor := service.NewExecutor()
-	Geofencing := service.NewGeofencing(config.Redis)
+	httpClient := service.NewHTTPClient(service.HTTPConfig{Timeout: time.Duration(30) * time.Second})
+	client := service.NewFingerprintClient(httpClient)
+	fingerprint := service.NewFingerprint(client)
+	auth := service.NewAuth(repos, fingerprint)
+	apiKey := service.NewAPIKeyStrategy(repos.Auth)
+	cost := service.NewCost(config.Redis)
+	executor := service.NewExecutor()
+	geofencing := service.NewGeofencing(config.Redis)
 
 	// we don't need to pass in the entire repos struct, just the ones we need
 	platformRepos := repository.Repositories{Auth: repos.Auth, Platform: repos.Platform}
-	Platform := service.NewPlatform(platformRepos)
+	platform := service.NewPlatform(platformRepos)
 
-	Transaction := service.NewTransaction(repos, config.Redis)
-	User := service.NewUser(repos)
+	transaction := service.NewTransaction(repos, config.Redis)
+	user := service.NewUser(repos, auth, fingerprint)
 
 	// we don't need to pass in the entire repos struct, just the ones we need
 	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User}
-	Verification := service.NewVerification(verificationRepos)
+	verification := service.NewVerification(verificationRepos)
 
 	return service.Services{
-		Auth:         Auth,
-		ApiKey:       ApiKey,
-		Cost:         Cost,
-		Executor:     Executor,
-		Geofencing:   Geofencing,
-		Platform:     Platform,
-		Transaction:  Transaction,
-		User:         User,
-		Verification: Verification,
+		Auth:         auth,
+		ApiKey:       apiKey,
+		Cost:         cost,
+		Executor:     executor,
+		Geofencing:   geofencing,
+		Platform:     platform,
+		Transaction:  transaction,
+		User:         user,
+		Verification: verification,
 	}
 }

@@ -15,10 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type UserRegister = model.UserRegister
-type UserLoginEmail = model.UserEmailLogin
-type UserPKLogin = model.UserPKLogin
-
 type SignablePayload struct {
 	Nonce string `json:"nonce"`
 }
@@ -51,12 +47,13 @@ type Auth interface {
 }
 
 type auth struct {
-	repos repository.Repositories
+	repos       repository.Repositories
+	fingerprint Fingerprint
 }
 
 // reusing UserRepos here
-func NewAuth(r repository.Repositories) Auth {
-	return &auth{r}
+func NewAuth(r repository.Repositories, f Fingerprint) Auth {
+	return &auth{r, f}
 }
 
 func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
@@ -83,11 +80,14 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	if err != nil {
 		return resp, common.StringError(err)
 	}
-	err = verifyWalletAuthentication(request)
-	if err != nil {
+
+	if err := verifyWalletAuthentication(request); err != nil {
 		return resp, common.StringError(err)
 	}
 
+	if err := a.deviceExists(request.Fingerprint.VisitorID); err != nil {
+		return resp, common.StringError(errors.New("unknown device"))
+	}
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
 	if err != nil {
@@ -104,6 +104,11 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 	return UserCreateResponse{JWT: jwt, User: user}, nil
+}
+
+func (a auth) deviceExists(visitorID string) error {
+	_, err := a.repos.Device.GetByFingerprint(visitorID)
+	return err
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
