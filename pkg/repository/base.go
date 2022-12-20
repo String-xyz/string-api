@@ -128,7 +128,7 @@ func (b base[T]) List(limit int, offset int) (list []T, err error) {
 }
 
 func (b base[T]) GetById(ID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND 'deactivated_at' IS NOT NULL", b.table), ID)
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND deactivated_at IS NULL", b.table), ID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
@@ -137,7 +137,7 @@ func (b base[T]) GetById(ID string) (m T, err error) {
 
 // Returns the first match of the user's ID
 func (b base[T]) GetByUserId(userID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND 'deactivated_at' IS NOT NULL LIMIT 1", b.table), userID)
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND deactivated_at IS NULL LIMIT 1", b.table), userID)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
