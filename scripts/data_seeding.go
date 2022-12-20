@@ -242,10 +242,6 @@ func mockSeeding() {
 
 	// Devices, this is used in TX LEG
 	/*deviceDeveloper*/
-	// _, err = repos.Device.Create(model.Device{LastUsedAt: time.Now(), Type: "Admin", Description: "Developer Laptop", UserID: userString.ID})
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
