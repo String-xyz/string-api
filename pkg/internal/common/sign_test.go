@@ -15,10 +15,10 @@ func TestSignAndValidateString(t *testing.T) {
 
 	obj1 := "Your String Here"
 
-	obj1Signed, err := EVMSign(obj1)
+	obj1Signed, err := EVMSign(obj1, true)
 	assert.NoError(t, err)
 	fmt.Printf("\nString Signature: %+v\n", obj1Signed)
-	valid, err := ValidateEVMSignature(obj1Signed, obj1)
+	valid, err := ValidateEVMSignature(obj1Signed, obj1, true)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
 }
@@ -33,10 +33,10 @@ func TestSignAndValidateStruct(t *testing.T) {
 		Timestamp: 1010101010,
 	}
 
-	obj1Signed, err := EVMSign(obj1)
+	obj1Signed, err := EVMSign(obj1, true)
 	assert.NoError(t, err)
 	fmt.Printf("\nStruct Signature: %+v\n", obj1Signed)
-	valid, err := ValidateEVMSignature(obj1Signed, obj1)
+	valid, err := ValidateEVMSignature(obj1Signed, obj1, true)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
 }
