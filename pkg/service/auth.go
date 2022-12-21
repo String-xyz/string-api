@@ -128,12 +128,12 @@ func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, m
 	}
 	// create device only if the error is not found
 	if err != nil && err == repository.ErrNotFound {
-		visitor, err := a.fingerprint.GetVisitor(visitorID, requestID)
-		if err != nil {
-			return false, model.Device{}, common.StringError(err)
+		visitor, fpErr := a.fingerprint.GetVisitor(visitorID, requestID)
+		if fpErr != nil {
+			return false, model.Device{}, common.StringError(fpErr)
 		}
-		device, err := a.createDevice(userID, visitor)
-		return err == nil, device, err
+		device, dErr := a.createDevice(userID, visitor)
+		return dErr == nil, device, dErr
 	}
 
 	return false, device, common.StringError(err)
