@@ -47,6 +47,7 @@ CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- enum: to be defined at struct level in Go
   status TEXT NOT NULL, -- enum: to be defined at struct level in Go
   name TEXT DEFAULT '',
@@ -65,6 +66,7 @@ CREATE TABLE network (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   name TEXT NOT NULL,
   network_id TEXT DEFAULT '', -- might actually be big.Int
   chain_id TEXT NOT NULL, -- might actually be big.Int
@@ -85,6 +87,7 @@ CREATE TABLE asset ( -- We will write sql commands to add/update these in bulk.
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
   decimals INT DEFAULT 0,

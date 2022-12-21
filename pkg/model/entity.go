@@ -37,29 +37,31 @@ type Platform struct {
 
 // See NETWORK in Migrations 0001
 type Network struct {
-	ID          string    `json:"id" db:"id"`
-	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
-	Name        string    `json:"name" db:"name"`
-	NetworkID   uint64    `json:"networkId" db:"network_id"`
-	ChainID     uint64    `json:"chainId" db:"chain_id"`
-	GasTokenID  string    `json:"gasTokenId" db:"gas_token_id"`
-	GasOracle   string    `json:"gasOracle" db:"gas_oracle"`
-	RPCUrl      string    `json:"rpcUrl" db:"rpc_url"`
-	ExplorerUrl string    `json:"explorerUrl" db:"explorer_url"`
+	ID            string     `json:"id" db:"id"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Name          string     `json:"name" db:"name"`
+	NetworkID     uint64     `json:"networkId" db:"network_id"`
+	ChainID       uint64     `json:"chainId" db:"chain_id"`
+	GasTokenID    string     `json:"gasTokenId" db:"gas_token_id"`
+	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
+	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
+	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
 }
 
 // See ASSET in Migrations 0001
 type Asset struct {
-	ID          string         `json:"id" db:"id"`
-	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt   time.Time      `json:"updatedAt" db:"updated_at"`
-	Name        string         `json:"name" db:"name"`
-	Description string         `json:"description" db:"description"`
-	Decimals    uint64         `json:"decimals" db:"decimals"`
-	IsCrypto    bool           `json:"isCrypto" db:"is_crypto"`
-	NetworkID   sql.NullString `json:"networkId" db:"network_id"`
-	ValueOracle sql.NullString `json:"valueOracle" db:"value_oracle"`
+	ID            string         `json:"id" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Name          string         `json:"name" db:"name"`
+	Description   string         `json:"description" db:"description"`
+	Decimals      uint64         `json:"decimals" db:"decimals"`
+	IsCrypto      bool           `json:"isCrypto" db:"is_crypto"`
+	NetworkID     sql.NullString `json:"networkId" db:"network_id"`
+	ValueOracle   sql.NullString `json:"valueOracle" db:"value_oracle"`
 }
 
 // See USER_PLATFORM in Migrations 0002
@@ -98,20 +100,21 @@ type Contact struct {
 
 // See LOCATION in Migrations 0002
 type Location struct {
-	ID             string    `json:"id" db:"id"`
-	UserID         string    `json:"userId" db:"user_id"`
-	CreatedAt      time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time `json:"updatedAt" db:"updated_at"`
-	Type           string    `json:"type" db:"type"`
-	Status         string    `json:"status" db:"status"`
-	Tags           StringMap `json:"tags" db:"tags"`
-	BuildingNumber string    `json:"buildingNumber" db:"building_number"`
-	UnitNumber     string    `json:"unitNumber" db:"unit_number"`
-	StreetName     string    `json:"streetName" db:"street_name"`
-	City           string    `json:"city" db:"city"`
-	State          string    `json:"state" db:"state"`
-	PostalCode     string    `json:"postalCode" db:"postal_code"`
-	Country        string    `json:"country" db:"country"`
+	ID             string     `json:"id" db:"id"`
+	UserID         string     `json:"userId" db:"user_id"`
+	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type           string     `json:"type" db:"type"`
+	Status         string     `json:"status" db:"status"`
+	Tags           StringMap  `json:"tags" db:"tags"`
+	BuildingNumber string     `json:"buildingNumber" db:"building_number"`
+	UnitNumber     string     `json:"unitNumber" db:"unit_number"`
+	StreetName     string     `json:"streetName" db:"street_name"`
+	City           string     `json:"city" db:"city"`
+	State          string     `json:"state" db:"state"`
+	PostalCode     string     `json:"postalCode" db:"postal_code"`
+	Country        string     `json:"country" db:"country"`
 }
 
 // See INSTRUMENT in Migrations 0002
@@ -144,15 +147,16 @@ type DeviceInstrument struct {
 
 // See Tx_LEG in Migrations 0003
 type TxLeg struct {
-	ID           string    `json:"id" db:"id"`
-	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt    time.Time `json:"updatedAt" db:"updated_at"`
-	Timestamp    time.Time `json:"timestamp" db:"timestamp"`
-	Amount       string    `json:"amount" db:"amount"`
-	Value        string    `json:"value" db:"value"`
-	AssetID      string    `json:"assetId" db:"asset_id"`
-	UserID       string    `json:"userId" db:"user_id"`
-	InstrumentID string    `json:"instrumentId" db:"instrument_id"`
+	ID            string     `json:"id" db:"id"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Timestamp     time.Time  `json:"timestamp" db:"timestamp"`
+	Amount        string     `json:"amount" db:"amount"`
+	Value         string     `json:"value" db:"value"`
+	AssetID       string     `json:"assetId" db:"asset_id"`
+	UserID        string     `json:"userId" db:"user_id"`
+	InstrumentID  string     `json:"instrumentId" db:"instrument_id"`
 }
 
 // See TRANSACTION in Migrations 0003
@@ -160,6 +164,7 @@ type Transaction struct {
 	ID                 string         `json:"id" db:"id"`
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
+	DeactivatedAt      *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type               string         `json:"type" db:"type"`
 	Status             string         `json:"status" db:"status"`
 	Tags               StringMap      `json:"tags" db:"tags"`

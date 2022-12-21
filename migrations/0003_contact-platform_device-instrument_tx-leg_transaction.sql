@@ -25,6 +25,7 @@ CREATE TABLE tx_leg (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(), -- unique identifier for the TX leg which we generate
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, -- initial timestamp of creation
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, -- timestamp whenever this tx_leg is updated
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   -- TIMESTAMP:
   -- For CC send = auth timestamp
   -- For CC receive = capture timestamp
@@ -60,6 +61,7 @@ CREATE TABLE transaction (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(), -- unique idenfier for the transaction which we generate
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, -- time transaction entry was initially created
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, -- time transaction entry was last updated, including adding tags
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT DEFAULT '', -- enum [fiat-to-crypto, crypto-to-fiat] (these types may eventually have subtypes, ie NFT_MINT)
   status TEXT DEFAULT '', --enum State of the transaction in the /transact endpoint
   tags JSONB DEFAULT '{}'::JSONB, -- Empty but will be used for Unit21.  These are key-val pairs for flagging transactions
