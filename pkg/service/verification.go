@@ -53,7 +53,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 
 	user, err := v.repos.User.GetById(userID)
 	if err != nil || user.ID != userID {
-		return common.StringError(err) // JWT expiration will not be hit here
+		return common.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
 	}
 
 	contact, _ := v.repos.Contact.GetByData(email)

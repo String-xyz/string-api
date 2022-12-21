@@ -66,5 +66,4 @@ func (u contact[T]) GetByUserIdAndStatus(userID, status string) (model.Contact, 
 		return m, ErrNotFound
 	}
 	return m, common.StringError(err)
-
 }
