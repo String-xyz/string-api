@@ -137,14 +137,15 @@ func (u user) createUserData(addr, visitorID, requestID string) (model.User, mod
 		u.repos.Instrument.Rollback()
 		return user, model.Device{}, err // is this intentionally not common.StringError?
 	}
-
+	now := time.Now()
 	device, err := u.repos.Device.Create(model.Device{
 		Fingerprint: visitorID,
 		UserID:      user.ID,
 		Type:        visitor.Type,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
 		Description: visitor.UserAgent,
-		LastUsedAt:  time.Now(),
+		LastUsedAt:  now,
+		ValidatedAt: &now,
 	})
 	if err != nil {
 		u.repos.Device.Rollback()
