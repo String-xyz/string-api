@@ -88,11 +88,6 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	device, err := a.getDeviceIfExists(request.Fingerprint.VisitorID)
-	if err != nil {
-		return resp, common.StringError(errors.New("unknown device"))
-	}
-
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
 	if err != nil {
@@ -103,27 +98,28 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	if created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID); created && err == nil {
+	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	if created && err == nil {
 		go a.verification.SendDeviceVerification(user.ID, device.ID, time.Now().String())
 
 		return resp, common.StringError(errors.New("unknown device"))
 	}
-
+	if !created && err != nil {
+		return resp, common.StringError(err)
+	}
+	// device was not created, check if it has been validated
+	if !created && err == nil {
+		if device.ValidatedAt == nil {
+			go a.verification.SendDeviceVerification(user.ID, device.ID, time.Now().String())
+			return resp, common.StringError(errors.New("unknown device"))
+		}
+	}
 	// Create the JWT
 	jwt, err := a.GenerateJWT(device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 	return UserCreateResponse{JWT: jwt, User: user}, nil
-}
-
-func (a auth) getDeviceIfExists(visitorID string) (model.Device, error) {
-	device, err := a.repos.Device.GetByFingerprint(visitorID)
-	// Right now we want to return an error if not found
-	if err != nil {
-		return model.Device{}, common.StringError(err)
-	}
-	return device, nil
 }
 
 func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {

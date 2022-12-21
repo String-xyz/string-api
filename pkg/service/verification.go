@@ -163,7 +163,3 @@ func (v verification) VerifyDevice(encrypted string) error {
 
 	return err
 }
-
-func (v verification) htmlContent() {
-
-}
