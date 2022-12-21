@@ -99,20 +99,15 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
-	if created && err == nil {
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
+	if created || device.ValidatedAt == nil {
 		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
-	if !created && err != nil {
-		return resp, common.StringError(err)
-	}
-	// device was not created, check if it has been validated
-	if !created && err == nil {
-		if device.ValidatedAt == nil {
-			go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
-			return resp, common.StringError(errors.New("unknown device"))
-		}
-	}
+
 	// Create the JWT
 	jwt, err := a.GenerateJWT(device)
 	if err != nil {
