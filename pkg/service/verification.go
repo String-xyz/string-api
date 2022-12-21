@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
 )
 
 type EmailVerification struct {
@@ -80,7 +81,6 @@ func (v verification) SendEmailVerification(userID, email string) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-
 	// Wait for up to 15 minutes, final timeout TBD
 	now, lastPolled := time.Now().Unix(), time.Now().Unix()
 	until := now + (60 * 15)
@@ -104,6 +104,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 func (v verification) SendDeviceVerification(userID, deviceID, deviceDescription string) error {
 	email, err := v.repos.Contact.GetByUserIdAndStatus(userID, "validated")
 	if err != nil {
+		log.Error(err).Msg("Error getting a valid email")
 		return err
 	}
 
