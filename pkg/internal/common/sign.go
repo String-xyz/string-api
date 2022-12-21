@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func EVMSign(data interface{}) (string, error) {
+func EVMSign(data interface{}, eip131 bool) (string, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
 		return "", StringError(err)
@@ -20,6 +21,12 @@ func EVMSign(data interface{}) (string, error) {
 	if err != nil {
 		return "", StringError(err)
 	}
+
+	if eip131 {
+		prefix := []byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(buffer)))
+		buffer = append(prefix, buffer...)
+	}
+
 	hash := crypto.Keccak256Hash(buffer)
 	signature, err := crypto.Sign(hash.Bytes(), sk)
 	if err != nil {
@@ -28,7 +35,7 @@ func EVMSign(data interface{}) (string, error) {
 	return hexutil.Encode(signature), nil
 }
 
-func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
+func ValidateEVMSignature(signature string, data interface{}, eip131 bool) (bool, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
 		return false, StringError(err)
@@ -44,6 +51,13 @@ func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	if err != nil {
 		return false, StringError(err)
 	}
+
+	if eip131 {
+		// prepend expected prefix
+		prefix := []byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(buffer)))
+		buffer = append(prefix, buffer...)
+	}
+
 	hash := crypto.Keccak256Hash(buffer)
 
 	sigBytes, err := hexutil.Decode(signature)
@@ -54,11 +68,18 @@ func ValidateEVMSignature(signature string, data interface{}) (bool, error) {
 	return verified, nil
 }
 
-func ValidateExternalEVMSignature(signature string, address string, data interface{}) (bool, error) {
+func ValidateExternalEVMSignature(signature string, address string, data interface{}, eip131 bool) (bool, error) {
 	buffer, err := json.Marshal(data)
 	if err != nil {
 		return false, StringError(err)
 	}
+
+	if eip131 {
+		// prepend expected prefix
+		prefix := []byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(buffer)))
+		buffer = append(prefix, buffer...)
+	}
+
 	hash := crypto.Keccak256Hash(buffer)
 
 	sigBytes, err := hexutil.Decode(signature)

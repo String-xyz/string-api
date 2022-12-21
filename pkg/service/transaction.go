@@ -75,7 +75,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	executor.Close()
 
 	// Sign entire payload
-	signature, err := common.EVMSign(res)
+	signature, err := common.EVMSign(res, true)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -331,7 +331,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	dataToValidate := e
 	dataToValidate.Signature = ""
 	dataToValidate.CardToken = ""
-	valid, err := common.ValidateEVMSignature(e.Signature, dataToValidate)
+	valid, err := common.ValidateEVMSignature(e.Signature, dataToValidate, true)
 	if err != nil {
 		return false, common.StringError(err)
 	}

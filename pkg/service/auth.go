@@ -194,7 +194,7 @@ func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) erro
 		return common.StringError(err)
 	}
 	// Verify users signature
-	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, request.Nonce)
+	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, request.Nonce, true) // true: expect eip131
 	if err != nil {
 		return common.StringError(err)
 	}
