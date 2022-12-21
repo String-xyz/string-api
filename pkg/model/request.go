@@ -104,3 +104,7 @@ type UpdateStatus struct {
 type NetworkUpdates struct {
 	GasTokenID *string `json:"gasTokenId" db:"gas_token_id"`
 }
+
+type DeviceUpdates struct {
+	ValidatedAt *time.Time `json:"validatedAt" db:"validated_at"`
+}

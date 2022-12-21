@@ -12,6 +12,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -48,13 +49,14 @@ type Auth interface {
 }
 
 type auth struct {
-	repos       repository.Repositories
-	fingerprint Fingerprint
+	repos        repository.Repositories
+	fingerprint  Fingerprint
+	verification Verification
 }
 
 // reusing UserRepos here
-func NewAuth(r repository.Repositories, f Fingerprint) Auth {
-	return &auth{r, f}
+func NewAuth(r repository.Repositories, f Fingerprint, v Verification) Auth {
+	return &auth{r, f, v}
 }
 
 func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
@@ -86,11 +88,6 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	device, err := a.getDeviceIfExists(request.Fingerprint.VisitorID)
-	if err != nil {
-		return resp, common.StringError(errors.New("unknown device"))
-	}
-
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
 	if err != nil {
@@ -101,6 +98,16 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
+	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
+	if created || device.ValidatedAt == nil {
+		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+		return resp, common.StringError(errors.New("unknown device"))
+	}
+
 	// Create the JWT
 	jwt, err := a.GenerateJWT(device)
 	if err != nil {
@@ -109,13 +116,34 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (a auth) getDeviceIfExists(visitorID string) (model.Device, error) {
+func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {
 	device, err := a.repos.Device.GetByFingerprint(visitorID)
-	// Right now we want to return an error if not found
-	if err != nil {
-		return model.Device{}, common.StringError(err)
+	if err == nil {
+		return false, device, nil
 	}
-	return device, nil
+	// create device only if the error is not found
+	if err != nil && err == repository.ErrNotFound {
+		visitor, fpErr := a.fingerprint.GetVisitor(visitorID, requestID)
+		if fpErr != nil {
+			return false, model.Device{}, common.StringError(fpErr)
+		}
+		device, dErr := a.createDevice(userID, visitor)
+		return dErr == nil, device, dErr
+	}
+
+	return false, device, common.StringError(err)
+}
+
+func (a auth) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
+	return a.repos.Device.Create(model.Device{
+		UserID:      userID,
+		Fingerprint: visitor.VisitorID,
+		Type:        visitor.Type,
+		IpAddresses: pq.StringArray{visitor.IPAddress},
+		Description: visitor.UserAgent,
+		LastUsedAt:  time.Now(),
+		ValidatedAt: nil,
+	})
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis

@@ -12,6 +12,8 @@ type Device interface {
 	Transactable
 	Create(model.Device) (model.Device, error)
 	GetById(id string) (model.Device, error)
+
+	// GetByFingerprint gets a device by fingerprint ID
 	GetByFingerprint(fingerprintID string) (model.Device, error)
 	GetByUserId(userID string) (model.Device, error)
 	ListByUserId(userID string, imit int, offset int) ([]model.Device, error)
@@ -29,8 +31,8 @@ func NewDevice(db *sqlx.DB) Device {
 func (d device[T]) Create(insert model.Device) (model.Device, error) {
 	m := model.Device{}
 	rows, err := d.store.NamedQuery(`
-		INSERT INTO device (last_used_at, type, description, user_id, fingerprint, ip_addresses) 
-		VALUES(:last_used_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
+		INSERT INTO device (last_used_at,validated_at, type, description, user_id, fingerprint, ip_addresses) 
+		VALUES(:last_used_at,:validated_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
 		RETURNING *`, insert)
 	if err != nil {
 		return m, common.StringError(err)
