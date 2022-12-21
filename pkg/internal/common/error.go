@@ -5,7 +5,12 @@ import (
 )
 
 func StringError(err error, optionalMsg ...string) error {
+	if err == nil {
+		return nil
+	}
+
 	concat := ""
+
 	for _, msgs := range optionalMsg {
 		concat += msgs + " "
 	}

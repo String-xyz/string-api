@@ -39,7 +39,7 @@ func (v verification) VerifyEmail(c echo.Context) error {
 
 func (v verification) VerifyDevice(c echo.Context) error {
 	token := c.QueryParam("token")
-	err := v.service.VerifyEmail(token)
+	err := v.service.VerifyDevice(token)
 	if err != nil {
 		LogStringError(c, err, "verification: device verification")
 		return BadRequestError(c)

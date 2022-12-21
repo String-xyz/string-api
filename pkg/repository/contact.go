@@ -61,7 +61,7 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 
 func (u contact[T]) GetByUserIdAndStatus(userID, status string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1 AND status = $2 LIMIT 1", u.table), userID, status)
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.table), userID, status)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}

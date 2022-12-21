@@ -18,16 +18,16 @@ func Encrypt(object interface{}, secret string) (string, error) {
 }
 
 func Decrypt[T any](from string, secret string) (T, error) {
-	var result *T = new(T)
+	var result T
 	decrypted, err := DecryptString(from, secret)
 	if err != nil {
-		return *result, StringError(err)
+		return result, StringError(err)
 	}
 	err = json.Unmarshal([]byte(decrypted), &result)
 	if err != nil {
-		return *result, StringError(err)
+		return result, StringError(err)
 	}
-	return *result, nil
+	return result, nil
 }
 
 func EncryptString(data string, secret string) (string, error) {
