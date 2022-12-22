@@ -37,6 +37,18 @@ locals {
           valueFrom = data.aws_ssm_parameter.hot_wallet.arn
         },
         {
+          name      = "STRING_ENCRYPTION_SECRET"
+          valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
+        },
+        {
+          name      = "UNIT21_API_KEY"
+          valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
+        },
+        {
+          name      = "IPSTACK_API_KEY"
+          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
+        },
+        {
           name      = "CHECKOUT_PUBLIC_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_public_key.arn
         },
@@ -51,6 +63,26 @@ locals {
         {
           name      = "OWLRACLE_API_SECRET"
           valueFrom = data.aws_ssm_parameter.owlracle_api_secret.arn
+        },
+        {
+          name      = "FINGERPRINT_API_KEY"
+          valueFrom = data.aws_ssm_parameter.fingerprint_api_key.arn
+        },
+        {
+          name      = "SENDGRID_API_KEY"
+          valuefrom = data.aws_ssm_parameter.sendgrind_api_key.arn
+        },
+        {
+          name      = "TWILIO_ACCOUNT_SID"
+          valueFrom = data.aws_ssm_parameter.twilio_account_sid.arn
+        },
+        {
+          name      = "TWILIO_SMS_SID"
+          valuefrom = data.aws_ssm_parameter.twilio_sms_sid.arn
+        },
+        {
+          name      = "TWILIO_AUTH_TOKEN"
+          valuefrom = data.aws_ssm_parameter.twilio_auth_token.arn
         },
         {
           name      = "DB_USERNAME"
@@ -69,11 +101,11 @@ locals {
           valueFrom = data.aws_ssm_parameter.db_name.arn
         },
         {
-          name = "REDIS_HOST",
+          name      = "REDIS_HOST",
           valuefrom = data.aws_ssm_parameter.redis_host_url.arn
         },
         {
-          name = "REDIS_PASSWORD",
+          name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
         }
       ]
@@ -86,8 +118,8 @@ locals {
           name  = "REDIS_PORT"
           value = local.redis_port
         },
-         {
-          name = "DB_PORT",
+        {
+          name  = "DB_PORT",
           value = local.db_port
         },
         {
@@ -109,6 +141,22 @@ locals {
         {
           name  = "COINGECKO_API_URL"
           value = "https://api.coingecko.com/api/v3/"
+        },
+        {
+          name  = "FINGERPRINT_API_URL"
+          value = "https://api.fpjs.io/"
+        }, 
+        { 
+          name  = "BASE_URL"
+          value = "https://string-api.dev.string-api.xyz/"
+        },
+        {
+          name  = "UNIT21_ENV"
+          value = "sandbox2-api"
+        },
+        {
+          name  = "UNIT21_ORG_NAME"
+          value = "string"
         }
       ],
       logConfiguration = {
