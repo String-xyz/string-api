@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.redis_host_url.arn,
       data.aws_ssm_parameter.redis_auth_token.arn,
       data.aws_ssm_parameter.fingerprint_api_key.arn,
-      data.aws_ssm_parameter.sendgrind_api_key.arn,
+      data.aws_ssm_parameter.sendgrid_api_key.arn,
       data.aws_ssm_parameter.twilio_sms_sid.arn,
       data.aws_ssm_parameter.twilio_account_sid.arn,
       data.aws_ssm_parameter.twilio_auth_token.arn

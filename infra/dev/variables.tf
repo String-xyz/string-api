@@ -70,7 +70,7 @@ locals {
         },
         {
           name      = "SENDGRID_API_KEY"
-          valuefrom = data.aws_ssm_parameter.sendgrind_api_key.arn
+          valuefrom = data.aws_ssm_parameter.sendgrid_api_key.arn
         },
         {
           name      = "TWILIO_ACCOUNT_SID"

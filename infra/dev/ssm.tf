@@ -42,7 +42,7 @@ data "aws_ssm_parameter" "fingerprint_api_key" {
   name = "fingerprint-api-key"
 }
 
-data "aws_ssm_parameter" "sendgrind_api_key" {
+data "aws_ssm_parameter" "sendgrid_api_key" {
   name = "sendgrid-api-key"
 }
 
