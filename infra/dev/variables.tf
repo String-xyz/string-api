@@ -37,7 +37,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.hot_wallet.arn
         },
         {
-          name      = "STRING_ENCRYPTION_SECRET"
+          name      = "STRING_ENCRYPTION_KEY"
           valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
         },
         {

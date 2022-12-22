@@ -22,7 +22,7 @@ type RedisStore interface {
 }
 
 type redisStore struct {
-	client *redis.Client
+	client *redis.ClusterClient
 }
 
 const REDIS_NOT_FOUND_ERROR = "redis: nil"
@@ -45,9 +45,25 @@ func redisConf() *redis.Options {
 	return cf
 }
 
+func cluster() *redis.ClusterClient {
+	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
+	return redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:        []string{url},
+		Password:     os.Getenv("REDIS_PASSWORD"),
+		PoolSize:     10,
+		MinIdleConns: 10,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		ReadOnly:       false,
+		RouteRandomly:  false,
+		RouteByLatency: false,
+	})
+}
+
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
-	client := redis.NewClient(redisConf())
+	client := cluster()
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to ping Redis: %v", err)
