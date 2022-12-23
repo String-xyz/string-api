@@ -31,11 +31,13 @@ type AuthStrategy interface {
 	CreateAny(key string, val any, expire time.Duration) error
 	CreateAPIKey(entityID string, authType AuthType, apiKey string, persistOnly bool) (model.AuthStrategy, error)
 	CreateJWTRefresh(key string, val string) error
+	GetUserIdFromRefreshToken(key string) (string, error)
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
 	List(limit, offset int) ([]model.AuthStrategy, error)
 	ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error)
 	UpdateStatus(ID, status string) (model.AuthStrategy, error)
+	Delete(key string) error
 }
 
 type auth struct {
@@ -91,17 +93,18 @@ func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persi
 }
 
 // CreateJWTRefresh creates and persists a refresh jwt token
-// TODO: include expire time
-func (a auth) CreateJWTRefresh(key string, val string) error {
+func (a auth) CreateJWTRefresh(key string, userId string) error {
+	expireAt := time.Hour * 24 * 7 // 7 days expiration
 	m := model.AuthStrategy{
 		ID:         key,
 		CreatedAt:  time.Now(),
 		Type:       string(AuthTypeJWT),
 		EntityType: string(EntityTypeUser),
-		Data:       val,
+		Data:       userId,
+		ExpiresAt:  time.Now().Add(expireAt),
 	}
 
-	return a.redis.Set(key, m, 0)
+	return a.redis.Set(key, m, expireAt)
 }
 
 func (a auth) Get(key string) (model.AuthStrategy, error) {
@@ -116,6 +119,25 @@ func (a auth) Get(key string) (model.AuthStrategy, error) {
 	}
 
 	return authStrat, nil
+}
+
+// return the user id from the refresh token or error if token is invalid or expired
+func (a auth) GetUserIdFromRefreshToken(refreshToken string) (string, error) {
+	authStrat, err := a.Get(refreshToken)
+
+	if err != nil {
+		return "", common.StringError(err)
+	}
+	// assert token has not expired
+	if authStrat.ExpiresAt.Before(time.Now()) {
+		return "", common.StringError(fmt.Errorf("refresh token expired"))
+	}
+	// assert token has not been deactivated
+	if authStrat.DeactivatedAt != nil {
+		return "", common.StringError(fmt.Errorf("refresh token deactivated at %s", authStrat.DeactivatedAt))
+	}
+	// if all is well, return the user id
+	return authStrat.Data, nil
 }
 
 func (a auth) GetKeyString(key string) (string, error) {
@@ -153,4 +175,8 @@ func (a auth) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
 	m := model.AuthStrategy{}
 	err := row.StructScan(&m)
 	return m, err
+}
+
+func (a auth) Delete(key string) error {
+	return a.redis.Delete(key)
 }

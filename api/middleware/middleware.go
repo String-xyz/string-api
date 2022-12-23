@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -69,11 +70,18 @@ func BearerAuth() echo.MiddlewareFunc {
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
 				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 			})
+
 			c.Set("userId", claims.UserId)
 			c.Set("deviceId", claims.DeviceId)
 			return t, err
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		ErrorHandlerWithContext: func(err error, c echo.Context) error {
+			if strings.Contains(err.Error(), "token is expired") {
+				return handler.TokenExpired(c)
+			}
+			return handler.Unauthorized(c)
+		},
 	}
 	return echoMiddleware.JWTWithConfig(config)
 }

@@ -56,9 +56,17 @@ func Unprocessable(c echo.Context, message ...string) error {
 
 func Unauthorized(c echo.Context, message ...string) error {
 	if len(message) > 0 {
-		return c.JSON(http.StatusMethodNotAllowed, JSONError{Message: strings.Join(message, " "), Code: "UNAUTHORIZED"})
+		return c.JSON(http.StatusUnauthorized, JSONError{Message: strings.Join(message, " "), Code: "UNAUTHORIZED"})
 	}
 	return c.JSON(http.StatusUnauthorized, JSONError{Message: "Unauthorized", Code: "UNAUTHORIZED"})
+}
+
+func TokenExpired(c echo.Context, message ...string) error {
+	msg := "Token Expired"
+	if len(message) > 0 {
+		msg = strings.Join(message, " ")
+	}
+	return c.JSON(http.StatusUnauthorized, JSONError{Message: msg, Code: "TOKEN_EXPIRED"})
 }
 
 func Conflict(c echo.Context, message ...string) error {

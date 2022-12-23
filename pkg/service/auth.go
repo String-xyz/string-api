@@ -46,6 +46,7 @@ type Auth interface {
 
 	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
+	RefreshToken(token string) (JWT, error)
 }
 
 type auth struct {
@@ -185,6 +186,34 @@ func (a auth) ValidateAPIKey(key string) bool {
 		return false
 	}
 	return authKey.Data == hashed
+}
+
+func (a auth) RefreshToken(refreshToken string) (JWT, error) {
+	// get user id from refresh token
+	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// get device
+	device, err := a.repos.Device.GetByUserId(userId)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// create new jwt
+	jwt, err := a.GenerateJWT(device)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// delete old refresh token
+	err = a.repos.Auth.Delete(common.ToSha256(refreshToken))
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	return jwt, nil
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {

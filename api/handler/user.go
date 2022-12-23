@@ -2,11 +2,11 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 )
 
 type User interface {
@@ -45,7 +45,7 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(body)
 	if err != nil {
-		if errors.Cause(err).Error() == "wallet already associated with user" {
+		if strings.Contains(err.Error(), "wallet already associated with user") {
 			return Conflict(c)
 		}
 

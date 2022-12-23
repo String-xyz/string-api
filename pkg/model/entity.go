@@ -197,7 +197,8 @@ type AuthStrategy struct {
 	ContactID     NullableString `json:"contactId,omitempty" db:"contact_id"`
 	Data          string         `json:"data" data:"data"`
 	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
-	UpdateddAt    time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	ExpiresAt     time.Time      `json:"expireAt,omitempty" db:"expire_at"`
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 }
 
