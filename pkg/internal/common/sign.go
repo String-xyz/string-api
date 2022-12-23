@@ -2,7 +2,6 @@ package common
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
 	"os"
 	"strconv"
@@ -12,12 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func EVMSign(data interface{}, eip131 bool) (string, error) {
+func EVMSign(buffer []byte, eip131 bool) (string, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
-	if err != nil {
-		return "", StringError(err)
-	}
-	buffer, err := json.Marshal(data)
 	if err != nil {
 		return "", StringError(err)
 	}
@@ -35,7 +30,7 @@ func EVMSign(data interface{}, eip131 bool) (string, error) {
 	return hexutil.Encode(signature), nil
 }
 
-func ValidateEVMSignature(signature string, data interface{}, eip131 bool) (bool, error) {
+func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, error) {
 	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
 	if err != nil {
 		return false, StringError(err)
@@ -47,11 +42,6 @@ func ValidateEVMSignature(signature string, data interface{}, eip131 bool) (bool
 	}
 	pkBytes := crypto.FromECDSAPub(pkECDSA)
 
-	buffer, err := json.Marshal(data)
-	if err != nil {
-		return false, StringError(err)
-	}
-
 	if eip131 {
 		// prepend expected prefix
 		prefix := []byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(buffer)))
@@ -64,16 +54,17 @@ func ValidateEVMSignature(signature string, data interface{}, eip131 bool) (bool
 	if err != nil {
 		return false, StringError(err)
 	}
+
+	// Handle cases where EIP-155 is not implemented, as with most wallets
+	if sigBytes[64] == 27 || sigBytes[64] == 28 {
+		sigBytes[64] -= 27
+	}
+
 	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery ID
 	return verified, nil
 }
 
-func ValidateExternalEVMSignature(signature string, address string, data interface{}, eip131 bool) (bool, error) {
-	buffer, err := json.Marshal(data)
-	if err != nil {
-		return false, StringError(err)
-	}
-
+func ValidateExternalEVMSignature(signature string, address string, buffer []byte, eip131 bool) (bool, error) {
 	if eip131 {
 		// prepend expected prefix
 		prefix := []byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(buffer)))
@@ -85,6 +76,11 @@ func ValidateExternalEVMSignature(signature string, address string, data interfa
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
 		return false, StringError(err)
+	}
+
+	// Handle cases where EIP-155 is not implemented, as with most wallets
+	if sigBytes[64] == 27 || sigBytes[64] == 28 {
+		sigBytes[64] -= 27
 	}
 
 	sigPKECDSA, err := crypto.SigToPub(hash.Bytes(), sigBytes)
