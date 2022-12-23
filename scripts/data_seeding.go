@@ -36,6 +36,7 @@ func dataSeeding() {
 	if port == "" {
 		panic("no port!")
 	}
+
 	lg := zerolog.New(os.Stdout)
 
 	config := api.APIConfig{
@@ -124,6 +125,22 @@ func dataSeeding() {
 
 	// String User
 	userString, err := repos.User.Create(model.User{Type: "Internal", Status: "Internal"})
+	if err != nil {
+		panic(err)
+	}
+
+	// Set String User ID to what's defined in the ENV
+	internalId := os.Getenv("STRING_INTERNAL_ID")
+	if internalId == "" {
+		panic("STRING_INTERNAL_ID is not set in ENV!")
+	}
+
+	type UpdateID struct {
+		ID string `json:"id" db:"id"`
+	}
+
+	updateId := UpdateID{ID: internalId}
+	userString, err = repos.User.Update(userString.ID, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -236,6 +253,22 @@ func mockSeeding() {
 
 	// String User
 	userString, err := repos.User.Create(model.User{Type: "Internal", Status: "Internal"})
+	if err != nil {
+		panic(err)
+	}
+
+	// Set String User ID to what's defined in the ENV
+	internalId := os.Getenv("STRING_INTERNAL_ID")
+	if internalId == "" {
+		panic("STRING_INTERNAL_ID is not set in ENV!")
+	}
+
+	type UpdateID struct {
+		ID string `json:"id" db:"id"`
+	}
+
+	updateId := UpdateID{ID: internalId}
+	userString, err = repos.User.Update(userString.ID, updateId)
 	if err != nil {
 		panic(err)
 	}
