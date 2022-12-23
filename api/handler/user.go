@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -44,6 +45,10 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(body)
 	if err != nil {
+		if strings.Contains(err.Error(), "wallet already associated with user") {
+			return Conflict(c)
+		}
+
 		LogStringError(c, err, "user: creating user")
 		return InternalError(c)
 	}

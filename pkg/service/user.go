@@ -2,7 +2,6 @@ package service
 
 import (
 	"os"
-	"strings"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -75,12 +74,12 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	}
 
 	// Make sure wallet does not already exist
-	instrument, err := u.repos.Instrument.GetWallet(addr)
-	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
+	exists, err := u.repos.Instrument.WalletAlreadyExists(addr)
+	if err != nil {
 		return resp, common.StringError(err)
-	} else if err == nil && instrument.UserID != "" {
-		return resp, common.StringError(errors.New("wallet already associated with user"))
-	} else if err == nil && instrument.PublicKey == addr {
+	}
+
+	if exists {
 		return resp, common.StringError(errors.New("wallet already exists"))
 	}
 

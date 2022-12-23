@@ -60,3 +60,10 @@ func Unauthorized(c echo.Context, message ...string) error {
 	}
 	return c.JSON(http.StatusUnauthorized, JSONError{Message: "Unauthorized", Code: "UNAUTHORIZED"})
 }
+
+func Conflict(c echo.Context, message ...string) error {
+	if len(message) > 0 {
+		return c.JSON(http.StatusConflict, JSONError{Message: strings.Join(message, " "), Code: "CONFLICT"})
+	}
+	return c.JSON(http.StatusConflict, JSONError{Message: "Conflict", Code: "CONFLICT"})
+}
