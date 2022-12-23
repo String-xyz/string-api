@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -13,7 +14,7 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	obj1 := "Your String Here"
+	obj1 := []byte("Your String Here")
 
 	obj1Signed, err := EVMSign(obj1, true)
 	assert.NoError(t, err)
@@ -32,11 +33,13 @@ func TestSignAndValidateStruct(t *testing.T) {
 		Address:   "0xPasteYourAddressHere",
 		Timestamp: 1010101010,
 	}
+	bytes, err := json.Marshal(obj1)
+	assert.NoError(t, err)
 
-	obj1Signed, err := EVMSign(obj1, true)
+	obj1Signed, err := EVMSign(bytes, true)
 	assert.NoError(t, err)
 	fmt.Printf("\nStruct Signature: %+v\n", obj1Signed)
-	valid, err := ValidateEVMSignature(obj1Signed, obj1, true)
+	valid, err := ValidateEVMSignature(obj1Signed, bytes, true)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
 }
