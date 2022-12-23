@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -75,7 +76,11 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	executor.Close()
 
 	// Sign entire payload
-	signature, err := common.EVMSign(res)
+	bytes, err := json.Marshal(res)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	signature, err := common.EVMSign(bytes, true)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -331,7 +336,11 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	dataToValidate := e
 	dataToValidate.Signature = ""
 	dataToValidate.CardToken = ""
-	valid, err := common.ValidateEVMSignature(e.Signature, dataToValidate)
+	bytesToValidate, err := json.Marshal(dataToValidate)
+	if err != nil {
+		return false, common.StringError(err)
+	}
+	valid, err := common.ValidateEVMSignature(e.Signature, bytesToValidate, true)
 	if err != nil {
 		return false, common.StringError(err)
 	}
