@@ -7,7 +7,7 @@ import (
 )
 
 type APIKeyStrategy interface {
-	Create() (string, error)
+	Create() (model.AuthStrategy, error)
 	List(limit, offset int, status string) ([]model.AuthStrategy, error)
 	Approve(ID string) error
 }
@@ -19,11 +19,14 @@ type aPIKeyStrategy struct {
 func NewAPIKeyStrategy(repo repository.AuthStrategy) APIKeyStrategy {
 	return aPIKeyStrategy{repo}
 }
-func (g aPIKeyStrategy) Create() (string, error) {
+
+func (g aPIKeyStrategy) Create() (model.AuthStrategy, error) {
 	uuiKey := "str." + uuidWithoutHyphens()
 	hashed := common.ToSha256(uuiKey)
-	err := g.repo.CreateAPIKey("", repository.AuthTypeAPIKey, hashed, true)
-	return uuiKey, err
+	m, err := g.repo.CreateAPIKey("", repository.AuthTypeAPIKey, hashed, true)
+	m.Data = uuiKey
+	m.ContactData = ""
+	return m, err
 }
 
 func (g aPIKeyStrategy) List(limit, offset int, status string) ([]model.AuthStrategy, error) {
@@ -46,5 +49,7 @@ func (g aPIKeyStrategy) Approve(ID string) error {
 	if err != nil {
 		return err
 	}
-	return g.repo.CreateAPIKey(m.ID, repository.AuthTypeAPIKey, m.Data, false)
+
+	_, err = g.repo.CreateAPIKey(m.ID, repository.AuthTypeAPIKey, m.Data, false)
+	return err
 }

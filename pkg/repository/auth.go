@@ -29,7 +29,7 @@ const (
 type AuthStrategy interface {
 	Create(authType AuthType, m model.AuthStrategy) error
 	CreateAny(key string, val any, expire time.Duration) error
-	CreateAPIKey(entityID string, authType AuthType, apiKey string, persistOnly bool) error
+	CreateAPIKey(entityID string, authType AuthType, apiKey string, persistOnly bool) (model.AuthStrategy, error)
 	CreateJWTRefresh(key string, val string) error
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
@@ -64,12 +64,21 @@ func (a auth) CreateAny(key string, val any, expire time.Duration) error {
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
-func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persistOnly bool) error {
+func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persistOnly bool) (model.AuthStrategy, error) {
 	// only insert to postgres and skip redis cache
 	if persistOnly {
-		_, err := a.store.Exec("INSERT INTO auth_strategy(type,data) VALUES($1, $2)", authType, key)
-		return err
+		rows, err := a.store.Queryx("INSERT INTO auth_strategy(type,data) VALUES($1, $2) RETURNING *", authType, key)
+		if err == nil {
+			m := model.AuthStrategy{}
+			var scanErr error
+			for rows.Next() {
+				scanErr = rows.StructScan(&m)
+			}
+			return m, scanErr
+		}
+		return model.AuthStrategy{}, err
 	}
+
 	m := model.AuthStrategy{
 		EntityID:   entityID,
 		CreatedAt:  time.Now(),
@@ -78,7 +87,7 @@ func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persi
 		Data:       key,
 	}
 
-	return a.redis.Set(key, m, 0)
+	return m, a.redis.Set(key, m, 0)
 }
 
 // CreateJWTRefresh creates and persists a refresh jwt token
