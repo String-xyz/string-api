@@ -27,8 +27,7 @@ type redisStore struct {
 
 const REDIS_NOT_FOUND_ERROR = "redis: nil"
 
-func redisConf() *redis.Options {
-	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
+func redisConf() *tls.Config {
 	var tlsCf *tls.Config
 	if os.Getenv("ENV") != "local" {
 		tlsCf = &tls.Config{
@@ -36,25 +35,17 @@ func redisConf() *redis.Options {
 		}
 	}
 
-	cf := &redis.Options{
-		Addr:      url,
-		TLSConfig: tlsCf,
-		Password:  os.Getenv("REDIS_PASSWORD"),
-		DB:        0,
-	}
-	return cf
+	return tlsCf
 }
 
 func cluster() *redis.ClusterClient {
 	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 	return redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:        []string{url},
-		Password:     os.Getenv("REDIS_PASSWORD"),
-		PoolSize:     10,
-		MinIdleConns: 10,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+		Addrs:          []string{url},
+		Password:       os.Getenv("REDIS_PASSWORD"),
+		PoolSize:       10,
+		MinIdleConns:   10,
+		TLSConfig:      redisConf(),
 		ReadOnly:       false,
 		RouteRandomly:  false,
 		RouteByLatency: false,

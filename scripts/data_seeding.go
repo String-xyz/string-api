@@ -28,7 +28,6 @@ func DataSeeding() {
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
 		DB:     store.MustNewPG(),
-		Redis:  store.NewRedisStore(),
 		Port:   port,
 		Logger: &lg,
 	}
@@ -197,7 +196,6 @@ func MockSeeding() {
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
 		DB:     store.MustNewPG(),
-		Redis:  store.NewRedisStore(),
 		Port:   port,
 		Logger: &lg,
 	}
