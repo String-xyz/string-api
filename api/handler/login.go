@@ -17,6 +17,7 @@ type Login interface {
 	//VerifySignature receives the signed noncePaylod and verifies the signature to authenticate the user.
 	VerifySignature(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
+	RefreshToken(c echo.Context) error
 }
 
 type login struct {
@@ -72,6 +73,32 @@ func (l login) VerifySignature(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (l login) RefreshToken(c echo.Context) error {
+	var body model.RefreshTokenPayload
+	err := c.Bind(&body)
+	if err != nil {
+		LogStringError(c, err, "login: binding body")
+		return BadRequestError(c)
+	}
+
+	if err := c.Validate(body); err != nil {
+		return InvalidPayloadError(c, err)
+	}
+
+	jwt, err := l.Service.RefreshToken(body.RefreshToken)
+	if err != nil {
+		LogStringError(c, err, "login: refresh token")
+		return BadRequestError(c, "Invalid or expired token")
+	}
+	// set jwt in cookie
+	err = SetJWTCookie(c, jwt)
+	if err != nil {
+		LogStringError(c, err, "login: receive email set jwt cookie")
+		return InternalError(c)
+	}
+	return c.JSON(http.StatusOK, jwt)
+}
+
 func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
@@ -80,4 +107,5 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.Use(ms...)
 	g.GET("", l.NoncePayload)
 	g.POST("/sign", l.VerifySignature)
+	g.POST("/refresh", l.RefreshToken)
 }

@@ -108,3 +108,7 @@ type NetworkUpdates struct {
 type DeviceUpdates struct {
 	ValidatedAt *time.Time `json:"validatedAt" db:"validated_at"`
 }
+
+type RefreshTokenPayload struct {
+	RefreshToken string `json:"refreshToken" validate:"required"`
+}
