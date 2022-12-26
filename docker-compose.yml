@@ -11,7 +11,7 @@ services:
       - db
       - redis
     volumes:
-      - ./:/string-api
+      - ./:/string_api
   db:
     image: postgres:14.1-alpine
     restart: always
