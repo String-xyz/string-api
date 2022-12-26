@@ -91,10 +91,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 
 func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string) (model.TransactionReceipt, error) {
 	res := model.TransactionReceipt{}
-	err := t.getStringInstrumentsAndUserId()
-	if err != nil {
-		return res, common.StringError(err)
-	}
+	t.getStringInstrumentsAndUserId()
 
 	user, err := t.repos.User.GetById(userId)
 	if err != nil {
@@ -234,13 +231,8 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	return model.TransactionReceipt{TxID: txID, TxURL: chain.Explorer + "/tx/" + txID}, nil
 }
 
-func (t *transaction) getStringInstrumentsAndUserId() error {
-	ids, err := GetStringIds(t.repos, t.redis)
-	if err != nil {
-		return common.StringError(err)
-	}
-	t.ids = ids
-	return nil
+func (t *transaction) getStringInstrumentsAndUserId() {
+	t.ids = GetStringIdsFromEnv()
 }
 
 func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {

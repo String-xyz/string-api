@@ -145,14 +145,58 @@ func dataSeeding() {
 		panic(err)
 	}
 
+	// Devices, this is used in TX LEG
+	/*deviceDeveloper*/
+
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
+
+	bankId := os.Getenv("STRING_BANK_ID")
+	if bankId == "" {
+		panic("STRING_BANK_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: bankId}
+	err = repos.Instrument.Update(bankString.ID, updateId)
+	if err != nil {
+		panic(err)
+	}
+
 	/*instrumentDeveloperWallet*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	if err != nil {
+		panic(err)
+	}
+
+	walletId := os.Getenv("STRING_WALLET_ID")
+	if bankId == "" {
+		panic("STRING_WALLET_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: walletId}
+	err = repos.Instrument.Update(walletString.ID, updateId)
+	if err != nil {
+		panic(err)
+	}
+
+	// Platforms, placeholder
+	/*platformDeveloper*/
+	placeholderPlatform, err := repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
+	if err != nil {
+		panic(err)
+	}
+
+	platformId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
+	if bankId == "" {
+		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: platformId}
+	err = repos.Platform.Update(placeholderPlatform.ID, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -278,23 +322,56 @@ func mockSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
 	if err != nil {
 		panic(err)
 	}
+
+	bankId := os.Getenv("STRING_BANK_ID")
+	if bankId == "" {
+		panic("STRING_BANK_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: bankId}
+	err = repos.Instrument.Update(bankString.ID, updateId)
+	if err != nil {
+		panic(err)
+	}
+
 	/*instrumentDeveloperWallet*/
-	_, err = repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	if err != nil {
+		panic(err)
+	}
+
+	walletId := os.Getenv("STRING_WALLET_ID")
+	if bankId == "" {
+		panic("STRING_WALLET_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: walletId}
+	err = repos.Instrument.Update(walletString.ID, updateId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Platforms, placeholder
 	/*platformDeveloper*/
-	_, err = repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
+	placeholderPlatform, err := repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
 	if err != nil {
 		panic(err)
 	}
 
+	platformId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
+	if bankId == "" {
+		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
+	}
+
+	updateId = UpdateID{ID: platformId}
+	err = repos.Platform.Update(placeholderPlatform.ID, updateId)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func nullString(str string) sql.NullString {
