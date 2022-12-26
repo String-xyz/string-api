@@ -97,7 +97,7 @@ func userRoute(services service.Services, e *echo.Echo) {
 
 func loginRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewLogin(e, services.Auth)
-	handler.RegisterRoutes(e.Group("/login"))
+	handler.RegisterRoutes(e.Group("/login"), middleware.APIKeyAuth(services.Auth))
 }
 
 func verificationRoute(services service.Services, e *echo.Echo) {
