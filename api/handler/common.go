@@ -33,9 +33,13 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 
 	st := tracer.StackTrace()
 	st2 := fmt.Sprintf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
-	// delete the string-api docker path from the stack trace
-	fmt.Print(strings.ReplaceAll(st2, "/string-api/", ""))
 
+	if !strings.Contains(st2, "github.com") {
+		// delete the string-api docker path from the stack trace
+		st2 = strings.ReplaceAll(st2, "/string-api/", "")
+	}
+
+	fmt.Print(st2)
 	LogError(c, cause, handlerMsg)
 }
 
