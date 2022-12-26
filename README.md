@@ -9,10 +9,15 @@
 3. `goose postgres "host=localhost dbname=string_db user=string_db password=string_password sslmode=disable" down-to 0`
 
 ### Postgres & Redis - Docker Compose: ***local dev only*** ###
-1. To build and start the docker containers for the first time: `docker-compose -f docker-compose.yml up`
+1. To build and start the docker containers for the first time: `docker-compose up --build`
 2. To shutdown the docker containers press `ctl + c`
-3. To start them again: `docker start string-api_db_1 string-api_redis_1`
-4. To stop them: `docker stop string-api_db_1 string-api_redis_1`
+
+### Docker Issues?
+1. If docker is giving you an error when you try to `docker-compose up --build` try the following commands in order:
+2. `docker-compose down`
+3. `docker system prune` (/y)
+4. `docker volume prune` (/y)
+5. `docker compose up --build`
 
 ### For local development: ### 
 `cd api`
