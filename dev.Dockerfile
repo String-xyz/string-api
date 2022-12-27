@@ -5,10 +5,10 @@ RUN apt update && apt upgrade -y && \
 	make openssh-client
 
 # all the code lives here. We gonna mount the volume here
-WORKDIR /app
+WORKDIR /string_api
 
 # copy the go.mod and go.sum files then download the dependencies
-ADD go.mod go.sum /app/
+ADD go.mod go.sum /string_api/
 RUN go mod download
 
 # install the air tool

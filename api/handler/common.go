@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	service "github.com/String-xyz/string-api/pkg/service"
 
@@ -31,7 +32,12 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	cause := errors.Cause(err)
 
 	st := tracer.StackTrace()
-	fmt.Printf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
+	st2 := fmt.Sprintf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
+
+	// delete the string_api docker path from the stack trace
+	st2 = strings.ReplaceAll(st2, "/string_api/", "")
+
+	fmt.Print(st2)
 	LogError(c, cause, handlerMsg)
 }
 
