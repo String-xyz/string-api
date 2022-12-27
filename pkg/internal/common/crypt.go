@@ -7,6 +7,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"os"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
 )
 
 func Encrypt(object interface{}, secret string) (string, error) {
@@ -63,4 +68,38 @@ func DecryptString(data string, secret string) (string, error) {
 	plainText := make([]byte, len(cipherText))
 	cfb.XORKeyStream(plainText, cipherText)
 	return string(plainText), nil
+}
+
+func EncryptStringToKMS(data string) ([]byte, error) {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+	})
+	if err != nil {
+		return nil, StringError(err)
+	}
+	kmsService := kms.New(session)
+	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	result, err := kmsService.Encrypt(&kms.EncryptInput{
+		KeyId:     aws.String(keyId),
+		Plaintext: []byte(data),
+	})
+	if err != nil {
+		return nil, StringError(err)
+	}
+	return result.CiphertextBlob, nil
+}
+
+func DecryptBlobFromKMS(blob []byte) (string, error) {
+	session, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return "", StringError(err)
+	}
+	kmsService := kms.New(session)
+	result, err := kmsService.Decrypt(&kms.DecryptInput{CiphertextBlob: blob})
+	if err != nil {
+		return "", StringError(err)
+	}
+	return string(result.Plaintext), nil
 }
