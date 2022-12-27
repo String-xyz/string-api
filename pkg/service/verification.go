@@ -99,7 +99,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 			// update user status
 			user, err := v.repos.User.UpdateStatus(userID, "email_verified")
 			if err != nil {
-				fmt.Println("---------- User verify error", err, user.ID)
+				return common.StringError(errors.New("User email verify error - userID: " + user.ID))
 			}
 
 			return nil
@@ -163,7 +163,7 @@ func (v verification) VerifyEmail(encrypted string) error {
 	// update user status
 	user, err := v.repos.User.UpdateStatus(received.UserID, "email_verified")
 	if err != nil {
-		fmt.Println("---------- User verify error", err, user.ID)
+		return common.StringError(errors.New("User email verify error - userID: " + user.ID))
 	}
 
 	return common.StringError(err)
