@@ -144,10 +144,6 @@ func dataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Devices, this is used in TX LEG
-	/*deviceDeveloper*/
-
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
 	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
