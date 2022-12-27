@@ -45,7 +45,7 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(body)
 	if err != nil {
-		if strings.Contains(err.Error(), "wallet already associated with user") {
+		if errors.Cause(err) == "wallet already associated with user" {
 			return Conflict(c)
 		}
 
