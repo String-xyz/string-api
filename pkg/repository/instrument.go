@@ -85,7 +85,7 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	wallet, err := i.GetWallet(addr)
 
-	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
+	if err != nil && errors.Cause(err) != "not found" { // because we are wrapping error and care about its value
 		return true, common.StringError(err)
 	} else if err == nil && wallet.UserID != "" {
 		return true, common.StringError(errors.New("wallet already associated with user"))
