@@ -166,7 +166,7 @@ func (v verification) VerifyEmail(encrypted string) error {
 		return common.StringError(errors.New("User email verify error - userID: " + user.ID))
 	}
 
-	return common.StringError(err)
+	return nil
 }
 
 func (v verification) VerifyDevice(encrypted string) error {
