@@ -70,7 +70,7 @@ func DecryptString(data string, secret string) (string, error) {
 	return string(plainText), nil
 }
 
-func EncryptStringToKMS(data string) ([]byte, error) {
+func EncryptBytesToKMS(data []byte) ([]byte, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2"),
 	})
@@ -81,12 +81,16 @@ func EncryptStringToKMS(data string) ([]byte, error) {
 	keyId := os.Getenv("AWS_KMS_KEY_ID")
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
-		Plaintext: []byte(data),
+		Plaintext: data,
 	})
 	if err != nil {
 		return nil, StringError(err)
 	}
 	return result.CiphertextBlob, nil
+}
+
+func EncryptStringToKMS(data string) ([]byte, error) {
+	return EncryptBytesToKMS([]byte(data))
 }
 
 func DecryptBlobFromKMS(blob []byte) (string, error) {

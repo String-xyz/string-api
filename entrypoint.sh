@@ -16,7 +16,7 @@ goose postgres "$DB_CONFIG" up
 cd ..
 echo "----- ...Migrations done"
 echo "----- Seeding data..."
-go run scripts/data_seeding.go local
+go run script.go data_seeding local
 echo "----- ...Data seeded"
 
 # run app
