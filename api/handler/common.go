@@ -16,7 +16,7 @@ import (
 
 func LogError(c echo.Context, err error, handlerMsg string) {
 	lg := c.Get("logger").(*zerolog.Logger)
-	lg.Err(err).Stack().Msg(handlerMsg)
+	lg.Error().Stack().Err(err).Msg(handlerMsg)
 }
 
 func LogStringError(c echo.Context, err error, handlerMsg string) {
@@ -32,13 +32,14 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	cause := errors.Cause(err)
 
 	st := tracer.StackTrace()
-	st2 := fmt.Sprintf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
 
-	// delete the string_api docker path from the stack trace
-	st2 = strings.ReplaceAll(st2, "/string_api/", "")
-
-	fmt.Print(st2)
-	LogError(c, cause, handlerMsg)
+	if os.Getenv("env") == "local" {
+		st2 := fmt.Sprintf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
+		// delete the string_api docker path from the stack trace
+		st2 = strings.ReplaceAll(st2, "/string_api/", "")
+		fmt.Print(st2)
+	}
+	LogError(c, err, handlerMsg)
 }
 
 func SetJWTCookie(c echo.Context, jwt service.JWT) error {
