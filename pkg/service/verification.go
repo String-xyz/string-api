@@ -95,7 +95,14 @@ func (v verification) SendEmailVerification(userID, email string) error {
 		if err != nil && errors.Cause(err).Error() != "not found" {
 			return common.StringError(err)
 		} else if err == nil && contact.Data == email {
-			return nil // success
+			// success
+			// update user status
+			user, err := v.repos.User.UpdateStatus(userID, "email_verified")
+			if err != nil {
+				return common.StringError(errors.New("User email verify error - userID: " + user.ID))
+			}
+
+			return nil
 		}
 	}
 	// timed out
@@ -149,7 +156,17 @@ func (v verification) VerifyEmail(encrypted string) error {
 	}
 	contact := model.Contact{UserID: received.UserID, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
 	contact, err = v.repos.Contact.Create(contact)
-	return common.StringError(err)
+	if err != nil {
+		return common.StringError(err)
+	}
+
+	// update user status
+	user, err := v.repos.User.UpdateStatus(received.UserID, "email_verified")
+	if err != nil {
+		return common.StringError(errors.New("User email verify error - userID: " + user.ID))
+	}
+
+	return nil
 }
 
 func (v verification) VerifyDevice(encrypted string) error {

@@ -19,6 +19,7 @@ type User interface {
 	List(limit int, offset int) ([]model.User, error)
 	Update(ID string, updates any) (model.User, error)
 	GetByType(label string) (model.User, error)
+	UpdateStatus(ID string, status string) (model.User, error)
 }
 
 type user[T any] struct {
@@ -70,6 +71,16 @@ func (u user[T]) Update(ID string, updates any) (model.User, error) {
 		return user, common.StringError(err)
 	}
 	return user, err
+}
+
+// update user status
+func (u user[T]) UpdateStatus(ID string, status string) (model.User, error) {
+	m := model.User{}
+	err := u.store.Get(&m, fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 RETURNING *", u.table), status, ID)
+	if err != nil {
+		return m, common.StringError(err)
+	}
+	return m, nil
 }
 
 func (u user[T]) GetByType(label string) (model.User, error) {

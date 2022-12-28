@@ -7,6 +7,7 @@ import (
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 type Instrument interface {
@@ -17,6 +18,7 @@ type Instrument interface {
 	Update(ID string, updates any) error
 	GetWalletByUserId(userId string) (model.Instrument, error)
 	GetBankByUserId(userId string) (model.Instrument, error)
+	WalletAlreadyExists(addr string) (bool, error)
 }
 
 type instrument[T any] struct {
@@ -77,4 +79,18 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 		return m, common.StringError(err)
 	}
 	return m, nil
+}
+
+func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
+	wallet, err := i.GetWallet(addr)
+
+	if err != nil && errors.Cause(err).Error() != "not found" { // because we are wrapping error and care about its value
+		return true, common.StringError(err)
+	} else if err == nil && wallet.UserID != "" {
+		return true, common.StringError(errors.New("wallet already associated with user"))
+	} else if err == nil && wallet.PublicKey == addr {
+		return true, common.StringError(errors.New("wallet already exists"))
+	}
+
+	return false, nil
 }
