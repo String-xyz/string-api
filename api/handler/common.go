@@ -29,8 +29,8 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 		log.Warn().Str("error", err.Error()).Msg("error does not implement stack trace")
 		return
 	}
-	cause := errors.Cause(err)
 
+	cause := errors.Cause(err)
 	st := tracer.StackTrace()
 
 	if os.Getenv("env") == "local" {
@@ -39,6 +39,7 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 		st2 = strings.ReplaceAll(st2, "/string_api/", "")
 		fmt.Print(st2)
 	}
+
 	LogError(c, err, handlerMsg)
 }
 
