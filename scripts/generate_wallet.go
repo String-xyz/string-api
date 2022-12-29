@@ -6,8 +6,12 @@ import (
 )
 
 func GenerateWallet() {
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	err := service.GenerateWallet()
+	err := godotenv.Load(".env")
+	if err != nil {
+		panic(err)
+	}
+
+	err = service.GenerateWallet()
 	if err != nil {
 		panic(err)
 	}

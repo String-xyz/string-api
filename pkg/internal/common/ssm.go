@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -41,7 +42,7 @@ func FindParameter(c context.Context, api SSMGetParameterAPI, input *ssm.GetPara
 	return res, nil
 }
 
-func PutSSM(name string, value string) error {
+func PutSSM(name string, value string, overwrite bool) error {
 	if name == "" {
 		return StringError(errors.New("unnamed parameter"))
 	}
@@ -53,10 +54,13 @@ func PutSSM(name string, value string) error {
 		return StringError(err)
 	}
 	ssmClient := ssm.NewFromConfig(cfg)
+	keyId := os.Getenv("AWS_KMS_KEY_ID")
 	input := &ssm.PutParameterInput{
-		Name:  &name,
-		Value: &value,
-		Type:  types.ParameterTypeString,
+		Name:      &name,
+		Value:     &value,
+		Type:      types.ParameterTypeSecureString,
+		Overwrite: &overwrite,
+		KeyId:     &keyId,
 	}
 	_, err = AddStringParameter(context.TODO(), ssmClient, input)
 	if err != nil {
@@ -74,8 +78,10 @@ func GetSSM(name string) (string, error) {
 		return "", StringError(err)
 	}
 	ssmClient := ssm.NewFromConfig(cfg)
+	decrypt := true
 	input := &ssm.GetParameterInput{
-		Name: &name,
+		Name:           &name,
+		WithDecryption: &decrypt,
 	}
 	results, err := FindParameter(context.TODO(), ssmClient, input)
 	if err != nil {

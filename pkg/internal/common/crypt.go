@@ -70,12 +70,12 @@ func DecryptString(data string, secret string) (string, error) {
 	return string(plainText), nil
 }
 
-func EncryptBytesToKMS(data []byte) ([]byte, error) {
+func EncryptBytesToKMS(data []byte) (string, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2"),
 	})
 	if err != nil {
-		return nil, StringError(err)
+		return "", StringError(err)
 	}
 	kmsService := kms.New(session)
 	keyId := os.Getenv("AWS_KMS_KEY_ID")
@@ -84,16 +84,24 @@ func EncryptBytesToKMS(data []byte) ([]byte, error) {
 		Plaintext: data,
 	})
 	if err != nil {
-		return nil, StringError(err)
+		return "", StringError(err)
 	}
-	return result.CiphertextBlob, nil
+	return base64.StdEncoding.EncodeToString(result.CiphertextBlob), nil
 }
 
-func EncryptStringToKMS(data string) ([]byte, error) {
-	return EncryptBytesToKMS([]byte(data))
+func EncryptStringToKMS(data string) (string, error) {
+	res, err := EncryptBytesToKMS([]byte(data))
+	if err != nil {
+		return "", StringError(err)
+	}
+	return res, nil
 }
 
-func DecryptBlobFromKMS(blob []byte) (string, error) {
+func DecryptBlobFromKMS(blob string) (string, error) {
+	bytes, err := base64.StdEncoding.DecodeString(blob)
+	if err != nil {
+		return "", StringError(err)
+	}
 	session, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})
@@ -101,7 +109,7 @@ func DecryptBlobFromKMS(blob []byte) (string, error) {
 		return "", StringError(err)
 	}
 	kmsService := kms.New(session)
-	result, err := kmsService.Decrypt(&kms.DecryptInput{CiphertextBlob: blob})
+	result, err := kmsService.Decrypt(&kms.DecryptInput{CiphertextBlob: bytes})
 	if err != nil {
 		return "", StringError(err)
 	}
