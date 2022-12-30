@@ -1,4 +1,4 @@
-package main
+package scripts
 
 import (
 	"database/sql"
@@ -15,21 +15,7 @@ import (
 // Set this!
 const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286771"
 
-func main() {
-	var env string
-	if len(os.Args) > 1 {
-		env = os.Args[1]
-	}
-	if env == "local" {
-		fmt.Printf("\n\nSeeding Mock Data")
-		mockSeeding()
-	} else {
-		fmt.Printf("\n\nSeeding Production Data")
-		dataSeeding()
-	}
-}
-
-func dataSeeding() {
+func DataSeeding() {
 	// Initialize repos
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 	port := os.Getenv("PORT")
@@ -39,6 +25,7 @@ func dataSeeding() {
 
 	lg := zerolog.New(os.Stdout)
 
+	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Redis:  store.NewRedisStore(),
@@ -198,7 +185,7 @@ func dataSeeding() {
 	}
 }
 
-func mockSeeding() {
+func MockSeeding() {
 	// Initialize repos
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 	port := os.Getenv("PORT")
@@ -207,6 +194,7 @@ func mockSeeding() {
 	}
 	lg := zerolog.New(os.Stdout)
 
+	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Redis:  store.NewRedisStore(),

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,6 +72,19 @@ func TestEncryptDecryptUnencoded(t *testing.T) {
 	assert.NoError(t, err)
 
 	objDecrypted, err := Decrypt[randomObject1](objEncrypted, "secret_encryption_key_0123456789")
+	assert.NoError(t, err)
+	assert.Equal(t, obj, objDecrypted)
+}
+
+func TestEncryptDecryptKMS(t *testing.T) {
+	err := godotenv.Load("../../../.env")
+	assert.NoError(t, err)
+
+	obj := "herein lie the secrets of the universe"
+	objEncrypted, err := EncryptStringToKMS(obj)
+	assert.NoError(t, err)
+
+	objDecrypted, err := DecryptBlobFromKMS(objEncrypted)
 	assert.NoError(t, err)
 	assert.Equal(t, obj, objDecrypted)
 }
