@@ -64,38 +64,34 @@ func (l login) VerifySignature(c echo.Context) error {
 		LogStringError(c, err, "login: verify signature")
 		return BadRequestError(c, "Invalid Payload")
 	}
-	// set jwt in cookie
-	err = SetJWTCookie(c, resp.JWT)
+	// set auth cookies
+	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
-		LogStringError(c, err, "login: receive email set jwt cookie")
+		LogStringError(c, err, "login: unable to set auth cookies")
 		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, resp)
 }
 
 func (l login) RefreshToken(c echo.Context) error {
-	var body model.RefreshTokenPayload
-	err := c.Bind(&body)
+	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
-		LogStringError(c, err, "login: binding body")
-		return BadRequestError(c)
+		LogStringError(c, err, "RefreshToken: unable to get refresh_token cookie")
+		return Unauthorized(c)
 	}
 
-	if err := c.Validate(body); err != nil {
-		return InvalidPayloadError(c, err)
-	}
-
-	jwt, err := l.Service.RefreshToken(body.RefreshToken)
+	jwt, err := l.Service.RefreshToken(cookie.Value)
 	if err != nil {
 		LogStringError(c, err, "login: refresh token")
 		return BadRequestError(c, "Invalid or expired token")
 	}
-	// set jwt in cookie
-	err = SetJWTCookie(c, jwt)
+	// set auth in cookies
+	err = SetAuthCookies(c, jwt)
 	if err != nil {
-		LogStringError(c, err, "login: receive email set jwt cookie")
+		LogStringError(c, err, "RefreshToken: unable to set auth cookies")
 		return InternalError(c)
 	}
+
 	return c.JSON(http.StatusOK, jwt)
 }
 

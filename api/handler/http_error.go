@@ -69,6 +69,14 @@ func TokenExpired(c echo.Context, message ...string) error {
 	return c.JSON(http.StatusUnauthorized, JSONError{Message: msg, Code: "TOKEN_EXPIRED"})
 }
 
+func MissingToken(c echo.Context, message ...string) error {
+	msg := "Missing or malformed token"
+	if len(message) > 0 {
+		msg = strings.Join(message, " ")
+	}
+	return c.JSON(http.StatusUnauthorized, JSONError{Message: msg, Code: "MISSING_TOKEN"})
+}
+
 func Conflict(c echo.Context, message ...string) error {
 	if len(message) > 0 {
 		return c.JSON(http.StatusConflict, JSONError{Message: strings.Join(message, " "), Code: "CONFLICT"})

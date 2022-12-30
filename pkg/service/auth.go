@@ -22,11 +22,16 @@ type SignablePayload struct {
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
+type RefreshTokenResponse struct {
+	Token string    `json:"token"`
+	ExpAt time.Time `json:"expAt"`
+}
+
 type JWT struct {
-	ExpAt        time.Time `json:"expAt"`
-	IssuedAt     time.Time `json:"issuedAt"`
-	Token        string    `json:"token"`
-	RefreshToken string    `json:"refreshToken"`
+	ExpAt        time.Time            `json:"expAt"`
+	IssuedAt     time.Time            `json:"issuedAt"`
+	Token        string               `json:"token"`
+	RefreshToken RefreshTokenResponse `json:"refreshToken"`
 }
 
 type JWTClaims struct {
@@ -152,9 +157,8 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
-		IssuedAt:     time.Now(),
-		ExpAt:        time.Now().Add(time.Minute * 15),
-		RefreshToken: refreshToken,
+		IssuedAt: time.Now(),
+		ExpAt:    time.Now().Add(time.Minute * 15),
 	}
 
 	claims.DeviceId = m.ID
@@ -168,7 +172,18 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 		return *t, err
 	}
 	t.Token = signed
-	return *t, a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+
+	// create and save
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+	if err != nil {
+		return *t, err
+	}
+	t.RefreshToken = RefreshTokenResponse{
+		Token: refreshToken,
+		ExpAt: refreshObj.ExpiresAt,
+	}
+
+	return *t, nil
 }
 
 func (a auth) ValidateJWT(token string) (bool, error) {

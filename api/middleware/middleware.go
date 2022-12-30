@@ -10,14 +10,16 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	echoDatadog "gopkg.in/DataDog/dd-trace-go.v1/contrib/labstack/echo.v4"
 )
 
 func CORS() echo.MiddlewareFunc {
 	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+		AllowCredentials: true, // allow cookie auth
 	})
 }
 
@@ -80,6 +82,11 @@ func BearerAuth() echo.MiddlewareFunc {
 			if strings.Contains(err.Error(), "token is expired") {
 				return handler.TokenExpired(c)
 			}
+
+			if strings.Contains(errors.Cause(err).Error(), "missing or malformed jwt") {
+				return handler.MissingToken(c)
+			}
+
 			return handler.Unauthorized(c)
 		},
 	}

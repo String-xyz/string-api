@@ -52,10 +52,10 @@ func (u user) Create(c echo.Context) error {
 		LogStringError(c, err, "user: creating user")
 		return InternalError(c)
 	}
-	// set jwt in cookie
-	err = SetJWTCookie(c, resp.JWT)
+	// set auth cookies
+	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
-		LogStringError(c, err, "user: unable to set JWT cookie")
+		LogStringError(c, err, "user: unable to set auth cookies")
 		return InternalError(c)
 	}
 
