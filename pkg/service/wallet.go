@@ -10,11 +10,10 @@ import (
 )
 
 func GenerateWallet() error {
-	overwriteMe, _ := GetAddress()
-	if overwriteMe != "" {
-		fmt.Printf("\n WARNING!  Generating a new wallet will overwrite the old one.  To prevent loss of funds, the old wallet credentials will be printed below:")
-		sk, _ := GetPrivateKey()
-		fmt.Printf("\n ADDRESS: %+v\nPRIVATE KEY: %+v", overwriteMe, sk)
+	preExistingWallet, _ := GetAddress()
+	if preExistingWallet != "" {
+		fmt.Printf("\n WARNING: WALLET CREDENTIALS FOR %+v ARE ALREADY BEING STORED IN SSM.  THIS SCRIPT WILL EXIT.", preExistingWallet)
+		return nil
 	}
 
 	sk, err := crypto.GenerateKey()
