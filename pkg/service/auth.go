@@ -52,6 +52,7 @@ type Auth interface {
 	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
 	RefreshToken(token string) (JWT, error)
+	InvalidateRefreshToken(token string) error
 }
 
 type auth struct {
@@ -203,6 +204,10 @@ func (a auth) ValidateAPIKey(key string) bool {
 	return authKey.Data == hashed
 }
 
+func (a auth) InvalidateRefreshToken(refreshToken string) error {
+	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
+}
+
 func (a auth) RefreshToken(refreshToken string) (JWT, error) {
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
@@ -223,7 +228,7 @@ func (a auth) RefreshToken(refreshToken string) (JWT, error) {
 	}
 
 	// delete old refresh token
-	err = a.repos.Auth.Delete(common.ToSha256(refreshToken))
+	err = a.InvalidateRefreshToken(refreshToken)
 	if err != nil {
 		return JWT{}, common.StringError(err)
 	}

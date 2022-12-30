@@ -95,6 +95,32 @@ func (l login) RefreshToken(c echo.Context) error {
 	return c.JSON(http.StatusOK, jwt)
 }
 
+// logout
+func (l login) Logout(c echo.Context) error {
+	// get refresh token from cookie
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		LogStringError(c, err, "Logout: unable to get refresh_token cookie")
+		return Unauthorized(c)
+	}
+
+	// invalidate refresh token. Returns error if token is not found
+	err = l.Service.InvalidateRefreshToken(cookie.Value)
+	if err != nil {
+		LogStringError(c, err, "Token not found")
+	}
+	// There is no need to invalidate the access token since it is a short lived token
+
+	// delete auth cookies
+	err = DeleteAuthCookies(c)
+	if err != nil {
+		LogStringError(c, err, "Logout: unable to delete auth cookies")
+		return InternalError(c)
+	}
+
+	return c.JSON(http.StatusNoContent, nil)
+}
+
 func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
@@ -104,4 +130,5 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.GET("", l.NoncePayload)
 	g.POST("/sign", l.VerifySignature)
 	g.POST("/refresh", l.RefreshToken)
+	g.POST("/logout", l.Logout)
 }
