@@ -12,7 +12,12 @@ import (
 )
 
 func EVMSign(buffer []byte, eip131 bool) (string, error) {
-	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	privateKey := os.Getenv("EVM_PRIVATE_KEY")
+	return EVMSignWithPrivateKey(buffer, privateKey, eip131)
+}
+
+func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (string, error) {
+	sk, err := crypto.ToECDSA(common.FromHex(privateKey))
 	if err != nil {
 		return "", StringError(err)
 	}
