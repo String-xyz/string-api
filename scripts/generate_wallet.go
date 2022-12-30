@@ -177,7 +177,7 @@ func GetAddress() (string, error) {
 }
 
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := os.Getenv("REGION")
+	region := os.Getenv("AWS_REGION")
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
