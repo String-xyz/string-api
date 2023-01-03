@@ -51,7 +51,7 @@ type Auth interface {
 
 	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
-	RefreshToken(token string) (JWT, error)
+	RefreshToken(token string, walletAddress string) (JWT, error)
 	InvalidateRefreshToken(token string) error
 }
 
@@ -208,11 +208,25 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(refreshToken string) (JWT, error) {
+func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, error) {
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
 	if err != nil {
 		return JWT{}, common.StringError(err)
+	}
+
+	// verify wallet address
+	// Verify user is registered to this wallet address
+	instrument, err := a.repos.Instrument.GetWallet(walletAddress)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		}
+		return JWT{}, common.StringError(err)
+	}
+
+	if instrument.UserID != userId {
+		return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 	}
 
 	// get device

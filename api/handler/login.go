@@ -74,14 +74,29 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
+	var body model.RefreshTokenPayload
+	err := c.Bind(&body)
+	if err != nil {
+		LogStringError(c, err, "login: binding body")
+		return BadRequestError(c)
+	}
+
+	if err := c.Validate(body); err != nil {
+		return InvalidPayloadError(c, err)
+	}
+
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		LogStringError(c, err, "RefreshToken: unable to get refresh_token cookie")
 		return Unauthorized(c)
 	}
 
-	jwt, err := l.Service.RefreshToken(cookie.Value)
+	jwt, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
 	if err != nil {
+		if strings.Contains(err.Error(), "wallet address not associated with this user") {
+			return BadRequestError(c, "wallet address not associated with this user")
+		}
+
 		LogStringError(c, err, "login: refresh token")
 		return BadRequestError(c, "Invalid or expired token")
 	}

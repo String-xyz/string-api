@@ -110,5 +110,5 @@ type DeviceUpdates struct {
 }
 
 type RefreshTokenPayload struct {
-	RefreshToken string `json:"refreshToken" validate:"required"`
+	WalletAddress string `json:"walletAddress" validate:"required"`
 }
