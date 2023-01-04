@@ -117,7 +117,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 }
 
 func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {
-	device, err := a.repos.Device.GetByFingerprint(visitorID)
+	device, err := a.repos.Device.GetByUserIdAndFingerprint(userID, visitorID)
 	if err == nil {
 		return false, device, nil
 	}

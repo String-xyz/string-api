@@ -31,7 +31,7 @@ func (o authAPIKey) Create(c echo.Context) error {
 		LogStringError(c, err, "authKey approve: create")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
-	return c.JSON(http.StatusOK, map[string]string{"apiKey": key})
+	return c.JSON(http.StatusOK, key)
 }
 
 func (o authAPIKey) List(c echo.Context) error {

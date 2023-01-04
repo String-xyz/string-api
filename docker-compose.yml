@@ -22,16 +22,28 @@ services:
       - '5432:5432'
     volumes:
       - db:/var/lib/postgresql/data
+  redis-node-0:
+    image: bitnami/redis-cluster:latest
+    environment:
+      - REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      - REDIS_NODES=redis-node-0
+    volumes:
+      - redis-node-0:/node/data
   redis:
-    image: redis:7.0-alpine
+    image: bitnami/redis-cluster:latest
     restart: always
-    ports:
-      - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    depends_on:
+      - redis-node-0
+    environment:
+      - REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      - REDIS_NODES=redis-node-0
+      - CLUSTER_CREATOR=yes  
     volumes:
       - redis:/data
 volumes:
   db:
     driver: local
   redis:
+    driver: local
+  redis-node-0:
     driver: local
