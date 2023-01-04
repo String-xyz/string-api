@@ -27,6 +27,7 @@ services:
     restart: always
     ports:
       - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     ## We want the Redis data not to persist. 
     ## Commenting out the lines below is equivalent to run the command FLUSHALL after each restart
     ## Uncomment the following lines to persist data
