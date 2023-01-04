@@ -11,6 +11,17 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+type RedisRepresentable interface {
+	Ping(ctx context.Context) *redis.StatusCmd
+	Get(ctx context.Context, key string) *redis.StringCmd
+	Del(ctx context.Context, keys ...string) *redis.IntCmd
+	Set(ctx context.Context, key string, value interface{}, duration time.Duration) *redis.StatusCmd
+	HSet(ctx context.Context, key string, values ...interface{}) *redis.IntCmd
+	HGetAll(ctx context.Context, key string) *redis.StringStringMapCmd
+	HLen(ctx context.Context, key string) *redis.IntCmd
+	HDel(ctx context.Context, key string, fields ...string) *redis.IntCmd
+}
+
 type RedisStore interface {
 	Get(id string) ([]byte, error)
 	Set(string, any, time.Duration) error
@@ -22,7 +33,7 @@ type RedisStore interface {
 }
 
 type redisStore struct {
-	client *redis.ClusterClient
+	client RedisRepresentable
 }
 
 const REDIS_NOT_FOUND_ERROR = "redis: nil"
@@ -36,6 +47,24 @@ func redisConf() *tls.Config {
 	}
 
 	return tlsCf
+}
+
+func redisOptions() *redis.Options {
+	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
+	var tlsCf *tls.Config
+	if os.Getenv("ENV") != "local" {
+		tlsCf = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	op := &redis.Options{
+		Addr:      url,
+		TLSConfig: tlsCf,
+		Password:  os.Getenv("REDIS_PASSWORD"),
+		DB:        0,
+	}
+	return op
 }
 
 func cluster() *redis.ClusterClient {
@@ -54,7 +83,12 @@ func cluster() *redis.ClusterClient {
 
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
-	client := cluster()
+	var client RedisRepresentable
+	if os.Getenv("ENV") == "local" {
+		client = redis.NewClient(redisOptions())
+	} else {
+		client = cluster()
+	}
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to ping Redis: %v", err)
@@ -66,7 +100,8 @@ func NewRedisStore() RedisStore {
 }
 
 func (r redisStore) Delete(id string) error {
-	_, err := r.client.Del(r.client.Context(), id).Result()
+	ctx := context.Background()
+	_, err := r.client.Del(ctx, id).Result()
 	if err != nil {
 		return common.StringError(err)
 	}
