@@ -2,8 +2,8 @@ data "aws_ssm_parameter" "datadog" {
   name = "datadog-key"
 }
 
-data "aws_ssm_parameter" "hot_wallet" {
-  name = "private-key"
+data "aws_ssm_parameter" "evm_private_key" {
+  name = "string-encrypted-sk"
 }
 
 data "aws_ssm_parameter" "string_encryption_secret" {

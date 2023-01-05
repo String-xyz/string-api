@@ -3,7 +3,7 @@ data "aws_ssm_parameter" "datadog" {
 }
 
 data "aws_ssm_parameter" "evm_private_key" {
-  name = "dev-private-key"
+  name = "string-encrypted-sk"
 }
 
 data "aws_ssm_parameter" "string_encryption_secret" {
