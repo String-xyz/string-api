@@ -2,12 +2,28 @@ data "aws_ssm_parameter" "datadog" {
   name = "datadog-key"
 }
 
-data "aws_ssm_parameter" "hot_wallet" {
-  name = "dev-private-key"
+data "aws_ssm_parameter" "evm_private_key" {
+  name = "string-encrypted-sk"
 }
 
 data "aws_ssm_parameter" "string_encryption_secret" {
   name = "string-encryption-secret"  
+}
+
+data "aws_ssm_parameter" "string_internal_id" {
+  name = "string-internal-id"  
+}
+
+data "aws_ssm_parameter" "string_wallet_id" {
+  name = "string-wallet-id"  
+}
+
+data "aws_ssm_parameter" "string_bank_id" {
+  name = "string-bank-id"     
+}
+
+data "aws_ssm_parameter" "string_platform_id" {
+  name = "string-placeholder-platform-id"  
 }
 
 data "aws_ssm_parameter" "user_jwt_secret" {

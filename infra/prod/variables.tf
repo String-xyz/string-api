@@ -8,8 +8,8 @@ locals {
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
-  memory             = 512
-  cpu                = 256
+  memory             = 1024
+  cpu                = 512
   region             = "us-west-2"
 }
 
@@ -34,7 +34,35 @@ locals {
       secrets = [
         {
           name      = "EVM_PRIVATE_KEY"
-          valueFrom = data.aws_ssm_parameter.hot_wallet.arn
+          valueFrom = data.aws_ssm_parameter.evm_private_key.arn
+        },
+        {
+          name      = "STRING_ENCRYPTION_KEY"
+          valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
+        },
+        {
+          name      = "STRING_INTERNAL_ID"
+          valueFrom = data.aws_ssm_parameter.string_internal_id.arn
+        },
+        {
+          name      = "STRING_WALLET_ID"
+          valueFrom = data.aws_ssm_parameter.string_wallet_id.arn
+        },
+        {
+          name      = "STRING_BANK_ID"
+          valueFrom = data.aws_ssm_parameter.string_bank_id.arn
+        },
+        {
+          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
+          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
+        },
+        {
+          name      = "UNIT21_API_KEY"
+          valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
+        },
+        {
+          name      = "IPSTACK_API_KEY"
+          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
         },
         {
           name      = "CHECKOUT_PUBLIC_KEY"
@@ -53,6 +81,26 @@ locals {
           valueFrom = data.aws_ssm_parameter.owlracle_api_secret.arn
         },
         {
+          name      = "FINGERPRINT_API_KEY"
+          valueFrom = data.aws_ssm_parameter.fingerprint_api_key.arn
+        },
+        {
+          name      = "SENDGRID_API_KEY"
+          valuefrom = data.aws_ssm_parameter.sendgrid_api_key.arn
+        },
+        {
+          name      = "TWILIO_ACCOUNT_SID"
+          valueFrom = data.aws_ssm_parameter.twilio_account_sid.arn
+        },
+        {
+          name      = "TWILIO_SMS_SID"
+          valuefrom = data.aws_ssm_parameter.twilio_sms_sid.arn
+        },
+        {
+          name      = "TWILIO_AUTH_TOKEN"
+          valuefrom = data.aws_ssm_parameter.twilio_auth_token.arn
+        },
+        {
           name      = "DB_USERNAME"
           valueFrom = data.aws_ssm_parameter.db_username.arn
         },
@@ -69,11 +117,11 @@ locals {
           valueFrom = data.aws_ssm_parameter.db_name.arn
         },
         {
-          name = "REDIS_HOST",
+          name      = "REDIS_HOST",
           valuefrom = data.aws_ssm_parameter.redis_host_url.arn
         },
         {
-          name = "REDIS_PASSWORD",
+          name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
         }
       ]
@@ -86,8 +134,8 @@ locals {
           name  = "REDIS_PORT"
           value = local.redis_port
         },
-         {
-          name = "DB_PORT",
+        {
+          name  = "DB_PORT",
           value = local.db_port
         },
         {
@@ -110,9 +158,21 @@ locals {
           name  = "COINGECKO_API_URL"
           value = "https://api.coingecko.com/api/v3/"
         },
-        { 
-          name = "BASE_URL"
+        {
+          name  = "FINGERPRINT_API_URL"
+          value = "https://api.fpjs.io/"
+        },
+        {
+          name  = "BASE_URL"
           value = "https://api.string-api.xyz/"
+        },
+        {
+          name  = "UNIT21_ENV"
+          value = "api.prod2"
+        },
+        {
+          name  = "UNIT21_ORG_NAME"
+          value = "string"
         }
       ],
       logConfiguration = {
@@ -141,13 +201,13 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
-      environment = [ 
+      environment = [
         {
           name  = "DD_APM_ENABLED"
           value = "true"
         },
         {
-          name = "DD_SITE"
+          name  = "DD_SITE"
           value = "datadoghq.com"
         },
         {

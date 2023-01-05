@@ -35,8 +35,12 @@ data "aws_iam_policy_document" "task_policy" {
     ]
     resources = [
       data.aws_ssm_parameter.datadog.arn,
-      data.aws_ssm_parameter.hot_wallet.arn,
+      data.aws_ssm_parameter.evm_private_key.arn,
       data.aws_ssm_parameter.string_encryption_secret.arn,
+      data.aws_ssm_parameter.string_internal_id.arn,
+      data.aws_ssm_parameter.string_wallet_id.arn,
+      data.aws_ssm_parameter.string_bank_id.arn,
+      data.aws_ssm_parameter.string_platform_id.arn,
       data.aws_ssm_parameter.ipstack_api_key.arn,
       data.aws_ssm_parameter.unit21_api_key.arn,
       data.aws_ssm_parameter.checkout_public_key.arn,
@@ -65,7 +69,6 @@ data "aws_iam_policy_document" "task_policy" {
     ]
     resources = [data.aws_kms_key.kms_key.arn]
   }
-
 }
 
 resource "aws_iam_role_policy" "task_ecs_policy" {
