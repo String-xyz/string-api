@@ -34,11 +34,27 @@ locals {
       secrets = [
         {
           name      = "EVM_PRIVATE_KEY"
-          valueFrom = data.aws_ssm_parameter.hot_wallet.arn
+          valueFrom = data.aws_ssm_parameter.evm_private_key.arn
         },
         {
           name      = "STRING_ENCRYPTION_KEY"
           valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
+        },
+        {
+          name      = "STRING_INTERNAL_ID"
+          valueFrom = data.aws_ssm_parameter.string_internal_id.arn
+        },
+        {
+          name      = "STRING_WALLET_ID"
+          valueFrom = data.aws_ssm_parameter.string_wallet_id.arn
+        },
+        {
+          name      = "STRING_BANK_ID"
+          valueFrom = data.aws_ssm_parameter.string_bank_id.arn
+        },
+        {
+          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
+          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
         },
         {
           name      = "UNIT21_API_KEY"
@@ -145,8 +161,8 @@ locals {
         {
           name  = "FINGERPRINT_API_URL"
           value = "https://api.fpjs.io/"
-        }, 
-        { 
+        },
+        {
           name  = "BASE_URL"
           value = "https://string-api.dev.string-api.xyz/"
         },
@@ -185,13 +201,13 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
-      environment = [ 
+      environment = [
         {
           name  = "DD_APM_ENABLED"
           value = "true"
         },
         {
-          name = "DD_SITE"
+          name  = "DD_SITE"
           value = "datadoghq.com"
         },
         {
