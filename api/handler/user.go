@@ -2,11 +2,11 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 )
 
 type User interface {
@@ -45,17 +45,17 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(body)
 	if err != nil {
-		if errors.Cause(err).Error() == "wallet already associated with user" {
+		if strings.Contains(err.Error(), "wallet already associated with user") {
 			return Conflict(c)
 		}
 
 		LogStringError(c, err, "user: creating user")
 		return InternalError(c)
 	}
-	// set jwt in cookie
-	err = SetJWTCookie(c, resp.JWT)
+	// set auth cookies
+	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
-		LogStringError(c, err, "user: unable to set JWT cookie")
+		LogStringError(c, err, "user: unable to set auth cookies")
 		return InternalError(c)
 	}
 

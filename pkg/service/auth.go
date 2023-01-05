@@ -22,11 +22,16 @@ type SignablePayload struct {
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
+type RefreshTokenResponse struct {
+	Token string    `json:"token"`
+	ExpAt time.Time `json:"expAt"`
+}
+
 type JWT struct {
-	ExpAt        time.Time `json:"expAt"`
-	IssuedAt     time.Time `json:"issuedAt"`
-	Token        string    `json:"token"`
-	RefreshToken string    `json:"refreshToken"`
+	ExpAt        time.Time            `json:"expAt"`
+	IssuedAt     time.Time            `json:"issuedAt"`
+	Token        string               `json:"token"`
+	RefreshToken RefreshTokenResponse `json:"refreshToken"`
 }
 
 type JWTClaims struct {
@@ -46,6 +51,8 @@ type Auth interface {
 
 	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
+	RefreshToken(token string, walletAddress string) (JWT, error)
+	InvalidateRefreshToken(token string) error
 }
 
 type auth struct {
@@ -151,9 +158,8 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
-		IssuedAt:     time.Now(),
-		ExpAt:        time.Now().Add(time.Minute * 15),
-		RefreshToken: refreshToken,
+		IssuedAt: time.Now(),
+		ExpAt:    time.Now().Add(time.Minute * 15),
 	}
 
 	claims.DeviceId = m.ID
@@ -167,7 +173,18 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 		return *t, err
 	}
 	t.Token = signed
-	return *t, a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+
+	// create and save
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+	if err != nil {
+		return *t, err
+	}
+	t.RefreshToken = RefreshTokenResponse{
+		Token: refreshToken,
+		ExpAt: refreshObj.ExpiresAt,
+	}
+
+	return *t, nil
 }
 
 func (a auth) ValidateJWT(token string) (bool, error) {
@@ -185,6 +202,52 @@ func (a auth) ValidateAPIKey(key string) bool {
 		return false
 	}
 	return authKey.Data == hashed
+}
+
+func (a auth) InvalidateRefreshToken(refreshToken string) error {
+	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
+}
+
+func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, error) {
+	// get user id from refresh token
+	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// verify wallet address
+	// Verify user is registered to this wallet address
+	instrument, err := a.repos.Instrument.GetWallet(walletAddress)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		}
+		return JWT{}, common.StringError(err)
+	}
+
+	if instrument.UserID != userId {
+		return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+	}
+
+	// get device
+	device, err := a.repos.Device.GetByUserId(userId)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// create new jwt
+	jwt, err := a.GenerateJWT(device)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	// delete old refresh token
+	err = a.InvalidateRefreshToken(refreshToken)
+	if err != nil {
+		return JWT{}, common.StringError(err)
+	}
+
+	return jwt, nil
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {

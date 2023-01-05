@@ -22,6 +22,14 @@ func (v Verification) VerifyEmail(encrypted string) error {
 	return v.Error
 }
 
+func (v Verification) SendDeviceVerification(userID string, deviceID string, deviceDescription string) error {
+	return v.Error
+}
+
+func (v Verification) VerifyDevice(encrypted string) error {
+	return v.Error
+}
+
 // User Service Stub
 type User struct {
 	UserOnboardingStatus model.UserOnboardingStatus
@@ -86,10 +94,14 @@ func (a Auth) VerifySignedPayload(model.WalletSignaturePayloadSigned) (service.U
 	return a.UserCreateResponse, a.Error
 }
 
-func (a Auth) GenerateJWT(model.User) (service.JWT, error) {
+func (a Auth) GenerateJWT(model.Device) (service.JWT, error) {
 	return a.JWT, a.Error
 }
 
 func (a Auth) ValidateAPIKey(key string) bool {
 	return true
+}
+
+func (a Auth) RefreshToken(token string) (service.JWT, error) {
+	return a.JWT, a.Error
 }
