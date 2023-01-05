@@ -77,7 +77,11 @@ func (e *executor) Close() error {
 
 func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get private key
-	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	skStr, err := stringCommon.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return CallEstimate{}, stringCommon.StringError(err)
+	}
+	sk, err := crypto.ToECDSA(common.FromHex(skStr))
 	if err != nil {
 		return CallEstimate{}, stringCommon.StringError(err)
 	}
@@ -143,7 +147,11 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 
 func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get private key
-	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	skStr, err := stringCommon.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return "", nil, stringCommon.StringError(err)
+	}
+	sk, err := crypto.ToECDSA(common.FromHex(skStr))
 	if err != nil {
 		return "", nil, stringCommon.StringError(err)
 	}
@@ -249,7 +257,11 @@ func (e executor) GetChainID() (uint64, error) {
 
 func (e executor) GetBalance() (float64, error) {
 	// Get private key
-	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	skStr, err := stringCommon.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return 0, stringCommon.StringError(err)
+	}
+	sk, err := crypto.ToECDSA(common.FromHex(skStr))
 	if err != nil {
 		return 0, stringCommon.StringError(err)
 	}

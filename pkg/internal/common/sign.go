@@ -12,7 +12,10 @@ import (
 )
 
 func EVMSign(buffer []byte, eip131 bool) (string, error) {
-	privateKey := os.Getenv("EVM_PRIVATE_KEY")
+	privateKey, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return "", StringError(err)
+	}
 	return EVMSignWithPrivateKey(buffer, privateKey, eip131)
 }
 
@@ -36,7 +39,12 @@ func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (strin
 }
 
 func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, error) {
-	sk, err := crypto.ToECDSA(common.FromHex(os.Getenv("EVM_PRIVATE_KEY")))
+	// Get private key
+	skStr, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return false, StringError(err)
+	}
+	sk, err := crypto.ToECDSA(common.FromHex(skStr))
 	if err != nil {
 		return false, StringError(err)
 	}
