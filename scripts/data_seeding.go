@@ -55,11 +55,11 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 43113, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 1, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 43114, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 1, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -242,11 +242,11 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 43113, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 1, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 43114, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 1, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
