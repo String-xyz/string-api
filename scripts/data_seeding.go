@@ -63,7 +63,10 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	if err != nil {
+		panic(err)
+	}
 	// Assets
 	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkAvalanche.ID), ValueOracle: nullString("avalanche-2")})
 	if err != nil {
@@ -74,6 +77,10 @@ func DataSeeding() {
 		panic(err)
 	}
 	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkPolygon.ID), ValueOracle: nullString("matic-network")})
+	if err != nil {
+		panic(err)
+	}
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkArbitrumNova.ID), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -105,6 +112,10 @@ func DataSeeding() {
 		panic(err)
 	}
 	err = repos.Network.Update(networkAvalanche.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	if err != nil {
+		panic(err)
+	}
+	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
 	if err != nil {
 		panic(err)
 	}
@@ -231,7 +242,10 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	if err != nil {
+		panic(err)
+	}
 	// Assets
 	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkAvalanche.ID), ValueOracle: nullString("avalanche-2")})
 	if err != nil {
@@ -242,6 +256,10 @@ func MockSeeding() {
 		panic(err)
 	}
 	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkPolygon.ID), ValueOracle: nullString("matic-network")})
+	if err != nil {
+		panic(err)
+	}
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkArbitrumNova.ID), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -273,6 +291,10 @@ func MockSeeding() {
 		panic(err)
 	}
 	err = repos.Network.Update(networkAvalanche.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	if err != nil {
+		panic(err)
+	}
+	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
 	if err != nil {
 		panic(err)
 	}
