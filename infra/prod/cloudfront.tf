@@ -1,7 +1,7 @@
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   is_ipv6_enabled     = true
-  aliases             = ["api.${local.root_domain}"]
+  aliases             = [local.domain]
 
   origin {
     domain_name = aws_alb.alb.dns_name
@@ -37,13 +37,13 @@ resource "aws_cloudfront_distribution" "this" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 7200
-    max_ttl                = 86400
+    default_ttl            = 60
+    max_ttl                = 120
   }
 
   viewer_certificate {
     ssl_support_method             = "sni-only"
-    acm_certificate_arn            = module.acm.arn
+    acm_certificate_arn            = module.cloudfront.arn
     minimum_protocol_version       = "TLSv1.1_2016"
     cloudfront_default_certificate = false
   }

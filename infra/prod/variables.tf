@@ -1,8 +1,8 @@
 locals {
   cluster_name       = "string-core"
   env                = "prod"
-  service_name       = "api"
-  root_domain        = "string-api.xyz"
+  service_name       = "string-api"
+  domain             = "api.string-api.xyz"
   container_port     = "3000"
   origin_id          = "string-api"
   desired_task_count = "1"
