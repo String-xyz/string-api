@@ -63,7 +63,11 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	if err != nil {
+		panic(err)
+	}
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io/"})
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +84,7 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkArbitrumNova.ID), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkNitroGoerli.ID), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +119,11 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	err = repos.Network.Update(networkNitroGoerli.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	if err != nil {
+		panic(err)
+	}
+	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
 	if err != nil {
 		panic(err)
 	}
@@ -242,7 +250,11 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	if err != nil {
+		panic(err)
+	}
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io/"})
 	if err != nil {
 		panic(err)
 	}
@@ -259,7 +271,7 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkArbitrumNova.ID), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkNitroGoerli.ID), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -294,7 +306,11 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	err = repos.Network.Update(networkNitroGoerli.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	if err != nil {
+		panic(err)
+	}
+	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
 	if err != nil {
 		panic(err)
 	}
