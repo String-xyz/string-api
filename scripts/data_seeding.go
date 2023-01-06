@@ -63,7 +63,7 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +250,7 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
 	if err != nil {
 		panic(err)
 	}
