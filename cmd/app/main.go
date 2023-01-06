@@ -14,7 +14,7 @@ import (
 func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-
+	lg := zerolog.New(os.Stdout)
 	env := os.Getenv("ENV")
 	if env != "local" {
 		tracer.Start()
@@ -29,7 +29,7 @@ func main() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
-	lg := zerolog.New(os.Stdout)
+
 	// setup api
 	api.Start(api.APIConfig{
 		DB:     db,
