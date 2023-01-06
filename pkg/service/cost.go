@@ -98,6 +98,20 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	upcharge := chain.StringFee
 	serviceFee := (transactionCost + gasInUSD + tokenCost) * upcharge
 
+	// floor
+	if transactionCost < 0.01 {
+		transactionCost = 0.01
+	}
+	if gasInUSD < 0.01 {
+		gasInUSD = 0.01
+	}
+	// if tokenCost < 0.01 { tokenCost = 0.01 }
+	if serviceFee < 0.01 {
+		serviceFee = 0.01
+	}
+
+	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
+
 	// Fill out CostEstimate and return
 	return model.Quote{
 		Timestamp:  timestamp,
@@ -105,7 +119,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		GasUSD:     gasInUSD,
 		TokenUSD:   tokenCost,
 		ServiceUSD: serviceFee,
-		TotalUSD:   transactionCost + gasInUSD + tokenCost + serviceFee,
+		TotalUSD:   totalUSD,
 	}, nil
 }
 
