@@ -1,12 +1,11 @@
-include .env
+include .env.deploy
 
 export
 AWS_DEFAULT_PROFILE=${env}-string
 API=string-api
 ECS_CLUSTER=string-core
 SERVICE_TAG=${tag}
-AWS_REGION=us-west-2
-ECR=${AWS_ACCT}.dkr.ecr.us-west-2.amazonaws.com
+ECR=${${env}_AWS_ACCT}.dkr.ecr.us-west-2.amazonaws.com
 ECS_API_REPO=${ECR}/${API}
 INTERNAL_REPO=${ECR}/admin
 
@@ -23,7 +22,7 @@ build: test-envvars
 	rm cmd/app/main
 
 push: test-envvars
-	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECS_API_REPO)
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR)
 	docker push $(ECS_API_REPO):${SERVICE_TAG}
 
 deploy: test-envvars

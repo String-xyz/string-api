@@ -1,8 +1,8 @@
 locals {
   cluster_name       = "string-core"
   env                = "prod"
-  service_name       = "api"
-  root_domain        = "string-api.xyz"
+  service_name       = "string-api"
+  domain             = "api.string-api.xyz"
   container_port     = "3000"
   origin_id          = "string-api"
   desired_task_count = "1"
@@ -173,6 +173,38 @@ locals {
         {
           name  = "UNIT21_ORG_NAME"
           value = "string"
+        },
+        {
+          name  = "DD_LOGS_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
+          value = "true"
+        },
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
+        },
+        {
+          name  = "DD_ENV"
+          value = local.env
+        },
+        {
+          name  = "DD_APM_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "DD_SITE"
+          value = "datadoghq.com"
+        },
+        {
+          name  = "ECS_FARGATE"
+          value = "true"
         }
       ],
       logConfiguration = {
@@ -201,32 +233,7 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
-      environment = [
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        },
-        {
-          name  = "DD_ENV"
-          value = local.env
-        },
-        {
-          name  = "ECS_FARGATE"
-          value = "true"
-        },
-      ]
+
       portMappings = [{
         hostPort      = 8126,
         protocol      = "tcp",

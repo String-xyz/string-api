@@ -1,5 +1,6 @@
 tmp/
 .env
+.env.deploy
 .vscode/
 .terraform/
 bin/

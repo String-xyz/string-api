@@ -8,6 +8,7 @@ import (
 	"time"
 
 	service "github.com/String-xyz/string-api/pkg/service"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -17,7 +18,9 @@ import (
 
 func LogError(c echo.Context, err error, handlerMsg string) {
 	lg := c.Get("logger").(*zerolog.Logger)
-	lg.Error().Stack().Err(err).Msg(handlerMsg)
+	sp, _ := tracer.SpanFromContext(c.Request().Context())
+	lg.Error().Stack().Err(err).Uint64("trace_id", sp.Context().TraceID()).
+		Uint64("span_id", sp.Context().SpanID()).Msg(handlerMsg)
 }
 
 func LogStringError(c echo.Context, err error, handlerMsg string) {
@@ -34,11 +37,12 @@ func LogStringError(c echo.Context, err error, handlerMsg string) {
 	cause := errors.Cause(err)
 	st := tracer.StackTrace()
 
-	if os.Getenv("env") == "local" {
-		st2 := fmt.Sprintf("\n%+v: [%+v ]\n\n", cause.Error(), st[0:3])
+	if os.Getenv("ENV") == "local" {
+		st2 := fmt.Sprintf("\nSTACK TRACE:\n%+v: [%+v ]\n\n", cause.Error(), st[0:5])
 		// delete the string_api docker path from the stack trace
 		st2 = strings.ReplaceAll(st2, "/string_api/", "")
 		fmt.Print(st2)
+		return
 	}
 
 	LogError(c, err, handlerMsg)

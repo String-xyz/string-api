@@ -40,7 +40,7 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, true)
+	AuthAPIKey(services, e, false)
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)
@@ -67,9 +67,9 @@ func StartInternal(config APIConfig) {
 }
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
+	e.Use(middleware.Tracer())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RequestID())
-	e.Use(middleware.Tracer())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
 	e.Use(middleware.LogRequest())

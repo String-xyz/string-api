@@ -1,9 +1,9 @@
 data "aws_route53_zone" "root" {
-  name = local.root_domain
+  name = local.domain
 }
 
 resource "aws_route53_record" "domain" {
-  name = "api.${local.root_domain}"
+  name = local.domain
   type    = "A"
   zone_id = data.aws_route53_zone.root.zone_id
   alias {
@@ -13,13 +13,23 @@ resource "aws_route53_record" "domain" {
   }
 }
 
-module "acm" {
+module "cloudfront" {
   source      = "../acm"
-  domain_name = "api.${local.root_domain}"
+  domain_name = local.domain
   aws_region  = "us-east-1"
   zone_id     = data.aws_route53_zone.root.zone_id
   tags = {
     Environment = local.env
-    Name = "api.${local.root_domain}-certificate"
+    Name = "cert-${local.domain}"
+  }
+}
+
+module "alb_acm" {
+  source            = "../acm"
+  domain_name       = local.domain
+  aws_region        = "us-west-2"
+  zone_id           = data.aws_route53_zone.root.zone_id
+  tags = {
+    Name = "cert-${local.domain}-alb"
   }
 }

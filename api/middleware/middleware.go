@@ -44,16 +44,21 @@ func LogRequest() echo.MiddlewareFunc {
 		LogLatency:   true,
 		LogMethod:    true,
 		LogHost:      true,
+		LogError:     true,
 		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
+			env := os.Getenv("ENV")
 			logger := c.Get("logger").(*zerolog.Logger)
 			logger.Info().
-				Str("URI", v.URI).
-				Str("Method", v.Method).
-				Int("status", v.Status).
-				Str("requestId", v.RequestID).
+				Str("path", v.URI).
+				Str("method", v.Method).
+				Int("status_code", v.Status).
+				Str("request_id", v.RequestID).
 				Str("host", v.Host).
 				Dur("latency", v.Latency).
+				Str("env", env).
+				Err(v.Error).
 				Msg("request")
+
 			return nil
 		},
 	})
@@ -105,7 +110,7 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 }
 
 func Tracer() echo.MiddlewareFunc {
-	return echoDatadog.Middleware(echoDatadog.WithServiceName("string-api"))
+	return echoDatadog.Middleware()
 }
 
 func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
