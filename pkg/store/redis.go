@@ -40,7 +40,7 @@ const REDIS_NOT_FOUND_ERROR = "redis: nil"
 
 func redisConf() *tls.Config {
 	var tlsCf *tls.Config
-	if os.Getenv("ENV") != "local" {
+	if !common.IsLocalEnv() {
 		tlsCf = &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		}
@@ -52,7 +52,7 @@ func redisConf() *tls.Config {
 func redisOptions() *redis.Options {
 	url := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 	var tlsCf *tls.Config
-	if os.Getenv("ENV") != "local" {
+	if !common.IsLocalEnv() {
 		tlsCf = &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		}
@@ -84,7 +84,7 @@ func cluster() *redis.ClusterClient {
 func NewRedisStore() RedisStore {
 	ctx := context.Background()
 	var client RedisRepresentable
-	if os.Getenv("ENV") == "local" {
+	if common.IsLocalEnv() {
 		client = redis.NewClient(redisOptions())
 	} else {
 		client = cluster()

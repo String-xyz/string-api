@@ -90,3 +90,7 @@ func GetBaseURL() string {
 func FloatToUSDString(amount float64) string {
 	return fmt.Sprintf("USD $%.2f", math.Round(amount*100)/100)
 }
+
+func IsLocalEnv() bool {
+	return os.Getenv("ENV") == "local"
+}
