@@ -40,7 +40,7 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, true)
+	AuthAPIKey(services, e, false)
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)
