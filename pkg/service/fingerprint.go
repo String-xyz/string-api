@@ -49,16 +49,16 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 		return FPVisitor{}, common.StringError(errors.New("visitor history does not match"))
 	}
 
+	var state string
 	visit := visitor.Visits[0]
-	if len(visit.IPLocation.Subdivisions) == 0 {
-		return FPVisitor{}, common.StringError(errors.New("unable to verify user location"))
+	if len(visit.IPLocation.Subdivisions) != 0 {
+		state = visit.IPLocation.Subdivisions[0].ISOCode
 	}
-	state := visit.IPLocation.Subdivisions[0]
 
 	return FPVisitor{
 		VisitorID:  visitor.ID,
 		Country:    visit.IPLocation.Coutry.Code,
-		State:      state.ISOCode,
+		State:      state,
 		IPAddress:  visit.IP,
 		Timestamp:  visit.Timestamp,
 		Confidence: visit.IPLocation.Confidence.Score,
