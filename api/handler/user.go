@@ -104,6 +104,10 @@ func (u user) VerifyEmail(c echo.Context) error {
 
 	err := u.verificationService.SendEmailVerification(userId, email)
 	if err != nil {
+		if strings.Contains(err.Error(), "email already verified") {
+			return Conflict(c)
+		}
+
 		LogStringError(c, err, "user: email verification")
 		return InternalError(c, "Unable to send email verification")
 	}

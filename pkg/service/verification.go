@@ -58,7 +58,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 
 	contact, _ := v.repos.Contact.GetByData(email)
 	if contact.Status == "validated" {
-		return common.StringError(errors.New("email is already authenticated"))
+		return common.StringError(errors.New("email already verified"))
 	}
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
