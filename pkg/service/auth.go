@@ -22,7 +22,7 @@ type SignablePayload struct {
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
-var walletAuthenticationPrefix string = "Thank you for using String!\nBy signing this message you are:\n+Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n+Confirming that this wallet is owned by you.\nThis request will not trigger any blockchain transaction or cost any gas:\n"
+var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are: 1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card. 2) Confirming that this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas:"
 
 type RefreshTokenResponse struct {
 	Token string    `json:"token"`
@@ -255,7 +255,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, erro
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	preSignedPayload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	preSignedPayload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return common.StringError(err)
 	}
