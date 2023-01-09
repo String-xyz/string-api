@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -15,8 +16,7 @@ func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 
-	env := os.Getenv("ENV")
-	if env != "local" {
+	if !handler.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}
