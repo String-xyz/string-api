@@ -86,10 +86,9 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 }
 
 func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
-	nonce := request.Nonce[len(walletAuthenticationPrefix):]
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := common.Decrypt[model.WalletSignaturePayload](nonce, key)
+	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
