@@ -106,8 +106,8 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		gasInUSD = 0.01
 	}
 	// if tokenCost < 0.01 { tokenCost = 0.01 }
-	if serviceFee < 0.01 {
-		serviceFee = 0.01
+	if serviceFee < 0.3 {
+		serviceFee = 0.3
 	}
 
 	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
