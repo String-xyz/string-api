@@ -1,8 +1,8 @@
 locals {
   cluster_name       = "admin"
-  env                = "dev"
+  env                = "prod"
   service_name       = "admin"
-  root_domain        = "string-api.xyz"
+  root_domain        = "admin.string-api.xyz"
   container_port     = "3000"
   origin_id          = "admin-api"
   desired_task_count = "1"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "latest"
+  default = "v1.0.0.0"
 }
 
 locals {
@@ -49,11 +49,11 @@ locals {
           valueFrom = data.aws_ssm_parameter.db_name.arn
         },
         {
-          name = "REDIS_HOST",
+          name      = "REDIS_HOST",
           valuefrom = data.aws_ssm_parameter.redis_host_url.arn
         },
         {
-          name = "REDIS_PASSWORD",
+          name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
         }
       ]
@@ -66,7 +66,7 @@ locals {
           name  = "REDIS_PORT"
           value = local.redis_port
         },
-         {
+        {
           name = "DB_PORT",
           value = local.db_port
         },

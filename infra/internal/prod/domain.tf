@@ -3,7 +3,7 @@ data "aws_route53_zone" "root" {
 }
 
 resource "aws_route53_record" "domain" {
-  name = "admin.${local.root_domain}"
+  name = local.root_domain
   type    = "A"
   zone_id = data.aws_route53_zone.root.zone_id
   alias {

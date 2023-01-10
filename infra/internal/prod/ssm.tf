@@ -3,19 +3,19 @@ data "aws_ssm_parameter" "datadog" {
 }
 
 data "aws_ssm_parameter" "db_password" {
-  name = "string-rds-pg-db-password"
+  name = "string-pg-db-password"
 }
 
 data "aws_ssm_parameter" "db_username" {
-  name = "string-rds-pg-db-username"
+  name = "string-pg-db-username"
 }
 
 data "aws_ssm_parameter" "db_name" {
-  name = "string-rds-pg-db-name"
+  name = "string-pg-db-name"
 }
 
 data "aws_ssm_parameter" "db_host" {
-  name = "${local.env}-string-write-db-host-url"
+  name = "pg-cluster-write-host-url"
 }
 
 data "aws_ssm_parameter" "redis_auth_token" {
@@ -23,7 +23,7 @@ data "aws_ssm_parameter" "redis_auth_token" {
 }
 
 data "aws_ssm_parameter" "redis_host_url" {
-  name  = "redis-host-url"
+  name = "redis-host-url"
 }
 
 data "aws_kms_key" "kms_key" {
