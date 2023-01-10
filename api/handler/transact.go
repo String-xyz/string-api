@@ -3,13 +3,13 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
 
 type Transaction interface {
 	Transact(c echo.Context) error
-	Quote(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
@@ -23,17 +23,18 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
-	res, err := t.Service.Execute()
+	var body model.ExecutionRequest
+	err := c.Bind(&body)
 	if err != nil {
-		return err
+		LogStringError(c, err, "transact: execute bind")
+		return BadRequestError(c)
 	}
-	return c.JSON(http.StatusOK, res)
-}
-
-func (t transaction) Quote(c echo.Context) error {
-	res, err := t.Service.Quote()
+	userId := c.Get("userId").(string)
+	deviceId := c.Get("deviceId").(string)
+	res, err := t.Service.Execute(body, userId, deviceId)
 	if err != nil {
-		return err
+		LogStringError(c, err, "transact: execute")
+		return InternalError(c)
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -44,6 +45,5 @@ func (t transaction) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	}
 	t.Group = g
 	g.Use(ms...)
-	g.POST("/", t.Transact)
-	g.POST("/quote", t.Quote)
+	g.POST("", t.Transact)
 }

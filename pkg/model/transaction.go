@@ -8,39 +8,35 @@ const (
 	MintERC721 TransactionType = "MintERC721"
 )
 
-type CostEstimate struct {
-	Timestamp  int
-	BaseUSD    int
-	GasUSD     int
-	TokenUSD   int
-	ServiceUSD int
-	TotalUSD   int
+type Quote struct {
+	Timestamp  int64   `json:"timestamp"`
+	BaseUSD    float64 `json:"baseUSD"`
+	GasUSD     float64 `json:"gasUSD"`
+	TokenUSD   float64 `json:"tokenUSD"`
+	ServiceUSD float64 `json:"serviceUSD"`
+	TotalUSD   float64 `json:"totalUSD"`
 }
 
-type SignedQuote struct {
-	Estimate  CostEstimate
-	Signature string
-}
-
-type TransactionRequest struct {
-	TransactionType
-	SignedQuote
-	CardToken string `json:"cardToken"`
-	ChainID   int    `json:"chainID"`
-}
-
-type TransactionData struct {
+type ExecutionRequest struct {
 	TransactionRequest
-	UserAddress        string   // users wallet
-	ContractAddress    string   // 0x0000 or ENS name for contract
-	ContractABI        []string // relevant declarations of contract ABI
-	ContractFunction   string   // function name, i.e. 'transfer' or 'mint'
-	ContractParameters []string // All parameters which will be passed into the contractFunction
-	TxValue            string
-	GasLimit           string
-	Forward            bool // Forward resulting asset?
+	Quote
+	Signature string `json:"signature"`
+	CardToken string `json:"cardToken"`
 }
 
-type TransactionResponse struct {
-	TxID string `json:"txID"`
+// User will pass this in for a quote and receive Execution Parameters
+type TransactionRequest struct {
+	UserAddress string   `json:"userAddress"`        // Used to keep track of user ie "0x44A4b9E2A69d86BA382a511f845CbF2E31286770"
+	ChainID     int      `json:"chainID"`            // Chain ID to execute on ie 80000
+	CxAddr      string   `json:"contractAddress"`    // Address of contract ie "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+	CxFunc      string   `json:"contractFunction"`   // Function declaration ie "mintTo(address) payable"
+	CxReturn    string   `json:"contractReturn"`     // Function return type ie "uint256"
+	CxParams    []string `json:"contractParameters"` // Function parameters ie ["0x000000000000000000BEEF", "32"]
+	TxValue     string   `json:"txValue"`            // Amount of native token to send ie "0.08 ether"
+	TxGasLimit  string   `json:"gasLimit"`           // Gwei gas limit ie "210000 gwei"
+}
+
+type TransactionReceipt struct {
+	TxID  string `json:"txID"`
+	TxURL string `json:"txUrl"`
 }

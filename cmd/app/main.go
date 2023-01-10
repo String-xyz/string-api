@@ -1,44 +1,40 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/String-xyz/string-api/api"
-	"github.com/jmoiron/sqlx"
+	"github.com/String-xyz/string-api/api/handler"
+	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/pkgerrors"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
 	// load .env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file")
+	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	lg := zerolog.New(os.Stdout)
+	if !handler.IsLocalEnv() {
+		tracer.Start()
+		defer tracer.Stop()
 	}
-
-	// TODO: create db connection to Postgres
-	// Checkout https://github.com/jmoiron/sqlx
-	dbuser := os.Getenv("DB_USER")
-	dbname := os.Getenv("DB_NAME")
-	psqlInfo := "user=" + dbuser + " dbname=" + dbname + " sslmode=disable"
-	db, err := sqlx.Connect(
-		"postgres", // requires a driver
-		psqlInfo)
-	if err != nil {
-		log.Fatalf("Error connecting to db:", err)
-	}
-	// Query Builder https://github.com/Masterminds/squirrel
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		panic("no port!")
 	}
 
-	// setup api
-	err = api.Start(api.APIConfig{
-		DB:   db,
-		Port: port,
-	})
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
+	db := store.MustNewPG()
 
+	// setup api
+	api.Start(api.APIConfig{
+		DB:     db,
+		Redis:  store.NewRedisStore(),
+		Port:   port,
+		Logger: &lg,
+	})
 }

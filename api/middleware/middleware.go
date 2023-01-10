@@ -1,24 +1,137 @@
-package api
+package middleware
 
 import (
 	"net/http"
-	"regexp"
+	"os"
+	"strings"
 
+	"github.com/String-xyz/string-api/api/handler"
+	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/golang-jwt/jwt"
+	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	echoDatadog "gopkg.in/DataDog/dd-trace-go.v1/contrib/labstack/echo.v4"
 )
 
-func allowOrigin(origin string) (bool, error) {
-	// TODO: Modify to be more restrictive
-	return regexp.MatchString(`*`, origin)
-}
-
-type MiddlewareConfig struct {
-	any any
-}
-
-func StringMiddleware(config MiddlewareConfig) {
-	echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOriginFunc: allowOrigin,
-		AllowMethods:    []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+func CORS() echo.MiddlewareFunc {
+	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+		AllowCredentials: true, // allow cookie auth
 	})
+}
+
+func Recover() echo.MiddlewareFunc {
+	return echoMiddleware.Recover()
+}
+
+func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("logger", logger)
+			return next(c)
+		}
+	}
+}
+
+func LogRequest() echo.MiddlewareFunc {
+	return echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
+		LogURI:       true,
+		LogStatus:    true,
+		LogRequestID: true,
+		LogLatency:   true,
+		LogMethod:    true,
+		LogHost:      true,
+		LogError:     true,
+		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
+			env := os.Getenv("ENV")
+			logger := c.Get("logger").(*zerolog.Logger)
+			logger.Info().
+				Str("path", v.URI).
+				Str("method", v.Method).
+				Int("status_code", v.Status).
+				Str("request_id", v.RequestID).
+				Str("host", v.Host).
+				Dur("latency", v.Latency).
+				Str("env", env).
+				Err(v.Error).
+				Msg("request")
+
+			return nil
+		},
+	})
+}
+
+// RequestID generates a unique request ID
+func RequestID() echo.MiddlewareFunc {
+	return echoMiddleware.RequestID()
+}
+
+func BearerAuth() echo.MiddlewareFunc {
+	config := echoMiddleware.JWTConfig{
+		TokenLookup: "header:Authorization,cookie:StringJWT",
+		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
+			var claims = &service.JWTClaims{}
+			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
+				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+			})
+
+			c.Set("userId", claims.UserId)
+			c.Set("deviceId", claims.DeviceId)
+			return t, err
+		},
+		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		ErrorHandlerWithContext: func(err error, c echo.Context) error {
+			if strings.Contains(err.Error(), "token is expired") {
+				return handler.TokenExpired(c)
+			}
+
+			if strings.Contains(errors.Cause(err).Error(), "missing or malformed jwt") {
+				return handler.MissingToken(c)
+			}
+
+			return handler.Unauthorized(c)
+		},
+	}
+	return echoMiddleware.JWTWithConfig(config)
+}
+
+func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
+	config := echoMiddleware.KeyAuthConfig{
+		KeyLookup: "header:X-Api-Key",
+		Validator: func(auth string, c echo.Context) (bool, error) {
+			valid := service.ValidateAPIKey(auth)
+			return valid, nil
+		},
+	}
+	return echoMiddleware.KeyAuthWithConfig(config)
+}
+
+func Tracer() echo.MiddlewareFunc {
+	return echoDatadog.Middleware()
+}
+
+func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			/* Get Ip from request */
+			ip := c.RealIP()
+
+			// check if location ip is restricted
+			isAllowed, err := service.IsAllowed(ip)
+			// in case of error, what we should do? allow or deny?
+			// For now we are denying
+			if err != nil || !isAllowed {
+				if err != nil {
+					// TODO: Move the common.go file to the upper level
+					handler.LogStringError(c, err, "Error in georestrict middleware")
+				}
+				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
+			}
+
+			return next(c)
+		}
+	}
 }
