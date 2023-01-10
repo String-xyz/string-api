@@ -70,6 +70,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainID)
 	}
 	costEth := common.WeiToEther(&p.CostETH)
+	// transactionCost is for native token transaction cost (tx_value)
 	transactionCost := costEth * nativeCost
 
 	// Query owlracle for gas
@@ -86,6 +87,8 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 
 	// Query cost of token in USD if used and apply buffer
 	costToken := common.WeiToEther(&p.CostToken)
+	// tokenCost in contract call ERC-20 token costs
+	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
 	if err != nil {
 		return model.Quote{}, common.StringError(err)
@@ -96,7 +99,8 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 
 	// Compute service fee
 	upcharge := chain.StringFee
-	serviceFee := (transactionCost + gasInUSD + tokenCost) * upcharge
+	baseCheckoutFee := 0.3
+	serviceFee := (transactionCost+gasInUSD+tokenCost)*upcharge + baseCheckoutFee
 
 	// floor
 	if transactionCost < 0.01 {
@@ -104,10 +108,6 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	}
 	if gasInUSD < 0.01 {
 		gasInUSD = 0.01
-	}
-	// if tokenCost < 0.01 { tokenCost = 0.01 }
-	if serviceFee < 0.01 {
-		serviceFee = 0.01
 	}
 
 	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee

@@ -19,7 +19,7 @@ type Chain struct {
 
 // TODO: should we store this in a DB or determine it dynamically???  Previously this was defined in the preprocessor in the Chain array
 func stringFee(chainId uint64) (float64, error) {
-	return 0.05, nil
+	return 0.03, nil
 }
 
 func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
