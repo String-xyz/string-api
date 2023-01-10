@@ -1,10 +1,10 @@
 module "alb_acm" {
   source            = "../../acm"
-  domain_name       = "admin.${local.root_domain}"
+  domain_name       = local.root_domain
   aws_region        = "us-west-2"
   zone_id           = data.aws_route53_zone.root.zone_id
   tags = {
-    Name = "admin-${local.root_domain}-alb"
+    Name = "${local.root_domain}-alb"
   }
 }
 
@@ -13,7 +13,7 @@ resource "aws_alb" "alb" {
   internal                   = true
   drop_invalid_header_fields = true
   security_groups            = [aws_security_group.ecs_alb_https_sg.id]
-  subnets                    = data.terraform_remote_state.vpc.outputs.public_subnets
+  subnets                    = data.terraform_remote_state.vpc.outputs.private_subnets
 
   tags = {
     Name = "${local.service_name}-alb"
@@ -77,7 +77,7 @@ resource "aws_alb_listener_rule" "ecs_alb_listener_rule" {
 
   condition {
     host_header {
-      values = ["admin.${local.root_domain}"]
+      values = [local.root_domain]
     }
   }
 }
