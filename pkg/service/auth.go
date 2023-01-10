@@ -22,7 +22,7 @@ type SignablePayload struct {
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
-var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are:\n\n 1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n\n 2) Confirming that this wallet is owned by you.\n\nThis request will not trigger any blockchain transaction or cost any gas:\n\n"
+var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are:\n\n1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n\n2) Confirming that this wallet is owned by you.\n\nThis request will not trigger any blockchain transaction or cost any gas.\n\nNonce: "
 
 type RefreshTokenResponse struct {
 	Token string    `json:"token"`
