@@ -22,6 +22,8 @@ type SignablePayload struct {
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
+var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are:\n\n1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n\n2) Confirming that this wallet is owned by you.\n\nThis request will not trigger any blockchain transaction or cost any gas.\n\nNonce: "
+
 type RefreshTokenResponse struct {
 	Token string    `json:"token"`
 	ExpAt time.Time `json:"expAt"`
@@ -80,13 +82,13 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	if err != nil {
 		return signable, common.StringError(err)
 	}
-	return SignablePayload{encrypted}, nil
+	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
 }
 
 func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -252,7 +254,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, erro
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	preSignedPayload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	preSignedPayload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return common.StringError(err)
 	}

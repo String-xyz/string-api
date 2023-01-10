@@ -63,7 +63,7 @@ func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
 func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce, key)
+	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
