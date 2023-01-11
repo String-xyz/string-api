@@ -31,11 +31,9 @@ func (t transaction) Transact(c echo.Context) error {
 	}
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
-	var cxParams []*string
-	for _, p := range body.CxParams {
-		cxParams = append(cxParams, &p)
+	for i := range body.CxParams {
+		SanitizeChecksums(&body.CxParams[i])
 	}
-	SanitizeChecksums(cxParams...)
 	userId := c.Get("userId").(string)
 	deviceId := c.Get("deviceId").(string)
 	res, err := t.Service.Execute(body, userId, deviceId)

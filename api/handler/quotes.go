@@ -32,11 +32,9 @@ func (q quote) Quote(c echo.Context) error {
 	}
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
-	var cxParams []*string
-	for _, p := range body.CxParams {
-		cxParams = append(cxParams, &p)
+	for i := range body.CxParams {
+		SanitizeChecksums(&body.CxParams[i])
 	}
-	SanitizeChecksums(cxParams...)
 
 	// userId := c.Get("userId").(string)
 	res, err := q.Service.Quote(body) // TODO: pass in userId and use it
