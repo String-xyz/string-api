@@ -30,6 +30,14 @@ func (q quote) Quote(c echo.Context) error {
 		LogStringError(c, err, "quote: quote bind")
 		return BadRequestError(c)
 	}
+	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
+	// Sanitize Checksum for body.CxParams?  It might look like this:
+	var cxParams []*string
+	for _, p := range body.CxParams {
+		cxParams = append(cxParams, &p)
+	}
+	SanitizeChecksums(cxParams...)
+
 	// userId := c.Get("userId").(string)
 	res, err := q.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
