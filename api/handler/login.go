@@ -34,7 +34,7 @@ func (l login) NoncePayload(c echo.Context) error {
 	if walletAddress == "" {
 		return BadRequestError(c, "WalletAddress must be provided")
 	}
-
+	SanitizeChecksums(&walletAddress)
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
@@ -84,6 +84,8 @@ func (l login) RefreshToken(c echo.Context) error {
 	if err := c.Validate(body); err != nil {
 		return InvalidPayloadError(c, err)
 	}
+
+	SanitizeChecksums(&body.WalletAddress)
 
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {

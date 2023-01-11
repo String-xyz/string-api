@@ -90,9 +90,7 @@ func IsWallet(addr string) bool {
 	if !validAddress(addr) {
 		return false
 	}
-	if !validChecksum(addr) {
-		return false
-	}
+	addr = SanitizeChecksum(addr) // Copy correct checksum, although endpoint handlers are doing this already
 
 	address := common.HexToAddress(addr)
 	bytecode, err := geth.CodeAt(context.Background(), address, nil)
@@ -104,6 +102,11 @@ func IsWallet(addr string) bool {
 }
 
 func validChecksum(addr string) bool {
+	valid := SanitizeChecksum(addr)
+	return addr == valid
+}
+
+func SanitizeChecksum(addr string) string {
 	lowerCase := strings.ToLower(addr)[2:]
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write([]byte(lowerCase))
@@ -119,7 +122,7 @@ func validChecksum(addr string) bool {
 		}
 		valid += c
 	}
-	return addr == valid
+	return valid
 }
 
 func validAddress(addr string) bool {
