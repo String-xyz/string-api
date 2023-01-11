@@ -56,22 +56,27 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 	}
 	client := payments.NewClient(*config)
 
-	// Generate a payment token ID in case we don't yet have one in the front end
-	// For testing purposes only
-	card := tokens.Card{
-		Type:        checkoutCommon.Card,
-		Number:      "4242424242424242",
-		ExpiryMonth: 2,
-		ExpiryYear:  2024,
-		Name:        "Customer Name",
-		CVV:         "100",
-	}
-	paymentToken, err := CreateToken(&card)
-	if err != nil {
-		return auth, common.StringError(err)
-	}
-	paymentTokenID := paymentToken.Created.Token
-	if tokenId != "" {
+	var paymentTokenID string
+	if common.IsLocalEnv() {
+		// Generate a payment token ID in case we don't yet have one in the front end
+		// For testing purposes only
+		card := tokens.Card{
+			Type:        checkoutCommon.Card,
+			Number:      "4242424242424242",
+			ExpiryMonth: 2,
+			ExpiryYear:  2024,
+			Name:        "Customer Name",
+			CVV:         "100",
+		}
+		paymentToken, err := CreateToken(&card)
+		if err != nil {
+			return auth, common.StringError(err)
+		}
+		paymentTokenID = paymentToken.Created.Token
+		if tokenId != "" {
+			paymentTokenID = tokenId
+		}
+	} else {
 		paymentTokenID = tokenId
 	}
 
