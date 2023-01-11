@@ -29,6 +29,11 @@ func (t transaction) Transact(c echo.Context) error {
 		LogStringError(c, err, "transact: execute bind")
 		return BadRequestError(c)
 	}
+	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
+	// Sanitize Checksum for body.CxParams?  It might look like this:
+	for i := range body.CxParams {
+		SanitizeChecksums(&body.CxParams[i])
+	}
 	userId := c.Get("userId").(string)
 	deviceId := c.Get("deviceId").(string)
 	res, err := t.Service.Execute(body, userId, deviceId)
