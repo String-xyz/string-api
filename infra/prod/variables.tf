@@ -170,6 +170,10 @@ locals {
           name  = "UNIT21_ENV"
           value = "api.prod2"
         },
+         {
+          name = "CHECKOUT_ENV"
+          value = local.env
+        },
         {
           name  = "UNIT21_ORG_NAME"
           value = "string"

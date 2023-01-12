@@ -56,7 +56,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Value = jwt.Token
 	// cookie.HttpOnly = true // due the short expiration time it is not needed to be http only
 	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
-	cookie.SameSite = http.SameSiteNoneMode
+	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/"             // Send cookie in every sub path request
 	cookie.Secure = !IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
@@ -70,7 +70,7 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	cookie.Value = refresh.Token
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
-	cookie.SameSite = http.SameSiteNoneMode
+	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/"       // Send cookie only in /login path request
 	cookie.Secure = !IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
@@ -98,7 +98,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Name = "StringJWT"
 	cookie.Value = ""
 	cookie.Expires = time.Now()
-	cookie.SameSite = http.SameSiteLaxMode
+	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/" // Send cookie in every sub path request
 	cookie.Secure = !IsLocalEnv()
 	c.SetCookie(cookie)
@@ -107,7 +107,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Name = "refresh_token"
 	cookie.Value = ""
 	cookie.Expires = time.Now()
-	cookie.SameSite = http.SameSiteNoneMode
+	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/" // Send cookie only in refresh path request
 	cookie.Secure = !IsLocalEnv()
 	c.SetCookie(cookie)
@@ -122,6 +122,14 @@ func IsLocalEnv() bool {
 func validAddress(addr string) bool {
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 	return re.MatchString(addr)
+}
+
+func getCookieSameSiteMode() http.SameSite {
+	sameSiteMode := http.SameSiteNoneMode // allow cors
+	if IsLocalEnv() {
+		sameSiteMode = http.SameSiteLaxMode // because SameSiteNoneMode is not allowed in localhost we use lax mode
+	}
+	return sameSiteMode
 }
 
 func SanitizeChecksums(addrs ...*string) {
