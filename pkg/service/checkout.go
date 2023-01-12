@@ -16,8 +16,14 @@ import (
 func getConfig() (*checkout.Config, error) {
 	var sk = os.Getenv("CHECKOUT_SECRET_KEY")
 	var pk = os.Getenv("CHECKOUT_PUBLIC_KEY")
+	var env = os.Getenv("CHECKOUT_ENV")
+	checkoutEnv := checkout.Sandbox
 
-	var config, err = checkout.SdkConfig(&sk, &pk, checkout.Sandbox)
+	if env == "production" {
+		checkoutEnv = checkout.Production
+	}
+
+	var config, err = checkout.SdkConfig(&sk, &pk, checkoutEnv)
 	if err != nil {
 		return nil, common.StringError(err)
 	}
