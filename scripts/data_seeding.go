@@ -43,7 +43,7 @@ func DataSeeding() {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com/"})
+	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io/"})
+	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -63,11 +63,11 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io/"})
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -230,7 +230,7 @@ func MockSeeding() {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com/"})
+	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
@@ -238,7 +238,7 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io/"})
+	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -250,11 +250,11 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io/"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io/"})
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
