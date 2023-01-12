@@ -177,6 +177,10 @@ locals {
           value = "string"
         },
         {
+          name = "CHECKOUT_ENV"
+          value = local.env
+        },
+        {
           name  = "DD_LOGS_ENABLED"
           value = "true"
         },
