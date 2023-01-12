@@ -56,7 +56,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Value = jwt.Token
 	// cookie.HttpOnly = true // due the short expiration time it is not needed to be http only
 	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
-	cookie.SameSite = http.SameSiteLaxMode
+	cookie.SameSite = http.SameSiteNoneMode
 	cookie.Path = "/"             // Send cookie in every sub path request
 	cookie.Secure = !IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
@@ -70,7 +70,7 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	cookie.Value = refresh.Token
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
-	cookie.SameSite = http.SameSiteLaxMode
+	cookie.SameSite = http.SameSiteNoneMode
 	cookie.Path = "/login/"       // Send cookie only in /login path request
 	cookie.Secure = !IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
@@ -107,7 +107,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Name = "refresh_token"
 	cookie.Value = ""
 	cookie.Expires = time.Now()
-	cookie.SameSite = http.SameSiteLaxMode
+	cookie.SameSite = http.SameSiteNoneMode
 	cookie.Path = "/login/" // Send cookie only in refresh path request
 	cookie.Secure = !IsLocalEnv()
 	c.SetCookie(cookie)
