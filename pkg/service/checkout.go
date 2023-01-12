@@ -19,7 +19,7 @@ func getConfig() (*checkout.Config, error) {
 	var env = os.Getenv("CHECKOUT_ENV")
 	checkoutEnv := checkout.Sandbox
 
-	if env == "production" {
+	if env == "prod" {
 		checkoutEnv = checkout.Production
 	}
 
