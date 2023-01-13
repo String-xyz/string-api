@@ -99,7 +99,6 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		Customer: &payments.Customer{
 			Name: userWallet,
 		},
-		// AuthorizationType: "Estimated", // Only compatible with MasterCard
 		Capture: &capture,
 	}
 
