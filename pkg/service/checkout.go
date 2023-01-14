@@ -99,8 +99,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		Customer: &payments.Customer{
 			Name: userWallet,
 		},
-		AuthorizationType: "Estimated",
-		Capture:           &capture,
+		Capture: &capture,
 	}
 
 	idempotencyKey := checkout.NewIdempotencyKey()
