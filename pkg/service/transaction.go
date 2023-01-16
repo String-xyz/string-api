@@ -681,7 +681,7 @@ func (t transaction) sendEmailReceipt(request postProcessRequest) error {
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   request.TxDBID,
-		PaymentDescriptor: "STRNG*STRNG-DEMO NFT", // TODO: retrieve dynamically
+		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	receiptBody := [][2]string{
@@ -689,9 +689,9 @@ func (t transaction) sendEmailReceipt(request postProcessRequest) error {
 		{"Destination Wallet", "<a href='" + request.Chain.Explorer + "/address/" + request.UserAddress + "'>" + request.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", request.Authorization.Issuer + " " + request.Authorization.Last4},
-		{"Platform", "String Demo"},         // TODO: retrieve dynamically
-		{"Item Ordered", "String Demo NFT"}, // TODO: retrieve dynamically
-		{"Token ID", "1234"},                // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Platform", "String Demo"},            // TODO: retrieve dynamically
+		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
+		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(request.Quote.BaseUSD + request.Quote.TokenUSD)},
 		{"Network Fee:", common.FloatToUSDString(request.Quote.GasUSD)},
 		{"Processing Fee", common.FloatToUSDString(request.Quote.ServiceUSD)},
