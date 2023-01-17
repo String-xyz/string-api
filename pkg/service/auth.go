@@ -55,7 +55,7 @@ type Auth interface {
 
 	GenerateJWT(model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
-	RefreshToken(token string, walletAddress string) (JWT, error)
+	RefreshToken(token string, walletAddress string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
 
@@ -212,11 +212,13 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, error) {
+func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreateResponse, error) {
+	resp := UserCreateResponse{}
+
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// verify wallet address
@@ -224,34 +226,41 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, erro
 	instrument, err := a.repos.Instrument.GetWallet(walletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+			return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 		}
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	if instrument.UserID != userId {
-		return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 	}
 
 	// get device
 	device, err := a.repos.Device.GetByUserId(userId)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// create new jwt
 	jwt, err := a.GenerateJWT(device)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
+	resp.JWT = jwt
 
 	// delete old refresh token
 	err = a.InvalidateRefreshToken(refreshToken)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
-	return jwt, nil
+	user, err := a.repos.User.GetById(instrument.UserID)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+	resp.User = user
+
+	return resp, nil
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
