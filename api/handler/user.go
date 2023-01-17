@@ -108,6 +108,10 @@ func (u user) VerifyEmail(c echo.Context) error {
 			return Conflict(c)
 		}
 
+		if strings.Contains(err.Error(), "link expired") {
+			return LinkExpired(c, "Link expired, please request a new one")
+		}
+
 		LogStringError(c, err, "user: email verification")
 		return InternalError(c, "Unable to send email verification")
 	}
