@@ -43,6 +43,7 @@ type CostCache struct {
 type Cost interface {
 	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
 	LookupUSD(coin string, quantity float64) (float64, error)
+	CoingeckoUSD(coin string, quantity float64) (float64, error)
 }
 
 type cost struct {
@@ -135,7 +136,7 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
-		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
+		cacheObject.Value, err = c.CoingeckoUSD(coin, 1)
 		if err != nil {
 			return 0, common.StringError(err)
 		}
@@ -169,7 +170,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 	return cacheObject.Value, nil
 }
 
-func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
+func (c cost) CoingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
