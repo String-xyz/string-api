@@ -112,11 +112,7 @@ func OffRamp(from string, fromChain int, fromAmount *big.Int) {
 }
 
 func Swap(from string, to string, chainId int, userAddr string, amount *big.Int) error {
-	// type spender struct {
-	// 	address string
-	// }
-	// var addr spender
-	var spender map[string]interface{}
+	var spender map[string]interface{} // Address of 1inch smart contract
 
 	getSpenderAddr := "https://api.1inch.io/v5.0/" + fmt.Sprint(chainId) + "/approve/spender"
 	err := common.GetJsonGeneric(getSpenderAddr, &spender)
@@ -127,8 +123,7 @@ func Swap(from string, to string, chainId int, userAddr string, amount *big.Int)
 	if !ok {
 		return common.StringError(errors.New("Failed to unmarshal 1inch spender addr"))
 	}
-	addr = common.SanitizeChecksum(addr) // lol
-	fmt.Printf("\n\nADDR=%+v", spender["address"])
+	addr = common.SanitizeChecksum(addr) // 1inch provides non-checksummed address
 
 	e := NewExecutor()
 	e.Initialize("https://api.avax.network/ext/bc/C/rpc") // Hackathon
