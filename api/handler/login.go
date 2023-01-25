@@ -93,7 +93,7 @@ func (l login) RefreshToken(c echo.Context) error {
 		return Unauthorized(c)
 	}
 
-	jwt, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
+	resp, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet address not associated with this user") {
 			return BadRequestError(c, "wallet address not associated with this user")
@@ -102,14 +102,15 @@ func (l login) RefreshToken(c echo.Context) error {
 		LogStringError(c, err, "login: refresh token")
 		return BadRequestError(c, "Invalid or expired token")
 	}
+
 	// set auth in cookies
-	err = SetAuthCookies(c, jwt)
+	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "RefreshToken: unable to set auth cookies")
 		return InternalError(c)
 	}
 
-	return c.JSON(http.StatusOK, jwt)
+	return c.JSON(http.StatusOK, resp)
 }
 
 // logout
