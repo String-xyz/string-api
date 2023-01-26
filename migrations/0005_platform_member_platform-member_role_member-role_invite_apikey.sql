@@ -12,7 +12,7 @@ CREATE TABLE platform (
 	name TEXT NOT NULL,
 	description TEXT NOT NULL,
 	domains TEXT[] DEFAULT NULL, -- define which domains can make calls to API (web-to-API)
-	ip_addresses TEXT[] DEFAULT NULL, -- define which API ips can make calls (API-to-API)
+	ip_addresses TEXT[] DEFAULT NULL -- define which API ips can make calls (API-to-API)
 );
 
 -------------------------------------------------------------------------
@@ -23,7 +23,7 @@ CREATE TABLE member (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 	email TEXT NOT NULL,
-	password TEXT NOT NULL, -- how do we maintain this?
+	password TEXT NOT NULL -- how do we maintain this?
 );
 
 -------------------------------------------------------------------------
@@ -42,14 +42,14 @@ CREATE TABLE role (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-	name TEXT NOT NULL,
+	name TEXT NOT NULL
 );
 
 -------------------------------------------------------------------------
 -- MEMBER_ROLE -----------------------------------------------------
 CREATE TABLE member_role (
-    member_id UUID REFERENCES member (id)
-	role_id UUID REFERENCES role (id),
+    member_id UUID REFERENCES member (id),
+	role_id UUID REFERENCES role (id)
 );
 
 CREATE UNIQUE INDEX member_role_member_id_role_id_idx ON member_role(member_id, role_id);
@@ -65,7 +65,7 @@ CREATE TABLE invite (
     accepted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 	email TEXT NOT NULL,
 	invited_by UUID REFERENCES member (id),
-	platform_id UUID REFERENCES platform (id),
+	platform_id UUID REFERENCES platform (id)
 );
 
 -------------------------------------------------------------------------
@@ -79,7 +79,7 @@ CREATE TABLE apikey (
 	data TEXT NOT NULL, -- the key itself
 	description TEXT NOT NULL,
 	created_by UUID REFERENCES member (id),
-	platform_id UUID REFERENCES platform (id),
+	platform_id UUID REFERENCES platform (id)
 );
 
 

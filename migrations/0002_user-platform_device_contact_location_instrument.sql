@@ -5,7 +5,7 @@
 -- USER_PLATFORM --------------------------------------------------------
 CREATE TABLE user_platform (
   user_id UUID REFERENCES string_user (id),
-  platform_id UUID REFERENCES platform (id)
+  platform_id UUID REFERENCES platform_deprecated (id)
 );
 
 CREATE UNIQUE INDEX user_platform_user_id_platform_id_idx ON user_platform(user_id, platform_id);
