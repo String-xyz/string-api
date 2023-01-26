@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	b64 "encoding/base64"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +16,14 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	obj1 := []byte("Your String Here")
+	encodedMessage := "Your String Here"
 
+	// decode
+	decoded, err := b64.URLEncoding.DecodeString(encodedMessage)
+	assert.NoError(t, err)
+	obj1 := []byte(decoded)
+
+	// sign
 	obj1Signed, err := EVMSign(obj1, true)
 	assert.NoError(t, err)
 	fmt.Printf("\nString Signature: %+v\n", obj1Signed)
