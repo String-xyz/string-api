@@ -16,18 +16,17 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	encodedMessage := "Your String Here"
+	encodedMessage := "Your base64 enconded String Here"
 
 	// decode
 	decoded, err := b64.URLEncoding.DecodeString(encodedMessage)
 	assert.NoError(t, err)
-	obj1 := []byte(decoded)
 
 	// sign
-	obj1Signed, err := EVMSign(obj1, true)
+	obj1Signed, err := EVMSign(decoded, true)
 	assert.NoError(t, err)
 	fmt.Printf("\nString Signature: %+v\n", obj1Signed)
-	valid, err := ValidateEVMSignature(obj1Signed, obj1, true)
+	valid, err := ValidateEVMSignature(obj1Signed, decoded, true)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
 }
