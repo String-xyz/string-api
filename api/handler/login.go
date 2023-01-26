@@ -61,7 +61,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	// base64 decode nonce
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
-		LogStringError(c, err, "login: base64 decode nonce")
+		LogStringError(c, err, "login: verify signature decode nonce")
 		return BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
