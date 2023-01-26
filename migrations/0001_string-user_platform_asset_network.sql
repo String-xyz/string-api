@@ -43,7 +43,7 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------
-CREATE TABLE platform_deprecated (
+CREATE TABLE platform (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -54,9 +54,9 @@ CREATE TABLE platform_deprecated (
   api_key TEXT DEFAULT '',
   authentication TEXT DEFAULT '' --enum [email, phone, wallet]
 );
-CREATE OR REPLACE TRIGGER update_platform_deprecated_updated_at
+CREATE OR REPLACE TRIGGER update_platform_updated_at
     BEFORE UPDATE
-    ON platform_deprecated
+    ON platform
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
@@ -121,8 +121,8 @@ DROP TABLE IF EXISTS network;
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------
-DROP TRIGGER IF EXISTS update_platform_deprecated_updated_at ON platform_deprecated;
-DROP TABLE IF EXISTS platform_deprecated;
+DROP TRIGGER IF EXISTS update_platform_updated_at ON platform;
+DROP TABLE IF EXISTS platform;
 
 -------------------------------------------------------------------------
 -- STRING_USER ----------------------------------------------------------

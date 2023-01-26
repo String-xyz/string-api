@@ -32,13 +32,13 @@ type platform[T any] struct {
 }
 
 func NewPlatform(db *sqlx.DB) Platform {
-	return &platform[model.Platform]{base: base[model.Platform]{store: db, table: "platform_deprecated"}}
+	return &platform[model.Platform]{base: base[model.Platform]{store: db, table: "platform"}}
 }
 
 func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	plat := model.Platform{}
 	rows, err := p.store.NamedQuery(`
-		INSERT INTO platform_deprecated (type, authentication, api_key, status) 
+		INSERT INTO platform (type, authentication, api_key, status) 
 		VALUES(:type, :authentication, :api_key, :status) RETURNING *`, m)
 
 	if err != nil {

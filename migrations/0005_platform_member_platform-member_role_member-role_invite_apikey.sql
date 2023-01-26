@@ -3,17 +3,17 @@
 
 -------------------------------------------------------------------------
 -- PLATFORM -----------------------------------------------------
-CREATE TABLE platform (
-	id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-	activated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- for activating prod users
-	name TEXT NOT NULL,
-	description TEXT NOT NULL,
-	domains TEXT[] DEFAULT NULL, -- define which domains can make calls to API (web-to-API)
-	ip_addresses TEXT[] DEFAULT NULL -- define which API ips can make calls (API-to-API)
-);
+ALTER TABLE platform
+	DROP COLUMN IF EXISTS type,
+	DROP COLUMN IF EXISTS status, 
+	DROP COLUMN IF EXISTS name, 
+	DROP COLUMN IF EXISTS api_key, 
+	DROP COLUMN IF EXISTS authentication,
+	ADD COLUMN activated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,  -- for activating prod users
+	ADD COLUMN name TEXT NOT NULL,
+	ADD COLUMN description TEXT NOT NULL,
+	ADD COLUMN domains TEXT[] DEFAULT NULL, -- define which domains can make calls to API (web-to-API)
+	ADD COLUMN ip_addresses TEXT[] DEFAULT NULL; -- define which API ips can make calls (API-to-API)
 
 -------------------------------------------------------------------------
 -- MEMBER -----------------------------------------------------
@@ -87,8 +87,18 @@ CREATE TABLE apikey (
 -- +goose Down
 
 -------------------------------------------------------------------------
--- CONTACT_PLATFORM -----------------------------------------------------
-DROP TABLE IF EXISTS platform;
+-- PLATFORM -----------------------------------------------------
+ALTER TABLE platform
+	DROP COLUMN IF EXISTS activated_at,
+	DROP COLUMN IF EXISTS name,
+	DROP COLUMN IF EXISTS description,
+	DROP COLUMN IF EXISTS domains,
+	DROP COLUMN IF EXISTS ip_addresses
+	ADD COLUMN type TEXT NOT NULL, -- enum: to be defined at struct level in Go
+	ADD COLUMN status TEXT NOT NULL, -- enum: to be defined at struct level in Go
+	ADD COLUMN name TEXT DEFAULT '', 
+	ADD COLUMN api_key TEXT DEFAULT '', 
+	ADD COLUMN authentication TEXT DEFAULT ''; --enum [email, phone, wallet]
 
 -------------------------------------------------------------------------
 -- MEMBER -----------------------------------------------------
