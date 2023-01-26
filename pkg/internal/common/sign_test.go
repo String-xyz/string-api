@@ -16,7 +16,7 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	encodedMessage := "Your base64 enconded String Here"
+	encodedMessage := "Your base64 encoded String Here"
 
 	// decode
 	decoded, err := b64.URLEncoding.DecodeString(encodedMessage)
