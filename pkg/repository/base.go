@@ -15,18 +15,18 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Repositories struct {
-	Auth         AuthStrategy
-	User         User
-	Contact      Contact
-	Instrument   Instrument
-	Device       Device
-	UserPlatform UserPlatform
-	Asset        Asset
-	Network      Network
-	Platform     Platform
-	Transaction  Transaction
-	TxLeg        TxLeg
-	Location     Location
+	Auth           AuthStrategy
+	User           User
+	Contact        Contact
+	Instrument     Instrument
+	Device         Device
+	UserToPlatform UserToPlatform
+	Asset          Asset
+	Network        Network
+	Platform       Platform
+	Transaction    Transaction
+	TxLeg          TxLeg
+	Location       Location
 }
 
 type Queryable interface {

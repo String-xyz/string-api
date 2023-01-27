@@ -65,7 +65,7 @@ type Asset struct {
 }
 
 // See USER_PLATFORM in Migrations 0002
-type UserPlatform struct {
+type UserToPlatform struct {
 	UserID     string `json:"userId" db:"user_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
@@ -135,13 +135,13 @@ type Instrument struct {
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
-type ContactPlatform struct {
+type ContactToPlatform struct {
 	ContactID  string `json:"contactId" db:"contact_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE_INSTRUMENT in Migrations 0003
-type DeviceInstrument struct {
+type DeviceToInstrument struct {
 	DeviceID     string `json:"deviceId" db:"device_id"`
 	InstrumentID string `json:"instrumentId" db:"instrument_id"`
 }

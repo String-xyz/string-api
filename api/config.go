@@ -10,18 +10,18 @@ import (
 func NewRepos(config APIConfig) repository.Repositories {
 	// TODO: Make sure all of the repos are initialized here
 	return repository.Repositories{
-		Auth:         repository.NewAuth(config.Redis, config.DB),
-		User:         repository.NewUser(config.DB),
-		Contact:      repository.NewContact(config.DB),
-		Instrument:   repository.NewInstrument(config.DB),
-		Device:       repository.NewDevice(config.DB),
-		UserPlatform: repository.NewUserPlatform(config.DB),
-		Asset:        repository.NewAsset(config.DB),
-		Network:      repository.NewNetwork(config.DB),
-		Platform:     repository.NewPlatform(config.DB),
-		Transaction:  repository.NewTransaction(config.DB),
-		TxLeg:        repository.NewTxLeg(config.DB),
-		Location:     repository.NewLocation(config.DB),
+		Auth:           repository.NewAuth(config.Redis, config.DB),
+		User:           repository.NewUser(config.DB),
+		Contact:        repository.NewContact(config.DB),
+		Instrument:     repository.NewInstrument(config.DB),
+		Device:         repository.NewDevice(config.DB),
+		UserToPlatform: repository.NewUserToPlatform(config.DB),
+		Asset:          repository.NewAsset(config.DB),
+		Network:        repository.NewNetwork(config.DB),
+		Platform:       repository.NewPlatform(config.DB),
+		Transaction:    repository.NewTransaction(config.DB),
+		TxLeg:          repository.NewTxLeg(config.DB),
+		Location:       repository.NewLocation(config.DB),
 	}
 }
 
