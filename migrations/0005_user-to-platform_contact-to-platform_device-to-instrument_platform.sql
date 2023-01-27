@@ -57,8 +57,8 @@ ALTER TABLE platform
   DROP COLUMN IF EXISTS description,
   DROP COLUMN IF EXISTS domains,
   DROP COLUMN IF EXISTS ip_addresses,
-  ADD COLUMN type TEXT NOT NULL, -- enum: to be defined at struct level in Go
-  ADD COLUMN status TEXT NOT NULL, -- enum: to be defined at struct level in Go
+  ADD COLUMN type TEXT DEFAULT '', -- enum: to be defined at struct level in Go
+  ADD COLUMN status TEXT DEFAULT '', -- enum: to be defined at struct level in Go
   ADD COLUMN name TEXT DEFAULT '', 
   ADD COLUMN api_key TEXT DEFAULT '', 
   ADD COLUMN authentication TEXT DEFAULT ''; --enum [email, phone, wallet]
