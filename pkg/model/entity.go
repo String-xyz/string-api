@@ -22,17 +22,17 @@ type User struct {
 	LastName      string     `json:"lastName" db:"last_name"`
 }
 
-// See PLATFORM in Migrations 0001 -- THIS IS DEPRECATED
+// See PLATFORM in Migrations 0005
 type Platform struct {
-	ID             string     `json:"id" db:"id"`
-	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type           string     `json:"type" db:"type"`
-	Status         string     `json:"status" db:"status"`
-	Name           string     `json:"name" db:"name"`
-	ApiKey         string     `json:"apiKey" db:"api_key"`
-	Authentication AuthType   `json:"authentication" db:"authentication"`
+	ID            string         `json:"id,omitempty" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	ActivatedAt   *time.Time     `json:"activatedAt,omitempty" db:"activated_at"`
+	Name          string         `json:"name" db:"name"`
+	Description   string         `json:"description" db:"description"`
+	Domains       pq.StringArray `json:"domains" db:"domains"`
+	IPAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
 }
 
 // See NETWORK in Migrations 0001
