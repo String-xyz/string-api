@@ -22,7 +22,6 @@ type Platform interface {
 	GetById(ID string) (model.Platform, error)
 	List(limit int, offset int) ([]model.Platform, error)
 	Update(ID string, updates any) error
-	// GetByApiKey(key string) (model.Platform, error)
 }
 
 type platform[T any] struct {
