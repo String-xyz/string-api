@@ -1,6 +1,7 @@
 package handler
 
 import (
+	b64 "encoding/base64"
 	"net/http"
 	"strings"
 
@@ -41,7 +42,8 @@ func (l login) NoncePayload(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	return c.JSON(http.StatusOK, payload)
+	encodedNonce := b64.StdEncoding.EncodeToString([]byte(payload.Nonce))
+	return c.JSON(http.StatusOK, map[string]string{"nonce": encodedNonce})
 }
 
 func (l login) VerifySignature(c echo.Context) error {
@@ -55,6 +57,14 @@ func (l login) VerifySignature(c echo.Context) error {
 	if err := c.Validate(body); err != nil {
 		return InvalidPayloadError(c, err)
 	}
+
+	// base64 decode nonce
+	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
+	if err != nil {
+		LogStringError(c, err, "login: verify signature decode nonce")
+		return BadRequestError(c)
+	}
+	body.Nonce = string(decodedNonce)
 
 	resp, err := l.Service.VerifySignedPayload(body)
 	if err != nil && strings.Contains(err.Error(), "unknown device") {
@@ -93,7 +103,7 @@ func (l login) RefreshToken(c echo.Context) error {
 		return Unauthorized(c)
 	}
 
-	jwt, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
+	resp, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet address not associated with this user") {
 			return BadRequestError(c, "wallet address not associated with this user")
@@ -102,14 +112,15 @@ func (l login) RefreshToken(c echo.Context) error {
 		LogStringError(c, err, "login: refresh token")
 		return BadRequestError(c, "Invalid or expired token")
 	}
+
 	// set auth in cookies
-	err = SetAuthCookies(c, jwt)
+	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "RefreshToken: unable to set auth cookies")
 		return InternalError(c)
 	}
 
-	return c.JSON(http.StatusOK, jwt)
+	return c.JSON(http.StatusOK, resp)
 }
 
 // logout
