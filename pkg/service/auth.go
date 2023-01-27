@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	netmail "net/mail"
 	"os"
 	"regexp"
@@ -109,17 +110,53 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 
 	var device model.Device
 
-	// create a new device only if there is fingerprint data
-	if request.Fingerprint.VisitorID != "" && request.Fingerprint.RequestID != "" {
-		created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
-		if err != nil {
-			return resp, common.StringError(err)
-		}
+	// If there is no fingerprint data use a temporary device
+	if request.Fingerprint.VisitorID == "" || request.Fingerprint.RequestID == "" {
+		device, err := a.repos.Device.GetByUserIdAndFingerprint(user.ID, "tmp")
+		// print device
+		fmt.Println("---- Device dk", device.ValidatedAt)
 
-		if created || device.ValidatedAt == nil {
+		if err != nil && err == repository.ErrNotFound {
+			device, err := a.createTmpDevice(user.ID)
+			if err != nil {
+				return resp, common.StringError(err)
+			}
 			go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
 			return resp, common.StringError(errors.New("unknown device"))
 		}
+
+		aYearAgo := time.Now().Add(-1 * time.Hour * 24 * 365)
+		// if the device is tmp and is validated return a jwt and set validatedAt to nil
+		if device.ValidatedAt != nil && device.ValidatedAt.After(aYearAgo) {
+			println("---- Device is validated")
+			jwt, err := a.GenerateJWT(user.ID, device)
+			if err != nil {
+				return resp, common.StringError(err)
+			}
+
+			resp.JWT = jwt
+			// set validatedAt far in the past
+			device.ValidatedAt = &aYearAgo
+			err = a.repos.Device.Update(device.ID, device)
+			if err != nil {
+				println("---- Error updating device")
+			}
+			return resp, common.StringError(err)
+		} else {
+			println("---- Device is not validated")
+			go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+			return resp, common.StringError(errors.New("unknown device"))
+		}
+	}
+
+	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
+	if created || device.ValidatedAt == nil {
+		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+		return resp, common.StringError(errors.New("unknown device"))
 	}
 
 	// Create the JWT
@@ -146,6 +183,18 @@ func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, m
 	}
 
 	return false, device, common.StringError(err)
+}
+
+func (a auth) createTmpDevice(userID string) (model.Device, error) {
+	// create device only if the error is not found
+	visitor := model.FPVisitor{
+		VisitorID: "tmp",
+		Type:      "tmp",
+		IPAddress: "tmp",
+		UserAgent: "tmp",
+	}
+	device, err := a.createDevice(userID, visitor)
+	return device, common.StringError(err)
 }
 
 func (a auth) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
