@@ -186,7 +186,8 @@ func DataSeeding() {
 
 	// Platforms, placeholder
 	/*platformDeveloper*/
-	placeholderPlatform, err := repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
+	placeholderPlatform, err := repos.Platform.Create(model.Platform{Name: "Nintendo", Description: "Fun"})
+
 	if err != nil {
 		panic(err)
 	}
@@ -377,7 +378,7 @@ func MockSeeding() {
 
 	// Platforms, placeholder
 	/*platformDeveloper*/
-	placeholderPlatform, err := repos.Platform.Create(model.Platform{Type: "Game", Status: "Verified", Name: "Nintendo", ApiKey: "Internal", Authentication: "Email"})
+	placeholderPlatform, err := repos.Platform.Create(model.Platform{Name: "Nintendo", Description: "Fun"})
 	if err != nil {
 		panic(err)
 	}

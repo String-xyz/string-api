@@ -17,9 +17,9 @@ type Entity interface {
 }
 
 type EntityRepos struct {
-	Device       repository.Device
-	Contact      repository.Contact
-	UserPlatform repository.UserPlatform
+	Device         repository.Device
+	Contact        repository.Contact
+	UserToPlatform repository.UserToPlatform
 }
 
 type entity struct {
@@ -176,7 +176,7 @@ func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalDat
 }
 
 func (e entity) getCustomData(userId string) (customData entityCustomData, err error) {
-	devices, err := e.repo.UserPlatform.ListByUserId(userId, 100, 0)
+	devices, err := e.repo.UserToPlatform.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user platforms: %s", err)
 		err = common.StringError(err)

@@ -11,9 +11,9 @@ CREATE TABLE auth_strategy (
 );
 
 CREATE OR REPLACE TRIGGER update_auth_strategy_updated_at
-    BEFORE UPDATE
-    ON auth_strategy
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON auth_strategy
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE INDEX auth_strategy_status_idx ON auth_strategy(status);

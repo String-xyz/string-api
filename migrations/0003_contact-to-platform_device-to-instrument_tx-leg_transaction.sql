@@ -50,9 +50,9 @@ CREATE TABLE tx_leg (
 );
 
 CREATE OR REPLACE TRIGGER update_tx_leg_updated_at
-    BEFORE UPDATE
-    ON tx_leg
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON tx_leg
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -84,9 +84,9 @@ CREATE TABLE transaction (
 );
 
 CREATE OR REPLACE TRIGGER update_transaction_updated_at
-    BEFORE UPDATE
-    ON transaction
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON transaction
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------

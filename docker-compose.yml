@@ -8,8 +8,10 @@ services:
     ports:
       - 5555:5555
     depends_on:
-      - db
-      - redis
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
     volumes:
       - ./:/string_api
   db:
@@ -22,6 +24,11 @@ services:
       - '5432:5432'
     volumes:
       - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U string_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7.0-alpine
     restart: always

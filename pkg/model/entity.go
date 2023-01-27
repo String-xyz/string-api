@@ -22,17 +22,17 @@ type User struct {
 	LastName      string     `json:"lastName" db:"last_name"`
 }
 
-// See PLATFORM in Migrations 0001
+// See PLATFORM in Migrations 0005
 type Platform struct {
-	ID             string     `json:"id" db:"id"`
-	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type           string     `json:"type" db:"type"`
-	Status         string     `json:"status" db:"status"`
-	Name           string     `json:"name" db:"name"`
-	ApiKey         string     `json:"apiKey" db:"api_key"`
-	Authentication AuthType   `json:"authentication" db:"authentication"`
+	ID            string         `json:"id,omitempty" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	ActivatedAt   *time.Time     `json:"activatedAt,omitempty" db:"activated_at"`
+	Name          string         `json:"name" db:"name"`
+	Description   string         `json:"description" db:"description"`
+	Domains       pq.StringArray `json:"domains" db:"domains"`
+	IPAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
 }
 
 // See NETWORK in Migrations 0001
@@ -65,7 +65,7 @@ type Asset struct {
 }
 
 // See USER_PLATFORM in Migrations 0002
-type UserPlatform struct {
+type UserToPlatform struct {
 	UserID     string `json:"userId" db:"user_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
@@ -135,13 +135,13 @@ type Instrument struct {
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
-type ContactPlatform struct {
+type ContactToPlatform struct {
 	ContactID  string `json:"contactId" db:"contact_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE_INSTRUMENT in Migrations 0003
-type DeviceInstrument struct {
+type DeviceToInstrument struct {
 	DeviceID     string `json:"deviceId" db:"device_id"`
 	InstrumentID string `json:"instrumentId" db:"instrument_id"`
 }

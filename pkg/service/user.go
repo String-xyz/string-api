@@ -173,9 +173,9 @@ func (u user) Update(userID string, request UserUpdates) (model.User, error) {
 func (u user) createUnit21Entity(user model.User) {
 	// Createing a User Entity in Unit21
 	u21Repo := unit21.EntityRepos{
-		Device:       u.repos.Device,
-		Contact:      u.repos.Contact,
-		UserPlatform: u.repos.UserPlatform,
+		Device:         u.repos.Device,
+		Contact:        u.repos.Contact,
+		UserToPlatform: u.repos.UserToPlatform,
 	}
 
 	u21Entity := unit21.NewEntity(u21Repo) // TODO: Make it an injected dependency
@@ -188,9 +188,9 @@ func (u user) createUnit21Entity(user model.User) {
 func (u user) updateUnit21Entity(user model.User) {
 	// Createing a User Entity in Unit21
 	u21Repo := unit21.EntityRepos{
-		Device:       u.repos.Device,
-		Contact:      u.repos.Contact,
-		UserPlatform: u.repos.UserPlatform,
+		Device:         u.repos.Device,
+		Contact:        u.repos.Contact,
+		UserToPlatform: u.repos.UserToPlatform,
 	}
 
 	u21Entity := unit21.NewEntity(u21Repo)
