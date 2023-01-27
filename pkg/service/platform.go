@@ -23,12 +23,6 @@ func NewPlatform(repos repository.Repositories) Platform {
 func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 	uuiKey := "str." + uuidWithoutHyphens()
 	hashed := common.ToSha256(uuiKey)
-	// m := model.Platform{
-	// 	Type:           c.Type,
-	// 	Authentication: c.Authentication,
-	// 	ApiKey:         hashed,
-	// 	Status:         "pending",
-	// }
 	m := model.Platform{}
 
 	plat, err := a.repos.Platform.Create(m)
