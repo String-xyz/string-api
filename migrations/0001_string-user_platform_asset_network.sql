@@ -10,11 +10,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -------------------------------------------------------------------------
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-    RETURNS TRIGGER AS
+  RETURNS TRIGGER AS
 $$
 BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
+  NEW.updated_at = now();
+  RETURN NEW;
 END;
 $$ language 'plpgsql';
 -- +goose StatementEnd
@@ -36,9 +36,9 @@ CREATE TABLE string_user (
 );
 
 CREATE OR REPLACE TRIGGER update_string_user_updated_at
-    BEFORE UPDATE
-    ON string_user
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON string_user
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -55,9 +55,9 @@ CREATE TABLE platform (
   authentication TEXT DEFAULT '' --enum [email, phone, wallet]
 );
 CREATE OR REPLACE TRIGGER update_platform_updated_at
-    BEFORE UPDATE
-    ON platform
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON platform
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -76,9 +76,9 @@ CREATE TABLE network (
   explorer_url TEXT DEFAULT '' -- The Block Explorer URL used to view transactions and entities in the browser
 );
 CREATE OR REPLACE TRIGGER update_network_updated_at
-    BEFORE UPDATE
-    ON network
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON network
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -97,9 +97,9 @@ CREATE TABLE asset ( -- We will write sql commands to add/update these in bulk.
 );
 
 CREATE OR REPLACE TRIGGER update_asset_updated_at
-    BEFORE UPDATE
-    ON asset
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON asset
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE INDEX network_gas_token_id_fk ON network (gas_token_id);
