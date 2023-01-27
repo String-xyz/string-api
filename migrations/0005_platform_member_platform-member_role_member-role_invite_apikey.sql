@@ -2,7 +2,7 @@
 -- +goose Up
 
 -------------------------------------------------------------------------
--- PLATFORM -----------------------------------------------------
+-- PLATFORM ----------------------------------------------------
 ALTER TABLE platform
 	DROP COLUMN IF EXISTS type,
 	DROP COLUMN IF EXISTS status, 
