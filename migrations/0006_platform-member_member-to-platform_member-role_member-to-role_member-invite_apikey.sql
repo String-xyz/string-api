@@ -35,10 +35,10 @@ CREATE TABLE member_role (
 -- MEMBER_TO_ROLE -------------------------------------------------------
 CREATE TABLE member_to_role (
   member_id UUID REFERENCES platform_member (id),
-  role_id UUID REFERENCES role (id)
+  role_id UUID REFERENCES member_role (id)
 );
 
-CREATE UNIQUE INDEX member_to_role_member_id_role_id_idx ON member_role(member_id, role_id);
+CREATE UNIQUE INDEX member_to_role_member_id_role_id_idx ON member_to_role(member_id, role_id);
 
 -------------------------------------------------------------------------
 -- MEMBER_INVITE --------------------------------------------------------
@@ -73,25 +73,28 @@ CREATE TABLE apikey (
 -- +goose Down
 
 -------------------------------------------------------------------------
--- PLATFORM_MEMBER ------------------------------------------------------
-DROP TABLE IF EXISTS platform_member;
-
--------------------------------------------------------------------------
--- PLATFORM_TO_MEMBER ---------------------------------------------------
-DROP TABLE IF EXISTS member_to_platform;
-
--------------------------------------------------------------------------
--- MEMBER_ROLE ----------------------------------------------------------
-DROP TABLE IF EXISTS member_role;
-
--------------------------------------------------------------------------
--- MEMBER_TO_ROLE -------------------------------------------------------
-DROP TABLE IF EXISTS member_to_role;
+-- APIKEY ---------------------------------------------------------------
+DROP TABLE IF EXISTS apikey;
 
 -------------------------------------------------------------------------
 -- MEMBER_INVITE --------------------------------------------------------
 DROP TABLE IF EXISTS member_invite;
 
 -------------------------------------------------------------------------
--- APIKEY ---------------------------------------------------------------
-DROP TABLE IF EXISTS apikey;
+-- MEMBER_TO_ROLE -------------------------------------------------------
+DROP TABLE IF EXISTS member_to_role;
+
+-------------------------------------------------------------------------
+-- MEMBER_ROLE ----------------------------------------------------------
+DROP TABLE IF EXISTS member_role;
+
+-------------------------------------------------------------------------
+-- PLATFORM_TO_MEMBER ---------------------------------------------------
+DROP TABLE IF EXISTS member_to_platform;
+
+-------------------------------------------------------------------------
+-- PLATFORM_MEMBER ------------------------------------------------------
+DROP TABLE IF EXISTS platform_member;
+
+
+
