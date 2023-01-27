@@ -52,13 +52,3 @@ func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	return plat, nil
 }
 
-// func (p platform[T]) GetByApiKey(key string) (model.Platform, error) {
-// 	m := model.Platform{}
-// 	err := p.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE api_key = $1", p.table), key)
-// 	if err != nil && err == sql.ErrNoRows {
-// 		return m, common.StringError(ErrNotFound)
-// 	} else if err != nil {
-// 		return m, common.StringError(err)
-// 	}
-// 	return m, nil
-// }
