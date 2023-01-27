@@ -1,16 +1,16 @@
-### For Live Reloading: ###
-1. install [Air|https://github.com/cosmtrek/air]: `go install github.com/cosmtrek/air@latest` 
-2. run `air`
-3. if you get `zsh: command not found: air` you need to add to PATH: `PATH=$PATH:$(go env GOPATH)/bin`
+### To run the APIS: ###
+1. Ensure you have the infra repo where the docker compose file is now located
+2. run `docker compose -f ../infra/local/docker-compose.yml up`
+3. You can also run with the -d flag to keep the process in the background, ie `docker compose -f -d ../infra/local/docker-compose.yml up`
+
+### To get a live terminal output from any repository being run by the infra docker compose: ###
+1. Run `docker logs [docker container name] -f`
+2. ie `docker logs platform-admin-api -f`
+3. You can get the container names using `docker ps`
+4. If you don't want the output in real time, you can omit the `-f` flag
 
 ### For migrations: ### 
-1. install [Goose|https://pressly.github.io/] `brew install goose`
-2. Note, this binary is separate from the go package.
-3. `goose postgres "host=localhost dbname=string_db user=string_db password=string_password sslmode=disable" down-to 0`
-
-### Postgres & Redis - Docker Compose: ***local dev only*** ###
-1. To build and start the docker containers for the first time: `docker-compose up --build`
-2. To shutdown the docker containers press `ctl + c`
+1. This is now handled by the docker compose file
 
 ### Docker Issues?
 1. If docker is giving you an error when you try to `docker-compose up --build` try the following commands in order:
@@ -25,6 +25,8 @@ run `go install` to get dependencies installed
 
 ### For local testing: ###
 run `go test`
+or if you want to run a specific test, use `go test -run [TestName] [./path/to/dir] -v -count 1`
+ie `go test -run TestGetSwapPayload ./pkg/service -v -count 1`
 
 ### Unit21: ### 
 This is a 3rd party service that offers the ability to evaluate risk at a transaction level and identify fraud. A client file exists to connect to their API. Documentation is here: https://docs.unit21.ai/reference/entities-api
