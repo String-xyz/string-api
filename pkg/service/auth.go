@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	netmail "net/mail"
 	"os"
 	"regexp"
@@ -13,7 +12,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -60,13 +58,13 @@ type Auth interface {
 
 type auth struct {
 	repos        repository.Repositories
-	fingerprint  Fingerprint
 	verification Verification
+	device       Device
 }
 
 // reusing UserRepos here
-func NewAuth(r repository.Repositories, f Fingerprint, v Verification) Auth {
-	return &auth{r, f, v}
+func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
+	return &auth{r, v, d}
 }
 
 func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
@@ -108,53 +106,12 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	var device model.Device
-
-	// If there is no fingerprint data use a temporary device
-	if request.Fingerprint.VisitorID == "" || request.Fingerprint.RequestID == "" {
-		device, err := a.repos.Device.GetByUserIdAndFingerprint(user.ID, "tmp")
-		// print device
-		fmt.Println("---- Device dk", device.ValidatedAt)
-
-		if err != nil && err == repository.ErrNotFound {
-			device, err := a.createTmpDevice(user.ID)
-			if err != nil {
-				return resp, common.StringError(err)
-			}
-			go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
-			return resp, common.StringError(errors.New("unknown device"))
-		}
-
-		aYearAgo := time.Now().Add(-1 * time.Hour * 24 * 365)
-		// if the device is tmp and is validated return a jwt and set validatedAt to nil
-		if device.ValidatedAt != nil && device.ValidatedAt.After(aYearAgo) {
-			println("---- Device is validated")
-			jwt, err := a.GenerateJWT(user.ID, device)
-			if err != nil {
-				return resp, common.StringError(err)
-			}
-
-			resp.JWT = jwt
-			// set validatedAt far in the past
-			device.ValidatedAt = &aYearAgo
-			err = a.repos.Device.Update(device.ID, device)
-			if err != nil {
-				println("---- Error updating device")
-			}
-			return resp, common.StringError(err)
-		} else {
-			println("---- Device is not validated")
-			go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
-			return resp, common.StringError(errors.New("unknown device"))
-		}
-	}
-
-	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	device, err := a.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 
-	if created || device.ValidatedAt == nil {
+	if !isDeviceValidated(device) {
 		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
@@ -164,49 +121,13 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	err = a.device.InvalidateTmpDevice(device)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
 	return UserCreateResponse{JWT: jwt, User: user}, nil
-}
-
-func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {
-	device, err := a.repos.Device.GetByUserIdAndFingerprint(userID, visitorID)
-	if err == nil {
-		return false, device, nil
-	}
-	// create device only if the error is not found
-	if err != nil && err == repository.ErrNotFound {
-		visitor, fpErr := a.fingerprint.GetVisitor(visitorID, requestID)
-		if fpErr != nil {
-			return false, model.Device{}, common.StringError(fpErr)
-		}
-		device, dErr := a.createDevice(userID, visitor)
-		return dErr == nil, device, dErr
-	}
-
-	return false, device, common.StringError(err)
-}
-
-func (a auth) createTmpDevice(userID string) (model.Device, error) {
-	// create device only if the error is not found
-	visitor := model.FPVisitor{
-		VisitorID: "tmp",
-		Type:      "tmp",
-		IPAddress: "tmp",
-		UserAgent: "tmp",
-	}
-	device, err := a.createDevice(userID, visitor)
-	return device, common.StringError(err)
-}
-
-func (a auth) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
-	return a.repos.Device.Create(model.Device{
-		UserID:      userID,
-		Fingerprint: visitor.VisitorID,
-		Type:        visitor.Type,
-		IpAddresses: pq.StringArray{visitor.IPAddress},
-		Description: visitor.UserAgent,
-		LastUsedAt:  time.Now(),
-		ValidatedAt: nil,
-	})
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis

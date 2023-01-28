@@ -35,7 +35,6 @@ type Verification interface {
 	VerifyEmail(encrypted string) error
 
 	SendDeviceVerification(userID string, deviceID string, deviceDescription string) error
-	VerifyDevice(encrypted string) error
 }
 
 type verification struct {
@@ -167,18 +166,4 @@ func (v verification) VerifyEmail(encrypted string) error {
 	}
 
 	return nil
-}
-
-func (v verification) VerifyDevice(encrypted string) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	received, err := common.Decrypt[DeviceVerification](encrypted, key)
-	if err != nil {
-		return common.StringError(err)
-	}
-	now := time.Now()
-	if now.Unix()-received.Timestamp > (60 * 15) {
-		return common.StringError(errors.New("link expired"))
-	}
-	err = v.repos.Device.Update(received.DeviceID, model.DeviceUpdates{ValidatedAt: &now})
-	return err
 }
