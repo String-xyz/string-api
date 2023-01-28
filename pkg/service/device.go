@@ -40,7 +40,6 @@ func (d device) createDevice(userID string, visitor model.FPVisitor) (model.Devi
 }
 
 func (d device) CreateTmpDevice(userID string) (model.Device, error) {
-	// create device only if the error is not found
 	visitor := model.FPVisitor{
 		VisitorID: "tmp",
 		Type:      "tmp",
