@@ -67,10 +67,14 @@ func (l login) VerifySignature(c echo.Context) error {
 	body.Nonce = string(decodedNonce)
 
 	resp, err := l.Service.VerifySignedPayload(body)
-	if err != nil && strings.Contains(err.Error(), "unknown device") {
-		return Unprocessable(c)
-	}
 	if err != nil {
+		if strings.Contains(err.Error(), "unknown device") {
+			return Unprocessable(c)
+		}
+		if strings.Contains(err.Error(), "invalid email") {
+			return InvalidEmail(c)
+		}
+
 		LogStringError(c, err, "login: verify signature")
 		return BadRequestError(c, "Invalid Payload")
 	}
