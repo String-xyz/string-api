@@ -41,7 +41,7 @@ ALTER TABLE platform
   DROP COLUMN IF EXISTS authentication,
   ADD COLUMN activated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,  -- for activating prod users
   ADD COLUMN name TEXT NOT NULL,
-  ADD COLUMN description TEXT NOT NULL,
+  ADD COLUMN description TEXT DEFAULT '',
   ADD COLUMN domains TEXT[] DEFAULT NULL, -- define which domains can make calls to API (web-to-API)
   ADD COLUMN ip_addresses TEXT[] DEFAULT NULL; -- define which API ips can make calls (API-to-API)
 
