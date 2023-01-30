@@ -14,8 +14,8 @@ import (
 type Device interface {
 	VerifyDevice(encrypted string) error
 	CreateDeviceIfNeeded(userID, visitorID, requestID string) (model.Device, error)
-	CreateTmpDevice(userID string) (model.Device, error)
-	InvalidateTmpDevice(device model.Device) error
+	CreateUnknownDevice(userID string) (model.Device, error)
+	InvalidateUnknownDevice(device model.Device) error
 }
 
 type device struct {
@@ -27,33 +27,33 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 	return &device{repos, f}
 }
 
-func (d device) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
+func (d device) createDevice(userID string, visitor model.FPVisitor, description string) (model.Device, error) {
 	return d.repos.Device.Create(model.Device{
 		UserID:      userID,
 		Fingerprint: visitor.VisitorID,
 		Type:        visitor.Type,
 		IpAddresses: pq.StringArray{visitor.IPAddress},
-		Description: visitor.UserAgent,
+		Description: description,
 		LastUsedAt:  time.Now(),
 		ValidatedAt: nil,
 	})
 }
 
-func (d device) CreateTmpDevice(userID string) (model.Device, error) {
+func (d device) CreateUnknownDevice(userID string) (model.Device, error) {
 	visitor := model.FPVisitor{
-		VisitorID: "tmp",
-		Type:      "tmp",
-		IPAddress: "tmp",
-		UserAgent: "tmp",
+		VisitorID: "unknown",
+		Type:      "unknown",
+		IPAddress: "unknown",
+		UserAgent: "unknown",
 	}
-	device, err := d.createDevice(userID, visitor)
+	device, err := d.createDevice(userID, visitor, "an unknown device")
 	return device, common.StringError(err)
 }
 
 func (d device) CreateDeviceIfNeeded(userID, visitorID, requestID string) (model.Device, error) {
 	if visitorID == "" || requestID == "" {
-		// fingerprint is not available, create a tmp device. It should be invalidated on every login
-		device, err := d.getOrCreateTmpDevice(userID, "tmp")
+		/* fingerprint is not available, create an unknown device. It should be invalidated on every login */
+		device, err := d.getOrCreateUnknownDevice(userID, "unknown")
 		if err != nil {
 			return device, common.StringError(err)
 		}
@@ -65,18 +65,19 @@ func (d device) CreateDeviceIfNeeded(userID, visitorID, requestID string) (model
 
 		return device, common.StringError(err)
 	} else {
+		/* device recognized, create or get the device */
 		device, err := d.repos.Device.GetByUserIdAndFingerprint(userID, visitorID)
 		if err == nil {
 			return device, err
 		}
 
-		// create device only if the error is not found
+		/* create device only if the error is not found */
 		if err == repository.ErrNotFound {
 			visitor, fpErr := d.fingerprint.GetVisitor(visitorID, requestID)
 			if fpErr != nil {
 				return model.Device{}, common.StringError(fpErr)
 			}
-			device, dErr := d.createDevice(userID, visitor)
+			device, dErr := d.createDevice(userID, visitor, "a new device")
 			return device, dErr
 		}
 
@@ -99,10 +100,10 @@ func (d device) VerifyDevice(encrypted string) error {
 	return err
 }
 
-func (d device) getOrCreateTmpDevice(userId, visitorId string) (model.Device, error) {
+func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device, error) {
 	var device model.Device
 
-	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "tmp")
+	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "unknown")
 	if err != nil && err != repository.ErrNotFound {
 		return device, common.StringError(err)
 	}
@@ -112,7 +113,7 @@ func (d device) getOrCreateTmpDevice(userId, visitorId string) (model.Device, er
 	}
 
 	// if device is not found, create a new one
-	device, err = d.CreateTmpDevice(userId)
+	device, err = d.CreateUnknownDevice(userId)
 	return device, common.StringError(err)
 }
 
@@ -120,9 +121,9 @@ func isDeviceValidated(device model.Device) bool {
 	return device.ValidatedAt != nil && !device.ValidatedAt.IsZero()
 }
 
-func (d device) InvalidateTmpDevice(device model.Device) error {
-	if device.Fingerprint != "tmp" {
-		return nil // only tmp devices can be invalidated
+func (d device) InvalidateUnknownDevice(device model.Device) error {
+	if device.Fingerprint != "unknown" {
+		return nil // only unknown devices can be invalidated
 	}
 
 	device.ValidatedAt = &time.Time{} // Zero time to set it to nil

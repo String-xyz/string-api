@@ -122,7 +122,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	err = a.device.InvalidateTmpDevice(device)
+	err = a.device.InvalidateUnknownDevice(device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}

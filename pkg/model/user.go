@@ -16,6 +16,6 @@ type FingerprintPayload struct {
 
 type WalletSignaturePayloadSigned struct {
 	Nonce       string             `json:"nonce" validate:"required"`
-	Signature   string             `json:"signature"`
+	Signature   string             `json:"signature" validate:"required"`
 	Fingerprint FingerprintPayload `json:"fingerprint"`
 }
