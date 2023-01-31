@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type SignablePayload struct {
@@ -112,7 +113,14 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	if !isDeviceValidated(device) {
-		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+		// get user email, if not found, return error
+		contact, err := a.repos.Contact.GetByUserIdAndStatus(user.ID, "validated")
+		if err != nil {
+			log.Err(err).Msg("Error getting a valid email")
+			return resp, common.StringError(errors.New("invalid email"))
+		}
+
+		go a.verification.SendDeviceVerification(contact.Data, user.ID, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
 

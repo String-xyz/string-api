@@ -34,7 +34,7 @@ type Verification interface {
 	// VerifyEmail verifies the provided email and creates a contact
 	VerifyEmail(encrypted string) error
 
-	SendDeviceVerification(userID string, deviceID string, deviceDescription string) error
+	SendDeviceVerification(userID, email string, deviceID string, deviceDescription string) error
 }
 
 type verification struct {
@@ -108,13 +108,8 @@ func (v verification) SendEmailVerification(userID, email string) error {
 	return common.StringError(errors.New("link expired"))
 }
 
-func (v verification) SendDeviceVerification(userID, deviceID, deviceDescription string) error {
-	email, err := v.repos.Contact.GetByUserIdAndStatus(userID, "validated")
-	if err != nil {
-		log.Err(err).Msg("Error getting a valid email")
-		return err
-	}
-	log.Info().Str("email", email.Data)
+func (v verification) SendDeviceVerification(userID, email, deviceID, deviceDescription string) error {
+	log.Info().Str("email", email)
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	code, err := common.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceID: deviceID, UserID: userID}, key)
 	if err != nil {
@@ -125,7 +120,7 @@ func (v verification) SendDeviceVerification(userID, deviceID, deviceDescription
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String XYZ", "auth@string.xyz")
 	subject := "New Device Login Verification"
-	to := mail.NewEmail("New Device Login", email.Data)
+	to := mail.NewEmail("New Device Login", email)
 	link := baseURL + "verification?type=device&token=" + code
 
 	textContent := "We noticed that you attempted to log in from " + deviceDescription + " at " + time.Now().Local().Format(time.RFC1123) + ". Is this you?"
