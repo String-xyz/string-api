@@ -35,7 +35,6 @@ func (d device) createDevice(userID string, visitor model.FPVisitor, description
 		IpAddresses: pq.StringArray{visitor.IPAddress},
 		Description: description,
 		LastUsedAt:  time.Now(),
-		ValidatedAt: nil,
 	})
 }
 
