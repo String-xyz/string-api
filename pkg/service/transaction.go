@@ -184,16 +184,16 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 		return res, common.StringError(err)
 	}
 
-	// // Turning off until we can determine the Destination Leg prior to execution
-	// u21auth, err := t.unit21Evaluate(db.ID)
-	// if err != nil {
-	// 	return res, common.StringError(err)
-	// }
+	// Turning off until we can determine the Destination Leg prior to execution
+	u21auth, err := t.unit21Evaluate(db.ID)
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
-	// if !u21auth {
-	// 	err = fmt.Errorf("Transaction Unauthorized in Unit21")
-	// 	return res, common.StringError(err)
-	// }
+	if !u21auth {
+		err = fmt.Errorf("Transaction Unauthorized in Unit21")
+		return res, common.StringError(err)
+	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
 	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID, userId)
@@ -294,25 +294,25 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		TokenName:  "",
 	}
 
-	// // TODO: Determine the output of the transaction!
-	// // We need to determine the DestinationTXLeg here
-	// destinationLeg := model.TxLeg{
-	// 	Timestamp:    time.Now(),   // null? Should be updated when the tx occurs
-	// 	Amount:       wei,          // Should be the amount of the asset received by the user
-	// 	Value:        usd,          // The value of the asset received by the user
-	// 	AssetID:      asset.ID,     // the asset received by the user
-	// 	UserID:       recipientId,  // the user who received the asset
-	// 	InstrumentID: userWalletId, // the instrument which received the asset (wallet usually)
-	// }
-	// destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
-	// if err != nil {
-	// 	return res, eth, common.StringError(err)
-	// }
-	// txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
-	// err = t.repos.Transaction.Update(txUUID, txLeg)
-	// if err != nil {
-	// 	return res, eth, common.StringError(err)
-	// }
+	// TODO: Determine the output of the transaction!
+	// We need to determine the DestinationTXLeg here
+	destinationLeg := model.TxLeg{
+		Timestamp: time.Now(), // Required by the db. Should be updated when the tx occurs
+		Amount:    "0",        // Required by Unit21. The amount of the asset received by the user
+		// Value:        usd,       // Defaults to ''. The value of the asset received by the user
+		AssetID:      asset.ID,     // Required by the db. the asset received by the user
+		UserID:       recipientId,  // the user who received the asset
+		InstrumentID: userWalletId, // Required by the db. the instrument which received the asset (wallet usually)
+	}
+	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+	if err != nil {
+		return res, eth, common.StringError(err)
+	}
+	txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
+	err = t.repos.Transaction.Update(txUUID, txLeg)
+	if err != nil {
+		return res, eth, common.StringError(err)
+	}
 
 	// Estimate Cost in USD to execute Tx request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)

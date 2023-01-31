@@ -213,9 +213,9 @@ func mapToUnit21Event(transaction model.Transaction, transactionData transaction
 
 	jsonBody := &u21Event{
 		GeneralData: &eventGeneral{
-			EventId:      transaction.ID,
-			EventType:    "transaction",
-			EventTime:    int(transaction.CreatedAt.Unix()),
+			EventId:      transaction.ID,                    //required
+			EventType:    "transaction",                     //required
+			EventTime:    int(transaction.CreatedAt.Unix()), //required
 			EventSubtype: "",
 			Status:       transaction.Status,
 			Parents:      nil,
