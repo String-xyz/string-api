@@ -77,7 +77,7 @@ func (d device) CreateDeviceIfNeeded(userID, visitorID, requestID string) (model
 			if fpErr != nil {
 				return model.Device{}, common.StringError(fpErr)
 			}
-			device, dErr := d.createDevice(userID, visitor, "a new device")
+			device, dErr := d.createDevice(userID, visitor, "a new device "+visitor.UserAgent+" ")
 			return device, dErr
 		}
 
