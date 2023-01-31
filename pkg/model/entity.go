@@ -20,6 +20,7 @@ type User struct {
 	FirstName     string     `json:"firstName" db:"first_name"`
 	MiddleName    string     `json:"middleName" db:"middle_name"`
 	LastName      string     `json:"lastName" db:"last_name"`
+	Email         string     `json:"email"`
 }
 
 // See PLATFORM in Migrations 0005

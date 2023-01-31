@@ -13,7 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 type SignablePayload struct {
@@ -107,20 +106,16 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
+
 	device, err := a.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, common.StringError(err)
 	}
 
-	if !isDeviceValidated(device) {
-		// get user email, if not found, return error
-		contact, err := a.repos.Contact.GetByUserIdAndStatus(user.ID, "validated")
-		if err != nil {
-			log.Err(err).Msg("Error getting a valid email")
-			return resp, common.StringError(errors.New("invalid email"))
-		}
-
-		go a.verification.SendDeviceVerification(contact.Data, user.ID, device.ID, device.Description)
+	// Send verification email if device is unknown and user has a validated email
+	if user.Email != "" && !isDeviceValidated(device) {
+		go a.verification.SendDeviceVerification(user.ID, user.Email, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
 
@@ -130,6 +125,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
+	// Invalidate device if it is unknown and was validated so it cannot be used again
 	err = a.device.InvalidateUnknownDevice(device)
 	if err != nil {
 		return resp, common.StringError(err)
@@ -243,6 +239,9 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	// get email
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
 	resp.User = user
 
 	return resp, nil
@@ -281,4 +280,13 @@ func validEmail(email string) bool {
 func uuidWithoutHyphens() string {
 	s := uuid.New().String()
 	return strings.Replace(s, "-", "", -1)
+}
+
+func getValidatedEmailOrEmpty(contactRepo repository.Contact, userId string) string {
+	contact, err := contactRepo.GetByUserIdAndStatus(userId, "validated")
+	if err != nil {
+		return ""
+	}
+
+	return contact.Data
 }
