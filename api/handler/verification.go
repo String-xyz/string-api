@@ -19,12 +19,13 @@ type Verification interface {
 }
 
 type verification struct {
-	service service.Verification
-	group   *echo.Group
+	service       service.Verification
+	deviceService service.Device
+	group         *echo.Group
 }
 
-func NewVerification(route *echo.Echo, service service.Verification) Verification {
-	return &verification{service, nil}
+func NewVerification(route *echo.Echo, service service.Verification, deviceService service.Device) Verification {
+	return &verification{service, deviceService, nil}
 }
 
 func (v verification) VerifyEmail(c echo.Context) error {
@@ -39,7 +40,7 @@ func (v verification) VerifyEmail(c echo.Context) error {
 
 func (v verification) VerifyDevice(c echo.Context) error {
 	token := c.QueryParam("token")
-	err := v.service.VerifyDevice(token)
+	err := v.deviceService.VerifyDevice(token)
 	if err != nil {
 		LogStringError(c, err, "verification: device verification")
 		return BadRequestError(c)

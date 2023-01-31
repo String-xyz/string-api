@@ -101,7 +101,7 @@ func loginRoute(services service.Services, e *echo.Echo) {
 }
 
 func verificationRoute(services service.Services, e *echo.Echo) {
-	handler := handler.NewVerification(e, services.Verification)
+	handler := handler.NewVerification(e, services.Verification, services.Device)
 	handler.RegisterRoutes(e.Group("/verification"))
 }
 

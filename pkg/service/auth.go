@@ -12,7 +12,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +50,7 @@ type Auth interface {
 	// if signaure is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
-	GenerateJWT(model.Device) (JWT, error)
+	GenerateJWT(string, ...model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
 	RefreshToken(token string, walletAddress string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
@@ -59,13 +58,13 @@ type Auth interface {
 
 type auth struct {
 	repos        repository.Repositories
-	fingerprint  Fingerprint
 	verification Verification
+	device       Device
 }
 
 // reusing UserRepos here
-func NewAuth(r repository.Repositories, f Fingerprint, v Verification) Auth {
-	return &auth{r, f, v}
+func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
+	return &auth{r, v, d}
 }
 
 func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
@@ -107,56 +106,36 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
-	if err != nil {
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
+
+	device, err := a.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, common.StringError(err)
 	}
 
-	if created || device.ValidatedAt == nil {
-		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+	// Send verification email if device is unknown and user has a validated email
+	if user.Email != "" && !isDeviceValidated(device) {
+		go a.verification.SendDeviceVerification(user.ID, user.Email, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
 
 	// Create the JWT
-	jwt, err := a.GenerateJWT(device)
+	jwt, err := a.GenerateJWT(user.ID, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	// Invalidate device if it is unknown and was validated so it cannot be used again
+	err = a.device.InvalidateUnknownDevice(device)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {
-	device, err := a.repos.Device.GetByUserIdAndFingerprint(userID, visitorID)
-	if err == nil {
-		return false, device, nil
-	}
-	// create device only if the error is not found
-	if err != nil && err == repository.ErrNotFound {
-		visitor, fpErr := a.fingerprint.GetVisitor(visitorID, requestID)
-		if fpErr != nil {
-			return false, model.Device{}, common.StringError(fpErr)
-		}
-		device, dErr := a.createDevice(userID, visitor)
-		return dErr == nil, device, dErr
-	}
-
-	return false, device, common.StringError(err)
-}
-
-func (a auth) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
-	return a.repos.Device.Create(model.Device{
-		UserID:      userID,
-		Fingerprint: visitor.VisitorID,
-		Type:        visitor.Type,
-		IpAddresses: pq.StringArray{visitor.IPAddress},
-		Description: visitor.UserAgent,
-		LastUsedAt:  time.Now(),
-		ValidatedAt: nil,
-	})
-}
-
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
-func (a auth) GenerateJWT(m model.Device) (JWT, error) {
+func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
@@ -164,8 +143,12 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 		ExpAt:    time.Now().Add(time.Minute * 15),
 	}
 
-	claims.DeviceId = m.ID
-	claims.UserId = m.UserID
+	// set device id if available
+	if len(m) > 0 {
+		claims.DeviceId = m[0].ID
+	}
+
+	claims.UserId = userId
 	claims.ExpiresAt = t.ExpAt.Unix()
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
@@ -177,7 +160,7 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 	t.Token = signed
 
 	// create and save
-	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), userId)
 	if err != nil {
 		return *t, err
 	}
@@ -240,7 +223,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 	}
 
 	// create new jwt
-	jwt, err := a.GenerateJWT(device)
+	jwt, err := a.GenerateJWT(userId, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -256,6 +239,9 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	// get email
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
 	resp.User = user
 
 	return resp, nil
@@ -294,4 +280,13 @@ func validEmail(email string) bool {
 func uuidWithoutHyphens() string {
 	s := uuid.New().String()
 	return strings.Replace(s, "-", "", -1)
+}
+
+func getValidatedEmailOrEmpty(contactRepo repository.Contact, userId string) string {
+	contact, err := contactRepo.GetByUserIdAndStatus(userId, "validated")
+	if err != nil {
+		return ""
+	}
+
+	return contact.Data
 }

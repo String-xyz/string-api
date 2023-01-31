@@ -13,4 +13,5 @@ type Services struct {
 	Transaction  Transaction
 	User         User
 	Verification Verification
+	Device       Device
 }

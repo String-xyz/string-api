@@ -10,12 +10,12 @@ type WalletSignaturePayload struct {
 }
 
 type FingerprintPayload struct {
-	VisitorID string `json:"visitorId" validate:"required"`
-	RequestID string `json:"requestId" validate:"required"`
+	VisitorID string `json:"visitorId"`
+	RequestID string `json:"requestId"`
 }
 
 type WalletSignaturePayloadSigned struct {
 	Nonce       string             `json:"nonce" validate:"required"`
 	Signature   string             `json:"signature" validate:"required"`
-	Fingerprint FingerprintPayload `json:"fingerprint" validate:"required"`
+	Fingerprint FingerprintPayload `json:"fingerprint"`
 }

@@ -38,7 +38,11 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User, Device: repos.Device}
 	verification := service.NewVerification(verificationRepos)
 
-	auth := service.NewAuth(repos, fingerprint, verification)
+	// device service
+	deviceRepos := repository.Repositories{Device: repos.Device}
+	device := service.NewDevice(deviceRepos, fingerprint)
+
+	auth := service.NewAuth(repos, verification, device)
 	apiKey := service.NewAPIKeyStrategy(repos.Auth)
 	cost := service.NewCost(config.Redis)
 	executor := service.NewExecutor()
@@ -61,5 +65,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Transaction:  transaction,
 		User:         user,
 		Verification: verification,
+		Device:       device,
 	}
 }
