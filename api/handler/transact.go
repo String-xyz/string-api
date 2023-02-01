@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -29,6 +30,7 @@ func (t transaction) Transact(c echo.Context) error {
 		LogStringError(c, err, "transact: execute bind")
 		return BadRequestError(c)
 	}
+
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
 	for i := range body.CxParams {
@@ -37,10 +39,15 @@ func (t transaction) Transact(c echo.Context) error {
 	userId := c.Get("userId").(string)
 	deviceId := c.Get("deviceId").(string)
 	res, err := t.Service.Execute(body, userId, deviceId)
+	if err != nil && strings.Contains(err.Error(), "risk:") {
+		LogStringError(c, err, "transact: execute")
+		return Unprocessable(c)
+	}
 	if err != nil {
 		LogStringError(c, err, "transact: execute")
 		return InternalError(c)
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 
