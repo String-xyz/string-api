@@ -179,7 +179,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 	}
 	defer db.Close()
 
-	userId1, u21UserId, err := createUser(mock, sqlxDB)
+	userId1, u21UserId, err := createMockUser(mock, sqlxDB)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21UserId)), 0)
 
@@ -195,7 +195,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 	// create 6 instruments
 	for i := 0; i <= 5; i++ {
 		var u21InstrumentId string
-		instrumentId1, u21InstrumentId, err = createInstrumentForUser(userId1, mock, sqlxDB)
+		instrumentId1, u21InstrumentId, err = createMockInstrumentForUser(userId1, mock, sqlxDB)
 		assert.NoError(t, err)
 		assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 	}
@@ -266,10 +266,13 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 	}
 	defer db.Close()
 
+	userId1, u21UserId, err := createMockUser(mock, sqlxDB)
+	assert.NoError(t, err)
+	assert.Greater(t, len([]rune(u21UserId)), 0)
+
 	transactionId := uuid.NewString()
 	OriginTxLegID := uuid.NewString()
 	DestinationTxLegID := uuid.NewString()
-	userId1 := uuid.NewString()
 	assetId1 := uuid.NewString()
 	assetId2 := uuid.NewString()
 	networkId := uuid.NewString()
@@ -405,92 +408,4 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 	pass, err := u21Transaction.Evaluate(transaction)
 	assert.Error(t, err)
 	assert.False(t, pass)
-}
-
-func createInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (instrumentId string, unit21Id string, err error) {
-	instrumentId = uuid.NewString()
-	locationId := uuid.NewString()
-
-	instrument := model.Instrument{
-		ID:            instrumentId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		DeactivatedAt: nil,
-		Type:          "Credit Card",
-		Status:        "Verified",
-		Tags:          nil,
-		Network:       "Visa",
-		PublicKey:     "",
-		Last4:         "1234",
-		UserID:        userId,
-		LocationID:    sql.NullString{String: locationId},
-	}
-
-	mockedUserRow1 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId, "User", "Onboarded", `{"kyc_level": "1", "platform": "mortal kombat"}`, "Daemon", "", "Targaryan")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND deactivated_at IS NULL").WithArgs(userId).WillReturnRows(mockedUserRow1)
-
-	mockedUserRow2 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
-		AddRow(userId, "User", "Onboarded", `{"kyc_level": "1", "platform": "mortal kombat"}`, "Daemon", "", "Targaryan")
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND deactivated_at IS NULL").WithArgs(userId).WillReturnRows(mockedUserRow2)
-
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
-		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, userId)
-	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(userId, 100, 0).WillReturnRows(mockedDeviceRow)
-
-	mockedLocationRow := sqlmock.NewRows([]string{"id", "type", "status", "building_number", "unit_number", "street_name", "city", "state", "postal_code", "country"}).
-		AddRow(locationId, "Home", "Verified", "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
-	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND deactivated_at IS NULL").WithArgs(locationId).WillReturnRows(mockedLocationRow)
-
-	repo := InstrumentRepo{
-		User:     repository.NewUser(sqlxDB),
-		Device:   repository.NewDevice(sqlxDB),
-		Location: repository.NewLocation(sqlxDB),
-	}
-
-	u21Instrument := NewInstrument(repo)
-
-	u21InstrumentId, err := u21Instrument.Create(instrument)
-
-	return instrumentId, u21InstrumentId, err
-}
-
-func createUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, unit21Id string, err error) {
-	entityId = uuid.NewString()
-	user := model.User{
-		ID:            entityId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		DeactivatedAt: nil,
-		Type:          "User",
-		Status:        "Onboarded",
-		Tags:          model.StringMap{"platform": "Activision Blizzard"},
-		FirstName:     "Test",
-		MiddleName:    "A",
-		LastName:      "User",
-	}
-
-	mockedContactRow := sqlmock.NewRows([]string{"id", "user_id", "type", "status", "data"}).
-		AddRow(uuid.NewString(), entityId, "email", "verified", "test@gmail.com").AddRow(uuid.NewString(), entityId, "phone", "verified", "+12345678910")
-	mock.ExpectQuery("SELECT * FROM contact WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedContactRow)
-
-	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
-		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, entityId)
-	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedDeviceRow)
-
-	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).
-		AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery("SELECT * FROM user_to_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
-
-	repos := EntityRepos{
-		Device:         repository.NewDevice(sqlxDB),
-		Contact:        repository.NewContact(sqlxDB),
-		UserToPlatform: repository.NewUserToPlatform(sqlxDB),
-	}
-
-	u21Entity := NewEntity(repos)
-
-	u21EntityId, err := u21Entity.Create(user)
-
-	return entityId, u21EntityId, err
 }

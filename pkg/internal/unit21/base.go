@@ -64,6 +64,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
+
 	if err != nil {
 		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)
 		return nil, common.StringError(err)
@@ -91,11 +92,24 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	defer res.Body.Close()
 
-	body, err = ioutil.ReadAll(res.Body)
+	// print requst body
+	bodyReaderCopy := bytes.NewReader(reqBodyBytes)
+	req_body, err := ioutil.ReadAll(bodyReaderCopy)
 	if err != nil {
 		log.Printf("Error extracting body from %s update request: %s", url, err)
 		return nil, common.StringError(err)
 	}
+
+	log.Printf("String of body from request: %s", string(req_body))
+	///
+
+	body, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("Error extracting body from %s update response: %s", url, err)
+		return nil, common.StringError(err)
+	}
+
+	log.Printf("String of body from response: %s", string(body))
 
 	if res.StatusCode != 200 {
 		log.Printf("Request failed to update %s: %s", url, fmt.Sprint(res.StatusCode))
