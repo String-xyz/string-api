@@ -49,12 +49,12 @@ func TestCreateEntity(t *testing.T) {
 
 	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).
 		AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
+	mock.ExpectQuery("SELECT * FROM user_to_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
-		Device:       repository.NewDevice(sqlxDB),
-		Contact:      repository.NewContact(sqlxDB),
-		UserPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:         repository.NewDevice(sqlxDB),
+		Contact:        repository.NewContact(sqlxDB),
+		UserToPlatform: repository.NewUserToPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)
@@ -104,12 +104,12 @@ func TestUpdateEntity(t *testing.T) {
 
 	mockedUserPlatformRow := sqlmock.NewRows([]string{"user_id", "platform_id"}).
 		AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery("SELECT * FROM user_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
+	mock.ExpectQuery("SELECT * FROM user_to_platform WHERE user_id = $1 LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedUserPlatformRow)
 
 	repos := EntityRepos{
-		Device:       repository.NewDevice(sqlxDB),
-		Contact:      repository.NewContact(sqlxDB),
-		UserPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:         repository.NewDevice(sqlxDB),
+		Contact:        repository.NewContact(sqlxDB),
+		UserToPlatform: repository.NewUserToPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)
@@ -144,9 +144,9 @@ func TestAddInstruments(t *testing.T) {
 	}
 
 	repos := EntityRepos{
-		Device:       repository.NewDevice(sqlxDB),
-		Contact:      repository.NewContact(sqlxDB),
-		UserPlatform: repository.NewUserPlatform(sqlxDB),
+		Device:         repository.NewDevice(sqlxDB),
+		Contact:        repository.NewContact(sqlxDB),
+		UserToPlatform: repository.NewUserToPlatform(sqlxDB),
 	}
 
 	u21Entity := NewEntity(repos)
