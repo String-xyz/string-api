@@ -128,14 +128,12 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	instruments := make(map[string][]string)
 	instruments["instrument_ids"] = instrumentIds
 
-	body, err := u21Put(url, instruments)
+	_, err = u21Put(url, instruments)
 	if err != nil {
 		log.Printf("Unit21 Entity Add Instruments failed: %s", err)
 		err = common.StringError(err)
 		return
 	}
-
-	log.Printf("String of body from response: %s", string(body))
 
 	return
 }
@@ -186,7 +184,6 @@ func (e entity) getCustomData(userId string) (customData entityCustomData, err e
 	for _, platform := range devices {
 		customData.Platforms = append(customData.Platforms, platform.PlatformID)
 	}
-	log.Printf("deviceData: %s", customData)
 	return
 }
 

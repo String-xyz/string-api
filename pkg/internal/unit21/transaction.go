@@ -2,7 +2,7 @@ package unit21
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"os"
 
@@ -37,24 +37,34 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return false, common.StringError(err)
 	}
-	url := "https://rtr.sandbox2.unit21.com/evaluate" // will need to be hardcoded for production
-	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
 
+	var url string
+	if common.IsLocalEnv() {
+		url = "https://rtr.sandbox2.unit21.com/evaluate"
+	} else {
+		// will need to be updated for production when available (end of February 2023)
+		url = "https://rtr.sandbox2.unit21.com/evaluate"
+	}
+
+	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction evaluate failed: %s", err)
 		return false, common.StringError(err)
 	}
 
 	// var u21Response *createEventResponse
-	var response any
+	var response evaluateEventResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
 		return false, common.StringError(err)
 	}
-	log.Printf("unit21 evaluate response: %+v", response)
 
-	// log.Printf("Unit21Id: %s")
+	for _, rule := range *response.RuleExecutions {
+		if rule.Status != "PASS" {
+			return false, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+		}
+	}
 
 	return true, nil
 }
@@ -162,24 +172,30 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		err = common.StringError(err)
 		return
 	}
-
-	stringFee, err := common.BigNumberToFloat(transaction.StringFee, 6)
-	if err != nil {
-		log.Printf("Failed to convert stringFee: %s", err)
-		err = common.StringError(err)
-		return
+	var stringFee float64
+	if transaction.StringFee != "" {
+		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
+		if err != nil {
+			log.Printf("Failed to convert stringFee: %s", err)
+			err = common.StringError(err)
+			return
+		}
 	}
 
-	processingFee, err := common.BigNumberToFloat(transaction.ProcessingFee, 6)
-	if err != nil {
-		log.Printf("Failed to convert processingFee: %s", err)
-		err = common.StringError(err)
-		return
+	var processingFee float64
+	if transaction.ProcessingFee != "" {
+		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
+		if err != nil {
+			log.Printf("Failed to convert processingFee: %s", err)
+			err = common.StringError(err)
+			return
+		}
 	}
 
-	fmt.Printf("senderAsset: %+v\n", senderAsset)
-	log.Printf("senderAsset.Name: %s", senderAsset.Name)
-	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
+	var exchangeRate float64
+	if receiverAmount > 0 {
+		exchangeRate = senderAmount / receiverAmount
+	}
 
 	txData = transactionData{
 		Amount:               amount,
@@ -193,7 +209,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		ReceiverEntityId:     receiverData.UserID,
 		ReceiverEntityType:   "user",
 		ReceiverInstrumentId: receiverData.InstrumentID,
-		ExchangeRate:         senderAmount / receiverAmount,
+		ExchangeRate:         exchangeRate,
 		TransactionHash:      transaction.TransactionHash,
 		USDConversionNotes:   "",
 		InternalFee:          stringFee,
