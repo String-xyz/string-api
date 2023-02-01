@@ -232,7 +232,7 @@ func mapToUnit21Event(transaction model.Transaction, transactionData transaction
 			EventId:      transaction.ID,                    //required
 			EventType:    "transaction",                     //required
 			EventTime:    int(transaction.CreatedAt.Unix()), //required
-			EventSubtype: "",
+			EventSubtype: "credit_card",                     //required for RTR
 			Status:       transaction.Status,
 			Parents:      nil,
 			Tags:         transactionTagArr,
