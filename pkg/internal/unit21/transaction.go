@@ -38,11 +38,8 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		return false, common.StringError(err)
 	}
 
-	var url string
-	if common.IsLocalEnv() {
-		url = "https://rtr.sandbox2.unit21.com/evaluate"
-	} else {
-		// will need to be updated for production when available (end of February 2023)
+	url := os.Getenv("UNIT21_RTR_URL")
+	if url == "" {
 		url = "https://rtr.sandbox2.unit21.com/evaluate"
 	}
 
