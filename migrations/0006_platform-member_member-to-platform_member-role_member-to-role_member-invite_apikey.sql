@@ -9,7 +9,8 @@ CREATE TABLE platform_member (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   email TEXT NOT NULL,
-  password TEXT DEFAULT '' -- how do we maintain this?
+  password TEXT DEFAULT, '' -- how do we maintain this?
+  name TEXT DEFAULT ''
 );
 
 -------------------------------------------------------------------------
@@ -51,7 +52,8 @@ CREATE TABLE member_invite (
   accepted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   email TEXT NOT NULL,
   invited_by UUID REFERENCES platform_member (id),
-  platform_id UUID REFERENCES platform (id)
+  platform_id UUID REFERENCES platform (id),
+  name TEXT DEFAULT ''
 );
 
 -------------------------------------------------------------------------
