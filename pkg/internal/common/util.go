@@ -1,9 +1,12 @@
 package common
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -93,4 +96,22 @@ func FloatToUSDString(amount float64) string {
 
 func IsLocalEnv() bool {
 	return os.Getenv("ENV") == "local"
+}
+
+func BetterStringify(jsonBody any) (betterString string, err error) {
+	bodyBytes, err := json.Marshal(jsonBody)
+	if err != nil {
+		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)
+		return betterString, StringError(err)
+	}
+
+	bodyReader := bytes.NewReader(bodyBytes)
+
+	betterBytes, err := ioutil.ReadAll(bodyReader)
+	betterString = string(betterBytes)
+	if err != nil {
+		return betterString, StringError(err)
+	}
+
+	return
 }

@@ -92,17 +92,6 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	defer res.Body.Close()
 
-	// print requst body
-	bodyReaderCopy := bytes.NewReader(reqBodyBytes)
-	req_body, err := ioutil.ReadAll(bodyReaderCopy)
-	if err != nil {
-		log.Printf("Error extracting body from %s update request: %s", url, err)
-		return nil, common.StringError(err)
-	}
-
-	log.Printf("String of body from request: %s", string(req_body))
-	///
-
 	body, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Printf("Error extracting body from %s update response: %s", url, err)

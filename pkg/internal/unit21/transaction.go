@@ -2,7 +2,6 @@ package unit21
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"os"
 
@@ -59,7 +58,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 
 	for _, rule := range *response.RuleExecutions {
 		if rule.Status != "PASS" {
-			return false, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+			return false, nil
 		}
 	}
 

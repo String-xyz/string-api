@@ -177,7 +177,8 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	status = "Card Authorized"
+
+	status = "Card " + cardAuthorization.Status
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
@@ -211,6 +212,15 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 		return res, common.StringError(err)
 	}
 
+	if !cardAuthorization.Approved {
+		err := t.unit21CreateTransaction(db.ID)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		return res, common.StringError(common.StringError(errors.New("payment: Authorization Declined by Checkout")))
+	}
+
 	// Validate Transaction through Real Time Rules engine
 	u21auth, err := t.unit21Evaluate(db.ID)
 	if err != nil {
@@ -218,10 +228,26 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	}
 
 	if !u21auth {
-		err = fmt.Errorf("Transaction Unauthorized in Unit21")
-		return res, common.StringError(err)
+		status = "Failed"
+		updateDB.Status = &status
+		err = t.repos.Transaction.Update(db.ID, updateDB)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		err = t.unit21CreateTransaction(db.ID)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		return res, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
 	}
 	status = "Unit21 Authorized"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
 	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID, userId)
@@ -645,23 +671,10 @@ func (t transaction) postProcess(request postProcessRequest) {
 	}
 	executor.Close()
 	// Create Transaction data in Unit21
-	txModel, err := t.repos.Transaction.GetById(request.TxDBID)
-	if err != nil {
-		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
-		// return res, common.StringError(err)
-	}
 
-	u21Repo := unit21.TransactionRepo{
-		TxLeg: t.repos.TxLeg,
-		User:  t.repos.User,
-		Asset: t.repos.Asset,
-	}
-
-	u21Tx := unit21.NewTransaction(u21Repo)
-	_, err = u21Tx.Create(txModel)
+	err = t.unit21CreateTransaction(request.TxDBID)
 	if err != nil {
-		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
-		// return res, common.StringError(err)
+		log.Printf("Error creating Unit21 transaction: %s", err)
 	}
 
 	// send email receipt
@@ -718,7 +731,7 @@ func floatToFixedString(value float64, decimals int) string {
 	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
 }
 
-func (t transaction) unit21CreateInstrument(instrumentId string) {
+func (t transaction) unit21CreateInstrument(instrumentId string) (err error) {
 	// Send Instrument Data to Unit21
 	instrument, err := t.repos.Instrument.GetById(instrumentId)
 	if err != nil {
@@ -736,7 +749,33 @@ func (t transaction) unit21CreateInstrument(instrumentId string) {
 	_, err = u21Tx.Create(instrument)
 	if err != nil {
 		fmt.Printf("Error creating new instrument in Unit21")
+		return
 	}
+
+	return
+}
+
+func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
+	txModel, err := t.repos.Transaction.GetById(transactionId)
+	if err != nil {
+		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
+		return
+	}
+
+	u21Repo := unit21.TransactionRepo{
+		TxLeg: t.repos.TxLeg,
+		User:  t.repos.User,
+		Asset: t.repos.Asset,
+	}
+
+	u21Tx := unit21.NewTransaction(u21Repo)
+	_, err = u21Tx.Create(txModel)
+	if err != nil {
+		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
+		return
+	}
+
+	return
 }
 
 func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err error) {

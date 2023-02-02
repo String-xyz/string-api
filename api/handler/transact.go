@@ -39,7 +39,7 @@ func (t transaction) Transact(c echo.Context) error {
 	userId := c.Get("userId").(string)
 	deviceId := c.Get("deviceId").(string)
 	res, err := t.Service.Execute(body, userId, deviceId)
-	if err != nil && strings.Contains(err.Error(), "risk:") {
+	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
 		LogStringError(c, err, "transact: execute")
 		return Unprocessable(c)
 	}
