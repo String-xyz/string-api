@@ -397,6 +397,7 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 	if err != nil {
 		return "", common.StringError(err)
 	}
+	go t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
@@ -414,6 +415,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	if err != nil {
 		return "", common.StringError(err)
 	}
+	go t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
@@ -449,8 +451,6 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	if err != nil {
 		return auth, common.StringError(err)
 	}
-
-	go t.unit21CreateInstrument(origin.InstrumentID)
 
 	return auth, nil
 }
@@ -731,24 +731,31 @@ func floatToFixedString(value float64, decimals int) string {
 	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
 }
 
-func (t transaction) unit21CreateInstrument(instrumentId string) (err error) {
-	// Send Instrument Data to Unit21
-	instrument, err := t.repos.Instrument.GetById(instrumentId)
-	if err != nil {
-		fmt.Printf("Error creating new instrument in Unit21 -- can't get instrument model")
-		return
-	}
-
-	u21Repo := unit21.InstrumentRepo{
+func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err error) {
+	u21InstrumentRepo := unit21.InstrumentRepo{
 		User:     t.repos.User,
 		Device:   t.repos.Device,
 		Location: t.repos.Location, // empty until fingerprint integration
 	}
 
-	u21Tx := unit21.NewInstrument(u21Repo)
-	_, err = u21Tx.Create(instrument)
+	u21Instrument := unit21.NewInstrument(u21InstrumentRepo)
+	u21InstrumentId, err := u21Instrument.Create(instrument)
 	if err != nil {
 		fmt.Printf("Error creating new instrument in Unit21")
+		return
+	}
+
+	// Log create instrument action w/ Unit21
+	u21ActionRepo := unit21.ActionRepo{
+		User:     t.repos.User,
+		Device:   t.repos.Device,
+		Location: t.repos.Location, // empty until fingerprint integration
+	}
+
+	u21Action := unit21.NewAction(u21ActionRepo)
+	_, err = u21Action.Create(instrument, "CreditCard", "Creation", u21InstrumentId, "Creation")
+	if err != nil {
+		fmt.Printf("Error creating a new instrument action in Unit21")
 		return
 	}
 

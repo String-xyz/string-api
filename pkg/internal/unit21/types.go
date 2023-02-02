@@ -125,7 +125,7 @@ type updateInstrumentResponse struct {
 
 type u21Event struct {
 	GeneralData     *eventGeneral           `json:"general_data"`
-	TransactionData *transactionData        `json:"transaction_data"`
+	TransactionData *transactionData        `json:"transaction_data,omitempty"`
 	ActionData      *actionData             `json:"action_data,omitempty"`
 	DigitalData     *eventDigitalData       `json:"digital_data,omitempty"`
 	LocationData    *instrumentLocationData `json:"location_data,omitempty"`

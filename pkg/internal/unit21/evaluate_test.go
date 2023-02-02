@@ -2,6 +2,7 @@ package unit21
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -163,7 +164,7 @@ func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
 	u21Transaction := NewTransaction(repo)
 
 	pass, err := u21Transaction.Evaluate(transaction)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.False(t, pass)
 }
 
@@ -195,9 +196,24 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 	// create 6 instruments
 	for i := 0; i <= 5; i++ {
 		var u21InstrumentId string
-		instrumentId1, u21InstrumentId, err = createMockInstrumentForUser(userId1, mock, sqlxDB)
+		instrument, u21InstrumentId, err := createMockInstrumentForUser(userId1, mock, sqlxDB)
+		instrumentId1 = instrument.ID
 		assert.NoError(t, err)
 		assert.Greater(t, len([]rune(u21InstrumentId)), 0)
+
+		// Log create instrument action w/ Unit21
+		u21ActionRepo := ActionRepo{
+			User:     repository.NewUser(sqlxDB),
+			Device:   repository.NewDevice(sqlxDB),
+			Location: repository.NewLocation(sqlxDB),
+		}
+
+		u21Action := NewAction(u21ActionRepo)
+		_, err = u21Action.Create(instrument, "CreditCard", "Creation", u21InstrumentId, "Creation")
+		if err != nil {
+			fmt.Printf("Error creating a new instrument action in Unit21")
+			return
+		}
 	}
 
 	transaction := model.Transaction{
@@ -250,7 +266,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 	u21Transaction := NewTransaction(repo)
 
 	pass, err := u21Transaction.Evaluate(transaction)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.False(t, pass)
 }
 

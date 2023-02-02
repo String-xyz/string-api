@@ -42,7 +42,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		url = "https://rtr.sandbox2.unit21.com/evaluate"
 	}
 
-	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction evaluate failed: %s", err)
 		return false, common.StringError(err)
@@ -74,7 +74,7 @@ func (t transaction) Create(transaction model.Transaction) (unit21Id string, err
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
-	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -101,7 +101,7 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
-	body, err := u21Put(url, mapToUnit21Event(transaction, transactionData))
+	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData))
 
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
@@ -215,7 +215,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func mapToUnit21Event(transaction model.Transaction, transactionData transactionData) *u21Event {
+func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData) *u21Event {
 	var transactionTagArr []string
 	if transaction.Tags != nil {
 		for key, value := range transaction.Tags {

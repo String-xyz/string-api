@@ -47,14 +47,14 @@ func TestUpdateInstrument(t *testing.T) {
 
 	userId := uuid.NewString()
 
-	instrumentId, u21InstrumentId, err := createMockInstrumentForUser(userId, mock, sqlxDB)
+	instrument, u21InstrumentId, err := createMockInstrumentForUser(userId, mock, sqlxDB)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 
 	locationId := uuid.NewString()
 
-	instrument := model.Instrument{
-		ID:            instrumentId,
+	instrument = model.Instrument{
+		ID:            instrument.ID,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,

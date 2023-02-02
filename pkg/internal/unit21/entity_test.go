@@ -174,11 +174,11 @@ func createMockUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, uni
 	return entityId, u21EntityId, err
 }
 
-func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (instrumentId string, unit21Id string, err error) {
-	instrumentId = uuid.NewString()
+func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (instrument model.Instrument, unit21Id string, err error) {
+	instrumentId := uuid.NewString()
 	locationId := uuid.NewString()
 
-	instrument := model.Instrument{
+	instrument = model.Instrument{
 		ID:            instrumentId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
@@ -219,5 +219,5 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 
-	return instrumentId, u21InstrumentId, err
+	return instrument, u21InstrumentId, err
 }
