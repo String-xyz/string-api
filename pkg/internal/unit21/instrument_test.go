@@ -9,21 +9,13 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateInstrument(t *testing.T) {
-	err := godotenv.Load("../../../.env")
+	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
-
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	if err != nil {
-		t.Fatalf("error %s was not expected when opening stub db", err)
-	}
 	defer db.Close()
 
 	userId := uuid.NewString()
@@ -35,14 +27,8 @@ func TestCreateInstrument(t *testing.T) {
 }
 
 func TestUpdateInstrument(t *testing.T) {
-	err := godotenv.Load("../../../.env")
+	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
-
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	if err != nil {
-		t.Fatalf("error %s was not expected when opening stub db", err)
-	}
 	defer db.Close()
 
 	userId := uuid.NewString()

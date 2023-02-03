@@ -383,7 +383,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string) (string, error) {
+func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string, cardType string) (string, error) {
 	instrument, err := t.repos.Instrument.GetWallet(fingerprint)   // temporarily using get wallet and storing it there
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", common.StringError(err)
@@ -391,8 +391,13 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 		return instrument.ID, nil // instrument already exists
 	}
 
+	// We should gather type from the payment processor
+	instrument_type := "DebitCard"
+	if cardType == "CREDIT" {
+		instrument_type = "CreditCard"
+	}
 	// Create a new instrument
-	instrument = model.Instrument{Type: "card", Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
+	instrument = model.Instrument{Type: instrument_type, Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -410,7 +415,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "CryptoWallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -427,7 +432,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	}
 
 	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
-	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, userId, auth.Last4)
+	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, userId, auth.Last4, auth.CardType)
 	if err != nil {
 		return auth, common.StringError(err)
 	}
@@ -555,13 +560,14 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 		return profit, common.StringError(err)
 	}
 
-	destinationLeg := model.TxLeg{
-		Timestamp:    time.Now(),   // updated based on *when the transaction occured* not time.Now()
-		Amount:       wei,          // Should be the amount of the asset received by the user
-		Value:        usd,          // The value of the asset received by the user
-		AssetID:      asset.ID,     // the asset received by the user
-		UserID:       recipientId,  // the user who received the asset
-		InstrumentID: userWalletId, // the instrument which received the asset (wallet usually)
+	now := time.Now()
+	destinationLeg := model.TxLegUpdates{
+		Timestamp:    &now,          // updated based on *when the transaction occured* not time.Now()
+		Amount:       &wei,          // Should be the amount of the asset received by the user
+		Value:        &usd,          // The value of the asset received by the user
+		AssetID:      &asset.ID,     // the asset received by the user
+		UserID:       &recipientId,  // the user who received the asset
+		InstrumentID: &userWalletId, // the instrument which received the asset (wallet usually)
 	}
 
 	// We now update the destination leg instead of creating it
@@ -753,7 +759,7 @@ func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err er
 	}
 
 	u21Action := unit21.NewAction(u21ActionRepo)
-	_, err = u21Action.Create(instrument, "CreditCard", "Creation", u21InstrumentId, "Creation")
+	_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
 	if err != nil {
 		fmt.Printf("Error creating a new instrument action in Unit21")
 		return

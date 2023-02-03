@@ -16,14 +16,8 @@ import (
 )
 
 func TestCreateEntity(t *testing.T) {
-	err := godotenv.Load("../../../.env")
+	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
-
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	if err != nil {
-		t.Fatalf("error %s was not expected when opening stub db", err)
-	}
 	defer db.Close()
 
 	_, u21EntityId, err := createMockUser(mock, sqlxDB)
@@ -37,14 +31,8 @@ func TestCreateEntity(t *testing.T) {
 }
 
 func TestUpdateEntity(t *testing.T) {
-	err := godotenv.Load("../../../.env")
+	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
-
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	if err != nil {
-		t.Fatalf("error %s was not expected when opening stub db", err)
-	}
 	defer db.Close()
 
 	// create entity to modify
@@ -96,14 +84,8 @@ func TestUpdateEntity(t *testing.T) {
 }
 
 func TestAddInstruments(t *testing.T) {
-	err := godotenv.Load("../../../.env")
+	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
-
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	if err != nil {
-		t.Fatalf("error %s was not expected when opening stub db", err)
-	}
 	defer db.Close()
 
 	// create entity to modify
@@ -220,4 +202,18 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 
 	return instrument, u21InstrumentId, err
+}
+
+func initializeTest(t *testing.T) (db *sql.DB, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB, err error) {
+	err = godotenv.Load("../../../.env")
+	if err != nil {
+		t.Fatalf("error %s was not expected when loading env", err)
+	}
+
+	db, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	sqlxDB = sqlx.NewDb(db, "sqlmock")
+	if err != nil {
+		t.Fatalf("error %s was not expected when opening stub db", err)
+	}
+	return
 }

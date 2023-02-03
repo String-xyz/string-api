@@ -12,7 +12,6 @@ import (
 
 type Action interface {
 	Create(instrument model.Instrument,
-		actionType string,
 		actionDetails string,
 		unit21InstrumentId string,
 		eventSubtype string) (unit21Id string, err error)
@@ -34,13 +33,12 @@ func NewAction(r ActionRepo) Action {
 
 func (a action) Create(
 	instrument model.Instrument,
-	actionType string,
 	actionDetails string,
 	unit21InstrumentId string,
 	eventSubtype string) (unit21Id string, err error) {
 
 	actionData := actionData{
-		ActionType:    actionType,
+		ActionType:    instrument.Type,
 		ActionDetails: actionDetails,
 		EntityId:      instrument.UserID,
 		EntityType:    "user",
