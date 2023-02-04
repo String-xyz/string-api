@@ -99,7 +99,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 
 	// Compute service fee
 	upcharge := chain.StringFee
-	baseCheckoutFee := 0.3
+	baseCheckoutFee := 0.64
 	serviceFee := (transactionCost+gasInUSD+tokenCost)*upcharge + baseCheckoutFee
 
 	// floor
