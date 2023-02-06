@@ -32,6 +32,15 @@ type TransactionUpdates struct {
 	StringFee          *string         `json:"stringFee" db:"string_fee"`
 }
 
+type TxLegUpdates struct {
+	Timestamp    *time.Time `json:"timestamp" db:"timestamp"`
+	Amount       *string    `json:"amount" db:"amount"`
+	Value        *string    `json:"value" db:"value"`
+	AssetID      *string    `json:"assetId" db:"asset_id"`
+	UserID       *string    `json:"userId" db:"user_id"`
+	InstrumentID *string    `json:"instrumentId" db:"instrument_id"`
+}
+
 type UserRegister struct {
 	FirstName  string `json:"firstName" db:"first_name"`
 	MiddleName string `json:"middleName" db:"middle_name"`

@@ -174,7 +174,6 @@ func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrum
 	for _, device := range devices {
 		digitalData.IpAddresses = append(digitalData.IpAddresses, device.IpAddresses...)
 	}
-	log.Printf("deviceData: %s", digitalData)
 	return
 }
 
@@ -234,8 +233,6 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 		Tags:         instrumentTagArr,
 		// Options:      &options,
 	}
-
-	log.Printf("%+v\n", jsonBody)
 
 	return jsonBody
 }

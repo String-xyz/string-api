@@ -167,25 +167,25 @@ type Transaction struct {
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt      *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type               string         `json:"type" db:"type"`
-	Status             string         `json:"status" db:"status"`
-	Tags               StringMap      `json:"tags" db:"tags"`
-	DeviceID           string         `json:"deviceId" db:"device_id"`
-	IPAddress          string         `json:"ipAddress" db:"ip_address"`
-	PlatformID         string         `json:"platformId" db:"platform_id"`
-	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
-	NetworkID          string         `json:"networkId" db:"network_id"`
-	NetworkFee         string         `json:"networkFee" db:"network_fee"`
-	ContractParams     pq.StringArray `json:"contractParameters" db:"contract_params"`
-	ContractFunc       string         `json:"contractFunc" db:"contract_func"`
-	TransactionAmount  string         `json:"transactionAmount" db:"transaction_amount"`
-	OriginTxLegID      string         `json:"originTxLegId" db:"origin_tx_leg_id"`
-	ReceiptTxLegID     string         `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
-	ResponseTxLegID    string         `json:"responseTxLegId" db:"response_tx_leg_id"`
-	DestinationTxLegID string         `json:"destinationTxLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      string         `json:"processingFee" db:"processing_fee"`
-	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"`
-	StringFee          string         `json:"stringFee" db:"string_fee"`
+	Type               string         `json:"type,omitempty" db:"type"`
+	Status             string         `json:"status,omitempty" db:"status"`
+	Tags               StringMap      `json:"tags,omitempty" db:"tags"`
+	DeviceID           string         `json:"deviceId,omitempty" db:"device_id"`
+	IPAddress          string         `json:"ipAddress,omitempty" db:"ip_address"`
+	PlatformID         string         `json:"platformId,omitempty" db:"platform_id"`
+	TransactionHash    string         `json:"transactionHash,omitempty" db:"transaction_hash"`
+	NetworkID          string         `json:"networkId,omitempty" db:"network_id"`
+	NetworkFee         string         `json:"networkFee,omitempty" db:"network_fee"`
+	ContractParams     pq.StringArray `json:"contractParameters,omitempty" db:"contract_params"`
+	ContractFunc       string         `json:"contractFunc,omitempty" db:"contract_func"`
+	TransactionAmount  string         `json:"transactionAmount,omitempty" db:"transaction_amount"`
+	OriginTxLegID      string         `json:"originTxLegId,omitempty" db:"origin_tx_leg_id"`
+	ReceiptTxLegID     sql.NullString `json:"receiptTxLegId,omitempty" db:"receipt_tx_leg_id"`
+	ResponseTxLegID    sql.NullString `json:"responseTxLegId,omitempty" db:"response_tx_leg_id"`
+	DestinationTxLegID string         `json:"destinationTxLegId,omitempty" db:"destination_tx_leg_id"`
+	ProcessingFee      string         `json:"processingFee,omitempty" db:"processing_fee"`
+	ProcessingFeeAsset string         `json:"processingFeeAsset,omitempty" db:"processing_fee_asset"`
+	StringFee          string         `json:"stringFee,omitempty" db:"string_fee"`
 }
 
 type AuthStrategy struct {

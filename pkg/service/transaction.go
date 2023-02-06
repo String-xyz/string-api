@@ -177,23 +177,77 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	status = "Card Authorized"
+
+	status = "Card " + cardAuthorization.Status
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(db.ID, updateDB)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
-	// // Turning off until we can determine the Destination Leg prior to execution
-	// u21auth, err := t.unit21Evaluate(db.ID)
-	// if err != nil {
-	// 	return res, common.StringError(err)
-	// }
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(e.UserAddress, user.ID)
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
-	// if !u21auth {
-	// 	err = fmt.Errorf("Transaction Unauthorized in Unit21")
-	// 	return res, common.StringError(err)
-	// }
+	// TODO: Determine the output of the transaction (destination leg) with Tracers
+	destinationLeg := model.TxLeg{
+		Timestamp:    time.Now(),        // Required by the db. Should be updated when the tx occurs
+		Amount:       "0",               // Required by Unit21. The amount of the asset received by the user
+		Value:        "0",               // Default to '0'. The value of the asset received by the user
+		AssetID:      chain.GasTokenID,  // Required by the db. the asset received by the user
+		UserID:       user.ID,           // the user who received the asset
+		InstrumentID: recipientWalletId, // Required by the db. the instrument which received the asset (wallet usually)
+	}
+
+	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+
+	txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
+
+	err = t.repos.Transaction.Update(db.ID, txLeg)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+
+	if !cardAuthorization.Approved {
+		err := t.unit21CreateTransaction(db.ID)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		return res, common.StringError(common.StringError(errors.New("payment: Authorization Declined by Checkout")))
+	}
+
+	// Validate Transaction through Real Time Rules engine
+	u21auth, err := t.unit21Evaluate(db.ID)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+
+	if !u21auth {
+		status = "Failed"
+		updateDB.Status = &status
+		err = t.repos.Transaction.Update(db.ID, updateDB)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		err = t.unit21CreateTransaction(db.ID)
+		if err != nil {
+			return res, common.StringError(err)
+		}
+
+		return res, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+	}
+	status = "Unit21 Authorized"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(db.ID, updateDB)
+	if err != nil {
+		return res, common.StringError(err)
+	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
 	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID, userId)
@@ -225,6 +279,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 		processingFeeAsset: processingFeeAsset,
 		preBalance:         preBalance,
 		userId:             userId,
+		recipientWalletId:  recipientWalletId,
 	}
 	go t.postProcess(post)
 
@@ -294,26 +349,6 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		TokenName:  "",
 	}
 
-	// // TODO: Determine the output of the transaction!
-	// // We need to determine the DestinationTXLeg here
-	// destinationLeg := model.TxLeg{
-	// 	Timestamp:    time.Now(),   // null? Should be updated when the tx occurs
-	// 	Amount:       wei,          // Should be the amount of the asset received by the user
-	// 	Value:        usd,          // The value of the asset received by the user
-	// 	AssetID:      asset.ID,     // the asset received by the user
-	// 	UserID:       recipientId,  // the user who received the asset
-	// 	InstrumentID: userWalletId, // the instrument which received the asset (wallet usually)
-	// }
-	// destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
-	// if err != nil {
-	// 	return res, eth, common.StringError(err)
-	// }
-	// txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
-	// err = t.repos.Transaction.Update(txUUID, txLeg)
-	// if err != nil {
-	// 	return res, eth, common.StringError(err)
-	// }
-
 	// Estimate Cost in USD to execute Tx request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)
 	if err != nil {
@@ -348,7 +383,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string) (string, error) {
+func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string, cardType string) (string, error) {
 	instrument, err := t.repos.Instrument.GetWallet(fingerprint)   // temporarily using get wallet and storing it there
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", common.StringError(err)
@@ -356,12 +391,18 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 		return instrument.ID, nil // instrument already exists
 	}
 
+	// We should gather type from the payment processor
+	instrument_type := "DebitCard"
+	if cardType == "CREDIT" {
+		instrument_type = "CreditCard"
+	}
 	// Create a new instrument
-	instrument = model.Instrument{Type: "card", Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
+	instrument = model.Instrument{Type: instrument_type, Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
 	}
+	go t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
@@ -374,11 +415,12 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "crypto-wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "CryptoWallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
 	}
+	go t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
@@ -390,7 +432,7 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	}
 
 	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
-	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, userId, auth.Last4)
+	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, userId, auth.Last4, auth.CardType)
 	if err != nil {
 		return auth, common.StringError(err)
 	}
@@ -414,8 +456,6 @@ func (t transaction) authCard(userWallet string, cardToken string, usd float64, 
 	if err != nil {
 		return auth, common.StringError(err)
 	}
-
-	go t.unit21CreateInstrument(origin.InstrumentID)
 
 	return auth, nil
 }
@@ -514,20 +554,24 @@ func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas u
 	}
 	wei := floatToFixedString(trueEth, int(asset.Decimals))
 	usd := floatToFixedString(quotedTotal, 6)
-	destinationLeg := model.TxLeg{
-		Timestamp:    time.Now(),   // updated based on *when the transaction occured* not time.Now()
-		Amount:       wei,          // Should be the amount of the asset received by the user
-		Value:        usd,          // The value of the asset received by the user
-		AssetID:      asset.ID,     // the asset received by the user
-		UserID:       recipientId,  // the user who received the asset
-		InstrumentID: userWalletId, // the instrument which received the asset (wallet usually)
-	}
-	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+
+	txModel, err := t.repos.Transaction.GetById(txUUID)
 	if err != nil {
 		return profit, common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
-	err = t.repos.Transaction.Update(txUUID, txLeg)
+
+	now := time.Now()
+	destinationLeg := model.TxLegUpdates{
+		Timestamp:    &now,          // updated based on *when the transaction occured* not time.Now()
+		Amount:       &wei,          // Should be the amount of the asset received by the user
+		Value:        &usd,          // The value of the asset received by the user
+		AssetID:      &asset.ID,     // the asset received by the user
+		UserID:       &recipientId,  // the user who received the asset
+		InstrumentID: &userWalletId, // the instrument which received the asset (wallet usually)
+	}
+
+	// We now update the destination leg instead of creating it
+	err = t.repos.TxLeg.Update(txModel.DestinationTxLegID, destinationLeg)
 	if err != nil {
 		return profit, common.StringError(err)
 	}
@@ -547,6 +591,7 @@ type postProcessRequest struct {
 	processingFeeAsset model.Asset
 	preBalance         float64
 	userId             string
+	recipientWalletId  string
 }
 
 func (t transaction) postProcess(request postProcessRequest) {
@@ -594,11 +639,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(request.UserAddress, request.userId)
-	if err != nil {
-		// TODO: handle error instead of returning it
-	}
-	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.Quote.TotalUSD, request.Chain, request.TxDBID, request.userId, recipientWalletId)
+	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.Quote.TotalUSD, request.Chain, request.TxDBID, request.userId, request.recipientWalletId)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -636,23 +677,10 @@ func (t transaction) postProcess(request postProcessRequest) {
 	}
 	executor.Close()
 	// Create Transaction data in Unit21
-	txModel, err := t.repos.Transaction.GetById(request.TxDBID)
-	if err != nil {
-		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
-		// return res, common.StringError(err)
-	}
 
-	u21Repo := unit21.TransactionRepo{
-		TxLeg: t.repos.TxLeg,
-		User:  t.repos.User,
-		Asset: t.repos.Asset,
-	}
-
-	u21Tx := unit21.NewTransaction(u21Repo)
-	_, err = u21Tx.Create(txModel)
+	err = t.unit21CreateTransaction(request.TxDBID)
 	if err != nil {
-		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
-		// return res, common.StringError(err)
+		log.Printf("Error creating Unit21 transaction: %s", err)
 	}
 
 	// send email receipt
@@ -709,25 +737,58 @@ func floatToFixedString(value float64, decimals int) string {
 	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
 }
 
-func (t transaction) unit21CreateInstrument(instrumentId string) {
-	// Send Instrument Data to Unit21
-	instrument, err := t.repos.Instrument.GetById(instrumentId)
-	if err != nil {
-		fmt.Printf("Error creating new instrument in Unit21 -- can't get instrument model")
-		return
-	}
-
-	u21Repo := unit21.InstrumentRepo{
+func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err error) {
+	u21InstrumentRepo := unit21.InstrumentRepo{
 		User:     t.repos.User,
 		Device:   t.repos.Device,
 		Location: t.repos.Location, // empty until fingerprint integration
 	}
 
-	u21Tx := unit21.NewInstrument(u21Repo)
-	_, err = u21Tx.Create(instrument)
+	u21Instrument := unit21.NewInstrument(u21InstrumentRepo)
+	u21InstrumentId, err := u21Instrument.Create(instrument)
 	if err != nil {
 		fmt.Printf("Error creating new instrument in Unit21")
+		return
 	}
+
+	// Log create instrument action w/ Unit21
+	u21ActionRepo := unit21.ActionRepo{
+		User:     t.repos.User,
+		Device:   t.repos.Device,
+		Location: t.repos.Location, // empty until fingerprint integration
+	}
+
+	u21Action := unit21.NewAction(u21ActionRepo)
+	_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
+	if err != nil {
+		fmt.Printf("Error creating a new instrument action in Unit21")
+		return
+	}
+
+	return
+}
+
+func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
+	txModel, err := t.repos.Transaction.GetById(transactionId)
+	if err != nil {
+		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
+		return
+	}
+
+	u21Repo := unit21.TransactionRepo{
+		TxLeg: t.repos.TxLeg,
+		User:  t.repos.User,
+		Asset: t.repos.Asset,
+	}
+
+	u21Tx := unit21.NewTransaction(u21Repo)
+	_, err = u21Tx.Create(txModel)
+	if err != nil {
+		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
+		return
+	}
+
+	return
 }
 
 func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err error) {
@@ -735,7 +796,7 @@ func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err 
 	txModel, err := t.repos.Transaction.GetById(transactionId)
 	if err != nil {
 		log.Printf("Error getting tx model in Unit21 in Tx Evaluate: %s", err)
-		return
+		return evaluation, common.StringError(err)
 	}
 
 	u21Repo := unit21.TransactionRepo{
@@ -748,7 +809,7 @@ func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err 
 	evaluation, err = u21Tx.Evaluate(txModel)
 	if err != nil {
 		log.Printf("Error evaluating transaction in Unit21: %s", err)
-		return
+		return evaluation, common.StringError(err)
 	}
 
 	return
