@@ -51,9 +51,10 @@ CREATE TABLE member_invite (
   expired_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   accepted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   email TEXT NOT NULL,
-  invited_by UUID REFERENCES platform_member (id),
+  name TEXT DEFAULT '',
+  invited_by UUID REFERENCES platform_member (id) DEFAULT NULL,
   platform_id UUID REFERENCES platform (id),
-  name TEXT DEFAULT ''
+  role_id UUID REFERENCES member_role (id)
 );
 
 -------------------------------------------------------------------------
