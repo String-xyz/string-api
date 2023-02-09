@@ -89,177 +89,32 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	return res, nil
 }
 
-func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string) (model.TransactionReceipt, error) {
-	res := model.TransactionReceipt{}
+func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-
-	user, err := t.repos.User.GetById(userId)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	if user.ID != userId {
-		return res, common.StringError(errors.New("not logged in"))
-	}
-
-	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(uint64(e.ChainID), t.repos.Network, t.repos.Asset)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	// Create new Tx in repository, populate it with known info
-	db, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: deviceId, PlatformID: t.ids.StringPlatformId})
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(e, updateDB)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	err = t.repos.Transaction.Update(db.ID, updateDB)
-	if err != nil {
-		fmt.Printf("\nERROR = %+v", err)
-		return res, common.StringError(err)
-	}
-
-	// Dial the RPC and update model status
 	executor := NewExecutor()
-	err = executor.Initialize(chain.RPC)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	status := "RPC Dialed"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(db.ID, updateDB)
-	if err != nil {
-		return res, common.StringError(err)
-	}
 
-	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(executor, e.TransactionRequest, chain, false)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	status = "Tested and Estimated"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(db.ID, updateDB)
+	s := transactionSetupData{executionRequest: &e, userId: &userId, deviceId: &deviceId}
+
+	s, err = t.transactionSetup(s, executor)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
-	// Verify the Quote and update model status
-	_, err = verifyQuote(e, estimateUSD)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	status = "Quote Verified"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(db.ID, updateDB)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	// Get current balance of primary token
-	preBalance, err := executor.GetBalance()
-	if err != nil {
-		return res, common.StringError(err)
-	}
-	if preBalance < estimateETH {
-		msg := fmt.Sprintf("STRING-API: %s balance is too low to execute %.2f transaction at %.2f", chain.OwlracleName, estimateETH, preBalance)
-		MessageStaff(msg)
-		return res, common.StringError(errors.New("hot wallet ETH balance too low"))
-	}
-
-	// Authorize quoted cost on end-user CC and update model status
-	cardAuthorization, err := t.authCard(e.UserAddress, e.CardToken, e.TotalUSD, processingFeeAsset, db.ID, userId)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	status = "Card " + cardAuthorization.Status
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(db.ID, updateDB)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(e.UserAddress, user.ID)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	// TODO: Determine the output of the transaction (destination leg) with Tracers
-	destinationLeg := model.TxLeg{
-		Timestamp:    time.Now(),        // Required by the db. Should be updated when the tx occurs
-		Amount:       "0",               // Required by Unit21. The amount of the asset received by the user
-		Value:        "0",               // Default to '0'. The value of the asset received by the user
-		AssetID:      chain.GasTokenID,  // Required by the db. the asset received by the user
-		UserID:       user.ID,           // the user who received the asset
-		InstrumentID: recipientWalletId, // Required by the db. the instrument which received the asset (wallet usually)
-	}
-
-	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
-
-	err = t.repos.Transaction.Update(db.ID, txLeg)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	if !cardAuthorization.Approved {
-		err := t.unit21CreateTransaction(db.ID)
-		if err != nil {
-			return res, common.StringError(err)
-		}
-
-		return res, common.StringError(common.StringError(errors.New("payment: Authorization Declined by Checkout")))
-	}
-
-	// Validate Transaction through Real Time Rules engine
-	u21auth, err := t.unit21Evaluate(db.ID)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	if !u21auth {
-		status = "Failed"
-		updateDB.Status = &status
-		err = t.repos.Transaction.Update(db.ID, updateDB)
-		if err != nil {
-			return res, common.StringError(err)
-		}
-
-		err = t.unit21CreateTransaction(db.ID)
-		if err != nil {
-			return res, common.StringError(err)
-		}
-
-		return res, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
-	}
-	status = "Unit21 Authorized"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(db.ID, updateDB)
+	s, err = t.safetyCheck(s)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
-	txID, value, err := t.initiateTransaction(executor, e, processingFeeAsset, db.ID, userId)
+	txID, value, err := t.initiateTransaction(*s.executor, e, *s.processingFeeAsset, s.transactionModel.ID, userId)
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	status = "Transaction Initiated"
-	updateDB.Status = &status
-	updateDB.TransactionHash = &txID
+
+	status := "Transaction Initiated"
 	txAmount := value.String()
-	updateDB.TransactionAmount = &txAmount
-	err = t.repos.Transaction.Update(db.ID, updateDB)
+	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: &txID, TransactionAmount: &txAmount}
+	err = t.repos.Transaction.Update(s.transactionModel.ID, updateDB)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -270,20 +125,190 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	// Send required information to new thread and return TxID to the endpoint
 	post := postProcessRequest{
 		TxID:               txID,
-		Chain:              chain,
-		Authorization:      cardAuthorization,
+		Chain:              *s.chain,
+		Authorization:      *s.cardAuthorization,
 		UserAddress:        e.UserAddress,
 		CumulativeValue:    value,
 		Quote:              e.Quote,
-		TxDBID:             db.ID,
-		processingFeeAsset: processingFeeAsset,
-		preBalance:         preBalance,
+		TxDBID:             s.transactionModel.ID,
+		processingFeeAsset: *s.processingFeeAsset,
+		preBalance:         *s.preBalance,
 		userId:             userId,
-		recipientWalletId:  recipientWalletId,
+		recipientWalletId:  *s.recipientWalletId,
 	}
 	go t.postProcess(post)
 
-	return model.TransactionReceipt{TxID: txID, TxURL: chain.Explorer + "/tx/" + txID}, nil
+	return model.TransactionReceipt{TxID: txID, TxURL: s.chain.Explorer + "/tx/" + txID}, nil
+}
+
+type transactionSetupData struct {
+	userId             *string
+	chainId            *int
+	deviceId           *string
+	executor           *Executor
+	processingFeeAsset *model.Asset
+	transactionModel   *model.Transaction
+	chain              *Chain
+	executionRequest   *model.ExecutionRequest
+	cardAuthorization  *AuthorizedCharge
+	preBalance         *float64
+	recipientWalletId  *string
+}
+
+func (t transaction) transactionSetup(s transactionSetupData, executor Executor) (transactionSetupData, error) {
+	// get user object
+	_, err := t.repos.User.GetById(*s.userId)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	// Pull chain info needed for execution from repository
+	chain, err := ChainInfo(uint64(*s.chainId), t.repos.Network, t.repos.Asset)
+	s.chain = &chain
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	// Create new Tx in repository, populate it with known info
+	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: *s.deviceId, PlatformID: t.ids.StringPlatformId})
+	s.transactionModel = &transactionModel
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	updateDB := &model.TransactionUpdates{}
+	processingFeeAsset, err := t.populateInitialTxModelData(*s.executionRequest, updateDB)
+	s.processingFeeAsset = &processingFeeAsset
+	if err != nil {
+		return s, common.StringError(err)
+	}
+	err = t.repos.Transaction.Update(transactionModel.ID, updateDB)
+	if err != nil {
+		fmt.Printf("\nERROR = %+v", err)
+		return s, common.StringError(err)
+	}
+
+	// Dial the RPC and update model status
+	err = executor.Initialize(chain.RPC)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	err = t.updateTransactionStatus("RPC Dialed", transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	return s, err
+}
+
+func (t transaction) safetyCheck(s transactionSetupData) (transactionSetupData, error) {
+
+	// Test the Tx and update model status
+	estimateUSD, estimateETH, err := t.testTransaction(*s.executor, s.executionRequest.TransactionRequest, *s.chain, false)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+	err = t.updateTransactionStatus("Tested and Estimated", s.transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	// Verify the Quote and update model status
+	_, err = verifyQuote(*s.executionRequest, estimateUSD)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+	err = t.updateTransactionStatus("Quote Verified", s.transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	// Get current balance of primary token
+	preBalance, err := executor.GetBalance()
+	s.preBalance = &preBalance
+	if err != nil {
+		return s, common.StringError(err)
+	}
+	if preBalance < estimateETH {
+		msg := fmt.Sprintf("STRING-API: %s balance is too low to execute %.2f transaction at %.2f", s.chain.OwlracleName, estimateETH, preBalance)
+		MessageStaff(msg)
+		return s, common.StringError(errors.New("hot wallet ETH balance too low"))
+	}
+
+	// Authorize quoted cost on end-user CC and update model status
+	cardAuthorization, err := t.authCard(s.executionRequest.UserAddress, s.executionRequest.CardToken, s.executionRequest.TotalUSD, *s.processingFeeAsset, s.transactionModel.ID, *s.userId)
+	s.cardAuthorization = &cardAuthorization
+	if err != nil {
+		return s, common.StringError(err)
+	}
+	err = t.updateTransactionStatus("Card "+cardAuthorization.Status, s.transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(s.executionRequest.UserAddress, *s.userId)
+	s.recipientWalletId = *&s.recipientWalletId
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	// TODO: Determine the output of the transaction (destination leg) with Tracers
+	destinationLeg := model.TxLeg{
+		Timestamp:    time.Now(),         // Required by the db. Should be updated when the tx occurs
+		Amount:       "0",                // Required by Unit21. The amount of the asset received by the user
+		Value:        "0",                // Default to '0'. The value of the asset received by the user
+		AssetID:      s.chain.GasTokenID, // Required by the db. the asset received by the user
+		UserID:       *s.userId,          // the user who received the asset
+		InstrumentID: recipientWalletId,  // Required by the db. the instrument which received the asset (wallet usually)
+	}
+
+	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	txLeg := model.TransactionUpdates{DestinationTxLegID: &destinationLeg.ID}
+
+	err = t.repos.Transaction.Update(s.transactionModel.ID, txLeg)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	if !cardAuthorization.Approved {
+		err := t.unit21CreateTransaction(s.transactionModel.ID)
+		if err != nil {
+			return s, common.StringError(err)
+		}
+
+		return s, common.StringError(errors.New("payment: Authorization Declined by Checkout"))
+	}
+
+	// Validate Transaction through Real Time Rules engine
+	u21auth, err := t.unit21Evaluate(s.transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	if !u21auth {
+		err = t.updateTransactionStatus("Failed", s.transactionModel.ID)
+		if err != nil {
+			return s, common.StringError(err)
+		}
+
+		err = t.unit21CreateTransaction(s.transactionModel.ID)
+		if err != nil {
+			return s, common.StringError(err)
+		}
+
+		return s, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+	}
+	err = t.updateTransactionStatus("Unit21 Authorized", s.transactionModel.ID)
+	if err != nil {
+		return s, common.StringError(err)
+	}
+
+	return s, nil
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() {
@@ -293,10 +318,10 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
-	// TODO populate db.Tags with key-val pairs for Unit21
-	// TODO populate db.DeviceID with info from fingerprint
-	// TODO populate db.IPAddress with info from fingerprint
-	// TODO populate db.PlatformID with UUID of customer
+	// TODO populate transactionModel.Tags with key-val pairs for Unit21
+	// TODO populate transactionModel.DeviceID with info from fingerprint
+	// TODO populate transactionModel.IPAddress with info from fingerprint
+	// TODO populate transactionModel.PlatformID with UUID of customer
 	// bytes, err := json.Marshal()
 
 	contractParams := pq.StringArray(e.CxParams)
@@ -813,5 +838,14 @@ func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err 
 	}
 
 	return
+}
 
+func (t transaction) updateTransactionStatus(transactionId string, status string) (err error) {
+	updateDB := &model.TransactionUpdates{Status: &status}
+	err = t.repos.Transaction.Update(transactionId, updateDB)
+	if err != nil {
+		return common.StringError(err)
+	}
+
+	return err
 }
