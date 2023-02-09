@@ -2,9 +2,7 @@ name: deploy to development
 permissions:
   id-token: write
   contents: read
-on: 
-  push:
-    branches: [develop]
+on: [push]
 jobs:
   deploy:
     environment: 
