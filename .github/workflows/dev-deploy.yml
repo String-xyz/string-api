@@ -28,7 +28,7 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
           
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1.6.1
+        uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
           aws-region: us-west-2
           role-to-assume: ${{ secrets.ASSUME_ROLE }}
