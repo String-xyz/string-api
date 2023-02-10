@@ -129,8 +129,7 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	}
 
 	// this Executor will not exist in scope of postProcess
-	executor := *p.executor // needed to keep the compiler from complaining
-	executor.Close()
+	(*p.executor).Close()
 
 	// Send required information to new thread and return txId to the endpoint
 	go t.postProcess(p)
@@ -331,8 +330,7 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	}
 
 	// Get current balance of primary token
-	executor := *p.executor
-	preBalance, err := executor.GetBalance()
+	preBalance, err := (*p.executor).GetBalance()
 	p.preBalance = &preBalance
 	if err != nil {
 		return p, common.StringError(err)
@@ -583,8 +581,8 @@ func (t transaction) initiateTransaction(p transactionProcessingData) (transacti
 		TxValue:    p.executionRequest.TxValue,
 		TxGasLimit: p.executionRequest.TxGasLimit,
 	}
-	executor := *p.executor
-	txID, value, err := executor.Initiate(call)
+
+	txID, value, err := (*p.executor).Initiate(call)
 	p.cumulativeValue = value
 	if err != nil {
 		return p, common.StringError(err)
