@@ -184,6 +184,9 @@ func (t transaction) postProcess(p transactionProcessingData) {
 		// TODO: handle error instead of returning it
 	}
 
+	// We can close the executor because we aren't using it after this
+	executor.Close()
+
 	// If threshold was crossed, notify devs
 	// TODO: store threshold on a per-network basis in the repo
 	threshold := 10.0
@@ -243,9 +246,6 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	if err != nil {
 		log.Printf("Failed to update transaction repo with status 'Completed': %s", common.StringError(err))
 	}
-
-	// Close EVM executor
-	executor.Close()
 
 	// Create Transaction data in Unit21
 	err = t.unit21CreateTransaction(p.transactionModel.ID)
