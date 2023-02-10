@@ -209,6 +209,7 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	}
 
 	// Get current balance of primary token
+	executor := *p.executor
 	preBalance, err := executor.GetBalance()
 	p.preBalance = &preBalance
 	if err != nil {
@@ -413,7 +414,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 	}
 
 	recipientWalletId, err := t.addWalletInstrumentIdIfNew(p.executionRequest.UserAddress, *p.userId)
-	p.recipientWalletId = *&p.recipientWalletId
+	p.recipientWalletId = &recipientWalletId
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -471,7 +472,7 @@ func (t transaction) initiateTransaction(p transactionProcessingData) (transacti
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
 	wei := floatToFixedString(eth, 18)
-	usd := floatToFixedString(e.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usd := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
 	responseLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       wei,
