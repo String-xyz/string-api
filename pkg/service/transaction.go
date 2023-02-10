@@ -50,6 +50,23 @@ type transaction struct {
 	ids   InternalIds
 }
 
+type transactionProcessingData struct {
+	userId             *string
+	chainId            *int
+	deviceId           *string
+	executor           *Executor
+	processingFeeAsset *model.Asset
+	transactionModel   *model.Transaction
+	chain              *Chain
+	executionRequest   *model.ExecutionRequest
+	cardAuthorization  *AuthorizedCharge
+	preBalance         *float64
+	recipientWalletId  *string
+	txId               *string
+	cumulativeValue    *big.Int
+	trueGas            *uint64
+}
+
 func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
 	return &transaction{repos: repos, redis: redis}
 }
@@ -92,72 +109,37 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
 
-	s := transactionSetupData{executionRequest: &e, userId: &userId, deviceId: &deviceId}
+	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId}
 
 	// Pre-flight transaction setup
-	s, err = t.transactionSetup(s)
+	p, err = t.transactionSetup(p)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
 	// Run safety checks
-	s, err = t.safetyCheck(s)
+	p, err = t.safetyCheck(p)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
 	// Send request to the blockchain and update model status, hash, transaction amount
-	txID, value, err := t.initiateTransaction(*s.executor, e, *s.processingFeeAsset, s.transactionModel.ID, userId)
-	if err != nil {
-		return res, common.StringError(err)
-	}
-
-	status := "Transaction Initiated"
-	txAmount := value.String()
-	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: &txID, TransactionAmount: &txAmount}
-	err = t.repos.Transaction.Update(s.transactionModel.ID, updateDB)
+	p, err = t.initiateTransaction(p)
 	if err != nil {
 		return res, common.StringError(err)
 	}
 
 	// this Executor will not exist in scope of postProcess
-	executor := *s.executor // needed to keep the compiler from complaining
+	executor := *p.executor // needed to keep the compiler from complaining
 	executor.Close()
 
-	// Send required information to new thread and return TxID to the endpoint
-	post := postProcessRequest{
-		TxID:               txID,
-		Chain:              *s.chain,
-		Authorization:      *s.cardAuthorization,
-		UserAddress:        e.UserAddress,
-		CumulativeValue:    value,
-		Quote:              e.Quote,
-		TxDBID:             s.transactionModel.ID,
-		processingFeeAsset: *s.processingFeeAsset,
-		preBalance:         *s.preBalance,
-		userId:             userId,
-		recipientWalletId:  *s.recipientWalletId,
-	}
-	go t.postProcess(post)
+	// Send required information to new thread and return txId to the endpoint
+	go t.postProcess(p)
 
-	return model.TransactionReceipt{TxID: txID, TxURL: s.chain.Explorer + "/tx/" + txID}, nil
+	return model.TransactionReceipt{TxID: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
 }
 
-type transactionSetupData struct {
-	userId             *string
-	chainId            *int
-	deviceId           *string
-	executor           *Executor
-	processingFeeAsset *model.Asset
-	transactionModel   *model.Transaction
-	chain              *Chain
-	executionRequest   *model.ExecutionRequest
-	cardAuthorization  *AuthorizedCharge
-	preBalance         *float64
-	recipientWalletId  *string
-}
-
-func (t transaction) transactionSetup(s transactionSetupData) (transactionSetupData, error) {
+func (t transaction) transactionSetup(s transactionProcessingData) (transactionProcessingData, error) {
 	// get user object
 	_, err := t.repos.User.GetById(*s.userId)
 	if err != nil {
@@ -205,8 +187,7 @@ func (t transaction) transactionSetup(s transactionSetupData) (transactionSetupD
 	return s, err
 }
 
-func (t transaction) safetyCheck(s transactionSetupData) (transactionSetupData, error) {
-
+func (t transaction) safetyCheck(s transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
 	estimateUSD, estimateETH, err := t.testTransaction(*s.executor, s.executionRequest.TransactionRequest, *s.chain, false)
 	if err != nil {
@@ -252,10 +233,6 @@ func (t transaction) safetyCheck(s transactionSetupData) (transactionSetupData, 
 	}
 
 	return s, nil
-}
-
-func (t *transaction) getStringInstrumentsAndUserId() {
-	t.ids = GetStringIdsFromEnv()
 }
 
 func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
@@ -392,11 +369,8 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	return instrument.ID, nil
 }
 
-func (t transaction) authCard(s transactionSetupData) (transactionSetupData, error) {
-	// userWallet string, cardToken string, usd float64, chargeAsset model.Asset, dbID string, userId string
-	//s.executionRequest.UserAddress, s.executionRequest.CardToken, s.executionRequest.TotalUSD, *s.processingFeeAsset, s.transactionModel.ID, *s.userId
+func (t transaction) authCard(s transactionProcessingData) (transactionProcessingData, error) {
 	// auth their card
-
 	auth, err := AuthorizeCharge(s.executionRequest.TotalUSD, s.executionRequest.UserAddress, s.executionRequest.CardToken)
 	if err != nil {
 		return s, common.StringError(err)
@@ -478,43 +452,53 @@ func (t transaction) authCard(s transactionSetupData) (transactionSetupData, err
 	return s, nil
 }
 
-func (t transaction) initiateTransaction(executor Executor, e model.ExecutionRequest, chargeAsset model.Asset, txUUID string, userId string) (string, *big.Int, error) {
+func (t transaction) initiateTransaction(p transactionProcessingData) (transactionProcessingData, error) {
 	call := ContractCall{
-		CxAddr:     e.CxAddr,
-		CxFunc:     e.CxFunc,
-		CxReturn:   e.CxReturn,
-		CxParams:   e.CxParams,
-		TxValue:    e.TxValue,
-		TxGasLimit: e.TxGasLimit,
+		CxAddr:     p.executionRequest.CxAddr,
+		CxFunc:     p.executionRequest.CxFunc,
+		CxReturn:   p.executionRequest.CxReturn,
+		CxParams:   p.executionRequest.CxParams,
+		TxValue:    p.executionRequest.TxValue,
+		TxGasLimit: p.executionRequest.TxGasLimit,
 	}
+	executor := *p.executor
 	txID, value, err := executor.Initiate(call)
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return p, common.StringError(err)
 	}
+	p.txId = &txID
 
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
 	wei := floatToFixedString(eth, 18)
-	usd := floatToFixedString(e.TotalUSD, int(chargeAsset.Decimals))
+	usd := floatToFixedString(e.TotalUSD, int(p.processingFeeAsset.Decimals))
 	responseLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       wei,
 		Value:        usd,
-		AssetID:      chargeAsset.ID,
-		UserID:       userId,
+		AssetID:      p.processingFeeAsset.ID,
+		UserID:       *p.userId,
 		InstrumentID: t.ids.StringWalletId,
 	}
 	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
 	if err != nil {
-		return txID, value, common.StringError(err)
+		return p, common.StringError(err)
 	}
 	txLeg := model.TransactionUpdates{ResponseTxLegID: &responseLeg.ID}
-	err = t.repos.Transaction.Update(txUUID, txLeg)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, txLeg)
 	if err != nil {
-		return txID, value, common.StringError(err)
+		return p, common.StringError(err)
 	}
 
-	return txID, value, nil
+	status := "Transaction Initiated"
+	txAmount := p.cumulativeValue.String()
+	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: p.txId, TransactionAmount: &txAmount}
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		return p, common.StringError(err)
+	}
+
+	return p, nil
 }
 
 func confirmTx(executor Executor, txID string) (uint64, error) {
@@ -525,109 +509,23 @@ func confirmTx(executor Executor, txID string) (uint64, error) {
 	return trueGas, nil
 }
 
-func (t transaction) chargeCard(userWallet string, authorizationID string, usd float64, chargeAsset model.Asset, txUUID string, userId string) error {
-	_, err := CaptureCharge(usd, userWallet, authorizationID)
-	if err != nil {
-		return common.StringError(err)
-	}
-
-	// Create Receipt Tx leg
-	usdWei := floatToFixedString(usd, int(chargeAsset.Decimals))
-	receiptLeg := model.TxLeg{
-		Timestamp:    time.Now(),
-		Amount:       usdWei,
-		Value:        usdWei,
-		AssetID:      chargeAsset.ID,
-		UserID:       t.ids.StringUserId,
-		InstrumentID: t.ids.StringBankId,
-	}
-	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
-	if err != nil {
-		return common.StringError(err)
-	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID}
-	err = t.repos.Transaction.Update(txUUID, txLeg)
-	if err != nil {
-		return common.StringError(err)
-	}
-
-	return nil
-}
-
-// TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
-func (t transaction) tenderTransaction(cumulativeValue *big.Int, cumulativeGas uint64, quotedTotal float64, chain Chain, txUUID string, recipientId string, userWalletId string) (float64, error) {
-	cost := NewCost(t.redis)
-	trueWei := big.NewInt(0).Add(cumulativeValue, big.NewInt(int64(cumulativeGas)))
-	trueEth := common.WeiToEther(trueWei)
-	trueUSD, err := cost.LookupUSD(chain.CoingeckoName, trueEth)
-	if err != nil {
-		return 0, common.StringError(err)
-	}
-	profit := quotedTotal - trueUSD
-
-	// Create Receive Tx leg
-	asset, err := t.repos.Asset.GetName("ETH")
-	if err != nil {
-		return profit, common.StringError(err)
-	}
-	wei := floatToFixedString(trueEth, int(asset.Decimals))
-	usd := floatToFixedString(quotedTotal, 6)
-
-	txModel, err := t.repos.Transaction.GetById(txUUID)
-	if err != nil {
-		return profit, common.StringError(err)
-	}
-
-	now := time.Now()
-	destinationLeg := model.TxLegUpdates{
-		Timestamp:    &now,          // updated based on *when the transaction occured* not time.Now()
-		Amount:       &wei,          // Should be the amount of the asset received by the user
-		Value:        &usd,          // The value of the asset received by the user
-		AssetID:      &asset.ID,     // the asset received by the user
-		UserID:       &recipientId,  // the user who received the asset
-		InstrumentID: &userWalletId, // the instrument which received the asset (wallet usually)
-	}
-
-	// We now update the destination leg instead of creating it
-	err = t.repos.TxLeg.Update(txModel.DestinationTxLegID, destinationLeg)
-	if err != nil {
-		return profit, common.StringError(err)
-	}
-
-	return profit, nil
-}
-
-type postProcessRequest struct {
-	TxID               string
-	Chain              Chain
-	Authorization      AuthorizedCharge
-	UserAddress        string
-	CumulativeGas      uint64
-	CumulativeValue    *big.Int
-	Quote              model.Quote
-	TxDBID             string
-	processingFeeAsset model.Asset
-	preBalance         float64
-	userId             string
-	recipientWalletId  string
-}
-
-func (t transaction) postProcess(request postProcessRequest) {
+func (t transaction) postProcess(p transactionProcessingData) {
 	executor := NewExecutor()
-	err := executor.Initialize(request.Chain.RPC)
+	err := executor.Initialize(p.chain.RPC)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 	updateDB := model.TransactionUpdates{}
 	status := "Post Process RPC Dialed"
 	updateDB.Status = &status
-	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 
 	// confirm the Tx on the EVM, update db status and NetworkFee
-	trueGas, err := confirmTx(executor, request.TxID)
+	trueGas, err := confirmTx(executor, *p.txId)
+	p.trueGas = &trueGas
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -635,7 +533,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 	updateDB.Status = &status
 	networkFee := strconv.FormatUint(trueGas, 10)
 	updateDB.NetworkFee = &networkFee // geth uses uint64 for gas
-	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -647,8 +545,8 @@ func (t transaction) postProcess(request postProcessRequest) {
 	}
 	// TODO: store threshold on a per-network basis in the repo
 	threshold := 10.0
-	if request.preBalance >= threshold && postBalance < threshold {
-		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", request.Chain.OwlracleName, threshold, postBalance)
+	if *p.preBalance >= threshold && postBalance < threshold {
+		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
 		MessageStaff(msg)
 		if err != nil {
 			// TODO: handle error instead of returning it
@@ -657,7 +555,7 @@ func (t transaction) postProcess(request postProcessRequest) {
 
 	// compute profit, update db status and processing fees to db
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	profit, err := t.tenderTransaction(request.CumulativeValue, trueGas, request.Quote.TotalUSD, request.Chain, request.TxDBID, request.userId, request.recipientWalletId)
+	profit, err := t.tenderTransaction(p)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -668,13 +566,13 @@ func (t transaction) postProcess(request postProcessRequest) {
 	processingFee := floatToFixedString(profit, 6) // TODO: set processingFee based on payment method, and location
 	updateDB.StringFee = &stringFee                // string fee is always USD with 6 digits
 	updateDB.ProcessingFee = &processingFee
-	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 
 	// charge the users CC
-	err = t.chargeCard(request.UserAddress, request.Authorization.AuthID, request.Quote.TotalUSD, request.processingFeeAsset, request.TxDBID, request.userId)
+	err = t.chargeCard(p)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
@@ -682,39 +580,111 @@ func (t transaction) postProcess(request postProcessRequest) {
 	updateDB.Status = &status
 	// TODO: Figure out how much we paid the CC payment processor and deduct it
 	// and use it to populate processing_fee and processing_fee_asset in the table
-	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 
 	status = "Completed"
 	updateDB.Status = &status
-	err = t.repos.Transaction.Update(request.TxDBID, updateDB)
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
 		// TODO: Handle error instead of returning it
 	}
 	executor.Close()
 	// Create Transaction data in Unit21
 
-	err = t.unit21CreateTransaction(request.TxDBID)
+	err = t.unit21CreateTransaction(p.transactionModel.ID)
 	if err != nil {
 		log.Printf("Error creating Unit21 transaction: %s", err)
 	}
 
 	// send email receipt
-	err = t.sendEmailReceipt(request)
+	err = t.sendEmailReceipt(p)
 	if err != nil {
 		log.Printf("Error sending email receipt to user: %s", err)
 	}
 }
 
-func (t transaction) sendEmailReceipt(request postProcessRequest) error {
-	user, err := t.repos.User.GetById(request.userId)
+// TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
+func (t transaction) tenderTransaction(p transactionProcessingData) (float64, error) {
+	cost := NewCost(t.redis)
+	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
+	trueEth := common.WeiToEther(trueWei)
+	trueUSD, err := cost.LookupUSD(p.chain.CoingeckoName, trueEth)
+	if err != nil {
+		return 0, common.StringError(err)
+	}
+	profit := p.executionRequest.Quote.TotalUSD - trueUSD
+
+	// Create Receive Tx leg
+	asset, err := t.repos.Asset.GetName("ETH")
+	if err != nil {
+		return profit, common.StringError(err)
+	}
+	wei := floatToFixedString(trueEth, int(asset.Decimals))
+	usd := floatToFixedString(p.executionRequest.Quote.TotalUSD, 6)
+
+	txModel, err := t.repos.Transaction.GetById(p.transactionModel.ID)
+	if err != nil {
+		return profit, common.StringError(err)
+	}
+
+	now := time.Now()
+	destinationLeg := model.TxLegUpdates{
+		Timestamp:    &now,                // updated based on *when the transaction occured* not time.Now()
+		Amount:       &wei,                // Should be the amount of the asset received by the user
+		Value:        &usd,                // The value of the asset received by the user
+		AssetID:      &asset.ID,           // the asset received by the user
+		UserID:       p.userId,            // the user who received the asset
+		InstrumentID: p.recipientWalletId, // the instrument which received the asset (wallet usually)
+	}
+
+	// We now update the destination leg instead of creating it
+	err = t.repos.TxLeg.Update(txModel.DestinationTxLegID, destinationLeg)
+	if err != nil {
+		return profit, common.StringError(err)
+	}
+
+	return profit, nil
+}
+
+func (t transaction) chargeCard(p transactionProcessingData) error {
+	_, err := CaptureCharge(p.executionRequest.Quote.TotalUSD, p.executionRequest.UserAddress, p.cardAuthorization.AuthID)
+	if err != nil {
+		return common.StringError(err)
+	}
+
+	// Create Receipt Tx leg
+	usdWei := floatToFixedString(p.executionRequest.Quote.TotalUSD, int(p.processingFeeAsset.Decimals))
+	receiptLeg := model.TxLeg{
+		Timestamp:    time.Now(),
+		Amount:       usdWei,
+		Value:        usdWei,
+		AssetID:      p.processingFeeAsset.ID,
+		UserID:       t.ids.StringUserId,
+		InstrumentID: t.ids.StringBankId,
+	}
+	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
+	if err != nil {
+		return common.StringError(err)
+	}
+	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID}
+	err = t.repos.Transaction.Update(p.transactionModel.ID, txLeg)
+	if err != nil {
+		return common.StringError(err)
+	}
+
+	return nil
+}
+
+func (t transaction) sendEmailReceipt(p transactionProcessingData) error {
+	user, err := t.repos.User.GetById(*p.userId)
 	if err != nil {
 		log.Printf("Error getting user from repo: %s", err)
 		return err
 	}
-	contact, err := t.repos.Contact.GetByUserId(request.userId)
+	contact, err := t.repos.Contact.GetByUserId(user.ID)
 	if err != nil {
 		log.Printf("Error getting user contact from repo: %s", err)
 		return err
@@ -726,22 +696,22 @@ func (t transaction) sendEmailReceipt(request postProcessRequest) error {
 	receiptParams := common.ReceiptGenerationParams{
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
-		StringPaymentId:   request.TxDBID,
+		StringPaymentId:   p.transactionModel.ID,
 		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	receiptBody := [][2]string{
-		{"Transaction ID", "<a href='" + request.Chain.Explorer + "/tx/" + request.TxID + "'>" + request.TxID + "</a>"},
-		{"Destination Wallet", "<a href='" + request.Chain.Explorer + "/address/" + request.UserAddress + "'>" + request.UserAddress + "</a>"},
+		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
+		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + p.executionRequest.UserAddress + "'>" + p.executionRequest.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
-		{"Payment Method", request.Authorization.Issuer + " " + request.Authorization.Last4},
+		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", "String Demo"},            // TODO: retrieve dynamically
 		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
 		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
-		{"Subtotal", common.FloatToUSDString(request.Quote.BaseUSD + request.Quote.TokenUSD)},
-		{"Network Fee:", common.FloatToUSDString(request.Quote.GasUSD)},
-		{"Processing Fee", common.FloatToUSDString(request.Quote.ServiceUSD)},
-		{"Total Charge", common.FloatToUSDString(request.Quote.TotalUSD)},
+		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
+		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
+		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
+		{"Total Charge", common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
 	}
 	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
 	if err != nil {
@@ -857,4 +827,8 @@ func (t transaction) updateTransactionStatus(transactionId string, status string
 	}
 
 	return err
+}
+
+func (t *transaction) getStringInstrumentsAndUserId() {
+	t.ids = GetStringIdsFromEnv()
 }
