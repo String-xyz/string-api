@@ -138,6 +138,128 @@ func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId s
 	return model.TransactionReceipt{TxID: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
 }
 
+func (t transaction) postProcess(p transactionProcessingData) {
+	// Reinitialize Executor
+	executor := NewExecutor()
+	p.executor = &executor
+	err := executor.Initialize(p.chain.RPC)
+	if err != nil {
+		log.Printf("Failed to initialized executor in postProcess: %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// Update TX Status
+	updateDB := model.TransactionUpdates{}
+	status := "Post Process RPC Dialed"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Post Process RPC Dialed': %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// confirm the Tx on the EVM
+	trueGas, err := confirmTx(executor, *p.txId)
+	p.trueGas = &trueGas
+	if err != nil {
+		log.Printf("Failed to confirm transaction: %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// Update DB status and NetworkFee
+	status = "Tx Confirmed"
+	updateDB.Status = &status
+	networkFee := strconv.FormatUint(trueGas, 10)
+	updateDB.NetworkFee = &networkFee // geth uses uint64 for gas
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Tx Confirmed': %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// Get new string wallet balance after executing the transaction
+	postBalance, err := executor.GetBalance()
+	if err != nil {
+		log.Printf("Failed to get executor balance: %s", common.StringError(err))
+		// TODO: handle error instead of returning it
+	}
+
+	// If threshold was crossed, notify devs
+	// TODO: store threshold on a per-network basis in the repo
+	threshold := 10.0
+	if *p.preBalance >= threshold && postBalance < threshold {
+		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
+		err = MessageStaff(msg)
+		if err != nil {
+			log.Printf("Failed to send staff with low balance threshold message: %s", common.StringError(err))
+			// Not seeing any e
+			// TODO: handle error instead of returning it
+		}
+	}
+
+	// compute profit
+	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
+	profit, err := t.tenderTransaction(p)
+	if err != nil {
+		log.Printf("Failed to tender transaction: %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+	stringFee := floatToFixedString(profit, 6)
+	processingFee := floatToFixedString(profit, 6) // TODO: set processingFee based on payment method, and location
+
+	// update db status and processing fees to db
+	updateDB.StringFee = &stringFee // string fee is always USD with 6 digits
+	updateDB.ProcessingFee = &processingFee
+	status = "Profit Tendered"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Profit Tendered': %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// charge the users CC
+	err = t.chargeCard(p)
+	if err != nil {
+		log.Printf("Error, failed to charge card: %+v", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// Update status upon success
+	status = "Card Charged"
+	updateDB.Status = &status
+	// TODO: Figure out how much we paid the CC payment processor and deduct it
+	// and use it to populate processing_fee and processing_fee_asset in the table
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Card Charged': %s", common.StringError(err))
+		// TODO: Handle error instead of returning it
+	}
+
+	// Transaction complete!  Update status
+	status = "Completed"
+	updateDB.Status = &status
+	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
+	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Completed': %s", common.StringError(err))
+	}
+
+	// Close EVM executor
+	executor.Close()
+
+	// Create Transaction data in Unit21
+	err = t.unit21CreateTransaction(p.transactionModel.ID)
+	if err != nil {
+		log.Printf("Error creating Unit21 transaction: %s", common.StringError(err))
+	}
+
+	// send email receipt
+	err = t.sendEmailReceipt(p)
+	if err != nil {
+		log.Printf("Error sending email receipt to user: %s", common.StringError(err))
+	}
+}
+
 func (t transaction) transactionSetup(p transactionProcessingData) (transactionProcessingData, error) {
 	// get user object
 	_, err := t.repos.User.GetById(*p.userId)
@@ -509,115 +631,6 @@ func confirmTx(executor Executor, txID string) (uint64, error) {
 		return 0, common.StringError(err)
 	}
 	return trueGas, nil
-}
-
-func (t transaction) postProcess(p transactionProcessingData) {
-	executor := NewExecutor()
-	p.executor = &executor
-	err := executor.Initialize(p.chain.RPC)
-	if err != nil {
-		log.Printf("Failed to initialized executor in postProcess: %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-	updateDB := model.TransactionUpdates{}
-	status := "Post Process RPC Dialed"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
-	if err != nil {
-		log.Printf("Failed to update transaction repo with status 'Post Process RPC Dialed': %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-
-	// confirm the Tx on the EVM, update db status and NetworkFee
-	trueGas, err := confirmTx(executor, *p.txId)
-	p.trueGas = &trueGas
-	if err != nil {
-		log.Printf("Failed to confirm transaction: %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-	status = "Tx Confirmed"
-	updateDB.Status = &status
-	networkFee := strconv.FormatUint(trueGas, 10)
-	updateDB.NetworkFee = &networkFee // geth uses uint64 for gas
-	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
-	if err != nil {
-		log.Printf("Failed to update transaction repo with status 'Tx Confirmed': %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-
-	// Check and see if balance threshold was crossed
-	postBalance, err := executor.GetBalance()
-	if err != nil {
-		log.Printf("Failed to get executor balance: %s", common.StringError(err))
-		// TODO: handle error instead of returning it
-	}
-	// TODO: store threshold on a per-network basis in the repo
-	threshold := 10.0
-	if *p.preBalance >= threshold && postBalance < threshold {
-		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
-		err = MessageStaff(msg)
-		if err != nil {
-			log.Printf("Failed to send staff with low balance threshold message: %s", common.StringError(err))
-			// Not seeing any e
-			// TODO: handle error instead of returning it
-		}
-	}
-
-	// compute profit, update db status and processing fees to db
-	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
-	profit, err := t.tenderTransaction(p)
-	if err != nil {
-		log.Printf("Failed to tender transaction: %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-	fmt.Printf("PROFIT=%+v", profit)
-	status = "Profit Tendered"
-	updateDB.Status = &status
-	stringFee := floatToFixedString(profit, 6)
-	processingFee := floatToFixedString(profit, 6) // TODO: set processingFee based on payment method, and location
-	updateDB.StringFee = &stringFee                // string fee is always USD with 6 digits
-	updateDB.ProcessingFee = &processingFee
-	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
-	if err != nil {
-		log.Printf("Failed to update transaction repo with status 'Profit Tendered': %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-
-	// charge the users CC
-	err = t.chargeCard(p)
-	if err != nil {
-		log.Printf("Error, failed to charge card: %+v", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-	status = "Card Charged"
-	updateDB.Status = &status
-	// TODO: Figure out how much we paid the CC payment processor and deduct it
-	// and use it to populate processing_fee and processing_fee_asset in the table
-	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
-	if err != nil {
-		log.Printf("Failed to update transaction repo with status 'Card Charged': %s", common.StringError(err))
-		// TODO: Handle error instead of returning it
-	}
-
-	status = "Completed"
-	updateDB.Status = &status
-	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
-	if err != nil {
-		log.Printf("Failed to update transaction repo with status 'Completed': %s", common.StringError(err))
-	}
-	executor.Close()
-	// Create Transaction data in Unit21
-
-	err = t.unit21CreateTransaction(p.transactionModel.ID)
-	if err != nil {
-		log.Printf("Error creating Unit21 transaction: %s", common.StringError(err))
-	}
-
-	// send email receipt
-	err = t.sendEmailReceipt(p)
-	if err != nil {
-		log.Printf("Error sending email receipt to user: %s", common.StringError(err))
-	}
 }
 
 // TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
