@@ -168,7 +168,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	}
 	err = t.repos.Transaction.Update(transactionModel.ID, updateDB)
 	if err != nil {
-		fmt.Printf("\nERROR = %+v", err)
+		fmt.Printf("\nERROR = %+v", common.StringError(err))
 		return p, common.StringError(err)
 	}
 
@@ -511,8 +511,10 @@ func confirmTx(executor Executor, txID string) (uint64, error) {
 
 func (t transaction) postProcess(p transactionProcessingData) {
 	executor := NewExecutor()
+	p.executor = &executor
 	err := executor.Initialize(p.chain.RPC)
 	if err != nil {
+		log.Printf("Failed to initialized executor in postProcess: %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 	updateDB := model.TransactionUpdates{}
@@ -520,6 +522,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Post Process RPC Dialed': %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 
@@ -527,6 +530,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	trueGas, err := confirmTx(executor, *p.txId)
 	p.trueGas = &trueGas
 	if err != nil {
+		log.Printf("Failed to confirm transaction: %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 	status = "Tx Confirmed"
@@ -535,20 +539,24 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	updateDB.NetworkFee = &networkFee // geth uses uint64 for gas
 	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Tx Confirmed': %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 
 	// Check and see if balance threshold was crossed
 	postBalance, err := executor.GetBalance()
 	if err != nil {
+		log.Printf("Failed to get executor balance: %s", common.StringError(err))
 		// TODO: handle error instead of returning it
 	}
 	// TODO: store threshold on a per-network basis in the repo
 	threshold := 10.0
 	if *p.preBalance >= threshold && postBalance < threshold {
 		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
-		MessageStaff(msg)
+		err = MessageStaff(msg)
 		if err != nil {
+			log.Printf("Failed to send staff with low balance threshold message: %s", common.StringError(err))
+			// Not seeing any e
 			// TODO: handle error instead of returning it
 		}
 	}
@@ -557,6 +565,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
 	profit, err := t.tenderTransaction(p)
 	if err != nil {
+		log.Printf("Failed to tender transaction: %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 	fmt.Printf("PROFIT=%+v", profit)
@@ -568,12 +577,14 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	updateDB.ProcessingFee = &processingFee
 	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Profit Tendered': %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 
 	// charge the users CC
 	err = t.chargeCard(p)
 	if err != nil {
+		log.Printf("Error, failed to charge card: %+v", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 	status = "Card Charged"
@@ -582,6 +593,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	// and use it to populate processing_fee and processing_fee_asset in the table
 	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
+		log.Printf("Failed to update transaction repo with status 'Card Charged': %s", common.StringError(err))
 		// TODO: Handle error instead of returning it
 	}
 
@@ -589,20 +601,20 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	updateDB.Status = &status
 	err = t.repos.Transaction.Update(p.transactionModel.ID, updateDB)
 	if err != nil {
-		// TODO: Handle error instead of returning it
+		log.Printf("Failed to update transaction repo with status 'Completed': %s", common.StringError(err))
 	}
 	executor.Close()
 	// Create Transaction data in Unit21
 
 	err = t.unit21CreateTransaction(p.transactionModel.ID)
 	if err != nil {
-		log.Printf("Error creating Unit21 transaction: %s", err)
+		log.Printf("Error creating Unit21 transaction: %s", common.StringError(err))
 	}
 
 	// send email receipt
 	err = t.sendEmailReceipt(p)
 	if err != nil {
-		log.Printf("Error sending email receipt to user: %s", err)
+		log.Printf("Error sending email receipt to user: %s", common.StringError(err))
 	}
 }
 
@@ -681,13 +693,13 @@ func (t transaction) chargeCard(p transactionProcessingData) error {
 func (t transaction) sendEmailReceipt(p transactionProcessingData) error {
 	user, err := t.repos.User.GetById(*p.userId)
 	if err != nil {
-		log.Printf("Error getting user from repo: %s", err)
-		return err
+		log.Printf("Error getting user from repo: %s", common.StringError(err))
+		return common.StringError(err)
 	}
 	contact, err := t.repos.Contact.GetByUserId(user.ID)
 	if err != nil {
-		log.Printf("Error getting user contact from repo: %s", err)
-		return err
+		log.Printf("Error getting user contact from repo: %s", common.StringError(err))
+		return common.StringError(err)
 	}
 	name := user.FirstName // + " " + user.MiddleName + " " + user.LastName
 	if name == "" {
@@ -715,8 +727,8 @@ func (t transaction) sendEmailReceipt(p transactionProcessingData) error {
 	}
 	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
 	if err != nil {
-		log.Printf("Error sending email receipt to user: %s", err)
-		return err
+		log.Printf("Error sending email receipt to user: %s", common.StringError(err))
+		return common.StringError(err)
 	}
 	return nil
 }
@@ -736,7 +748,7 @@ func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err er
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 	if err != nil {
 		fmt.Printf("Error creating new instrument in Unit21")
-		return
+		return common.StringError(err)
 	}
 
 	// Log create instrument action w/ Unit21
@@ -750,7 +762,7 @@ func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err er
 	_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
 	if err != nil {
 		fmt.Printf("Error creating a new instrument action in Unit21")
-		return
+		return common.StringError(err)
 	}
 
 	return
@@ -759,8 +771,8 @@ func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err er
 func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
 	txModel, err := t.repos.Transaction.GetById(transactionId)
 	if err != nil {
-		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", err)
-		return
+		log.Printf("Error getting tx model in Unit21 in Tx Postprocess: %s", common.StringError(err))
+		return common.StringError(err)
 	}
 
 	u21Repo := unit21.TransactionRepo{
@@ -772,18 +784,18 @@ func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
 	u21Tx := unit21.NewTransaction(u21Repo)
 	_, err = u21Tx.Create(txModel)
 	if err != nil {
-		log.Printf("Error updating Unit21 in Tx Postprocess: %s", err)
-		return
+		log.Printf("Error updating Unit21 in Tx Postprocess: %s", common.StringError(err))
+		return common.StringError(err)
 	}
 
-	return
+	return nil
 }
 
 func (t transaction) unit21Evaluate(transactionId string) (err error) {
 	//Check transaction in Unit21
 	txModel, err := t.repos.Transaction.GetById(transactionId)
 	if err != nil {
-		log.Printf("Error getting tx model in Unit21 in Tx Evaluate: %s", err)
+		log.Printf("Error getting tx model in Unit21 in Tx Evaluate: %s", common.StringError(err))
 		return common.StringError(err)
 	}
 
@@ -796,7 +808,7 @@ func (t transaction) unit21Evaluate(transactionId string) (err error) {
 	u21Tx := unit21.NewTransaction(u21Repo)
 	evaluation, err := u21Tx.Evaluate(txModel)
 	if err != nil {
-		log.Printf("Error evaluating transaction in Unit21: %s", err)
+		log.Printf("Error evaluating transaction in Unit21: %s", common.StringError(err))
 		return common.StringError(err)
 	}
 
@@ -828,7 +840,7 @@ func (t transaction) updateTransactionStatus(transactionId string, status string
 		return common.StringError(err)
 	}
 
-	return err
+	return nil
 }
 
 func (t *transaction) getStringInstrumentsAndUserId() {
