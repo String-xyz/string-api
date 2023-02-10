@@ -525,7 +525,6 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	///
 	p.cardAuthorization = &auth
 	if err != nil {
 		return p, common.StringError(err)
