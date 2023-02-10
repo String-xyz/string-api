@@ -52,7 +52,6 @@ type transaction struct {
 
 type transactionProcessingData struct {
 	userId             *string
-	chainId            *int
 	deviceId           *string
 	executor           *Executor
 	processingFeeAsset *model.Asset
@@ -147,7 +146,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	}
 
 	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(uint64(*p.chainId), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(uint64(p.executionRequest.ChainID), t.repos.Network, t.repos.Asset)
 	p.chain = &chain
 	if err != nil {
 		return p, common.StringError(err)
@@ -174,6 +173,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 
 	// Dial the RPC and update model status
 	executor := NewExecutor()
+	p.executor = &executor
 	err = executor.Initialize(chain.RPC)
 	if err != nil {
 		return p, common.StringError(err)
@@ -464,6 +464,7 @@ func (t transaction) initiateTransaction(p transactionProcessingData) (transacti
 	}
 	executor := *p.executor
 	txID, value, err := executor.Initiate(call)
+	p.cumulativeValue = value
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -834,7 +835,7 @@ func (t transaction) unit21Evaluate(transactionId string) (err error) {
 	return nil
 }
 
-func (t transaction) updateTransactionStatus(transactionId string, status string) (err error) {
+func (t transaction) updateTransactionStatus(status string, transactionId string) (err error) {
 	updateDB := &model.TransactionUpdates{Status: &status}
 	err = t.repos.Transaction.Update(transactionId, updateDB)
 	if err != nil {

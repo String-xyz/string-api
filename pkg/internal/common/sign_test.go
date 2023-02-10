@@ -16,7 +16,7 @@ func TestSignAndValidateString(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	assert.NoError(t, err)
 
-	encodedMessage := "Your base64 encoded String Here"
+	encodedMessage := "VGhhbmsgeW91IGZvciB1c2luZyBTdHJpbmchIEJ5IHNpZ25pbmcgdGhpcyBtZXNzYWdlIHlvdSBhcmU6CgoxKSBBdXRob3JpemluZyBTdHJpbmcgdG8gaW5pdGlhdGUgb2ZmLWNoYWluIHRyYW5zYWN0aW9ucyBvbiB5b3VyIGJlaGFsZiwgaW5jbHVkaW5nIHlvdXIgYmFuayBhY2NvdW50LCBjcmVkaXQgY2FyZCwgb3IgZGViaXQgY2FyZC4KCjIpIENvbmZpcm1pbmcgdGhhdCB0aGlzIHdhbGxldCBpcyBvd25lZCBieSB5b3UuCgpUaGlzIHJlcXVlc3Qgd2lsbCBub3QgdHJpZ2dlciBhbnkgYmxvY2tjaGFpbiB0cmFuc2FjdGlvbiBvciBjb3N0IGFueSBnYXMuCgpOb25jZTogejhQVk4wSzlNZW5hcGNOSnY0V2xvNFhkM1gxV2lCSVE5UE94b0hPc1ZuWFFjN0tCOEV2NTZzOTAvZU1OR25kWE03S2JtblZiMU9EZDdLc3VuekZEZW9SWGdwcTBaYTliek94VGJ0dVdzQnpnYnZsb3RjQ2V5NWx3VzRHMm5uTT0="
 
 	// decode
 	decoded, err := b64.URLEncoding.DecodeString(encodedMessage)
