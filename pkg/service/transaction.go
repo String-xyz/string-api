@@ -458,9 +458,9 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 	}
 
 	// We should gather type from the payment processor
-	instrument_type := "DebitCard"
+	instrument_type := "Debit Card"
 	if cardType == "CREDIT" {
-		instrument_type = "CreditCard"
+		instrument_type = "Credit Card"
 	}
 	// Create a new instrument
 	instrument = model.Instrument{Type: instrument_type, Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
