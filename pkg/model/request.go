@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx/types"
@@ -30,6 +31,17 @@ type TransactionUpdates struct {
 	ProcessingFee      *string         `json:"processingFee" db:"processing_fee"`
 	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"`
 	StringFee          *string         `json:"stringFee" db:"string_fee"`
+}
+
+type InstrumentUpdates struct {
+	Type       *string         `json:"type" db:"type"`
+	Status     *string         `json:"status" db:"status"`
+	Tags       *StringMap      `json:"tags" db:"tags"`
+	Network    *string         `json:"network" db:"network"`
+	PublicKey  *string         `json:"publicKey" db:"public_key"`
+	Last4      *string         `json:"last4" db:"last_4"`
+	UserID     *string         `json:"userId" db:"user_id"`
+	LocationID *sql.NullString `json:"locationId" db:"location_id"`
 }
 
 type TxLegUpdates struct {
