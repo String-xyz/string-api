@@ -74,7 +74,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 			Type:   checkoutCommon.Card,
 			Number: "4242424242424242", // Success
 			// Number: "4273149019799094", // succeed authorize, fail capture
-			// Number:      "4544249167673670", // Declined - Insufficient funds
+			// Number: "4544249167673670", // Declined - Insufficient funds
 			// Number:      "5148447461737269", // Invalid transaction
 			ExpiryMonth: 2,
 			ExpiryYear:  2024,
