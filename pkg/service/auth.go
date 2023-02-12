@@ -97,7 +97,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(payload.Address)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -204,7 +204,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 
 	// verify wallet address
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWallet(walletAddress)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
