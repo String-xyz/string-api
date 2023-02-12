@@ -150,7 +150,7 @@ func (u user) createUserData(addr string) (model.User, error) {
 		return user, common.StringError(err)
 	}
 	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
