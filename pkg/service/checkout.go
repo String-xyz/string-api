@@ -160,6 +160,8 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (c
 		return nil, common.StringError(err)
 	}
 
+	// TODO: call action, err = client.Actions(capture.Accepted.ActionID) in another service to check on
+
 	// TODO: Create entry for capture in our DB associated with userWallet
 	return capture, nil
 }

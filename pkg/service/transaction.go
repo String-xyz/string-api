@@ -676,7 +676,7 @@ func (t transaction) tenderTransaction(p transactionProcessingData) (float64, er
 }
 
 func (t transaction) chargeCard(p transactionProcessingData) error {
-	_, err := CaptureCharge(p.executionRequest.Quote.TotalUSD, p.executionRequest.UserAddress, p.cardAuthorization.AuthID)
+	captureResponse, err := CaptureCharge(p.executionRequest.Quote.TotalUSD, p.executionRequest.UserAddress, p.cardAuthorization.AuthID)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -695,7 +695,7 @@ func (t transaction) chargeCard(p transactionProcessingData) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID, PaymentCode: &captureResponse.Accepted.ActionID}
 	err = t.repos.Transaction.Update(p.transactionModel.ID, txLeg)
 	if err != nil {
 		return common.StringError(err)
