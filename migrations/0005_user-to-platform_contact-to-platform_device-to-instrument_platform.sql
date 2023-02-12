@@ -45,9 +45,18 @@ ALTER TABLE platform
   ADD COLUMN domains TEXT[] DEFAULT NULL, -- define which domains can make calls to API (web-to-API)
   ADD COLUMN ip_addresses TEXT[] DEFAULT NULL; -- define which API ips can make calls (API-to-API)
 
+-------------------------------------------------------------------------
+-- TRANSACTION -------------------------------------------------------------
+ALTER TABLE transaction
+  ADD COLUMN payment_code TEXT DEFAULT '';
 
 -------------------------------------------------------------------------
 -- +goose Down
+
+-------------------------------------------------------------------------
+-- TRANSACTION -------------------------------------------------------------
+ALTER TABLE transaction
+  DROP COLUMN IF EXISTS payment_code;
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------
