@@ -13,7 +13,7 @@ type Network interface {
 	Transactable
 	Create(model.Network) (model.Network, error)
 	GetById(id string) (model.Network, error)
-	GetChainID(chainId uint64) (model.Network, error)
+	GetByChainId(chainId uint64) (model.Network, error)
 	Update(ID string, updates any) error
 }
 
@@ -47,7 +47,7 @@ func (n network[T]) Create(insert model.Network) (model.Network, error) {
 	return m, nil
 }
 
-func (n network[T]) GetChainID(chainId uint64) (model.Network, error) {
+func (n network[T]) GetByChainId(chainId uint64) (model.Network, error) {
 	m := model.Network{}
 	err := n.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE chain_id = $1", n.table), chainId)
 	if err != nil && err == sql.ErrNoRows {

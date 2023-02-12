@@ -49,7 +49,7 @@ import (
 // 	return model.Asset{}, nil
 // }
 
-// func (Asset) GetName(name string) (model.Asset, error) {
+// func (Asset) GetByName(name string) (model.Asset, error) {
 // 	if name == "AVAX" {
 // 		return avax, nil
 // 	}
