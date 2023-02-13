@@ -139,9 +139,6 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 }
 
 func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
-	capture := &payments.CapturesResponse{}
-	// amount float64, 						userWallet string, 				authorizationID string
-	// p.executionRequest.Quote.TotalUSD, 	p.executionRequest.UserAddress, p.cardAuthorization.AuthID
 	config, err := getConfig()
 	if err != nil {
 		return p, common.StringError(err)
@@ -158,7 +155,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 		Amount: usd,
 	}
 
-	capture, err = client.Captures(p.cardAuthorization.AuthID, &request, &params)
+	capture, err := client.Captures(p.cardAuthorization.AuthID, &request, &params)
 	if err != nil {
 		return p, common.StringError(err)
 	}
