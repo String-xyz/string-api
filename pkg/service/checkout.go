@@ -138,14 +138,17 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	return p, nil
 }
 
-func CaptureCharge(amount float64, userWallet string, authorizationID string) (capture *payments.CapturesResponse, err error) {
+func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
+	capture := &payments.CapturesResponse{}
+	// amount float64, 						userWallet string, 				authorizationID string
+	// p.executionRequest.Quote.TotalUSD, 	p.executionRequest.UserAddress, p.cardAuthorization.AuthID
 	config, err := getConfig()
 	if err != nil {
-		return nil, common.StringError(err)
+		return p, common.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
-	usd := convertAmount(amount)
+	usd := convertAmount(p.executionRequest.Quote.TotalUSD)
 
 	idempotencyKey := checkout.NewIdempotencyKey()
 	params := checkout.Params{
@@ -155,13 +158,15 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (c
 		Amount: usd,
 	}
 
-	capture, err = client.Captures(authorizationID, &request, &params)
+	capture, err = client.Captures(p.cardAuthorization.AuthID, &request, &params)
 	if err != nil {
-		return nil, common.StringError(err)
+		return p, common.StringError(err)
 	}
+
+	p.cardCapture = capture
 
 	// TODO: call action, err = client.Actions(capture.Accepted.ActionID) in another service to check on
 
 	// TODO: Create entry for capture in our DB associated with userWallet
-	return capture, nil
+	return p, nil
 }
