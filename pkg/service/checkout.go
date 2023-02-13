@@ -72,11 +72,11 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		// Generate a payment token ID in case we don't yet have one in the front end
 		// For testing purposes only
 		card := tokens.Card{
-			Type: checkoutCommon.Card,
-			// Number: "4242424242424242", // Success
+			Type:   checkoutCommon.Card,
+			Number: "4242424242424242", // Success
 			// Number: "4273149019799094", // succeed authorize, fail capture
-			Number: "4544249167673670", // Declined - Insufficient funds
-			// Number:      "5148447461737269", // Invalid transaction (debt card)
+			// Number: "4544249167673670", // Declined - Insufficient funds
+			// Number:      "5148447461737269", // Invalid transaction (debit card)
 			ExpiryMonth: 2,
 			ExpiryYear:  2024,
 			Name:        "Customer Name",
