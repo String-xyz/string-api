@@ -13,7 +13,7 @@ type Asset interface {
 	Transactable
 	Create(model.Asset) (model.Asset, error)
 	GetById(id string) (model.Asset, error)
-	GetName(name string) (model.Asset, error)
+	GetByName(name string) (model.Asset, error)
 	Update(ID string, updates any) error
 }
 
@@ -41,7 +41,7 @@ func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
 	return m, err
 }
 
-func (a asset[T]) GetName(name string) (model.Asset, error) {
+func (a asset[T]) GetByName(name string) (model.Asset, error) {
 	m := model.Asset{}
 	err := a.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE name = $1", a.table), name)
 	if err != nil && err == sql.ErrNoRows {

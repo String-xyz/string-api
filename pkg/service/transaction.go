@@ -370,7 +370,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	contractFunc := e.CxFunc + e.CxReturn
 	m.ContractFunc = &contractFunc
 
-	asset, err := t.repos.Asset.GetName("USD")
+	asset, err := t.repos.Asset.GetByName("USD")
 	if err != nil {
 		return model.Asset{}, common.StringError(err)
 	}
@@ -401,7 +401,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	wei := gas.Add(&estimateEVM.Value, gas)
 	eth := common.WeiToEther(wei)
 
-	chainID, err := executor.GetChainID()
+	chainID, err := executor.GetByChainId()
 	if err != nil {
 		return res, eth, common.StringError(err)
 	}
@@ -644,7 +644,7 @@ func (t transaction) tenderTransaction(p transactionProcessingData) (float64, er
 	profit := p.executionRequest.Quote.TotalUSD - trueUSD
 
 	// Create Receive Tx leg
-	asset, err := t.repos.Asset.GetName("ETH")
+	asset, err := t.repos.Asset.GetById(p.chain.GasTokenID)
 	if err != nil {
 		return profit, common.StringError(err)
 	}
