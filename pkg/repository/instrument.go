@@ -61,11 +61,7 @@ func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
 }
 
 func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrument, err error) {
-	m, err = i.GetWalletByAddr(fingerprint)
-	if err != nil {
-		return m, common.StringError(err)
-	}
-	return m, nil
+	return i.GetWalletByAddr(fingerprint)
 }
 
 func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error) {
