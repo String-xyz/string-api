@@ -449,8 +449,8 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	return true, nil
 }
 
-func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string, last4 string, cardType string) (string, error) {
-	instrument, err := t.repos.Instrument.GetWallet(fingerprint)   // temporarily using get wallet and storing it there
+func (t transaction) addCardInstrumentIdIfNew(p transactionProcessingData) (string, error) {
+	instrument, err := t.repos.Instrument.GetCardByFingerprint(p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
@@ -458,12 +458,18 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 	}
 
 	// We should gather type from the payment processor
-	instrument_type := "DebitCard"
-	if cardType == "CREDIT" {
-		instrument_type = "CreditCard"
+	instrument_type := "Debit Card"
+	if p.cardAuthorization.CardType == "CREDIT" {
+		instrument_type = "Credit Card"
 	}
 	// Create a new instrument
-	instrument = model.Instrument{Type: instrument_type, Status: "authorized", Last4: last4, UserID: userID, PublicKey: fingerprint} // No locationID until fingerprint
+	instrument = model.Instrument{ // No locationID until fingerprint
+		Type:      instrument_type,
+		Status:    "created",
+		Last4:     p.cardAuthorization.Last4,
+		UserID:    *p.userId,
+		PublicKey: p.cardAuthorization.CheckoutFingerprint,
+	}
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
@@ -473,7 +479,7 @@ func (t transaction) addCardInstrumentIdIfNew(fingerprint string, userID string,
 }
 
 func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (string, error) {
-	instrument, err := t.repos.Instrument.GetWallet(address)
+	instrument, err := t.repos.Instrument.GetWalletByAddr(address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", common.StringError(err)
 	} else if err == nil && instrument.PublicKey == address {
@@ -492,13 +498,13 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 
 func (t transaction) authCard(p transactionProcessingData) (transactionProcessingData, error) {
 	// auth their card
-	auth, err := AuthorizeCharge(p.executionRequest.TotalUSD, p.executionRequest.UserAddress, p.executionRequest.CardToken)
+	p, err := AuthorizeCharge(p)
 	if err != nil {
 		return p, common.StringError(err)
 	}
 
 	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
-	instrumentId, err := t.addCardInstrumentIdIfNew(auth.CheckoutFingerprint, *p.userId, auth.Last4, auth.CardType)
+	instrumentId, err := t.addCardInstrumentIdIfNew(p)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -523,11 +529,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	p.cardAuthorization = &auth
-	if err != nil {
-		return p, common.StringError(err)
-	}
-	err = t.updateTransactionStatus("Card "+auth.Status, p.transactionModel.ID)
+	err = t.updateTransactionStatus("Card "+p.cardAuthorization.Status, p.transactionModel.ID)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -560,7 +562,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	if !auth.Approved {
+	if !p.cardAuthorization.Approved {
 		err := t.unit21CreateTransaction(p.transactionModel.ID)
 		if err != nil {
 			return p, common.StringError(err)
