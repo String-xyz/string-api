@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lmittmann/w3"
 	"github.com/pkg/errors"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -23,6 +24,7 @@ import (
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
 	Execute(e model.ExecutionRequest, userId string, deviceId string) (model.TransactionReceipt, error)
+	OffRampQuote(o model.OffRampRequest) (model.OffRampExecutionRequest, error)
 }
 
 type TransactionRepos struct {
@@ -857,4 +859,29 @@ func (t transaction) updateTransactionStatus(status string, transactionId string
 
 func (t *transaction) getStringInstrumentsAndUserId() {
 	t.ids = GetStringIdsFromEnv()
+}
+
+func (t transaction) OffRampQuote(o model.OffRampRequest) (model.OffRampExecutionRequest, error) {
+	res := model.OffRampExecutionRequest{OffRampRequest: o}
+	fromAmount := w3.I(o.Amount)
+	tokenUSD, err := SwapQuoteUSD(o.FromToken, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", o.ChainID, fromAmount)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	res.TokenUSD = tokenUSD
+	res.ServiceUSD = res.TokenUSD * 0.03
+	res.TotalUSD = res.TokenUSD - res.ServiceUSD
+	res.Timestamp = time.Now().Unix()
+
+	// Sign entire payload
+	bytes, err := json.Marshal(res)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	signature, err := common.EVMSign(bytes, true)
+	if err != nil {
+		return res, common.StringError(err)
+	}
+	res.Signature = signature
+	return res, nil
 }

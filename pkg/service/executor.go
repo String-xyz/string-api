@@ -27,6 +27,15 @@ type ContractCall struct {
 	TxGasLimit string   // Gwei gas limit ie "210000 gwei"
 }
 
+type EncodedContractCall struct {
+	Data     string // Hex encoded function, parameters etc
+	From     string // Address
+	Gas      string
+	GasPrice big.Int
+	To       string // Address
+	Value    string
+}
+
 type CallEstimate struct {
 	Value   big.Int
 	Gas     uint64
@@ -36,6 +45,7 @@ type CallEstimate struct {
 type Executor interface {
 	Initialize(RPC string) error
 	Initiate(call ContractCall) (string, *big.Int, error)
+	InitiateEncoded(call EncodedContractCall) (string, *big.Int, error)
 	Estimate(call ContractCall) (CallEstimate, error)
 	TxWait(txID string) (uint64, error)
 	Close() error
@@ -143,6 +153,81 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, stringCommon.StringError(err)
 	}
 	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
+}
+
+func (e executor) InitiateEncoded(call EncodedContractCall) (string, *big.Int, error) {
+	// Get private key
+	skStr, err := stringCommon.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	if err != nil {
+		return "", nil, stringCommon.StringError(err)
+	}
+	sk, err := crypto.ToECDSA(common.FromHex(skStr))
+	if err != nil {
+		return "", nil, stringCommon.StringError(err)
+	}
+	// TODO: avoid panicking so that we get an intelligible error message
+	to := w3.A(call.To)
+	value := w3.I(call.Value)
+	// Get public key
+	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
+	if !ok {
+		return "", nil, stringCommon.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
+	}
+	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	// Use provided gas limit
+	gasLimit := w3.I(call.Gas)
+
+	// Get chainID from state
+	var chainId64 uint64
+	err = e.client.Call(eth.ChainID().Returns(&chainId64))
+	if err != nil {
+		return "", nil, stringCommon.StringError(err)
+	}
+
+	// Get sender nonce
+	var nonce uint64
+	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
+	if err != nil {
+		return "", nil, stringCommon.StringError(err)
+	}
+
+	// // Get dynamic fee tx gas params
+	tipCap, _ := e.geth.SuggestGasTipCap(context.Background())
+	feeCap, _ := e.geth.SuggestGasPrice(context.Background())
+
+	// // Function is already encoded along with parameters
+	// data := []byte(call.Data)
+	data := w3.B(call.Data)
+
+	// Type conversion for chainID
+	chainIdBig := new(big.Int).SetUint64(chainId64)
+
+	// Get signer type, this is used to encode the tx
+	signer := types.LatestSignerForChainID(chainIdBig)
+
+	// Generate blockchain tx
+	dynamicFeeTx := types.DynamicFeeTx{
+		ChainID:   chainIdBig,
+		Nonce:     nonce,
+		GasTipCap: tipCap,
+		GasFeeCap: feeCap,
+		Gas:       gasLimit.Uint64(),
+		To:        &to,
+		Value:     value,
+		Data:      data,
+	}
+	// Sign it
+	tx := types.MustSignNewTx(sk, signer, &dynamicFeeTx)
+
+	// Call tx and retrieve hash
+	var hash common.Hash
+	err = e.client.Call(eth.SendTx(tx).Returns(&hash))
+	if err != nil {
+		// Execution failed!
+		return "", nil, stringCommon.StringError(err)
+	}
+	return hash.String(), value, nil
 }
 
 func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {

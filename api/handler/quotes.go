@@ -11,6 +11,7 @@ import (
 
 type Quotes interface {
 	Quote(c echo.Context) error
+	OffRampQuote(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
@@ -47,6 +48,22 @@ func (q quote) Quote(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+func (q quote) OffRampQuote(c echo.Context) error {
+	var body model.OffRampRequest
+	err := c.Bind(&body)
+	if err != nil {
+		LogStringError(c, err, "quote: offrampquote bind")
+		return BadRequestError(c)
+	}
+	SanitizeChecksums(&body.FromToken, &body.UserAddress)
+	res, err := q.Service.OffRampQuote(body)
+	if err != nil {
+		LogStringError(c, err, "quote: offrampquote")
+		return c.JSON(http.StatusInternalServerError, JSONError{Message: "Quote Service Failed"})
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
 func (q quote) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the Quote Handler")
@@ -54,4 +71,5 @@ func (q quote) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	q.Group = g
 	g.Use(ms...)
 	g.POST("", q.Quote)
+	g.POST("/offramp", q.OffRampQuote)
 }

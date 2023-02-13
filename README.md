@@ -28,6 +28,10 @@ run `go test`
 or if you want to run a specific test, use `go test -run [TestName] [./path/to/dir] -v -count 1`
 ie `go test -run TestGetSwapPayload ./pkg/service -v -count 1`
 
+### To run an individual test in verbose mode ###
+`go test -run [TestName] [TestDirectory] -v -count 1`
+i.e. `go test -run TestGetSwapPayload ./pkg/service -v -count 1`
+
 ### Unit21: ### 
 This is a 3rd party service that offers the ability to evaluate risk at a transaction level and identify fraud. A client file exists to connect to their API. Documentation is here: https://docs.unit21.ai/reference/entities-api
 You can create a test API key on the Unit21 dashboard. You will need to be setup as an Admin. Here are the instructions: https://docs.unit21.ai/reference/generate-api-keys
