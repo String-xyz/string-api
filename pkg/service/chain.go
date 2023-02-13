@@ -24,7 +24,7 @@ func stringFee(chainId uint64) (float64, error) {
 }
 
 func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
-	network, err := networkRepo.GetChainID(chainId)
+	network, err := networkRepo.GetByChainId(chainId)
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}
