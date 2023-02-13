@@ -186,6 +186,7 @@ type Transaction struct {
 	ProcessingFee      string         `json:"processingFee,omitempty" db:"processing_fee"`
 	ProcessingFeeAsset string         `json:"processingFeeAsset,omitempty" db:"processing_fee_asset"`
 	StringFee          string         `json:"stringFee,omitempty" db:"string_fee"`
+	PaymentCode        string         `json:"paymentCode,omitempty" db:"payment_code"`
 }
 
 type AuthStrategy struct {

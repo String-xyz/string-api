@@ -84,6 +84,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	}
 
 	// Make sure address is a wallet and not a smart contract
+	log.Printf("\n\naddr: %+v\n", addr)
 	if !common.IsWallet(addr) {
 		return resp, common.StringError(errors.New("address provided is not a valid wallet"))
 	}
