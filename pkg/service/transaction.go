@@ -498,7 +498,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 
 func (t transaction) authCard(p transactionProcessingData) (transactionProcessingData, error) {
 	// auth their card
-	auth, err := AuthorizeCharge(p.executionRequest.TotalUSD, p.executionRequest.UserAddress, p.executionRequest.CardToken)
+	p, err := AuthorizeCharge(p)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -529,11 +529,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	p.cardAuthorization = &auth
-	if err != nil {
-		return p, common.StringError(err)
-	}
-	err = t.updateTransactionStatus("Card "+auth.Status, p.transactionModel.ID)
+	err = t.updateTransactionStatus("Card "+p.cardAuthorization.Status, p.transactionModel.ID)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -566,7 +562,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	if !auth.Approved {
+	if !p.cardAuthorization.Approved {
 		err := t.unit21CreateTransaction(p.transactionModel.ID)
 		if err != nil {
 			return p, common.StringError(err)
