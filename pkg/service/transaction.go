@@ -355,7 +355,7 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	if err != nil {
 		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
 		log.Printf("Error evaluating transaction in Unit21: %s", common.StringError(err))
-		return p, nil
+		return p, nil // NOTE: intentionally returning nil here in order to continue the transaction
 	}
 
 	if !evaluation {
