@@ -350,9 +350,13 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	}
 
 	// Validate Transaction through Real Time Rules engine
-	err = t.unit21Evaluate(p.transactionModel.ID)
-	if err != nil {
-		return p, common.StringError(err)
+	// RTR is not released for Unit21 Production (slated for Late February 2023)
+	// Only hit in local environments for now!
+	if common.IsLocalEnv() {
+		err = t.unit21Evaluate(p.transactionModel.ID)
+		if err != nil {
+			return p, common.StringError(err)
+		}
 	}
 
 	return p, nil
