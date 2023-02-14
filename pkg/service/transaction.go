@@ -351,12 +351,30 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 
 	// Validate Transaction through Real Time Rules engine
 	// RTR is not released for Unit21 Production (slated for Late February 2023)
-	// Only hit in local environments for now!
-	if common.IsLocalEnv() {
-		err = t.unit21Evaluate(p.transactionModel.ID)
+	evaluation, err := t.unit21Evaluate(p.transactionModel.ID)
+	if err != nil {
+		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
+		log.Printf("Error evaluating transaction in Unit21: %s", common.StringError(err))
+		return p, nil
+	}
+
+	if !evaluation {
+		err = t.updateTransactionStatus("Failed", p.transactionModel.ID)
 		if err != nil {
 			return p, common.StringError(err)
 		}
+
+		err = t.unit21CreateTransaction(p.transactionModel.ID)
+		if err != nil {
+			return p, common.StringError(err)
+		}
+
+		return p, common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+	}
+
+	err = t.updateTransactionStatus("Unit21 Authorized", p.transactionModel.ID)
+	if err != nil {
+		return p, common.StringError(err)
 	}
 
 	return p, nil
@@ -811,12 +829,12 @@ func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
 	return nil
 }
 
-func (t transaction) unit21Evaluate(transactionId string) (err error) {
+func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err error) {
 	//Check transaction in Unit21
 	txModel, err := t.repos.Transaction.GetById(transactionId)
 	if err != nil {
 		log.Printf("Error getting tx model in Unit21 in Tx Evaluate: %s", common.StringError(err))
-		return common.StringError(err)
+		return evaluation, common.StringError(err)
 	}
 
 	u21Repo := unit21.TransactionRepo{
@@ -826,31 +844,7 @@ func (t transaction) unit21Evaluate(transactionId string) (err error) {
 	}
 
 	u21Tx := unit21.NewTransaction(u21Repo)
-	evaluation, err := u21Tx.Evaluate(txModel)
-	if err != nil {
-		log.Printf("Error evaluating transaction in Unit21: %s", common.StringError(err))
-		return common.StringError(err)
-	}
-
-	if !evaluation {
-		err = t.updateTransactionStatus("Failed", transactionId)
-		if err != nil {
-			return common.StringError(err)
-		}
-
-		err = t.unit21CreateTransaction(transactionId)
-		if err != nil {
-			return common.StringError(err)
-		}
-
-		return common.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
-	}
-	err = t.updateTransactionStatus("Unit21 Authorized", transactionId)
-	if err != nil {
-		return common.StringError(err)
-	}
-
-	return nil
+	return u21Tx.Evaluate(txModel)
 }
 
 func (t transaction) updateTransactionStatus(status string, transactionId string) (err error) {
