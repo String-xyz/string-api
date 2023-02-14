@@ -31,6 +31,7 @@ type TransactionUpdates struct {
 	ProcessingFee      *string         `json:"processingFee" db:"processing_fee"`
 	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"`
 	StringFee          *string         `json:"stringFee" db:"string_fee"`
+	PaymentCode        *string         `json:"paymentCode" db:"payment_code"`
 }
 
 type InstrumentUpdates struct {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/pkg/errors"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -59,6 +60,7 @@ type transactionProcessingData struct {
 	chain              *Chain
 	executionRequest   *model.ExecutionRequest
 	cardAuthorization  *AuthorizedCharge
+	cardCapture        *payments.CapturesResponse
 	preBalance         *float64
 	recipientWalletId  *string
 	txId               *string
@@ -676,7 +678,7 @@ func (t transaction) tenderTransaction(p transactionProcessingData) (float64, er
 }
 
 func (t transaction) chargeCard(p transactionProcessingData) error {
-	_, err := CaptureCharge(p.executionRequest.Quote.TotalUSD, p.executionRequest.UserAddress, p.cardAuthorization.AuthID)
+	p, err := CaptureCharge(p)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -695,7 +697,7 @@ func (t transaction) chargeCard(p transactionProcessingData) error {
 	if err != nil {
 		return common.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegID: &receiptLeg.ID, PaymentCode: &p.cardCapture.Accepted.ActionID}
 	err = t.repos.Transaction.Update(p.transactionModel.ID, txLeg)
 	if err != nil {
 		return common.StringError(err)
