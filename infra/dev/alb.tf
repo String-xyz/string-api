@@ -23,6 +23,18 @@ resource "aws_alb" "alb" {
     create_before_destroy = true
   }
 }
+ 
+ resource "aws_ssm_parameter" "alb" {
+    name = "${local.service_name}-alb-arn"
+    value = aws_alb.alb.arn
+    type = "String"
+ }
+
+  resource "aws_ssm_parameter" "alb_dns" {
+    name = "${local.service_name}-alb-dns"
+    value = aws_alb.alb.dns_name
+    type = "String"
+ }
 
 resource "aws_alb_target_group" "ecs_task_target_group" {
   name        = "${local.service_name}-tg"
@@ -66,6 +78,12 @@ resource "aws_alb_listener" "alb_https_listener" {
     target_group_arn = aws_alb_target_group.ecs_task_target_group.arn
   }
 }
+
+ resource "aws_ssm_parameter" "alb_listerner" {
+    name = "${local.service_name}-alb-listener-arn"
+    value = aws_alb_listener.alb_https_listener.arn
+    type = "String"
+ }
 
 resource "aws_alb_listener_rule" "ecs_alb_listener_rule" {
   listener_arn = aws_alb_listener.alb_https_listener.arn

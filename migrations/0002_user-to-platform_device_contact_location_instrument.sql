@@ -27,9 +27,9 @@ CREATE TABLE device (
 );
 
 CREATE OR REPLACE TRIGGER update_device_updated_at
-    BEFORE UPDATE
-    ON device
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON device
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE UNIQUE INDEX device_fingerprint_id_idx ON device(fingerprint, user_id);
@@ -49,9 +49,9 @@ CREATE TABLE contact (
 );
 
 CREATE OR REPLACE TRIGGER update_contact_updated_at
-    BEFORE UPDATE
-    ON contact
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON contact
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -74,9 +74,9 @@ CREATE TABLE location (
 );
 
 CREATE OR REPLACE TRIGGER update_location_updated_at
-    BEFORE UPDATE
-    ON location
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON location
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
@@ -97,9 +97,9 @@ CREATE TABLE instrument (
 );
 
 CREATE OR REPLACE TRIGGER update_instrument_updated_at
-    BEFORE UPDATE
-    ON instrument
-    FOR EACH ROW
+  BEFORE UPDATE
+  ON instrument
+  FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------

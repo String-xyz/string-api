@@ -20,19 +20,20 @@ type User struct {
 	FirstName     string     `json:"firstName" db:"first_name"`
 	MiddleName    string     `json:"middleName" db:"middle_name"`
 	LastName      string     `json:"lastName" db:"last_name"`
+	Email         string     `json:"email"`
 }
 
-// See PLATFORM in Migrations 0001
+// See PLATFORM in Migrations 0005
 type Platform struct {
-	ID             string     `json:"id" db:"id"`
-	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type           string     `json:"type" db:"type"`
-	Status         string     `json:"status" db:"status"`
-	Name           string     `json:"name" db:"name"`
-	ApiKey         string     `json:"apiKey" db:"api_key"`
-	Authentication AuthType   `json:"authentication" db:"authentication"`
+	ID            string         `json:"id,omitempty" db:"id"`
+	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	ActivatedAt   *time.Time     `json:"activatedAt,omitempty" db:"activated_at"`
+	Name          string         `json:"name" db:"name"`
+	Description   string         `json:"description" db:"description"`
+	Domains       pq.StringArray `json:"domains" db:"domains"`
+	IPAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
 }
 
 // See NETWORK in Migrations 0001
@@ -65,7 +66,7 @@ type Asset struct {
 }
 
 // See USER_PLATFORM in Migrations 0002
-type UserPlatform struct {
+type UserToPlatform struct {
 	UserID     string `json:"userId" db:"user_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
@@ -135,13 +136,13 @@ type Instrument struct {
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
-type ContactPlatform struct {
+type ContactToPlatform struct {
 	ContactID  string `json:"contactId" db:"contact_id"`
 	PlatformID string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE_INSTRUMENT in Migrations 0003
-type DeviceInstrument struct {
+type DeviceToInstrument struct {
 	DeviceID     string `json:"deviceId" db:"device_id"`
 	InstrumentID string `json:"instrumentId" db:"instrument_id"`
 }
@@ -166,25 +167,26 @@ type Transaction struct {
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt      *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type               string         `json:"type" db:"type"`
-	Status             string         `json:"status" db:"status"`
-	Tags               StringMap      `json:"tags" db:"tags"`
-	DeviceID           string         `json:"deviceId" db:"device_id"`
-	IPAddress          string         `json:"ipAddress" db:"ip_address"`
-	PlatformID         string         `json:"platformId" db:"platform_id"`
-	TransactionHash    string         `json:"transactionHash" db:"transaction_hash"`
-	NetworkID          string         `json:"networkId" db:"network_id"`
-	NetworkFee         string         `json:"networkFee" db:"network_fee"`
-	ContractParams     pq.StringArray `json:"contractParameters" db:"contract_params"`
-	ContractFunc       string         `json:"contractFunc" db:"contract_func"`
-	TransactionAmount  string         `json:"transactionAmount" db:"transaction_amount"`
-	OriginTxLegID      string         `json:"originTxLegId" db:"origin_tx_leg_id"`
-	ReceiptTxLegID     string         `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
-	ResponseTxLegID    string         `json:"responseTxLegId" db:"response_tx_leg_id"`
-	DestinationTxLegID string         `json:"destinationTxLegId" db:"destination_tx_leg_id"`
-	ProcessingFee      string         `json:"processingFee" db:"processing_fee"`
-	ProcessingFeeAsset string         `json:"processingFeeAsset" db:"processing_fee_asset"`
-	StringFee          string         `json:"stringFee" db:"string_fee"`
+	Type               string         `json:"type,omitempty" db:"type"`
+	Status             string         `json:"status,omitempty" db:"status"`
+	Tags               StringMap      `json:"tags,omitempty" db:"tags"`
+	DeviceID           string         `json:"deviceId,omitempty" db:"device_id"`
+	IPAddress          string         `json:"ipAddress,omitempty" db:"ip_address"`
+	PlatformID         string         `json:"platformId,omitempty" db:"platform_id"`
+	TransactionHash    string         `json:"transactionHash,omitempty" db:"transaction_hash"`
+	NetworkID          string         `json:"networkId,omitempty" db:"network_id"`
+	NetworkFee         string         `json:"networkFee,omitempty" db:"network_fee"`
+	ContractParams     pq.StringArray `json:"contractParameters,omitempty" db:"contract_params"`
+	ContractFunc       string         `json:"contractFunc,omitempty" db:"contract_func"`
+	TransactionAmount  string         `json:"transactionAmount,omitempty" db:"transaction_amount"`
+	OriginTxLegID      string         `json:"originTxLegId,omitempty" db:"origin_tx_leg_id"`
+	ReceiptTxLegID     sql.NullString `json:"receiptTxLegId,omitempty" db:"receipt_tx_leg_id"`
+	ResponseTxLegID    sql.NullString `json:"responseTxLegId,omitempty" db:"response_tx_leg_id"`
+	DestinationTxLegID string         `json:"destinationTxLegId,omitempty" db:"destination_tx_leg_id"`
+	ProcessingFee      string         `json:"processingFee,omitempty" db:"processing_fee"`
+	ProcessingFeeAsset string         `json:"processingFeeAsset,omitempty" db:"processing_fee_asset"`
+	StringFee          string         `json:"stringFee,omitempty" db:"string_fee"`
+	PaymentCode        string         `json:"paymentCode,omitempty" db:"payment_code"`
 }
 
 type AuthStrategy struct {

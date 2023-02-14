@@ -22,7 +22,7 @@ func TestGetLocation(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "type", "status", "building_number", "unit_number", "street_name", "city", "state", "postal_code", "country"}).
 		AddRow(id, time.Now(), time.Now(), "Home", "Verified", "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
 
-	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WillReturnRows(rows).WithArgs(id)
+	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND deactivated_at IS NULL").WillReturnRows(rows).WithArgs(id)
 
 	location, err := NewLocation(sqlxDB).GetById(id)
 	assert.NoError(t, err)

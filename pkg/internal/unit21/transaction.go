@@ -2,7 +2,6 @@ package unit21
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -37,24 +36,31 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		log.Printf("Failed to gather Unit21 transaction source: %s", err)
 		return false, common.StringError(err)
 	}
-	url := "https://rtr.sandbox2.unit21.com/evaluate" // will need to be hardcoded for production
-	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
 
+	url := os.Getenv("UNIT21_RTR_URL")
+	if url == "" {
+		url = "https://rtr.sandbox2.unit21.com/evaluate"
+	}
+
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction evaluate failed: %s", err)
 		return false, common.StringError(err)
 	}
 
 	// var u21Response *createEventResponse
-	var response any
+	var response evaluateEventResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		log.Printf("Reading body failed: %s", err)
 		return false, common.StringError(err)
 	}
-	log.Printf("unit21 evaluate response: %+v", response)
 
-	// log.Printf("Unit21Id: %s")
+	for _, rule := range *response.RuleExecutions {
+		if rule.Status != "PASS" {
+			return false, nil
+		}
+	}
 
 	return true, nil
 }
@@ -68,7 +74,7 @@ func (t transaction) Create(transaction model.Transaction) (unit21Id string, err
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
-	body, err := u21Post(url, mapToUnit21Event(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
 		return "", common.StringError(err)
@@ -95,7 +101,7 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
-	body, err := u21Put(url, mapToUnit21Event(transaction, transactionData))
+	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData))
 
 	if err != nil {
 		log.Printf("Unit21 Transaction create failed: %s", err)
@@ -162,24 +168,30 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		err = common.StringError(err)
 		return
 	}
-
-	stringFee, err := common.BigNumberToFloat(transaction.StringFee, 6)
-	if err != nil {
-		log.Printf("Failed to convert stringFee: %s", err)
-		err = common.StringError(err)
-		return
+	var stringFee float64
+	if transaction.StringFee != "" {
+		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
+		if err != nil {
+			log.Printf("Failed to convert stringFee: %s", err)
+			err = common.StringError(err)
+			return
+		}
 	}
 
-	processingFee, err := common.BigNumberToFloat(transaction.ProcessingFee, 6)
-	if err != nil {
-		log.Printf("Failed to convert processingFee: %s", err)
-		err = common.StringError(err)
-		return
+	var processingFee float64
+	if transaction.ProcessingFee != "" {
+		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
+		if err != nil {
+			log.Printf("Failed to convert processingFee: %s", err)
+			err = common.StringError(err)
+			return
+		}
 	}
 
-	fmt.Printf("senderAsset: %+v\n", senderAsset)
-	log.Printf("senderAsset.Name: %s", senderAsset.Name)
-	log.Printf("receiverAsset.Name: %s", receiverAsset.Name)
+	var exchangeRate float64
+	if receiverAmount > 0 {
+		exchangeRate = senderAmount / receiverAmount
+	}
 
 	txData = transactionData{
 		Amount:               amount,
@@ -193,7 +205,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		ReceiverEntityId:     receiverData.UserID,
 		ReceiverEntityType:   "user",
 		ReceiverInstrumentId: receiverData.InstrumentID,
-		ExchangeRate:         senderAmount / receiverAmount,
+		ExchangeRate:         exchangeRate,
 		TransactionHash:      transaction.TransactionHash,
 		USDConversionNotes:   "",
 		InternalFee:          stringFee,
@@ -203,7 +215,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func mapToUnit21Event(transaction model.Transaction, transactionData transactionData) *u21Event {
+func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData) *u21Event {
 	var transactionTagArr []string
 	if transaction.Tags != nil {
 		for key, value := range transaction.Tags {
@@ -213,10 +225,10 @@ func mapToUnit21Event(transaction model.Transaction, transactionData transaction
 
 	jsonBody := &u21Event{
 		GeneralData: &eventGeneral{
-			EventId:      transaction.ID,
-			EventType:    "transaction",
-			EventTime:    int(transaction.CreatedAt.Unix()),
-			EventSubtype: "",
+			EventId:      transaction.ID,                    //required
+			EventType:    "transaction",                     //required
+			EventTime:    int(transaction.CreatedAt.Unix()), //required
+			EventSubtype: "credit_card",                     //required for RTR
 			Status:       transaction.Status,
 			Parents:      nil,
 			Tags:         transactionTagArr,

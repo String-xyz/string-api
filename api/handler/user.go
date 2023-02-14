@@ -1,6 +1,7 @@
 package handler
 
 import (
+	b64 "encoding/base64"
 	"net/http"
 	"strings"
 
@@ -42,6 +43,14 @@ func (u user) Create(c echo.Context) error {
 	if err := c.Validate(body); err != nil {
 		return InvalidPayloadError(c, err)
 	}
+
+	// base64 decode nonce
+	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
+	if err != nil {
+		LogStringError(c, err, "user: create user decode nonce")
+		return BadRequestError(c)
+	}
+	body.Nonce = string(decodedNonce)
 
 	resp, err := u.userService.Create(body)
 	if err != nil {
@@ -106,6 +115,10 @@ func (u user) VerifyEmail(c echo.Context) error {
 	if err != nil {
 		if strings.Contains(err.Error(), "email already verified") {
 			return Conflict(c)
+		}
+
+		if strings.Contains(err.Error(), "link expired") {
+			return LinkExpired(c, "Link expired, please request a new one")
 		}
 
 		LogStringError(c, err, "user: email verification")

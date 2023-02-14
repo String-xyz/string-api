@@ -93,12 +93,38 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 		return resp, common.StringError(err)
 	}
 
-	user, device, err := u.createUserData(addr, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	user, err := u.createUserData(addr)
 	if err != nil {
 		return resp, err
 	}
 
-	jwt, err := u.auth.GenerateJWT(device)
+	var device model.Device
+
+	// create device only if there is a visitor
+	visitorID := request.Fingerprint.VisitorID
+	requestID := request.Fingerprint.RequestID
+	if visitorID != "" && requestID != "" {
+		visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
+		if err == nil {
+			// if fingerprint successfully retrieved, create device, otherwise continue without device
+			now := time.Now()
+
+			device, err = u.repos.Device.Create(model.Device{
+				Fingerprint: visitorID,
+				UserID:      user.ID,
+				Type:        visitor.Type,
+				IpAddresses: pq.StringArray{visitor.IPAddress},
+				Description: visitor.UserAgent,
+				LastUsedAt:  now,
+				ValidatedAt: &now,
+			})
+			if err != nil {
+				return resp, common.StringError(err)
+			}
+		}
+	}
+
+	jwt, err := u.auth.GenerateJWT(user.ID, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -109,7 +135,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (u user) createUserData(addr, visitorID, requestID string) (model.User, model.Device, error) {
+func (u user) createUserData(addr string) (model.User, error) {
 	tx := u.repos.User.MustBegin()
 	u.repos.Instrument.SetTx(tx)
 	u.repos.Device.SetTx(tx)
@@ -121,41 +147,21 @@ func (u user) createUserData(addr, visitorID, requestID string) (model.User, mod
 	user, err := u.repos.User.Create(user)
 	if err != nil {
 		u.repos.User.Rollback()
-		return user, model.Device{}, common.StringError(err)
+		return user, common.StringError(err)
 	}
 	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "crypto-wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
-		return user, model.Device{}, common.StringError(err)
-	}
-
-	visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
-	if err != nil {
-		u.repos.Instrument.Rollback()
-		return user, model.Device{}, err // is this intentionally not common.StringError?
-	}
-	now := time.Now()
-	device, err := u.repos.Device.Create(model.Device{
-		Fingerprint: visitorID,
-		UserID:      user.ID,
-		Type:        visitor.Type,
-		IpAddresses: pq.StringArray{visitor.IPAddress},
-		Description: visitor.UserAgent,
-		LastUsedAt:  now,
-		ValidatedAt: &now,
-	})
-	if err != nil {
-		u.repos.Device.Rollback()
-		return user, model.Device{}, err // is this intentionally not common.StringError?
+		return user, common.StringError(err)
 	}
 
 	if err := u.repos.User.Commit(); err != nil {
-		return user, model.Device{}, common.StringError(errors.New("error commiting transaction"))
+		return user, common.StringError(errors.New("error commiting transaction"))
 	}
 
-	return user, device, nil
+	return user, nil
 }
 
 func (u user) Update(userID string, request UserUpdates) (model.User, error) {
@@ -173,9 +179,9 @@ func (u user) Update(userID string, request UserUpdates) (model.User, error) {
 func (u user) createUnit21Entity(user model.User) {
 	// Createing a User Entity in Unit21
 	u21Repo := unit21.EntityRepos{
-		Device:       u.repos.Device,
-		Contact:      u.repos.Contact,
-		UserPlatform: u.repos.UserPlatform,
+		Device:         u.repos.Device,
+		Contact:        u.repos.Contact,
+		UserToPlatform: u.repos.UserToPlatform,
 	}
 
 	u21Entity := unit21.NewEntity(u21Repo) // TODO: Make it an injected dependency
@@ -188,9 +194,9 @@ func (u user) createUnit21Entity(user model.User) {
 func (u user) updateUnit21Entity(user model.User) {
 	// Createing a User Entity in Unit21
 	u21Repo := unit21.EntityRepos{
-		Device:       u.repos.Device,
-		Contact:      u.repos.Contact,
-		UserPlatform: u.repos.UserPlatform,
+		Device:         u.repos.Device,
+		Contact:        u.repos.Contact,
+		UserToPlatform: u.repos.UserToPlatform,
 	}
 
 	u21Entity := unit21.NewEntity(u21Repo)

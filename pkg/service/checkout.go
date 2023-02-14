@@ -53,12 +53,17 @@ type AuthorizedCharge struct {
 	CheckoutFingerprint string
 	Last4               string
 	Issuer              string
+	Approved            bool
+	Status              string
+	Summary             string
+	CardType            string
 }
 
-func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth AuthorizedCharge, err error) {
+func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {
+	auth := AuthorizedCharge{}
 	config, err := getConfig()
 	if err != nil {
-		return auth, common.StringError(err)
+		return p, common.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
@@ -67,8 +72,11 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		// Generate a payment token ID in case we don't yet have one in the front end
 		// For testing purposes only
 		card := tokens.Card{
-			Type:        checkoutCommon.Card,
-			Number:      "4242424242424242",
+			Type:   checkoutCommon.Card,
+			Number: "4242424242424242", // Success
+			// Number: "4273149019799094", // succeed authorize, fail capture
+			// Number: "4544249167673670", // Declined - Insufficient funds
+			// Number:      "5148447461737269", // Invalid transaction (debit card)
 			ExpiryMonth: 2,
 			ExpiryYear:  2024,
 			Name:        "Customer Name",
@@ -76,17 +84,17 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		}
 		paymentToken, err := CreateToken(&card)
 		if err != nil {
-			return auth, common.StringError(err)
+			return p, common.StringError(err)
 		}
 		paymentTokenID = paymentToken.Created.Token
-		if tokenId != "" {
-			paymentTokenID = tokenId
+		if p.executionRequest.CardToken != "" {
+			paymentTokenID = p.executionRequest.CardToken
 		}
 	} else {
-		paymentTokenID = tokenId
+		paymentTokenID = p.executionRequest.CardToken
 	}
 
-	usd := convertAmount(amount)
+	usd := convertAmount(p.executionRequest.TotalUSD)
 
 	capture := false
 	request := &payments.Request{
@@ -97,7 +105,7 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
-			Name: userWallet,
+			Name: p.executionRequest.UserAddress,
 		},
 		Capture: &capture,
 	}
@@ -107,30 +115,37 @@ func AuthorizeCharge(amount float64, userWallet string, tokenId string) (auth Au
 		IdempotencyKey: &idempotencyKey,
 	}
 	response, err := client.Request(request, &params)
-
 	if err != nil {
-		return auth, common.StringError(err)
+		return p, common.StringError(err)
 	}
 
 	// Collect authorization ID and Instrument ID
-	auth.AuthID = response.Processed.ID
-	if response.Processed.Source.CardSourceResponse != nil {
-		auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
-		auth.Issuer = response.Processed.Source.Issuer
-		auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
+	if response.Processed != nil {
+		auth.AuthID = response.Processed.ID
+		auth.Approved = *response.Processed.Approved
+		auth.Status = string(response.Processed.Status)
+		auth.Summary = response.Processed.ResponseSummary
+		auth.CardType = string(response.Processed.Source.CardType)
+
+		if response.Processed.Source.CardSourceResponse != nil {
+			auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
+			auth.Issuer = response.Processed.Source.Issuer
+			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
+		}
 	}
+	p.cardAuthorization = &auth
 	// TODO: Create entry for authorization in our DB associated with userWallet
-	return auth, nil
+	return p, nil
 }
 
-func CaptureCharge(amount float64, userWallet string, authorizationID string) (capture *payments.CapturesResponse, err error) {
+func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
 	config, err := getConfig()
 	if err != nil {
-		return nil, common.StringError(err)
+		return p, common.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
-	usd := convertAmount(amount)
+	usd := convertAmount(p.executionRequest.Quote.TotalUSD)
 
 	idempotencyKey := checkout.NewIdempotencyKey()
 	params := checkout.Params{
@@ -139,11 +154,16 @@ func CaptureCharge(amount float64, userWallet string, authorizationID string) (c
 	request := payments.CapturesRequest{
 		Amount: usd,
 	}
-	capture, err = client.Captures(authorizationID, &request, &params)
+
+	capture, err := client.Captures(p.cardAuthorization.AuthID, &request, &params)
 	if err != nil {
-		return nil, common.StringError(err)
+		return p, common.StringError(err)
 	}
 
+	p.cardCapture = capture
+
+	// TODO: call action, err = client.Actions(capture.Accepted.ActionID) in another service to check on
+
 	// TODO: Create entry for capture in our DB associated with userWallet
-	return capture, nil
+	return p, nil
 }

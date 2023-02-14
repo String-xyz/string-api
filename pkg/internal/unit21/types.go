@@ -125,7 +125,7 @@ type updateInstrumentResponse struct {
 
 type u21Event struct {
 	GeneralData     *eventGeneral           `json:"general_data"`
-	TransactionData *transactionData        `json:"transaction_data"`
+	TransactionData *transactionData        `json:"transaction_data,omitempty"`
 	ActionData      *actionData             `json:"action_data,omitempty"`
 	DigitalData     *eventDigitalData       `json:"digital_data,omitempty"`
 	LocationData    *instrumentLocationData `json:"location_data,omitempty"`
@@ -193,4 +193,20 @@ type createEventResponse struct {
 type updateEventResponse struct {
 	EventId  string `json:"event_id"`
 	Unit21Id string `json:"unit21_id"`
+}
+
+type evaluateEventResponse struct {
+	Endpoint       string          `json:"endpoint"`
+	EvaluationId   string          `json:"evaluation_id"`
+	EventId        string          `json:"event_id"`
+	OrgId          int             `json:"org_id"`
+	RuleExecutions *ruleExecutions `json:"rule_executions"`
+	Timestamp      float64         `json:"timestamp"`
+}
+
+type ruleExecutions map[string]rule
+
+type rule struct {
+	RuleName string `json:"rule_name"`
+	Status   string `json:"status"`
 }

@@ -1,0 +1,58 @@
+name: deploy to development
+permissions:
+  id-token: write
+  contents: read
+on:
+  push: 
+    branches: [develop]
+jobs:
+  deploy:
+    environment: 
+      name: development
+      url: https://string-api.dev.string-api.xyz
+
+    name: build push and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+      - name: install deps and build
+      ## TODO: Move all building into the docker container
+        run: |
+          go mod download
+          GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
+          
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.ASSUME_ROLE }}
+
+      - name: login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+  
+      - name: tag and push to Amazon ECR
+        env:
+          ECR_REPO: ${{ secrets.AWS_ACCT }}.dkr.ecr.us-west-2.amazonaws.com
+          SERVICE: string-api
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REPO/$SERVICE:$IMAGE_TAG ./cmd/app/
+          docker push $ECR_REPO/$SERVICE:$IMAGE_TAG
+
+      - name: deploy
+        env:
+          CLUSTER: string-core
+          SERVICE: string-api
+          AWS_REGION: us-west-2
+        run: |
+          aws ecs --region $AWS_REGION update-service --cluster $CLUSTER --service $SERVICE --force-new-deployment
+

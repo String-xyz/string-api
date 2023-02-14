@@ -17,9 +17,9 @@ type Entity interface {
 }
 
 type EntityRepos struct {
-	Device       repository.Device
-	Contact      repository.Contact
-	UserPlatform repository.UserPlatform
+	Device         repository.Device
+	Contact        repository.Contact
+	UserToPlatform repository.UserToPlatform
 }
 
 type entity struct {
@@ -128,14 +128,12 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	instruments := make(map[string][]string)
 	instruments["instrument_ids"] = instrumentIds
 
-	body, err := u21Put(url, instruments)
+	_, err = u21Put(url, instruments)
 	if err != nil {
 		log.Printf("Unit21 Entity Add Instruments failed: %s", err)
 		err = common.StringError(err)
 		return
 	}
-
-	log.Printf("String of body from response: %s", string(body))
 
 	return
 }
@@ -176,7 +174,7 @@ func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalDat
 }
 
 func (e entity) getCustomData(userId string) (customData entityCustomData, err error) {
-	devices, err := e.repo.UserPlatform.ListByUserId(userId, 100, 0)
+	devices, err := e.repo.UserToPlatform.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Printf("Failed to get user platforms: %s", err)
 		err = common.StringError(err)
@@ -186,7 +184,6 @@ func (e entity) getCustomData(userId string) (customData entityCustomData, err e
 	for _, platform := range devices {
 		customData.Platforms = append(customData.Platforms, platform.PlatformID)
 	}
-	log.Printf("deviceData: %s", customData)
 	return
 }
 

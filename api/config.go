@@ -10,18 +10,18 @@ import (
 func NewRepos(config APIConfig) repository.Repositories {
 	// TODO: Make sure all of the repos are initialized here
 	return repository.Repositories{
-		Auth:         repository.NewAuth(config.Redis, config.DB),
-		User:         repository.NewUser(config.DB),
-		Contact:      repository.NewContact(config.DB),
-		Instrument:   repository.NewInstrument(config.DB),
-		Device:       repository.NewDevice(config.DB),
-		UserPlatform: repository.NewUserPlatform(config.DB),
-		Asset:        repository.NewAsset(config.DB),
-		Network:      repository.NewNetwork(config.DB),
-		Platform:     repository.NewPlatform(config.DB),
-		Transaction:  repository.NewTransaction(config.DB),
-		TxLeg:        repository.NewTxLeg(config.DB),
-		Location:     repository.NewLocation(config.DB),
+		Auth:           repository.NewAuth(config.Redis, config.DB),
+		User:           repository.NewUser(config.DB),
+		Contact:        repository.NewContact(config.DB),
+		Instrument:     repository.NewInstrument(config.DB),
+		Device:         repository.NewDevice(config.DB),
+		UserToPlatform: repository.NewUserToPlatform(config.DB),
+		Asset:          repository.NewAsset(config.DB),
+		Network:        repository.NewNetwork(config.DB),
+		Platform:       repository.NewPlatform(config.DB),
+		Transaction:    repository.NewTransaction(config.DB),
+		TxLeg:          repository.NewTxLeg(config.DB),
+		Location:       repository.NewLocation(config.DB),
 	}
 }
 
@@ -38,7 +38,11 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User, Device: repos.Device}
 	verification := service.NewVerification(verificationRepos)
 
-	auth := service.NewAuth(repos, fingerprint, verification)
+	// device service
+	deviceRepos := repository.Repositories{Device: repos.Device}
+	device := service.NewDevice(deviceRepos, fingerprint)
+
+	auth := service.NewAuth(repos, verification, device)
 	apiKey := service.NewAPIKeyStrategy(repos.Auth)
 	cost := service.NewCost(config.Redis)
 	executor := service.NewExecutor()
@@ -61,5 +65,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Transaction:  transaction,
 		User:         user,
 		Verification: verification,
+		Device:       device,
 	}
 }

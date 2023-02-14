@@ -12,7 +12,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -21,8 +20,6 @@ type SignablePayload struct {
 }
 
 var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
-
-// var walletAuthenticationPrefix string = "" // For testing locally
 
 var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are:\n\n1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n\n2) Confirming that this wallet is owned by you.\n\nThis request will not trigger any blockchain transaction or cost any gas.\n\nNonce: "
 
@@ -53,21 +50,21 @@ type Auth interface {
 	// if signaure is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
-	GenerateJWT(model.Device) (JWT, error)
+	GenerateJWT(string, ...model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
-	RefreshToken(token string, walletAddress string) (JWT, error)
+	RefreshToken(token string, walletAddress string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
 
 type auth struct {
 	repos        repository.Repositories
-	fingerprint  Fingerprint
 	verification Verification
+	device       Device
 }
 
 // reusing UserRepos here
-func NewAuth(r repository.Repositories, f Fingerprint, v Verification) Auth {
-	return &auth{r, f, v}
+func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
+	return &auth{r, v, d}
 }
 
 func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
@@ -100,7 +97,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWallet(payload.Address)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(payload.Address)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -109,56 +106,36 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 		return resp, common.StringError(err)
 	}
 
-	created, device, err := a.createDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
-	if err != nil {
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
+
+	device, err := a.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, common.StringError(err)
 	}
 
-	if created || device.ValidatedAt == nil {
-		go a.verification.SendDeviceVerification(user.ID, device.ID, device.Description)
+	// Send verification email if device is unknown and user has a validated email
+	if user.Email != "" && !isDeviceValidated(device) {
+		go a.verification.SendDeviceVerification(user.ID, user.Email, device.ID, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
 
 	// Create the JWT
-	jwt, err := a.GenerateJWT(device)
+	jwt, err := a.GenerateJWT(user.ID, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+
+	// Invalidate device if it is unknown and was validated so it cannot be used again
+	err = a.device.InvalidateUnknownDevice(device)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
 
-func (a auth) createDeviceIfNeeded(userID, visitorID, requestID string) (bool, model.Device, error) {
-	device, err := a.repos.Device.GetByUserIdAndFingerprint(userID, visitorID)
-	if err == nil {
-		return false, device, nil
-	}
-	// create device only if the error is not found
-	if err != nil && err == repository.ErrNotFound {
-		visitor, fpErr := a.fingerprint.GetVisitor(visitorID, requestID)
-		if fpErr != nil {
-			return false, model.Device{}, common.StringError(fpErr)
-		}
-		device, dErr := a.createDevice(userID, visitor)
-		return dErr == nil, device, dErr
-	}
-
-	return false, device, common.StringError(err)
-}
-
-func (a auth) createDevice(userID string, visitor model.FPVisitor) (model.Device, error) {
-	return a.repos.Device.Create(model.Device{
-		UserID:      userID,
-		Fingerprint: visitor.VisitorID,
-		Type:        visitor.Type,
-		IpAddresses: pq.StringArray{visitor.IPAddress},
-		Description: visitor.UserAgent,
-		LastUsedAt:  time.Now(),
-		ValidatedAt: nil,
-	})
-}
-
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
-func (a auth) GenerateJWT(m model.Device) (JWT, error) {
+func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
@@ -166,8 +143,12 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 		ExpAt:    time.Now().Add(time.Minute * 15),
 	}
 
-	claims.DeviceId = m.ID
-	claims.UserId = m.UserID
+	// set device id if available
+	if len(m) > 0 {
+		claims.DeviceId = m[0].ID
+	}
+
+	claims.UserId = userId
 	claims.ExpiresAt = t.ExpAt.Unix()
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
@@ -179,7 +160,7 @@ func (a auth) GenerateJWT(m model.Device) (JWT, error) {
 	t.Token = signed
 
 	// create and save
-	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), m.UserID)
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), userId)
 	if err != nil {
 		return *t, err
 	}
@@ -212,46 +193,58 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(refreshToken string, walletAddress string) (JWT, error) {
+func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreateResponse, error) {
+	resp := UserCreateResponse{}
+
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// verify wallet address
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWallet(walletAddress)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+			return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 		}
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	if instrument.UserID != userId {
-		return JWT{}, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 	}
 
 	// get device
 	device, err := a.repos.Device.GetByUserId(userId)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
 	// create new jwt
-	jwt, err := a.GenerateJWT(device)
+	jwt, err := a.GenerateJWT(userId, device)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
+	resp.JWT = jwt
 
 	// delete old refresh token
 	err = a.InvalidateRefreshToken(refreshToken)
 	if err != nil {
-		return JWT{}, common.StringError(err)
+		return resp, common.StringError(err)
 	}
 
-	return jwt, nil
+	user, err := a.repos.User.GetById(instrument.UserID)
+	if err != nil {
+		return resp, common.StringError(err)
+	}
+
+	// get email
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
+	resp.User = user
+
+	return resp, nil
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
@@ -287,4 +280,13 @@ func validEmail(email string) bool {
 func uuidWithoutHyphens() string {
 	s := uuid.New().String()
 	return strings.Replace(s, "-", "", -1)
+}
+
+func getValidatedEmailOrEmpty(contactRepo repository.Contact, userId string) string {
+	contact, err := contactRepo.GetByUserIdAndStatus(userId, "validated")
+	if err != nil {
+		return ""
+	}
+
+	return contact.Data
 }

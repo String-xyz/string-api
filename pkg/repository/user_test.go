@@ -44,7 +44,7 @@ func TestGetUser(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "first_name", "last_name", "created_at", "updated_at"}).
 		AddRow(id, "Mocking", "Jay", time.Now(), time.Now())
 
-	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND 'deactivated_at' IS NOT NULL").WillReturnRows(rows).WithArgs(id)
+	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND deactivated_at IS NULL").WillReturnRows(rows).WithArgs(id)
 
 	user, err := NewUser(sqlxDB).GetById(id)
 	assert.NoError(t, err)

@@ -39,7 +39,7 @@ type Executor interface {
 	Estimate(call ContractCall) (CallEstimate, error)
 	TxWait(txID string) (uint64, error)
 	Close() error
-	GetChainID() (uint64, error)
+	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
 }
 
@@ -245,7 +245,7 @@ func (e executor) TxWait(txID string) (uint64, error) {
 	return receipt.GasUsed, nil
 }
 
-func (e executor) GetChainID() (uint64, error) {
+func (e executor) GetByChainId() (uint64, error) {
 	// Get ChainID from state
 	var chainId64 uint64
 	err := e.client.Call(eth.ChainID().Returns(&chainId64))

@@ -83,3 +83,17 @@ func Conflict(c echo.Context, message ...string) error {
 	}
 	return c.JSON(http.StatusConflict, JSONError{Message: "Conflict", Code: "CONFLICT"})
 }
+
+func LinkExpired(c echo.Context, message ...string) error {
+	if len(message) > 0 {
+		return c.JSON(http.StatusForbidden, JSONError{Message: strings.Join(message, " "), Code: "LINK_EXPIRED"})
+	}
+	return c.JSON(http.StatusForbidden, JSONError{Message: "Forbidden", Code: "LINK_EXPIRED"})
+}
+
+func InvalidEmail(c echo.Context, message ...string) error {
+	if len(message) > 0 {
+		return c.JSON(http.StatusUnprocessableEntity, JSONError{Message: strings.Join(message, " "), Code: "INVALID_EMAIL"})
+	}
+	return c.JSON(http.StatusUnprocessableEntity, JSONError{Message: "Invalid email", Code: "INVALID_EMAIL"})
+}
