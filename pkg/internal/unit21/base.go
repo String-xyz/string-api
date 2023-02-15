@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -45,7 +45,7 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 	defer res.Body.Close()
 
-	body, err = ioutil.ReadAll(res.Body)
+	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		log.Printf("Error extracting body from %s update request: %s", url, err)
 		return nil, common.StringError(err)
@@ -92,7 +92,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	defer res.Body.Close()
 
-	body, err = ioutil.ReadAll(res.Body)
+	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		log.Printf("Error extracting body from %s update response: %s", url, err)
 		return nil, common.StringError(err)
