@@ -2,7 +2,7 @@ package service
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
@@ -95,7 +95,7 @@ func getLocationFromAPI(ip string) (GeoLocation, error) {
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 
 		return GeoLocation{}, common.StringError(err)

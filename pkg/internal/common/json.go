@@ -2,7 +2,7 @@ package common
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -18,7 +18,7 @@ func GetJson(url string, target interface{}) error {
 		return StringError(err)
 	}
 	defer response.Body.Close()
-	jsonData, err := ioutil.ReadAll(response.Body)
+	jsonData, err := io.ReadAll(response.Body)
 	if err != nil {
 		return StringError(err)
 	}
@@ -41,7 +41,7 @@ func GetJsonGeneric(url string, target interface{}) error {
 		return StringError(err)
 	}
 	defer response.Body.Close()
-	jsonData, err := ioutil.ReadAll(response.Body)
+	jsonData, err := io.ReadAll(response.Body)
 	if err != nil {
 		return StringError(err)
 	}

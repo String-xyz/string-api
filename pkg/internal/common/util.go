@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -107,7 +107,7 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 
 	bodyReader := bytes.NewReader(bodyBytes)
 
-	betterBytes, err := ioutil.ReadAll(bodyReader)
+	betterBytes, err := io.ReadAll(bodyReader)
 	betterString = string(betterBytes)
 	if err != nil {
 		return betterString, StringError(err)
