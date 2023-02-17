@@ -44,7 +44,7 @@ jobs:
           IMAGE_TAG: latest
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
-          docker build --platform amd/64 -t $ECR_REPO/$SERVICE:$IMAGE_TAG ./cmd/app/
+          docker build --platform linux/amd64 -t $ECR_REPO/$SERVICE:$IMAGE_TAG ./cmd/app/
           docker push $ECR_REPO/$SERVICE:$IMAGE_TAG
 
       - name: deploy
