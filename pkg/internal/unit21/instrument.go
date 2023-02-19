@@ -2,12 +2,12 @@ package unit21
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/rs/zerolog/log"
 )
 
 type Instrument interface {
@@ -33,43 +33,43 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 
 	source, err := i.getSource(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument source: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument source")
 		return "", common.StringError(err)
 	}
 
 	entities, err := i.getEntities(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
 		return "", common.StringError(err)
 	}
 
 	digitalData, err := i.getInstrumentDigitalData(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		return "", common.StringError(err)
 	}
 
 	locationData, err := i.getLocationData(instrument.LocationID.String)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument location: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", common.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/instruments/create"
 	body, err := u21Post(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
-		log.Printf("Unit21 Instrument create failed: %s", err)
+		log.Err(err).Msg("Unit21 Instrument create failed")
 		return "", common.StringError(err)
 	}
 
 	var u21Response *createInstrumentResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
+		log.Err(err).Msg("Reading body failed")
 		return "", common.StringError(err)
 	}
 
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+	log.Info().Str("Unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
@@ -77,25 +77,25 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 
 	source, err := i.getSource(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument source: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument source")
 		return "", common.StringError(err)
 	}
 
 	entities, err := i.getEntities(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument entity: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
 		return "", common.StringError(err)
 	}
 
 	digitalData, err := i.getInstrumentDigitalData(instrument.UserID)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 entity digitalData: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		return "", common.StringError(err)
 	}
 
 	locationData, err := i.getLocationData(instrument.LocationID.String)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 instrument location: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", common.StringError(err)
 	}
 
@@ -104,30 +104,30 @@ func (i instrument) Update(instrument model.Instrument) (unit21Id string, err er
 	body, err := u21Put(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 
 	if err != nil {
-		log.Printf("Unit21 Instrument create failed: %s", err)
+		log.Err(err).Msg("Unit21 Instrument create failed")
 		return "", common.StringError(err)
 	}
 
 	var u21Response *updateInstrumentResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
+		log.Err(err).Msg("Reading body failed")
 		return "", common.StringError(err)
 	}
 
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+	log.Info().Str("Unit21Id", u21Response.Unit21Id).Send()
 
 	return u21Response.Unit21Id, nil
 }
 
 func (i instrument) getSource(userId string) (source string, err error) {
 	if userId == "" {
-		log.Printf("No userId defined")
+		log.Warn().Msg("No userId defined")
 		return
 	}
 	user, err := i.repo.User.GetById(userId)
 	if err != nil {
-		log.Printf("Failed go get user contacts: %s", err)
+		log.Err(err).Msg("Failed go get user contacts")
 		return "", common.StringError(err)
 	}
 
@@ -139,13 +139,13 @@ func (i instrument) getSource(userId string) (source string, err error) {
 
 func (i instrument) getEntities(userId string) (entity instrumentEntity, err error) {
 	if userId == "" {
-		log.Printf("No userId defined")
+		log.Warn().Msg("No userId defined")
 		return
 	}
 
 	user, err := i.repo.User.GetById(userId)
 	if err != nil {
-		log.Printf("Failed go get user contacts: %s", err)
+		log.Err(err).Msg("Failed go get user contacts")
 		err = common.StringError(err)
 		return
 	}
@@ -160,13 +160,13 @@ func (i instrument) getEntities(userId string) (entity instrumentEntity, err err
 
 func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrumentDigitalData, err error) {
 	if userId == "" {
-		log.Printf("No userId defined")
+		log.Warn().Msg("No userId defined")
 		return
 	}
 
 	devices, err := i.repo.Device.ListByUserId(userId, 100, 0)
 	if err != nil {
-		log.Printf("Failed to get user devices: %s", err)
+		log.Err(err).Msg("Failed to get user devices")
 		err = common.StringError(err)
 		return
 	}
@@ -179,13 +179,13 @@ func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrum
 
 func (i instrument) getLocationData(locationId string) (locationData instrumentLocationData, err error) {
 	if locationId == "" {
-		log.Printf("No locationId defined")
+		log.Warn().Msg("No locationId defined")
 		return
 	}
 
 	location, err := i.repo.Location.GetById(locationId)
 	if err != nil {
-		log.Printf("Failed go get instrument location: %s", err)
+		log.Err(err).Msg("Failed go get instrument location")
 		err = common.StringError(err)
 		return
 	}

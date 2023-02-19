@@ -2,12 +2,12 @@ package unit21
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/rs/zerolog/log"
 )
 
 type Transaction interface {
@@ -33,7 +33,7 @@ func NewTransaction(r TransactionRepo) Transaction {
 func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
 	transactionData, err := t.getTransactionData(transaction)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return false, common.StringError(err)
 	}
 
@@ -44,7 +44,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
-		log.Printf("Unit21 Transaction evaluate failed: %s", err)
+		log.Err(err).Msg("Unit21 Transaction evaluate failed")
 		return false, common.StringError(err)
 	}
 
@@ -52,7 +52,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 	var response evaluateEventResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
+		log.Err(err).Msg("Reading body failed")
 		return false, common.StringError(err)
 	}
 
@@ -69,33 +69,32 @@ func (t transaction) Create(transaction model.Transaction) (unit21Id string, err
 	transactionData, err := t.getTransactionData(transaction)
 
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return "", common.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
 	if err != nil {
-		log.Printf("Unit21 Transaction create failed: %s", err)
+		log.Err(err).Msg("Unit21 Transaction create failed")
 		return "", common.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
+		log.Err(err).Msg("Reading body failed")
 		return "", common.StringError(err)
 	}
 
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
-
+	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
 func (t transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
 	transactionData, err := t.getTransactionData(transaction)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return "", common.StringError(err)
 	}
 
@@ -104,67 +103,66 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData))
 
 	if err != nil {
-		log.Printf("Unit21 Transaction create failed: %s", err)
+		log.Err(err).Msg("Unit21 Transaction create failed:")
 		return "", common.StringError(err)
 	}
 
 	var u21Response *updateEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
+		log.Err(err).Msg("Reading body failed")
 		return "", common.StringError(err)
 	}
-
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
 func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
 	senderData, err := t.repo.TxLeg.GetById(transaction.OriginTxLegID)
 	if err != nil {
-		log.Printf("Failed go get origin transaction leg: %s", err)
+		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
 	receiverData, err := t.repo.TxLeg.GetById(transaction.DestinationTxLegID)
 	if err != nil {
-		log.Printf("Failed go get origin transaction leg: %s", err)
+		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
 	senderAsset, err := t.repo.Asset.GetById(senderData.AssetID)
 	if err != nil {
-		log.Printf("Failed go get transaction sender asset: %s", err)
+		log.Err(err).Msg("Failed go get transaction sender asset")
 		err = common.StringError(err)
 		return
 	}
 
 	receiverAsset, err := t.repo.Asset.GetById(receiverData.AssetID)
 	if err != nil {
-		log.Printf("Failed go get transaction receiver asset: %s", err)
+		log.Err(err).Msg("Failed go get transaction receiver asset")
 		err = common.StringError(err)
 		return
 	}
 
 	amount, err := common.BigNumberToFloat(senderData.Value, 6)
 	if err != nil {
-		log.Printf("Failed to convert amount: %s", err)
+		log.Err(err).Msg("Failed to convert amount")
 		err = common.StringError(err)
 		return
 	}
 
 	senderAmount, err := common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert senderAmount: %s", err)
+		log.Err(err).Msg("Failed to convert senderAmount")
 		err = common.StringError(err)
 		return
 	}
 
 	receiverAmount, err := common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert receiverAmount: %s", err)
+		log.Err(err).Msg("Failed to convert receiverAmount")
 		err = common.StringError(err)
 		return
 	}
@@ -172,7 +170,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	if transaction.StringFee != "" {
 		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
 		if err != nil {
-			log.Printf("Failed to convert stringFee: %s", err)
+			log.Err(err).Msg("Failed to convert stringFee")
 			err = common.StringError(err)
 			return
 		}
@@ -182,7 +180,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	if transaction.ProcessingFee != "" {
 		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
 		if err != nil {
-			log.Printf("Failed to convert processingFee: %s", err)
+			log.Err(err).Msg("Failed to convert processingFee")
 			err = common.StringError(err)
 			return
 		}
