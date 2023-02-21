@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 	"reflect"
@@ -17,6 +16,7 @@ import (
 	ethcomm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rs/zerolog/log"
 )
 
 func ToSha256(v string) string {
@@ -40,7 +40,7 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, err error) {
 	floatReturn, err = strconv.ParseFloat(bigNumber, 64)
 	if err != nil {
-		log.Printf("Failed to convert bigNumber to float: %s", err)
+		log.Err(err).Msg("Failed to convert bigNumber to float")
 		err = StringError(err)
 		return
 	}
@@ -101,7 +101,7 @@ func IsLocalEnv() bool {
 func BetterStringify(jsonBody any) (betterString string, err error) {
 	bodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
-		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)
+		log.Err(err).Interface("body", jsonBody).Msg("Could not encode to bytes")
 		return betterString, StringError(err)
 	}
 
