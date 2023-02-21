@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/rs/zerolog/log"
 )
 
 func u21Put(url string, jsonBody any) (body []byte, err error) {
@@ -18,16 +18,15 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
-		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)
+		log.Err(err).Msg("Could not encode into bytes")
 		return nil, common.StringError(err)
 	}
-	log.Printf("reqBodyBytes: %s", reqBodyBytes)
-
+	log.Info().Str("body", string(reqBodyBytes)).Send()
 	bodyReader := bytes.NewReader(reqBodyBytes)
 
 	req, err := http.NewRequest(http.MethodPut, url, bodyReader)
 	if err != nil {
-		log.Printf("Could not create request for %s: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Could not create request")
 		return nil, common.StringError(err)
 	}
 
@@ -39,7 +38,7 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Printf("Request failed to update %s: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Request failed to update")
 		return nil, common.StringError(err)
 	}
 
@@ -47,12 +46,12 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 
 	body, err = io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("Error extracting body from %s update request: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Error extracting body")
 		return nil, common.StringError(err)
 	}
 
 	if res.StatusCode != 200 {
-		log.Printf("Request failed to update %s: %s", url, fmt.Sprint(res.StatusCode))
+		log.Err(err).Str("url", url).Int("statusCode", res.StatusCode).Msg("Request failed to update")
 		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
 		return
 	}
@@ -66,7 +65,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 	reqBodyBytes, err := json.Marshal(jsonBody)
 
 	if err != nil {
-		log.Printf("Could not encode %+v to bytes: %s", jsonBody, err)
+		log.Err(err).Msg("Could not encode into bytes")
 		return nil, common.StringError(err)
 	}
 
@@ -74,7 +73,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
 	if err != nil {
-		log.Printf("Could not create request for %s: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Could not create request")
 		return nil, common.StringError(err)
 	}
 
@@ -86,7 +85,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Printf("Request failed to update %s: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Request failed to update")
 		return nil, common.StringError(err)
 	}
 
@@ -94,14 +93,14 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 
 	body, err = io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("Error extracting body from %s update response: %s", url, err)
+		log.Err(err).Str("url", url).Msg("Error extracting body from")
 		return nil, common.StringError(err)
 	}
 
-	log.Printf("String of body from response: %s", string(body))
+	log.Info().Str("body", string(body)).Msgf("Strinb of body grom response")
 
 	if res.StatusCode != 200 {
-		log.Printf("Request failed to update %s: %s", url, fmt.Sprint(res.StatusCode))
+		log.Err(err).Str("url", url).Int("statusCode", res.StatusCode).Msg("Request failed to update")
 		err = common.StringError(fmt.Errorf("request failed with status code %s and return body: %s", fmt.Sprint(res.StatusCode), string(body)))
 		return
 	}
