@@ -2,7 +2,6 @@ package service
 
 import (
 	"os"
-	"strings"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
