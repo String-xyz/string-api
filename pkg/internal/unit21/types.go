@@ -87,8 +87,12 @@ type instrumentEntity struct {
 	EntityType     string `json:"entity_type,omitempty"`
 }
 
+type ipAddress struct {
+	IpAddress string `json:"ip_address"`
+}
+
 type instrumentDigitalData struct {
-	IpAddresses []string `json:"ip_addresses,omitempty"`
+	IpAddresses []ipAddress `json:"ip_addresses,omitempty"`
 }
 
 type instrumentLocationData struct {

@@ -172,7 +172,9 @@ func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrum
 	}
 
 	for _, device := range devices {
-		digitalData.IpAddresses = append(digitalData.IpAddresses, device.IpAddresses...)
+		for _, ip := range device.IpAddresses {
+			digitalData.IpAddresses = append(digitalData.IpAddresses, ipAddress{IpAddress: ip})
+		}
 	}
 	return
 }
