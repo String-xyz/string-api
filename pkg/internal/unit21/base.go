@@ -97,7 +97,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 		return nil, common.StringError(err)
 	}
 
-	log.Info().Str("body", string(body)).Msgf("Strinb of body grom response")
+	log.Info().Str("body", string(body)).Msgf("String of body from response")
 
 	if res.StatusCode != 200 {
 		log.Err(err).Str("url", url).Int("statusCode", res.StatusCode).Msg("Request failed to update")
