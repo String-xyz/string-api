@@ -101,7 +101,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
 
-	if err != nil && !strings.Contains(err.Error(), "not found") {
+	if err != nil && errors.Cause(err).Error() != "not found" {
 		return resp, common.StringError(err)
 	}
 
