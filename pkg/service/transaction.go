@@ -510,7 +510,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "CryptoWallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "Crypto Wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
