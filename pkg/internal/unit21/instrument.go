@@ -179,7 +179,7 @@ func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrum
 	return
 }
 
-func (i instrument) getLocationData(locationId string) (locationData instrumentLocationData, err error) {
+func (i instrument) getLocationData(locationId string) (locationData *instrumentLocationData, err error) {
 	if locationId == "" {
 		log.Warn().Msg("No locationId defined")
 		return
@@ -191,23 +191,24 @@ func (i instrument) getLocationData(locationId string) (locationData instrumentL
 		err = common.StringError(err)
 		return
 	}
-
-	locationData = instrumentLocationData{
-		Type:           location.Type,
-		BuildingNumber: location.BuildingNumber,
-		UnitNumber:     location.UnitNumber,
-		StreetName:     location.StreetName,
-		City:           location.City,
-		State:          location.State,
-		PostalCode:     location.PostalCode,
-		Country:        location.Country,
-		VerifiedOn:     int(location.CreatedAt.Unix()),
+	if location.CreatedAt.Unix() != 0 {
+		locationData = &instrumentLocationData{
+			Type:           location.Type,
+			BuildingNumber: location.BuildingNumber,
+			UnitNumber:     location.UnitNumber,
+			StreetName:     location.StreetName,
+			City:           location.City,
+			State:          location.State,
+			PostalCode:     location.PostalCode,
+			Country:        location.Country,
+			VerifiedOn:     int(location.CreatedAt.Unix()),
+		}
 	}
 
 	return locationData, nil
 }
 
-func mapToUnit21Instrument(instrument model.Instrument, source string, entityData instrumentEntity, digitalData instrumentDigitalData, locationData instrumentLocationData) *u21Instrument {
+func mapToUnit21Instrument(instrument model.Instrument, source string, entityData instrumentEntity, digitalData instrumentDigitalData, locationData *instrumentLocationData) *u21Instrument {
 	var instrumentTagArr []string
 	if instrument.Tags != nil {
 		for key, value := range instrument.Tags {
@@ -227,12 +228,10 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 		RegisteredAt:       int(instrument.CreatedAt.Unix()),
 		ParentInstrumentId: "",
 		Entities:           entityArray,
-		CustomData: &instrumentCustomData{
-			None: nil,
-		},
-		DigitalData:  &digitalData,
-		LocationData: &locationData,
-		Tags:         instrumentTagArr,
+		CustomData:         nil, //TODO: include platform in customData
+		DigitalData:        &digitalData,
+		LocationData:       locationData,
+		Tags:               instrumentTagArr,
 		// Options:      &options,
 	}
 
