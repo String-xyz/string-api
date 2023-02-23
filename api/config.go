@@ -53,7 +53,7 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	platform := service.NewPlatform(platformRepos)
 
 	transaction := service.NewTransaction(repos, config.Redis)
-	user := service.NewUser(repos, auth, fingerprint)
+	user := service.NewUser(repos, auth, fingerprint, device)
 
 	return service.Services{
 		Auth:         auth,

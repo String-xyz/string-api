@@ -2,13 +2,11 @@ package service
 
 import (
 	"os"
-	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -39,10 +37,11 @@ type user struct {
 	repos       repository.Repositories
 	auth        Auth
 	fingerprint Fingerprint
+	device      Device
 }
 
-func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint) User {
-	return &user{repos, auth, fprint}
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device) User {
+	return &user{repos, auth, fprint, device}
 }
 
 func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
@@ -98,30 +97,11 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 		return resp, err
 	}
 
-	var device model.Device
-
 	// create device only if there is a visitor
-	visitorID := request.Fingerprint.VisitorID
-	requestID := request.Fingerprint.RequestID
-	if visitorID != "" && requestID != "" {
-		visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
-		if err == nil {
-			// if fingerprint successfully retrieved, create device, otherwise continue without device
-			now := time.Now()
+	device, err := u.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
 
-			device, err = u.repos.Device.Create(model.Device{
-				Fingerprint: visitorID,
-				UserID:      user.ID,
-				Type:        visitor.Type,
-				IpAddresses: pq.StringArray{visitor.IPAddress},
-				Description: visitor.UserAgent,
-				LastUsedAt:  now,
-				ValidatedAt: &now,
-			})
-			if err != nil {
-				return resp, common.StringError(err)
-			}
-		}
+	if err != nil && errors.Cause(err).Error() != "not found" {
+		return resp, common.StringError(err)
 	}
 
 	jwt, err := u.auth.GenerateJWT(user.ID, device)
