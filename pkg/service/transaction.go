@@ -497,7 +497,7 @@ func (t transaction) addCardInstrumentIdIfNew(p transactionProcessingData) (stri
 	if err != nil {
 		return "", common.StringError(err)
 	}
-	go t.unit21CreateInstrument(instrument)
+	t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
@@ -515,7 +515,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	if err != nil {
 		return "", common.StringError(err)
 	}
-	go t.unit21CreateInstrument(instrument)
+	t.unit21CreateInstrument(instrument)
 	return instrument.ID, nil
 }
 
