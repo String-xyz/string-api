@@ -62,10 +62,7 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 func u21Post(url string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 
-	jsonInstrument, _ := common.BetterStringify(jsonBody)
-	log.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>create data passed to Unit21: %+v\n", jsonInstrument)
 	reqBodyBytes, err := json.Marshal(jsonBody)
-
 	if err != nil {
 		log.Err(err).Msg("Could not encode into bytes")
 		return nil, common.StringError(err)

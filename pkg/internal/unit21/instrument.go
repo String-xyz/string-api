@@ -15,18 +15,19 @@ type Instrument interface {
 	Update(instrument model.Instrument) (unit21Id string, err error)
 }
 
-type InstrumentRepo struct {
+type InstrumentRepos struct {
 	User     repository.User
 	Device   repository.Device
 	Location repository.Location
 }
 
 type instrument struct {
-	repo InstrumentRepo
+	action Action
+	repos  InstrumentRepos
 }
 
-func NewInstrument(r InstrumentRepo) Instrument {
-	return &instrument{repo: r}
+func NewInstrument(r InstrumentRepos, a Action) Instrument {
+	return &instrument{repos: r, action: a}
 }
 
 func (i instrument) Create(instrument model.Instrument) (unit21Id string, err error) {
@@ -70,6 +71,14 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 	}
 
 	log.Info().Str("Unit21Id", u21Response.Unit21Id).Send()
+
+	// Log create instrument action w/ Unit21
+	_, err = i.action.Create(instrument, "Creation", u21Response.Unit21Id, "Creation")
+	if err != nil {
+		log.Err(err).Msg("Error creating a new instrument action in Unit21")
+		return u21Response.Unit21Id, common.StringError(err)
+	}
+
 	return u21Response.Unit21Id, nil
 }
 
@@ -125,7 +134,7 @@ func (i instrument) getSource(userId string) (source string, err error) {
 		log.Warn().Msg("No userId defined")
 		return
 	}
-	user, err := i.repo.User.GetById(userId)
+	user, err := i.repos.User.GetById(userId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get user contacts")
 		return "", common.StringError(err)
@@ -143,7 +152,7 @@ func (i instrument) getEntities(userId string) (entity instrumentEntity, err err
 		return
 	}
 
-	user, err := i.repo.User.GetById(userId)
+	user, err := i.repos.User.GetById(userId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get user contacts")
 		err = common.StringError(err)
@@ -164,7 +173,7 @@ func (i instrument) getInstrumentDigitalData(userId string) (digitalData instrum
 		return
 	}
 
-	devices, err := i.repo.Device.ListByUserId(userId, 100, 0)
+	devices, err := i.repos.Device.ListByUserId(userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user devices")
 		err = common.StringError(err)
@@ -183,7 +192,7 @@ func (i instrument) getLocationData(locationId string) (locationData *instrument
 		return
 	}
 
-	location, err := i.repo.Location.GetById(locationId)
+	location, err := i.repos.Location.GetById(locationId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get instrument location")
 		err = common.StringError(err)

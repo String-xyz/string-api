@@ -31,6 +31,7 @@ func NewRepos(config APIConfig) repository.Repositories {
  * Not every service needs access to all of the repos, so we can pass in only the ones it needs. This will make it easier to test
  */
 func NewServices(config APIConfig, repos repository.Repositories) service.Services {
+	unit21 := service.NewUnit21(repos)
 	httpClient := service.NewHTTPClient(service.HTTPConfig{Timeout: time.Duration(30) * time.Second})
 	client := service.NewFingerprintClient(httpClient)
 	fingerprint := service.NewFingerprint(client)
@@ -52,8 +53,8 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	platformRepos := repository.Repositories{Auth: repos.Auth, Platform: repos.Platform}
 	platform := service.NewPlatform(platformRepos)
 
-	transaction := service.NewTransaction(repos, config.Redis)
-	user := service.NewUser(repos, auth, fingerprint, device)
+	transaction := service.NewTransaction(repos, config.Redis, unit21)
+	user := service.NewUser(repos, auth, fingerprint, device, unit21)
 
 	return service.Services{
 		Auth:         auth,
