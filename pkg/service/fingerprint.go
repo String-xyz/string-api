@@ -1,16 +1,25 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/model"
 )
 
 type FPClient common.FingerprintClient
 type HTTPConfig common.HTTPConfig
 type HTTPClient common.HTTPClient
-type FPVisitor = model.FPVisitor
+type FPVisitor struct {
+	VisitorID  string
+	Country    string
+	State      string
+	IPAddress  sql.NullString
+	Timestamp  int64
+	Confidence float64
+	Type       string
+	UserAgent  string
+}
 
 func NewHTTPClient(config HTTPConfig) HTTPClient {
 	return common.NewHTTPClient(common.HTTPConfig(config))
@@ -59,7 +68,7 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 		VisitorID:  visitor.ID,
 		Country:    visit.IPLocation.Coutry.Code,
 		State:      state,
-		IPAddress:  visit.IP,
+		IPAddress:  sql.NullString{String: visit.IP},
 		Timestamp:  visit.Timestamp,
 		Confidence: visit.IPLocation.Confidence.Score,
 		Type:       visit.BrowserDetails.Device,

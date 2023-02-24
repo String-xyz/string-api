@@ -4,11 +4,9 @@ import (
 	"os"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 type UserRequest = model.UserRequest
@@ -38,10 +36,11 @@ type user struct {
 	auth        Auth
 	fingerprint Fingerprint
 	device      Device
+	unit21      Unit21
 }
 
-func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device) User {
-	return &user{repos, auth, fprint, device}
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21) User {
+	return &user{repos, auth, fprint, device, unit21}
 }
 
 func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
@@ -110,7 +109,7 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	}
 
 	// deviceService.RegisterNewUserDevice()
-	go u.createUnit21Entity(user)
+	go u.unit21.Entity.Create(user)
 
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
@@ -136,10 +135,11 @@ func (u user) createUserData(addr string) (model.User, error) {
 		u.repos.Instrument.Rollback()
 		return user, common.StringError(err)
 	}
-
 	if err := u.repos.User.Commit(); err != nil {
 		return user, common.StringError(errors.New("error commiting transaction"))
 	}
+
+	go u.unit21.Instrument.Create(instrument)
 
 	return user, nil
 }
@@ -151,37 +151,7 @@ func (u user) Update(userID string, request UserUpdates) (model.User, error) {
 		return user, common.StringError(err)
 	}
 
-	go u.updateUnit21Entity(user)
+	go u.unit21.Entity.Update(user)
 
 	return user, nil
-}
-
-func (u user) createUnit21Entity(user model.User) {
-	// Createing a User Entity in Unit21
-	u21Repo := unit21.EntityRepos{
-		Device:         u.repos.Device,
-		Contact:        u.repos.Contact,
-		UserToPlatform: u.repos.UserToPlatform,
-	}
-
-	u21Entity := unit21.NewEntity(u21Repo) // TODO: Make it an injected dependency
-	_, err := u21Entity.Create(user)
-	if err != nil {
-		log.Err(err).Msg("Error creating Entity in Unit21")
-	}
-}
-
-func (u user) updateUnit21Entity(user model.User) {
-	// Createing a User Entity in Unit21
-	u21Repo := unit21.EntityRepos{
-		Device:         u.repos.Device,
-		Contact:        u.repos.Contact,
-		UserToPlatform: u.repos.UserToPlatform,
-	}
-
-	u21Entity := unit21.NewEntity(u21Repo)
-	_, err := u21Entity.Update(user)
-	if err != nil {
-		log.Err(err).Msg("Error updating Entity in Unit21")
-	}
 }

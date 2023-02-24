@@ -63,7 +63,6 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 	apiKey := os.Getenv("UNIT21_API_KEY")
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
-
 	if err != nil {
 		log.Err(err).Msg("Could not encode into bytes")
 		return nil, common.StringError(err)
@@ -97,7 +96,7 @@ func u21Post(url string, jsonBody any) (body []byte, err error) {
 		return nil, common.StringError(err)
 	}
 
-	log.Info().Str("body", string(body)).Msgf("Strinb of body grom response")
+	log.Info().Str("body", string(body)).Msgf("String of body from response")
 
 	if res.StatusCode != 200 {
 		log.Err(err).Str("url", url).Int("statusCode", res.StatusCode).Msg("Request failed to update")

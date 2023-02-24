@@ -14,4 +14,5 @@ type Services struct {
 	User         User
 	Verification Verification
 	Device       Device
+	Unit21       Unit21
 }

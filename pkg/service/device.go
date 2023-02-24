@@ -27,22 +27,26 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 	return &device{repos, f}
 }
 
-func (d device) createDevice(userID string, visitor model.FPVisitor, description string) (model.Device, error) {
+func (d device) createDevice(userID string, visitor FPVisitor, description string) (model.Device, error) {
+	addresses := pq.StringArray{}
+	if visitor.IPAddress.String != "" {
+		addresses = pq.StringArray{visitor.IPAddress.String}
+	}
+
 	return d.repos.Device.Create(model.Device{
 		UserID:      userID,
 		Fingerprint: visitor.VisitorID,
 		Type:        visitor.Type,
-		IpAddresses: pq.StringArray{visitor.IPAddress},
+		IpAddresses: addresses,
 		Description: description,
 		LastUsedAt:  time.Now(),
 	})
 }
 
 func (d device) CreateUnknownDevice(userID string) (model.Device, error) {
-	visitor := model.FPVisitor{
+	visitor := FPVisitor{
 		VisitorID: "unknown",
 		Type:      "unknown",
-		IPAddress: "unknown",
 		UserAgent: "unknown",
 	}
 	device, err := d.createDevice(userID, visitor, "an unknown device")

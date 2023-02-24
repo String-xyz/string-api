@@ -6,7 +6,6 @@ import (
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
 )
 
@@ -17,18 +16,11 @@ type Action interface {
 		eventSubtype string) (unit21Id string, err error)
 }
 
-type ActionRepo struct {
-	User     repository.User
-	Device   repository.Device
-	Location repository.Location
-}
-
 type action struct {
-	repo ActionRepo
 }
 
-func NewAction(r ActionRepo) Action {
-	return &action{repo: r}
+func NewAction() Action {
+	return &action{}
 }
 
 func (a action) Create(

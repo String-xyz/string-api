@@ -82,7 +82,7 @@ type Device struct {
 	Type          string         `json:"type" db:"type"`
 	Description   string         `json:"description" db:"description"`
 	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
-	IpAddresses   pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
+	IpAddresses   pq.StringArray `json:"ipAddresses,omitempty" db:"ip_addresses"`
 	UserID        string         `json:"userId" db:"user_id"`
 }
 

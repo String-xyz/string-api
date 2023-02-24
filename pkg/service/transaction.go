@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/internal/unit21"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -45,9 +44,14 @@ type InternalIds struct {
 }
 
 type transaction struct {
-	repos repository.Repositories
-	redis store.RedisStore
-	ids   InternalIds
+	repos  repository.Repositories
+	redis  store.RedisStore
+	ids    InternalIds
+	unit21 Unit21
+}
+
+func NewTransaction(repos repository.Repositories, redis store.RedisStore, unit21 Unit21) Transaction {
+	return &transaction{repos: repos, redis: redis, unit21: unit21}
 }
 
 type transactionProcessingData struct {
@@ -65,10 +69,6 @@ type transactionProcessingData struct {
 	txId               *string
 	cumulativeValue    *big.Int
 	trueGas            *uint64
-}
-
-func NewTransaction(repos repository.Repositories, redis store.RedisStore) Transaction {
-	return &transaction{repos: repos, redis: redis}
 }
 
 func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
@@ -349,8 +349,14 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	}
 
 	// Validate Transaction through Real Time Rules engine
-	// RTR is not released for Unit21 Production (slated for Late February 2023)
-	evaluation, err := t.unit21Evaluate(p.transactionModel.ID)
+	txModel, err := t.repos.Transaction.GetById(p.transactionModel.ID)
+	if err != nil {
+		log.Err(err).Msg("error getting tx model in unit21 Tx Evalute")
+		return p, common.StringError(err)
+	}
+
+	evaluation, err := t.unit21.Transaction.Evaluate(txModel)
+
 	if err != nil {
 		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
 		log.Err(err).Msg("Error evaluating transaction in Unit21")
@@ -477,7 +483,8 @@ func (t transaction) addCardInstrumentIdIfNew(p transactionProcessingData) (stri
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", common.StringError(err)
 	} else if err == nil && instrument.UserID != "" {
-		return instrument.ID, nil // instrument already exists
+		go t.unit21.Instrument.Update(instrument) // if instrument already exists, update it anyways
+		return instrument.ID, nil                 // return if instrument already exists
 	}
 
 	// We should gather type from the payment processor
@@ -497,7 +504,9 @@ func (t transaction) addCardInstrumentIdIfNew(p transactionProcessingData) (stri
 	if err != nil {
 		return "", common.StringError(err)
 	}
-	go t.unit21CreateInstrument(instrument)
+
+	go t.unit21.Instrument.Create(instrument)
+
 	return instrument.ID, nil
 }
 
@@ -506,16 +515,19 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", common.StringError(err)
 	} else if err == nil && instrument.PublicKey == address {
-		return instrument.ID, nil
+		go t.unit21.Instrument.Update(instrument) // if instrument already exists, update it anyways
+		return instrument.ID, nil                 // return if instrument already exists
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "CryptoWallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "Crypto Wallet", Status: "external", Network: "ethereum", PublicKey: address, UserID: id} // No locationID or userID because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", common.StringError(err)
 	}
-	go t.unit21CreateInstrument(instrument)
+
+	go t.unit21.Instrument.Create(instrument)
+
 	return instrument.ID, nil
 }
 
@@ -774,37 +786,6 @@ func floatToFixedString(value float64, decimals int) string {
 	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
 }
 
-func (t transaction) unit21CreateInstrument(instrument model.Instrument) (err error) {
-	u21InstrumentRepo := unit21.InstrumentRepo{
-		User:     t.repos.User,
-		Device:   t.repos.Device,
-		Location: t.repos.Location, // empty until fingerprint integration
-	}
-
-	u21Instrument := unit21.NewInstrument(u21InstrumentRepo)
-	u21InstrumentId, err := u21Instrument.Create(instrument)
-	if err != nil {
-		log.Err(err).Msg("Error creating new instrument in Unit21")
-		return common.StringError(err)
-	}
-
-	// Log create instrument action w/ Unit21
-	u21ActionRepo := unit21.ActionRepo{
-		User:     t.repos.User,
-		Device:   t.repos.Device,
-		Location: t.repos.Location, // empty until fingerprint integration
-	}
-
-	u21Action := unit21.NewAction(u21ActionRepo)
-	_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
-	if err != nil {
-		log.Err(err).Msg("Error creating a new instrument action in Unit21")
-		return common.StringError(err)
-	}
-
-	return
-}
-
 func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
 	txModel, err := t.repos.Transaction.GetById(transactionId)
 	if err != nil {
@@ -812,38 +793,13 @@ func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
 		return common.StringError(err)
 	}
 
-	u21Repo := unit21.TransactionRepo{
-		TxLeg: t.repos.TxLeg,
-		User:  t.repos.User,
-		Asset: t.repos.Asset,
-	}
-
-	u21Tx := unit21.NewTransaction(u21Repo)
-	_, err = u21Tx.Create(txModel)
+	_, err = t.unit21.Transaction.Create(txModel)
 	if err != nil {
 		log.Err(err).Msg("Error updating unit21 in Tx Postprocess")
 		return common.StringError(err)
 	}
 
 	return nil
-}
-
-func (t transaction) unit21Evaluate(transactionId string) (evaluation bool, err error) {
-	//Check transaction in Unit21
-	txModel, err := t.repos.Transaction.GetById(transactionId)
-	if err != nil {
-		log.Err(err).Msg("error getting tx model in unit21 Tx Evalute")
-		return evaluation, common.StringError(err)
-	}
-
-	u21Repo := unit21.TransactionRepo{
-		TxLeg: t.repos.TxLeg,
-		User:  t.repos.User,
-		Asset: t.repos.Asset,
-	}
-
-	u21Tx := unit21.NewTransaction(u21Repo)
-	return u21Tx.Evaluate(txModel)
 }
 
 func (t transaction) updateTransactionStatus(status string, transactionId string) (err error) {

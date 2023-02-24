@@ -16,18 +16,18 @@ type Transaction interface {
 	Update(transaction model.Transaction) (unit21Id string, err error)
 }
 
-type TransactionRepo struct {
-	TxLeg repository.TxLeg
+type TransactionRepos struct {
 	User  repository.User
+	TxLeg repository.TxLeg
 	Asset repository.Asset
 }
 
 type transaction struct {
-	repo TransactionRepo
+	repos TransactionRepos
 }
 
-func NewTransaction(r TransactionRepo) Transaction {
-	return &transaction{repo: r}
+func NewTransaction(r TransactionRepos) Transaction {
+	return &transaction{repos: r}
 }
 
 func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
@@ -118,28 +118,28 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 }
 
 func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
-	senderData, err := t.repo.TxLeg.GetById(transaction.OriginTxLegID)
+	senderData, err := t.repos.TxLeg.GetById(transaction.OriginTxLegID)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverData, err := t.repo.TxLeg.GetById(transaction.DestinationTxLegID)
+	receiverData, err := t.repos.TxLeg.GetById(transaction.DestinationTxLegID)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	senderAsset, err := t.repo.Asset.GetById(senderData.AssetID)
+	senderAsset, err := t.repos.Asset.GetById(senderData.AssetID)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction sender asset")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverAsset, err := t.repo.Asset.GetById(receiverData.AssetID)
+	receiverAsset, err := t.repos.Asset.GetById(receiverData.AssetID)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction receiver asset")
 		err = common.StringError(err)
