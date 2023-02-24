@@ -506,6 +506,7 @@ func (t transaction) addCardInstrumentIdIfNew(p transactionProcessingData) (stri
 	}
 
 	go t.unit21.Instrument.Create(instrument)
+
 	return instrument.ID, nil
 }
 
@@ -526,6 +527,7 @@ func (t transaction) addWalletInstrumentIdIfNew(address string, id string) (stri
 	}
 
 	go t.unit21.Instrument.Create(instrument)
+
 	return instrument.ID, nil
 }
 
