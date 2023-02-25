@@ -783,7 +783,7 @@ func (t transaction) sendEmailReceipt(p transactionProcessingData) error {
 }
 
 func floatToFixedString(value float64, decimals int) string {
-	return strconv.FormatUint(uint64(value*(math.Pow10(decimals-1))), 10)
+	return strconv.FormatUint(uint64(value*(math.Pow10(decimals))), 10)
 }
 
 func (t transaction) unit21CreateTransaction(transactionId string) (err error) {
