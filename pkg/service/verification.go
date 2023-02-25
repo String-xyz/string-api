@@ -38,11 +38,12 @@ type Verification interface {
 }
 
 type verification struct {
-	repos repository.Repositories
+	repos  repository.Repositories
+	unit21 Unit21
 }
 
-func NewVerification(repos repository.Repositories) Verification {
-	return &verification{repos}
+func NewVerification(repos repository.Repositories, unit21 Unit21) Verification {
+	return &verification{repos, unit21}
 }
 
 func (v verification) SendEmailVerification(userID, email string) error {
@@ -161,6 +162,8 @@ func (v verification) VerifyEmail(encrypted string) error {
 	if err != nil {
 		return common.StringError(errors.New("User email verify error - userID: " + user.ID))
 	}
+
+	go v.unit21.Entity.Update(user)
 
 	return nil
 }
