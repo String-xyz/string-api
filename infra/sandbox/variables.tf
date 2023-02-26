@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
-  env                = "dev"
+  cluster_name       = "core-sandbox"
+  env                = "sandbox"
   service_name       = "string-api"
-  root_domain        = "dev.string-api.xyz"
+  root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "sandbox-api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "latest"
+  default = "v.1.0.0-alpha"
 }
 
 locals {
