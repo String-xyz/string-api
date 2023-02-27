@@ -1,21 +1,22 @@
 module "alb_acm" {
   source            = "../acm"
-  domain_name       = "string-api.${local.root_domain}"
+  domain_name       = "api.${local.root_domain}"
   aws_region        = "us-west-2"
   zone_id           = data.aws_route53_zone.root.zone_id
   tags = {
-    Name = "string-api-${local.root_domain}-alb"
+    Name = "api-${local.root_domain}-alb"
   }
 }
 
 resource "aws_alb" "alb" {
-  name                       = "${local.env}${local.service_name}-alb"
+  name                       = "${local.env}-${local.service_name}-alb"
   drop_invalid_header_fields = true
   security_groups            = [aws_security_group.ecs_alb_https_sg.id]
   subnets                    = data.terraform_remote_state.vpc.outputs.public_subnets
 
   tags = {
-    Name = "${local.service_name}-alb"
+    Name = "${local.env}-${local.service_name}-alb"
+    Environment = local.env
   }
 
   lifecycle {
@@ -36,7 +37,7 @@ resource "aws_alb" "alb" {
  }
 
 resource "aws_alb_target_group" "ecs_task_target_group" {
-  name        = "${local.env}${local.service_name}-tg"
+  name        = "${local.env}-${local.service_name}-tg"
   port        = local.container_port
   vpc_id      = data.terraform_remote_state.vpc.outputs.id
   target_type = "ip"
@@ -57,7 +58,7 @@ resource "aws_alb_target_group" "ecs_task_target_group" {
   }
 
   tags = {
-    Name = "${local.service_name}-tg"
+    Name = "${local.env}-${local.service_name}-tg"
   }
 }
 
@@ -94,7 +95,7 @@ resource "aws_alb_listener_rule" "ecs_alb_listener_rule" {
 
   condition {
     host_header {
-      values = ["string-api.${local.root_domain}"]
+      values = ["api.${local.root_domain}"]
     }
   }
 }

@@ -1,11 +1,11 @@
 locals {
   cluster_name       = "core-sandbox"
   env                = "sandbox"
-  service_name       = "string-api"
+  service_name       = "api"
   root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
   origin_id          = "sandbox-api"
-  desired_task_count = "1"
+  desired_task_count = "2"
   db_port            = "5432"
   redis_port         = "6379"
   memory             = 512

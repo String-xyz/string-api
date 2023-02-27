@@ -1,5 +1,5 @@
 resource "aws_security_group" "ecs_alb_https_sg" {
-  name        = "${local.service_name}-alb-https-sg"
+  name        = "${local.env}-${local.service_name}-alb-https-sg"
   description = "Security group for ALB to cluster"
   vpc_id      = data.terraform_remote_state.vpc.outputs.id
   
@@ -22,13 +22,13 @@ resource "aws_security_group" "ecs_alb_https_sg" {
   }
 
   tags = {
-    Name        = "${local.service_name}-alb-https-sg"
+    Name        = "${local.env}-${local.service_name}-alb-https-sg"
     Environment = local.env
   }
 }
 
 resource "aws_security_group" "ecs_task_sg" {
-  name   = "${local.service_name}-task-sg"
+  name   = "${local.env}-${local.service_name}-task-sg"
   vpc_id = data.terraform_remote_state.vpc.outputs.id
   ingress {
     from_port   = local.container_port
@@ -49,12 +49,12 @@ resource "aws_security_group" "ecs_task_sg" {
   }
 
   tags = {
-    Name        = "${local.service_name}-task-sg"
+    Name        = "${local.env}-${local.service_name}-task-sg"
     environment = local.env
   }
 }
 
-# Give access to DB through Security group rule
+# Give access to DB through security group rule
 data "aws_security_group" "rds" {
   name   = "${local.env}-string-write-master-client-rds"
   vpc_id = data.terraform_remote_state.vpc.outputs.id

@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "ecs_task_policy" {
 }
 
 resource "aws_iam_role" "task_ecs_role" {
-  name               = "${local.service_name}-task-ecs-role"
+  name               = "${local.env}-${local.service_name}-task-ecs-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_policy.json
 }
 
