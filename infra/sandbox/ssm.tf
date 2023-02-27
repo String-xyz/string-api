@@ -91,7 +91,7 @@ data "aws_ssm_parameter" "db_name" {
 }
 
 data "aws_ssm_parameter" "db_host" {
-  name = "${local.env}-string-write-db-host-url"
+  name = "${local.env}-write-db-host-url"
 }
 
 data "aws_ssm_parameter" "redis_auth_token" {
