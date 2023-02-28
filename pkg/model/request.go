@@ -128,7 +128,8 @@ type NetworkUpdates struct {
 }
 
 type DeviceUpdates struct {
-	ValidatedAt *time.Time `json:"validatedAt" db:"validated_at"`
+	ValidatedAt *time.Time      `json:"validatedAt" db:"validated_at"`
+	IpAddresses *pq.StringArray `json:"ipAddresses" db:"ip_addresses"`
 }
 
 type RefreshTokenPayload struct {

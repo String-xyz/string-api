@@ -96,7 +96,7 @@ func userRoute(services service.Services, e *echo.Echo) {
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {
-	handler := handler.NewLogin(e, services.Auth)
+	handler := handler.NewLogin(e, services.Auth, services.Device)
 	handler.RegisterRoutes(e.Group("/login"), middleware.APIKeyAuth(services.Auth))
 }
 

@@ -18,7 +18,7 @@ func NewUnit21(repos repository.Repositories) Unit21 {
 	entity := unit21.NewEntity(entityRepos)
 	instrumentRepos := unit21.InstrumentRepos{User: repos.User, Device: repos.Device, Location: repos.Location}
 	instrument := unit21.NewInstrument(instrumentRepos, action)
-	transactionRepos := unit21.TransactionRepos{User: repos.User, TxLeg: repos.TxLeg, Asset: repos.Asset}
+	transactionRepos := unit21.TransactionRepos{User: repos.User, TxLeg: repos.TxLeg, Asset: repos.Asset, Device: repos.Device}
 	transaction := unit21.NewTransaction(transactionRepos)
 	return Unit21{
 		Action:      action,

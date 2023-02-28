@@ -21,7 +21,7 @@ import (
 
 type Transaction interface {
 	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
-	Execute(e model.ExecutionRequest, userId string, deviceId string) (model.TransactionReceipt, error)
+	Execute(e model.ExecutionRequest, userId string, deviceId string, ip string) (model.TransactionReceipt, error)
 }
 
 type TransactionRepos struct {
@@ -57,6 +57,7 @@ func NewTransaction(repos repository.Repositories, redis store.RedisStore, unit2
 type transactionProcessingData struct {
 	userId             *string
 	deviceId           *string
+	ip                 *string
 	executor           *Executor
 	processingFeeAsset *model.Asset
 	transactionModel   *model.Transaction
@@ -106,10 +107,9 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	return res, nil
 }
 
-func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-
-	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId}
+	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(p)
@@ -275,11 +275,11 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	}
 
 	// Create new Tx in repository, populate it with known info
-	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: *p.deviceId, PlatformID: t.ids.StringPlatformId})
-	p.transactionModel = &transactionModel
+	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkID: chain.UUID, DeviceID: *p.deviceId, IPAddress: *p.ip, PlatformID: t.ids.StringPlatformId})
 	if err != nil {
 		return p, common.StringError(err)
 	}
+	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
 	processingFeeAsset, err := t.populateInitialTxModelData(*p.executionRequest, updateDB)
