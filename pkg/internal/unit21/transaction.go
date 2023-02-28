@@ -17,9 +17,10 @@ type Transaction interface {
 }
 
 type TransactionRepos struct {
-	User  repository.User
-	TxLeg repository.TxLeg
-	Asset repository.Asset
+	User   repository.User
+	TxLeg  repository.TxLeg
+	Asset  repository.Asset
+	Device repository.Device
 }
 
 type transaction struct {
@@ -37,12 +38,18 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 		return false, common.StringError(err)
 	}
 
+	digitalData, err := t.getEventDigitalData(transaction)
+	if err != nil {
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return false, common.StringError(err)
+	}
+
 	url := os.Getenv("UNIT21_RTR_URL")
 	if url == "" {
 		url = "https://rtr.sandbox2.unit21.com/evaluate"
 	}
 
-	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction evaluate failed")
 		return false, common.StringError(err)
@@ -67,14 +74,19 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 
 func (t transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
 	transactionData, err := t.getTransactionData(transaction)
-
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return "", common.StringError(err)
 	}
 
+	digitalData, err := t.getEventDigitalData(transaction)
+	if err != nil {
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return "", common.StringError(err)
+	}
+
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
-	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction create failed")
 		return "", common.StringError(err)
@@ -98,9 +110,15 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 		return "", common.StringError(err)
 	}
 
+	digitalData, err := t.getEventDigitalData(transaction)
+	if err != nil {
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return "", common.StringError(err)
+	}
+
 	orgName := os.Getenv("UNIT21_ORG_NAME")
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
-	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction create failed:")
@@ -213,7 +231,26 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData) *u21Event {
+func (t transaction) getEventDigitalData(transaction model.Transaction) (digitalData eventDigitalData, err error) {
+	if transaction.DeviceID == "" {
+		return
+	}
+
+	device, err := t.repos.Device.GetById(transaction.DeviceID)
+	if err != nil {
+		log.Err(err).Msg("Failed to get transaction device")
+		err = common.StringError(err)
+		return
+	}
+
+	digitalData = eventDigitalData{
+		IPAddress:         transaction.IPAddress,
+		ClientFingerprint: device.Fingerprint,
+	}
+	return
+}
+
+func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData, digitalData eventDigitalData) *u21Event {
 	var transactionTagArr []string
 	if transaction.Tags != nil {
 		for key, value := range transaction.Tags {
@@ -233,11 +270,9 @@ func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData 
 		},
 		TransactionData: &transactionData,
 		ActionData:      nil,
-		DigitalData: &eventDigitalData{
-			IPAddress: transaction.IPAddress,
-		},
-		LocationData: nil,
-		CustomData:   nil,
+		DigitalData:     &digitalData,
+		LocationData:    nil,
+		CustomData:      nil,
 	}
 
 	return jsonBody

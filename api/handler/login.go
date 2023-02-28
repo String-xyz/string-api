@@ -3,10 +3,12 @@ package handler
 import (
 	b64 "encoding/base64"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,11 +25,12 @@ type Login interface {
 
 type login struct {
 	Service service.Auth
+	Device  service.Device
 	Group   *echo.Group
 }
 
-func NewLogin(route *echo.Echo, service service.Auth) Login {
-	return &login{service, nil}
+func NewLogin(route *echo.Echo, service service.Auth, device service.Device) Login {
+	return &login{service, device, nil}
 }
 
 func (l login) NoncePayload(c echo.Context) error {
@@ -78,12 +81,22 @@ func (l login) VerifySignature(c echo.Context) error {
 		LogStringError(c, err, "login: verify signature")
 		return BadRequestError(c, "Invalid Payload")
 	}
+
+	// Upsert IP address in user's device
+	var claims = &service.JWTClaims{}
+	_, _ = jwt.ParseWithClaims(resp.JWT.Token, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+	})
+	ip := c.RealIP()
+	l.Device.UpsertDeviceIP(claims.DeviceId, ip)
+
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "login: unable to set auth cookies")
 		return InternalError(c)
 	}
+
 	return c.JSON(http.StatusOK, resp)
 }
 

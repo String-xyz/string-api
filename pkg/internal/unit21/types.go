@@ -170,7 +170,8 @@ type actionData struct {
 }
 
 type eventDigitalData struct {
-	IPAddress string `json:"ip_address,omitempty"`
+	IPAddress         string `json:"ip_address,omitempty"`
+	ClientFingerprint string `json:"client_fingerprint,omitempty"`
 }
 
 type eventCustomData struct {
