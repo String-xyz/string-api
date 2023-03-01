@@ -19,7 +19,7 @@ type Contact interface {
 	List(limit int, offset int) ([]model.Contact, error)
 	Update(id string, updates any) error
 	GetByData(data string) (model.Contact, error)
-	//GetByUserIdAndStatus gets a contact with the user id and status
+	GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
 	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
 }
 
@@ -59,22 +59,22 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 	return m, nil
 }
 
-// TODO: replace GetByUserIdAndStatus with the following:
-// func (u contact[T] GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
-// 	m := model.Contact{}
-// 	err := u.store.Get(&m, fmt.Sprintf("SELECT contact.*
-// 	FROM contact
-// 	LEFT JOIN contact_platform
-// 	ON contact.id = contact_to_platform.contact_id
-// 	LEFT JOIN platform
-// 	ON contact_to_platform.platform_id = platform.id
-// 	WHERE contact.user_id = $1
-// 	AND platform.id = $2", u.table), userId, platformId)
-// 	if err != nil && err == sql.ErrNoRows {
-// 		return m, ErrNotFound
-// 	}
-// 	return m, common.StringError(err)
-// }
+// TODO: replace references to GetByUserIdAndStatus with the following:
+func (u contact[T] GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
+	m := model.Contact{}
+	err := u.store.Get(&m, fmt.Sprintf("SELECT contact.*
+	FROM contact
+	LEFT JOIN contact_platform
+	ON contact.id = contact_to_platform.contact_id
+	LEFT JOIN platform
+	ON contact_to_platform.platform_id = platform.id
+	WHERE contact.user_id = $1
+	AND platform.id = $2", u.table), userId, platformId)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
+	return m, common.StringError(err)
+}
 
 func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, error) {
 	m := model.Contact{}
