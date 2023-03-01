@@ -10,9 +10,9 @@ type ContactToPlatform interface {
 	Transactable
 	Readable
 	Create(model.ContactToPlatform) (model.ContactToPlatform, error)
-	GetById(ID string) (model.ContactToPlatform, error)
+	GetById(id string) (model.ContactToPlatform, error)
 	List(limit int, offset int) ([]model.ContactToPlatform, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type contactToPlatform[T any] struct {

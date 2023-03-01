@@ -12,7 +12,7 @@ import (
 )
 
 type EstimationParams struct {
-	ChainID    uint64  `json:"chainID"`
+	ChainId    uint64  `json:"chainId"`
 	CostETH    big.Int `json:"costETH"`
 	UseBuffer  bool    `json:"useBuffer"`
 	GasUsedWei uint64  `json:"gasUsedWei"`
@@ -67,7 +67,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
-		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainID)
+		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainId)
 	}
 	costEth := common.WeiToEther(&p.CostETH)
 	// transactionCost is for native token transaction cost (tx_value)
@@ -82,7 +82,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
-		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainID)
+		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainId)
 	}
 
 	// Query cost of token in USD if used and apply buffer

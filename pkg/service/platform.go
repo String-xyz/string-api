@@ -30,7 +30,7 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 		return model.Platform{}, common.StringError(err)
 	}
 
-	_, err = a.repos.Auth.CreateAPIKey(plat.ID, c.Authentication, hashed, false)
+	_, err = a.repos.Auth.CreateAPIKey(plat.Id, c.Authentication, hashed, false)
 	pt := &plat
 	if err != nil {
 		return *pt, common.StringError(err)

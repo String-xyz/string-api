@@ -41,7 +41,7 @@ func TestUpdateEntity(t *testing.T) {
 	assert.Greater(t, len([]rune(u21EntityId)), 0)
 
 	user := model.User{
-		ID:            entityId,
+		Id:            entityId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
@@ -119,7 +119,7 @@ func TestAddInstruments(t *testing.T) {
 func createMockUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, unit21Id string, err error) {
 	entityId = uuid.NewString()
 	user := model.User{
-		ID:            entityId,
+		Id:            entityId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
@@ -161,7 +161,7 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 	locationId := uuid.NewString()
 
 	instrument = model.Instrument{
-		ID:            instrumentId,
+		Id:            instrumentId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
@@ -171,8 +171,8 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 		Network:       "Visa",
 		PublicKey:     "",
 		Last4:         "1234",
-		UserID:        userId,
-		LocationID:    sql.NullString{String: locationId},
+		UserId:        userId,
+		LocationId:    sql.NullString{String: locationId},
 	}
 
 	mockedUserRow1 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
@@ -191,13 +191,15 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 		AddRow(locationId, "Home", "Verified", "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
 	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND deactivated_at IS NULL").WithArgs(locationId).WillReturnRows(mockedLocationRow)
 
-	repo := InstrumentRepo{
+	repos := InstrumentRepos{
 		User:     repository.NewUser(sqlxDB),
 		Device:   repository.NewDevice(sqlxDB),
 		Location: repository.NewLocation(sqlxDB),
 	}
 
-	u21Instrument := NewInstrument(repo)
+	action := NewAction()
+
+	u21Instrument := NewInstrument(repos, action)
 
 	u21InstrumentId, err := u21Instrument.Create(instrument)
 

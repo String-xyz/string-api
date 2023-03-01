@@ -50,7 +50,7 @@ func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
 }
 
 type AuthorizedCharge struct {
-	AuthID              string
+	AuthId              string
 	CheckoutFingerprint string
 	Last4               string
 	Issuer              string
@@ -68,9 +68,9 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	client := payments.NewClient(*config)
 
-	var paymentTokenID string
+	var paymentTokenId string
 	if common.IsLocalEnv() {
-		// Generate a payment token ID in case we don't yet have one in the front end
+		// Generate a payment token Id in case we don't yet have one in the front end
 		// For testing purposes only
 		card := tokens.Card{
 			Type:   checkoutCommon.Card,
@@ -87,12 +87,12 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		if err != nil {
 			return p, common.StringError(err)
 		}
-		paymentTokenID = paymentToken.Created.Token
+		paymentTokenId = paymentToken.Created.Token
 		if p.executionRequest.CardToken != "" {
-			paymentTokenID = p.executionRequest.CardToken
+			paymentTokenId = p.executionRequest.CardToken
 		}
 	} else {
-		paymentTokenID = p.executionRequest.CardToken
+		paymentTokenId = p.executionRequest.CardToken
 	}
 
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
@@ -103,12 +103,13 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	request := &payments.Request{
 		Source: payments.TokenSource{
 			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenID,
+			Token: paymentTokenId,
 		},
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
-			Name: fullName,
+			Name:  fullName,
+			Email: p.user.Email,
 		},
 		Capture: &capture,
 	}
@@ -122,9 +123,9 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		return p, common.StringError(err)
 	}
 
-	// Collect authorization ID and Instrument ID
+	// Collect authorization Id and Instrument Id
 	if response.Processed != nil {
-		auth.AuthID = response.Processed.ID
+		auth.AuthId = response.Processed.ID
 		auth.Approved = *response.Processed.Approved
 		auth.Status = string(response.Processed.Status)
 		auth.Summary = response.Processed.ResponseSummary
@@ -158,14 +159,14 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 		Amount: usd,
 	}
 
-	capture, err := client.Captures(p.cardAuthorization.AuthID, &request, &params)
+	capture, err := client.Captures(p.cardAuthorization.AuthId, &request, &params)
 	if err != nil {
 		return p, common.StringError(err)
 	}
 
 	p.cardCapture = capture
 
-	// TODO: call action, err = client.Actions(capture.Accepted.ActionID) in another service to check on
+	// TODO: call action, err = client.Actions(capture.Accepted.ActionId) in another service to check on
 
 	// TODO: Create entry for capture in our DB associated with userWallet
 	return p, nil

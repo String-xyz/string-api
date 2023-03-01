@@ -66,14 +66,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 
-		// Log create instrument action w/ Unit21
-		u21ActionRepo := ActionRepo{
-			User:     repository.NewUser(sqlxDB),
-			Device:   repository.NewDevice(sqlxDB),
-			Location: repository.NewLocation(sqlxDB),
-		}
-
-		u21Action := NewAction(u21ActionRepo)
+		u21Action := NewAction()
 		_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
 		if err != nil {
 			fmt.Printf("Error creating a new instrument action in Unit21")
@@ -174,13 +167,13 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 }
 
 func evaluateMockTransaction(transaction model.Transaction, sqlxDB *sqlx.DB) (pass bool, err error) {
-	repo := TransactionRepo{
+	repos := TransactionRepos{
 		TxLeg: repository.NewTxLeg((sqlxDB)),
 		User:  repository.NewUser(sqlxDB),
 		Asset: repository.NewAsset(sqlxDB),
 	}
 
-	u21Transaction := NewTransaction(repo)
+	u21Transaction := NewTransaction(repos)
 
 	pass, err = u21Transaction.Evaluate(transaction)
 

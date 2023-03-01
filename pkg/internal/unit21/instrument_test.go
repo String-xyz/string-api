@@ -40,7 +40,7 @@ func TestUpdateInstrument(t *testing.T) {
 	locationId := uuid.NewString()
 
 	instrument = model.Instrument{
-		ID:            instrument.ID,
+		Id:            instrument.Id,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		DeactivatedAt: nil,
@@ -50,8 +50,8 @@ func TestUpdateInstrument(t *testing.T) {
 		Network:       "Visa",
 		PublicKey:     "",
 		Last4:         "1235",
-		UserID:        userId,
-		LocationID:    sql.NullString{String: locationId},
+		UserId:        userId,
+		LocationId:    sql.NullString{String: locationId},
 	}
 
 	mockedUserRow1 := sqlmock.NewRows([]string{"id", "type", "status", "tags", "first_name", "middle_name", "last_name"}).
@@ -69,13 +69,16 @@ func TestUpdateInstrument(t *testing.T) {
 	mockedLocationRow := sqlmock.NewRows([]string{"id", "type", "status", "building_number", "unit_number", "street_name", "city", "state", "postal_code", "country"}).
 		AddRow(locationId, "Home", "Verified", "20181", "411", "Lark Avenue", "Somerville", "MA", "01443", "USA")
 	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND deactivated_at IS NULL").WithArgs(locationId).WillReturnRows(mockedLocationRow)
-	repo := InstrumentRepo{
+
+	repos := InstrumentRepos{
 		User:     repository.NewUser(sqlxDB),
 		Device:   repository.NewDevice(sqlxDB),
 		Location: repository.NewLocation(sqlxDB),
 	}
 
-	u21Instrument := NewInstrument(repo)
+	action := NewAction()
+
+	u21Instrument := NewInstrument(repos, action)
 
 	u21InstrumentId, err = u21Instrument.Update(instrument)
 	assert.NoError(t, err)

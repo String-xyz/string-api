@@ -30,7 +30,7 @@ func TestStatus200LoginNoncePayload(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
 	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
@@ -53,7 +53,7 @@ func TestStatus200LoginVerifySignature(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/sign", strings.NewReader(string(jsonBody)))
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
 	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
@@ -68,7 +68,7 @@ func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
 	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)

@@ -11,7 +11,7 @@ type FPClient common.FingerprintClient
 type HTTPConfig common.HTTPConfig
 type HTTPClient common.HTTPClient
 type FPVisitor struct {
-	VisitorID  string
+	VisitorId  string
 	Country    string
 	State      string
 	IPAddress  sql.NullString
@@ -31,7 +31,7 @@ func NewFingerprintClient(client HTTPClient) FPClient {
 
 type Fingerprint interface {
 	//GetVisitor fetches the visitor data by id, it does not validate if the device is the database
-	GetVisitor(ID string, request string) (FPVisitor, error)
+	GetVisitor(Id string, request string) (FPVisitor, error)
 }
 
 type fingerprint struct {
@@ -42,8 +42,8 @@ func NewFingerprint(client FPClient) Fingerprint {
 	return &fingerprint{client}
 }
 
-func (f fingerprint) GetVisitor(ID, requestID string) (FPVisitor, error) {
-	visitor, err := f.client.GetVisitorByID(ID, common.FPVisitorOpts{Limit: 1, RequestID: requestID})
+func (f fingerprint) GetVisitor(Id, requestId string) (FPVisitor, error) {
+	visitor, err := f.client.GetVisitorById(Id, common.FPVisitorOpts{Limit: 1, RequestId: requestId})
 	if err != nil {
 		return FPVisitor{}, common.StringError(err)
 	}
@@ -65,7 +65,7 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 	}
 
 	return FPVisitor{
-		VisitorID:  visitor.ID,
+		VisitorId:  visitor.Id,
 		Country:    visit.IPLocation.Coutry.Code,
 		State:      state,
 		IPAddress:  sql.NullString{String: visit.IP},

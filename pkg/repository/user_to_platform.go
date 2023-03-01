@@ -10,10 +10,10 @@ type UserToPlatform interface {
 	Transactable
 	Readable
 	Create(model.UserToPlatform) (model.UserToPlatform, error)
-	GetById(ID string) (model.UserToPlatform, error)
+	GetById(id string) (model.UserToPlatform, error)
 	List(limit int, offset int) ([]model.UserToPlatform, error)
-	ListByUserId(userID string, imit int, offset int) ([]model.UserToPlatform, error)
-	Update(ID string, updates any) error
+	ListByUserId(userId string, imit int, offset int) ([]model.UserToPlatform, error)
+	Update(id string, updates any) error
 }
 
 type userToPlatform[T any] struct {

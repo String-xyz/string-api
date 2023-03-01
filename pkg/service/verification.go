@@ -18,23 +18,23 @@ import (
 type EmailVerification struct {
 	Timestamp int64
 	Email     string
-	UserID    string
+	UserId    string
 }
 
 type DeviceVerification struct {
 	Timestamp int64
-	DeviceID  string
-	UserID    string
+	DeviceId  string
+	UserId    string
 }
 
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
-	SendEmailVerification(userID string, email string) error
+	SendEmailVerification(userId string, email string) error
 
 	// VerifyEmail verifies the provided email and creates a contact
 	VerifyEmail(encrypted string) error
 
-	SendDeviceVerification(userID, email string, deviceID string, deviceDescription string) error
+	SendDeviceVerification(userId, email string, deviceId string, deviceDescription string) error
 }
 
 type verification struct {
@@ -46,13 +46,13 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 	return &verification{repos, unit21}
 }
 
-func (v verification) SendEmailVerification(userID, email string) error {
+func (v verification) SendEmailVerification(userId, email string) error {
 	if !validEmail(email) {
 		return common.StringError(errors.New("missing or invalid email"))
 	}
 
-	user, err := v.repos.User.GetById(userID)
-	if err != nil || user.ID != userID {
+	user, err := v.repos.User.GetById(userId)
+	if err != nil || user.Id != userId {
 		return common.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
 	}
 
@@ -63,7 +63,7 @@ func (v verification) SendEmailVerification(userID, email string) error {
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserID: userID}, key)
+	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId}, key)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -97,9 +97,9 @@ func (v verification) SendEmailVerification(userID, email string) error {
 		} else if err == nil && contact.Data == email {
 			// success
 			// update user status
-			user, err := v.repos.User.UpdateStatus(userID, "email_verified")
+			user, err := v.repos.User.UpdateStatus(userId, "email_verified")
 			if err != nil {
-				return common.StringError(errors.New("User email verify error - userID: " + user.ID))
+				return common.StringError(errors.New("User email verify error - userId: " + user.Id))
 			}
 
 			return nil
@@ -109,10 +109,10 @@ func (v verification) SendEmailVerification(userID, email string) error {
 	return common.StringError(errors.New("link expired"))
 }
 
-func (v verification) SendDeviceVerification(userID, email, deviceID, deviceDescription string) error {
+func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
 	log.Info().Str("email", email)
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	code, err := common.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceID: deviceID, UserID: userID}, key)
+	code, err := common.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceId: deviceId, UserId: userId}, key)
 	if err != nil {
 		return common.StringError(err)
 	}
@@ -151,16 +151,16 @@ func (v verification) VerifyEmail(encrypted string) error {
 	if now.Unix()-received.Timestamp > (60 * 15) {
 		return common.StringError(errors.New("link expired"))
 	}
-	contact := model.Contact{UserID: received.UserID, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
+	contact := model.Contact{UserId: received.UserId, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
 	contact, err = v.repos.Contact.Create(contact)
 	if err != nil {
 		return common.StringError(err)
 	}
 
 	// update user status
-	user, err := v.repos.User.UpdateStatus(received.UserID, "email_verified")
+	user, err := v.repos.User.UpdateStatus(received.UserId, "email_verified")
 	if err != nil {
-		return common.StringError(errors.New("User email verify error - userID: " + user.ID))
+		return common.StringError(errors.New("User email verify error - userId: " + user.Id))
 	}
 
 	go v.unit21.Entity.Update(user)

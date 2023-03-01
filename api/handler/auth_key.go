@@ -61,7 +61,7 @@ func (o authAPIKey) Approve(c echo.Context) error {
 		return NotAllowedError(c)
 	}
 	params := struct {
-		ID string `param:"id"`
+		Id string `param:"id"`
 	}{}
 	err := c.Bind(&params)
 
@@ -69,7 +69,7 @@ func (o authAPIKey) Approve(c echo.Context) error {
 		LogStringError(c, err, "authKey approve: bind")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
-	err = o.service.Approve(params.ID)
+	err = o.service.Approve(params.Id)
 	if err != nil {
 		LogStringError(c, err, "authKey approve: approve")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")

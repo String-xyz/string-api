@@ -64,8 +64,8 @@ func LogRequest() echo.MiddlewareFunc {
 	})
 }
 
-// RequestID generates a unique request ID
-func RequestID() echo.MiddlewareFunc {
+// RequestID generates a unique request Id
+func RequestId() echo.MiddlewareFunc {
 	return echoMiddleware.RequestID()
 }
 

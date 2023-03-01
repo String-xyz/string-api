@@ -127,29 +127,29 @@ func (b base[T]) List(limit int, offset int) (list []T, err error) {
 	return list, err
 }
 
-func (b base[T]) GetById(ID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND deactivated_at IS NULL", b.table), ID)
+func (b base[T]) GetById(id string) (m T, err error) {
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE id = $1 AND deactivated_at IS NULL", b.table), id)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
 	return m, err
 }
 
-// Returns the first match of the user's ID
-func (b base[T]) GetByUserId(userID string) (m T, err error) {
-	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND deactivated_at IS NULL LIMIT 1", b.table), userID)
+// Returns the first match of the user's Id
+func (b base[T]) GetByUserId(userId string) (m T, err error) {
+	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND deactivated_at IS NULL LIMIT 1", b.table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, common.StringError(ErrNotFound)
 	}
 	return m, err
 }
 
-func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error) {
+func (b base[T]) ListByUserId(userId string, limit int, offset int) ([]T, error) {
 	list := []T{}
 	if limit == 0 {
 		limit = 20
 	}
-	err := b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userID, limit, offset)
+	err := b.store.Select(&list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.table), userId, limit, offset)
 	if err == sql.ErrNoRows {
 		return list, common.StringError(err)
 	}
@@ -160,12 +160,12 @@ func (b base[T]) ListByUserId(userID string, limit int, offset int) ([]T, error)
 	return list, nil
 }
 
-func (b base[T]) Update(ID string, updates any) error {
+func (b base[T]) Update(id string, updates any) error {
 	names, keyToUpdate := common.KeysAndValues(updates)
 	if len(names) == 0 {
 		return common.StringError(errors.New("no fields to update"))
 	}
-	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s'", b.table, strings.Join(names, ", "), ID)
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s'", b.table, strings.Join(names, ", "), id)
 	_, err := b.store.NamedExec(query, keyToUpdate)
 	if err != nil {
 		return common.StringError(err)

@@ -48,7 +48,7 @@ func TestGetUser(t *testing.T) {
 
 	user, err := NewUser(sqlxDB).GetById(id)
 	assert.NoError(t, err)
-	assert.Equal(t, id, user.ID)
+	assert.Equal(t, id, user.Id)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting user by id", err)
 	}

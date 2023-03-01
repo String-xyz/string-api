@@ -13,7 +13,7 @@ import (
 type Instrument interface {
 	Transactable
 	Create(model.Instrument) (model.Instrument, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 	GetById(id string) (model.Instrument, error)
 	GetWalletByAddr(addr string) (model.Instrument, error)
 	GetCardByFingerprint(fingerprint string) (m model.Instrument, err error)
@@ -91,7 +91,7 @@ func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 
 	if err != nil && errors.Cause(err).Error() != "not found" { // because we are wrapping error and care about its value
 		return true, common.StringError(err)
-	} else if err == nil && wallet.UserID != "" {
+	} else if err == nil && wallet.UserId != "" {
 		return true, common.StringError(errors.New("wallet already associated with user"))
 	} else if err == nil && wallet.PublicKey == addr {
 		return true, common.StringError(errors.New("wallet already exists"))

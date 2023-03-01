@@ -37,7 +37,7 @@ type Executor interface {
 	Initialize(RPC string) error
 	Initiate(call ContractCall) (string, *big.Int, error)
 	Estimate(call ContractCall) (CallEstimate, error)
-	TxWait(txID string) (uint64, error)
+	TxWait(txId string) (uint64, error)
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
@@ -95,7 +95,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	// Get ChainID from state
+	// Get ChainId from state
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
@@ -168,7 +168,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Use provided gas limit
 	gasLimit := w3.I(call.TxGasLimit)
 
-	// Get chainID from state
+	// Get chainId from state
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
@@ -198,7 +198,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 		return "", nil, stringCommon.StringError(err)
 	}
 
-	// Type conversion for chainID
+	// Type conversion for chainId
 	chainIdBig := new(big.Int).SetUint64(chainId64)
 
 	// Get signer type, this is used to encode the tx
@@ -228,8 +228,8 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	return hash.String(), value, nil
 }
 
-func (e executor) TxWait(txID string) (uint64, error) {
-	txHash := common.HexToHash(txID)
+func (e executor) TxWait(txId string) (uint64, error) {
+	txHash := common.HexToHash(txId)
 	receipt := types.Receipt{}
 	for receipt.Status == 0 {
 		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
@@ -246,7 +246,7 @@ func (e executor) TxWait(txID string) (uint64, error) {
 }
 
 func (e executor) GetByChainId() (uint64, error) {
-	// Get ChainID from state
+	// Get ChainId from state
 	var chainId64 uint64
 	err := e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {

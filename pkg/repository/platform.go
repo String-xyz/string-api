@@ -19,9 +19,9 @@ type PlaformUpdates struct {
 type Platform interface {
 	Transactable
 	Create(model.Platform) (model.Platform, error)
-	GetById(ID string) (model.Platform, error)
+	GetById(id string) (model.Platform, error)
 	List(limit int, offset int) ([]model.Platform, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type platform[T any] struct {
@@ -51,4 +51,3 @@ func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	defer rows.Close()
 	return plat, nil
 }
-

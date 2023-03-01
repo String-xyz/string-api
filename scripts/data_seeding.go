@@ -37,54 +37,54 @@ func DataSeeding() {
 
 	// Write to repos
 
-	// Networks without GasTokenID
-	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkID: 137, ChainID: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
+	// Networks without GasTokenId
+	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
+	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
-	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkID: 5, ChainID: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
+	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
+	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 1, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 1, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkAvalanche.ID), ValueOracle: nullString("avalanche-2")})
+	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkEthereum.ID), ValueOracle: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkPolygon.ID), ValueOracle: nullString("matic-network")})
+	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkNitroGoerli.ID), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -94,36 +94,36 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	// Update Networks with GasTokenIDs
-	err = repos.Network.Update(networkPolygon.ID, model.NetworkUpdates{GasTokenID: &assetMatic.ID})
+	// Update Networks with GasTokenIds
+	err = repos.Network.Update(networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkMumbai.ID, model.NetworkUpdates{GasTokenID: &assetMatic.ID})
+	err = repos.Network.Update(networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkGoerli.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkEthereum.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkFuji.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	err = repos.Network.Update(networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkAvalanche.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	err = repos.Network.Update(networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkNitroGoerli.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	err = repos.Network.Update(networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -134,24 +134,24 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	// Set String User ID to what's defined in the ENV
+	// Set String User Id to what's defined in the ENV
 	internalId := os.Getenv("STRING_INTERNAL_ID")
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
 
-	type UpdateID struct {
-		ID string `json:"id" db:"id"`
+	type UpdateId struct {
+		Id string `json:"id" db:"id"`
 	}
 
-	updateId := UpdateID{ID: internalId}
-	userString, err = repos.User.Update(userString.ID, updateId)
+	updateId := UpdateId{Id: internalId}
+	userString, err = repos.User.Update(userString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -161,14 +161,14 @@ func DataSeeding() {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: bankId}
-	err = repos.Instrument.Update(bankString.ID, updateId)
+	updateId = UpdateId{Id: bankId}
+	err = repos.Instrument.Update(bankString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -178,8 +178,8 @@ func DataSeeding() {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: walletId}
-	err = repos.Instrument.Update(walletString.ID, updateId)
+	updateId = UpdateId{Id: walletId}
+	err = repos.Instrument.Update(walletString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -197,8 +197,8 @@ func DataSeeding() {
 		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: platformId}
-	err = repos.Platform.Update(placeholderPlatform.ID, updateId)
+	updateId = UpdateId{Id: platformId}
+	err = repos.Platform.Update(placeholderPlatform.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -225,54 +225,54 @@ func MockSeeding() {
 
 	// Write to repos
 
-	// Networks without GasTokenID
-	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkID: 137, ChainID: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
+	// Networks without GasTokenId
+	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkID: 80001, ChainID: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
+	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
-	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkID: 5, ChainID: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
+	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkID: 1, ChainID: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
+	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkID: 1, ChainID: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkID: 1, ChainID: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkID: 421613, ChainID: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
+	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkID: 42170, ChainID: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
+	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkAvalanche.ID), ValueOracle: nullString("avalanche-2")})
+	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkEthereum.ID), ValueOracle: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkPolygon.ID), ValueOracle: nullString("matic-network")})
+	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkID: nullString(networkNitroGoerli.ID), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -282,36 +282,36 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	// Update Networks with GasTokenIDs
-	err = repos.Network.Update(networkPolygon.ID, model.NetworkUpdates{GasTokenID: &assetMatic.ID})
+	// Update Networks with GasTokenIds
+	err = repos.Network.Update(networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkMumbai.ID, model.NetworkUpdates{GasTokenID: &assetMatic.ID})
+	err = repos.Network.Update(networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkGoerli.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkEthereum.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkFuji.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	err = repos.Network.Update(networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkAvalanche.ID, model.NetworkUpdates{GasTokenID: &assetAvalanche.ID})
+	err = repos.Network.Update(networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkNitroGoerli.ID, model.NetworkUpdates{GasTokenID: &assetGoerliEth.ID})
+	err = repos.Network.Update(networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.ID, model.NetworkUpdates{GasTokenID: &assetEthereum.ID})
+	err = repos.Network.Update(networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -322,18 +322,18 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	// Set String User ID to what's defined in the ENV
+	// Set String User Id to what's defined in the ENV
 	internalId := os.Getenv("STRING_INTERNAL_ID")
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
 
-	type UpdateID struct {
-		ID string `json:"id" db:"id"`
+	type UpdateId struct {
+		Id string `json:"id" db:"id"`
 	}
 
-	updateId := UpdateID{ID: internalId}
-	userString, err = repos.User.Update(userString.ID, updateId)
+	updateId := UpdateId{Id: internalId}
+	userString, err = repos.User.Update(userString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -343,7 +343,7 @@ func MockSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserID: userString.ID})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -353,14 +353,14 @@ func MockSeeding() {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: bankId}
-	err = repos.Instrument.Update(bankString.ID, updateId)
+	updateId = UpdateId{Id: bankId}
+	err = repos.Instrument.Update(bankString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserID: userString.ID})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -370,8 +370,8 @@ func MockSeeding() {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: walletId}
-	err = repos.Instrument.Update(walletString.ID, updateId)
+	updateId = UpdateId{Id: walletId}
+	err = repos.Instrument.Update(walletString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -388,8 +388,8 @@ func MockSeeding() {
 		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
 	}
 
-	updateId = UpdateID{ID: platformId}
-	err = repos.Platform.Update(placeholderPlatform.ID, updateId)
+	updateId = UpdateId{Id: platformId}
+	err = repos.Platform.Update(placeholderPlatform.Id, updateId)
 	if err != nil {
 		panic(err)
 	}

@@ -1,10 +1,10 @@
 package common
 
-func NativeTokenBuffer(chainID uint64) float64 {
+func NativeTokenBuffer(chainId uint64) float64 {
 	return 0.05
 }
 
-func GasBuffer(chainID uint64) float64 {
+func GasBuffer(chainId uint64) float64 {
 	return 0.05
 }
 
