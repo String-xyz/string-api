@@ -5,6 +5,7 @@ package service
 import (
 	"math"
 	"os"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/checkout/checkout-sdk-go"
@@ -94,8 +95,10 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		paymentTokenID = p.executionRequest.CardToken
 	}
 
-	usd := convertAmount(p.executionRequest.TotalUSD)
+	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
+	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
 
+	usd := convertAmount(p.executionRequest.TotalUSD)
 	capture := false
 	request := &payments.Request{
 		Source: payments.TokenSource{
@@ -105,7 +108,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
-			Name: p.executionRequest.UserAddress,
+			Name: fullName,
 		},
 		Capture: &capture,
 	}
