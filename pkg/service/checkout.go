@@ -109,9 +109,10 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		Currency: "USD",
 		Customer: &payments.Customer{
 			Name:  fullName,
-			Email: p.user.Email,
+			Email: p.user.Email, // Replace with more robust email from platform and user
 		},
-		Capture: &capture,
+		Capture:   &capture,
+		PaymentIP: p.transactionModel.IPAddress,
 	}
 
 	idempotencyKey := checkout.NewIdempotencyKey()

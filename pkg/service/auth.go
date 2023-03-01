@@ -105,7 +105,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	if err != nil {
 		return resp, common.StringError(err)
 	}
-
+	// TODO: remove user.Email and replace with association with contact via user and platform
 	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
 
 	device, err := a.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
