@@ -46,7 +46,7 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 		"<br>All sales are final.  Please see our <a href='https://www.string.xyz/terms-of-service'>Terms of Service</a>" +
 		"<br>Please reference your String Payment Id " + params.StringPaymentId +
 		"<br><br>Service powered by String" +
-		"<br>String XYZ LLC | 490 43rd St, #86, Oakland CA 94609. | NMLS Id: 2400614" +
+		"<br>String XYZ LLC | 490 43rd St, #86, Oakland CA 94609. | NMLS ID: 2400614" +
 		"<br>Please visit us at string.xyz.  Should you need to reach us, please contact us at <a href='mailto:support@string.xyz'>support@string.xyz</a>." +
 		"<br><br>Consumer Fraud Warning" +
 		"<br>If you feel you have been the victim of a scam you can contact the FTC at 1-877-FTC-HELP (382-4357)" +
