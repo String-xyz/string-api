@@ -39,7 +39,7 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 		"<br>Dear " + params.CustomerName + "," +
 		"<br>Thank you for using String.  Here is your transaction receipt:" +
 		"<br>Transaction Date: " + params.TransactionDate +
-		"<br>String Payment Id: " + params.StringPaymentId
+		"<br>String Payment ID: " + params.StringPaymentId
 
 	footer := "" +
 		"<br>The transaction will appear on your card statement as " + params.PaymentDescriptor +
