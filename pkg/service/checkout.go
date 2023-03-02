@@ -124,7 +124,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		return p, common.StringError(err)
 	}
 
-	// Collect authorization Id and Instrument Id
+	// Collect authorization ID and Instrument ID
 	if response.Processed != nil {
 		auth.AuthId = response.Processed.ID
 		auth.Approved = *response.Processed.Approved

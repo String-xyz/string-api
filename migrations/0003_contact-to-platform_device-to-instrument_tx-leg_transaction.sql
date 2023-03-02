@@ -34,7 +34,7 @@ CREATE TABLE tx_leg (
   timestamp TIMESTAMP WITH TIME ZONE, 
   amount TEXT DEFAULT '', -- Quantity of financial asset in Asset wei
   value TEXT DEFAULT '', -- Quantity of financial asset in [USD wei (6 digits precision)]
-  asset_id UUID REFERENCES asset (id), -- Id of table entry of Asset (for USD, ETH, AVAX etc)
+  asset_id UUID REFERENCES asset (id), -- ID of table entry of Asset (for USD, ETH, AVAX etc)
   -- USER_ID:
   -- For CC send = id that correlates to the end-user in our user table
   -- For CC receive = id that correlates to the STRING entry in our user table

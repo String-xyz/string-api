@@ -134,7 +134,7 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	// Set String User Id to what's defined in the ENV
+	// Set String User ID to what's defined in the ENV
 	internalId := os.Getenv("STRING_INTERNAL_ID")
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
@@ -322,7 +322,7 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	// Set String User Id to what's defined in the ENV
+	// Set String User ID to what's defined in the ENV
 	internalId := os.Getenv("STRING_INTERNAL_ID")
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")

@@ -31,7 +31,7 @@ func NewFingerprintClient(client HTTPClient) FPClient {
 
 type Fingerprint interface {
 	//GetVisitor fetches the visitor data by id, it does not validate if the device is the database
-	GetVisitor(Id string, request string) (FPVisitor, error)
+	GetVisitor(id string, request string) (FPVisitor, error)
 }
 
 type fingerprint struct {
@@ -42,8 +42,8 @@ func NewFingerprint(client FPClient) Fingerprint {
 	return &fingerprint{client}
 }
 
-func (f fingerprint) GetVisitor(Id, requestId string) (FPVisitor, error) {
-	visitor, err := f.client.GetVisitorById(Id, common.FPVisitorOpts{Limit: 1, RequestId: requestId})
+func (f fingerprint) GetVisitor(id, requestId string) (FPVisitor, error) {
+	visitor, err := f.client.GetVisitorById(id, common.FPVisitorOpts{Limit: 1, RequestId: requestId})
 	if err != nil {
 		return FPVisitor{}, common.StringError(err)
 	}

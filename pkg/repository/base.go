@@ -135,7 +135,7 @@ func (b base[T]) GetById(id string) (m T, err error) {
 	return m, err
 }
 
-// Returns the first match of the user's Id
+// Returns the first match of the user's ID
 func (b base[T]) GetByUserId(userId string) (m T, err error) {
 	err = b.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND deactivated_at IS NULL LIMIT 1", b.table), userId)
 	if err != nil && err == sql.ErrNoRows {

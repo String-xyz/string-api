@@ -595,7 +595,7 @@ func (t transaction) authCard(p transactionProcessingData) (transactionProcessin
 		return p, common.StringError(err)
 	}
 
-	// Add Checkout Instrument Id to our DB if it's not there already and associate it with the user
+	// Add Checkout Instrument ID to our DB if it's not there already and associate it with the user
 	instrumentId, err := t.addCardInstrumentIdIfNew(p)
 	if err != nil {
 		return p, common.StringError(err)
@@ -769,13 +769,13 @@ func (t transaction) sendEmailReceipt(p transactionProcessingData) error {
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	receiptBody := [][2]string{
-		{"Transaction Id", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
+		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
 		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + p.executionRequest.UserAddress + "'>" + p.executionRequest.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", "String Demo"},            // TODO: retrieve dynamically
 		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
-		{"Token Id", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
 		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
 		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
