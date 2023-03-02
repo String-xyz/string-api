@@ -145,6 +145,11 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	if err != nil {
 		return p, common.StringError(err)
 	}
+	email, err := t.repos.Contact.GetByUserIdAndType(user.Id, "email")
+	if err != nil {
+		return p, common.StringError(err)
+	}
+	user.Email = email.Data
 	p.user = &user
 
 	// Pull chain info needed for execution from repository

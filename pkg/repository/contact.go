@@ -20,6 +20,7 @@ type Contact interface {
 	Update(id string, updates any) error
 	GetByData(data string) (model.Contact, error)
 	GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
+	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
 	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
 }
 
@@ -72,6 +73,15 @@ func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (
 	WHERE contact.user_id = $1
 		AND platform.id = $2
 	`, u.table), userId, platformId)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
+	return m, common.StringError(err)
+}
+
+func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Contact, error) {
+	m := model.Contact{}
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.table), userId, _type)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}
