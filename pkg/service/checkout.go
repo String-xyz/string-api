@@ -70,7 +70,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 
 	var paymentTokenId string
 	if common.IsLocalEnv() {
-		// Generate a payment token Id in case we don't yet have one in the front end
+		// Generate a payment token ID in case we don't yet have one in the front end
 		// For testing purposes only
 		card := tokens.Card{
 			Type:   checkoutCommon.Card,
