@@ -13,7 +13,7 @@ type Device interface {
 	Create(model.Device) (model.Device, error)
 	GetById(id string) (model.Device, error)
 
-	// GetByUserIdAndFingerprint gets a device by fingerprint Id and userId, using a compound index
+	// GetByUserIdAndFingerprint gets a device by fingerprint ID and userId, using a compound index
 	// the visitor might exisit for two users but the uniqueness comes from (userId, fingerprint)
 	GetByUserIdAndFingerprint(userId string, fingerprint string) (model.Device, error)
 	GetByUserId(userId string) (model.Device, error)

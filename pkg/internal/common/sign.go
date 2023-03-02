@@ -73,7 +73,7 @@ func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, e
 		sigBytes[64] -= 27
 	}
 
-	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery Id
+	verified := crypto.VerifySignature(pkBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery ID
 	return verified, nil
 }
 
@@ -107,6 +107,6 @@ func ValidateExternalEVMSignature(signature string, address string, buffer []byt
 		return false, nil
 	}
 
-	verified := crypto.VerifySignature(sigPKBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery Id
+	verified := crypto.VerifySignature(sigPKBytes, hash.Bytes(), sigBytes[:len(sigBytes)-1]) // last byte of signature is recovery ID
 	return verified, nil
 }
