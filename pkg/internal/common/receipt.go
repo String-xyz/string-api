@@ -44,7 +44,7 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 	footer := "" +
 		"<br>The transaction will appear on your card statement as " + params.PaymentDescriptor +
 		"<br>All sales are final.  Please see our <a href='https://www.string.xyz/terms-of-service'>Terms of Service</a>" +
-		"<br>Please reference your String Payment Id " + params.StringPaymentId +
+		"<br>Please reference your String Payment ID " + params.StringPaymentId +
 		"<br><br>Service powered by String" +
 		"<br>String XYZ LLC | 490 43rd St, #86, Oakland CA 94609. | NMLS ID: 2400614" +
 		"<br>Please visit us at string.xyz.  Should you need to reach us, please contact us at <a href='mailto:support@string.xyz'>support@string.xyz</a>." +
