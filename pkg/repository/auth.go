@@ -170,7 +170,6 @@ func (a auth) ListByStatus(limit, offset int, status string) ([]model.AuthStrate
 
 // UpdateStatus updates the status on postgres db and returns the updated row
 func (a auth) UpdateStatus(Id, status string) (model.AuthStrategy, error) {
-	fmt.Println("Status and ID", status, Id)
 	row := a.store.QueryRowx("UPDATE auth_strategy SET status = $2 WHERE id = $1 RETURNING *", Id, status)
 	m := model.AuthStrategy{}
 	err := row.StructScan(&m)
