@@ -9,11 +9,11 @@ import (
 func QuoteToPrecise(imprecise model.Quote) model.PrecisionSafeQuote {
 	res := model.PrecisionSafeQuote{
 		Timestamp:  imprecise.Timestamp,
-		BaseUSD:    strconv.FormatFloat(imprecise.BaseUSD, 'G', -1, 64),
-		GasUSD:     strconv.FormatFloat(imprecise.GasUSD, 'G', -1, 64),
-		TokenUSD:   strconv.FormatFloat(imprecise.TokenUSD, 'G', -1, 64),
-		ServiceUSD: strconv.FormatFloat(imprecise.ServiceUSD, 'G', -1, 64),
-		TotalUSD:   strconv.FormatFloat(imprecise.TotalUSD, 'G', -1, 64),
+		BaseUSD:    strconv.FormatFloat(imprecise.BaseUSD, 'f', 2, 64),
+		GasUSD:     strconv.FormatFloat(imprecise.GasUSD, 'f', 2, 64),
+		TokenUSD:   strconv.FormatFloat(imprecise.TokenUSD, 'f', 2, 64),
+		ServiceUSD: strconv.FormatFloat(imprecise.ServiceUSD, 'f', 2, 64),
+		TotalUSD:   strconv.FormatFloat(imprecise.TotalUSD, 'f', 2, 64),
 	}
 	return res
 }

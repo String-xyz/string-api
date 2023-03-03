@@ -111,7 +111,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.PrecisionSafeExecu
 
 func (t transaction) Execute(e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{precisionSafeExecutionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip}
+	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(p)
@@ -154,7 +154,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	p.user = &user
 
 	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(uint64(p.executionRequest.ChainId), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(p.precisionSafeExecutionRequest.ChainId, t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -168,7 +168,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(*p.executionRequest, updateDB)
+	processingFeeAsset, err := t.populateInitialTxModelData(*p.precisionSafeExecutionRequest, updateDB)
 	p.processingFeeAsset = &processingFeeAsset
 	if err != nil {
 		return p, common.StringError(err)
@@ -197,7 +197,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 
 func (t transaction) safetyCheck(p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.executionRequest.TransactionRequest, *p.chain, false)
+	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -444,7 +444,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	}
 }
 
-func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
 	// TODO populate transactionModel.Tags with key-val pairs for Unit21
