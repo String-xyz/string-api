@@ -69,7 +69,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 		u21Action := NewAction()
 		_, err = u21Action.Create(instrument, "Creation", u21InstrumentId, "Creation")
 		if err != nil {
-			fmt.Printf("Error creating a new instrument action in Unit21")
+			t.Log("Error creating a new instrument action in Unit21")
 			return
 		}
 	}
