@@ -15,11 +15,11 @@ type User interface {
 	Transactable
 	Readable
 	Create(model.User) (model.User, error)
-	GetById(ID string) (model.User, error)
+	GetById(id string) (model.User, error)
 	List(limit int, offset int) ([]model.User, error)
-	Update(ID string, updates any) (model.User, error)
+	Update(id string, updates any) (model.User, error)
 	GetByType(label string) (model.User, error)
-	UpdateStatus(ID string, status string) (model.User, error)
+	UpdateStatus(id string, status string) (model.User, error)
 }
 
 type user[T any] struct {
@@ -49,13 +49,13 @@ func (u user[T]) Create(insert model.User) (model.User, error) {
 	return m, nil
 }
 
-func (u user[T]) Update(ID string, updates any) (model.User, error) {
+func (u user[T]) Update(id string, updates any) (model.User, error) {
 	names, keyToUpdate := common.KeysAndValues(updates)
 	var user model.User
 	if len(names) == 0 {
 		return user, common.StringError(errors.New("no fields to update"))
 	}
-	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s' RETURNING *", u.table, strings.Join(names, ", "), ID)
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s' RETURNING *", u.table, strings.Join(names, ", "), id)
 	rows, err := u.store.NamedQuery(query, keyToUpdate)
 
 	if err != nil {
@@ -74,9 +74,9 @@ func (u user[T]) Update(ID string, updates any) (model.User, error) {
 }
 
 // update user status
-func (u user[T]) UpdateStatus(ID string, status string) (model.User, error) {
+func (u user[T]) UpdateStatus(id string, status string) (model.User, error) {
 	m := model.User{}
-	err := u.store.Get(&m, fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 RETURNING *", u.table), status, ID)
+	err := u.store.Get(&m, fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 RETURNING *", u.table), status, id)
 	if err != nil {
 		return m, common.StringError(err)
 	}

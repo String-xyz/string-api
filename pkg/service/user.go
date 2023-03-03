@@ -19,7 +19,7 @@ type UserCreateResponse struct {
 
 type User interface {
 	//GetStatus returns the onboarding status of an user
-	GetStatus(userID string) (model.UserOnboardingStatus, error)
+	GetStatus(userId string) (model.UserOnboardingStatus, error)
 
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
@@ -28,7 +28,7 @@ type User interface {
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
-	Update(userID string, request UserUpdates) (model.User, error)
+	Update(userId string, request UserUpdates) (model.User, error)
 }
 
 type user struct {
@@ -43,10 +43,10 @@ func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, devic
 	return &user{repos, auth, fprint, device, unit21}
 }
 
-func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
+func (u user) GetStatus(userId string) (model.UserOnboardingStatus, error) {
 	res := model.UserOnboardingStatus{Status: "not found"}
 
-	user, err := u.repos.User.GetById(userID)
+	user, err := u.repos.User.GetById(userId)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -97,13 +97,13 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 	}
 
 	// create device only if there is a visitor
-	device, err := u.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 
 	if err != nil && errors.Cause(err).Error() != "not found" {
 		return resp, common.StringError(err)
 	}
 
-	jwt, err := u.auth.GenerateJWT(user.ID, device)
+	jwt, err := u.auth.GenerateJWT(user.Id, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -129,7 +129,7 @@ func (u user) createUserData(addr string) (model.User, error) {
 		return user, common.StringError(err)
 	}
 	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
+	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
@@ -144,9 +144,9 @@ func (u user) createUserData(addr string) (model.User, error) {
 	return user, nil
 }
 
-func (u user) Update(userID string, request UserUpdates) (model.User, error) {
+func (u user) Update(userId string, request UserUpdates) (model.User, error) {
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}
-	user, err := u.repos.User.Update(userID, updates)
+	user, err := u.repos.User.Update(userId, updates)
 	if err != nil {
 		return user, common.StringError(err)
 	}

@@ -13,14 +13,15 @@ type Contact interface {
 	Transactable
 	Readable
 	Create(model.Contact) (model.Contact, error)
-	GetById(ID string) (model.Contact, error)
-	GetByUserId(userID string) (model.Contact, error)
-	ListByUserId(userID string, imit int, offset int) ([]model.Contact, error)
+	GetById(id string) (model.Contact, error)
+	GetByUserId(userId string) (model.Contact, error)
+	ListByUserId(userId string, imit int, offset int) ([]model.Contact, error)
 	List(limit int, offset int) ([]model.Contact, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 	GetByData(data string) (model.Contact, error)
-	//GetByUserIdAndStatus gets a contact with the user id and status
-	GetByUserIdAndStatus(userID string, status string) (model.Contact, error)
+	GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
+	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
+	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
 }
 
 type contact[T any] struct {
@@ -59,9 +60,37 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 	return m, nil
 }
 
-func (u contact[T]) GetByUserIdAndStatus(userID, status string) (model.Contact, error) {
+// TODO: replace references to GetByUserIdAndStatus with the following:
+func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.table), userID, status)
+	err := u.store.Get(&m, fmt.Sprintf(`
+	SELECT contact.*
+		FROM %s
+	LEFT JOIN contact_platform
+		ON contact.id = contact_to_platform.contact_id
+	LEFT JOIN platform
+		ON contact_to_platform.platform_id = platform.id
+	WHERE contact.user_id = $1
+		AND platform.id = $2
+	`, u.table), userId, platformId)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
+	return m, common.StringError(err)
+}
+
+func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Contact, error) {
+	m := model.Contact{}
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.table), userId, _type)
+	if err != nil && err == sql.ErrNoRows {
+		return m, ErrNotFound
+	}
+	return m, common.StringError(err)
+}
+
+func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, error) {
+	m := model.Contact{}
+	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.table), userId, status)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}

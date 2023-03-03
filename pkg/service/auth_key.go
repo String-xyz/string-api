@@ -9,7 +9,7 @@ import (
 type APIKeyStrategy interface {
 	Create() (model.AuthStrategy, error)
 	List(limit, offset int, status string) ([]model.AuthStrategy, error)
-	Approve(ID string) error
+	Approve(id string) error
 }
 
 type aPIKeyStrategy struct {
@@ -44,12 +44,12 @@ func (g aPIKeyStrategy) ListByStatus(limit, offset int, status string) ([]model.
 }
 
 // Approve updates the APIKey status and creates an entry on redis
-func (g aPIKeyStrategy) Approve(ID string) error {
-	m, err := g.repo.UpdateStatus(ID, "active")
+func (g aPIKeyStrategy) Approve(id string) error {
+	m, err := g.repo.UpdateStatus(id, "active")
 	if err != nil {
 		return err
 	}
 
-	_, err = g.repo.CreateAPIKey(m.ID, repository.AuthTypeAPIKey, m.Data, false)
+	_, err = g.repo.CreateAPIKey(m.Id, repository.AuthTypeAPIKey, m.Data, false)
 	return err
 }

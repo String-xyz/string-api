@@ -10,7 +10,7 @@ type Location interface {
 	Transactable
 	Create(model.Location) (model.Location, error)
 	GetById(id string) (model.Location, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type location[T any] struct {

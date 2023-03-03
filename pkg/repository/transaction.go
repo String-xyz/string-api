@@ -10,7 +10,7 @@ type Transaction interface {
 	Transactable
 	Create(model.Transaction) (model.Transaction, error)
 	GetById(id string) (model.Transaction, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type transaction[T any] struct {
@@ -31,7 +31,7 @@ func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, err
 		return m, common.StringError(err)
 	}
 	for rows.Next() {
-		err = rows.Scan(&m.ID)
+		err = rows.Scan(&m.Id)
 		if err != nil {
 			return m, common.StringError(err)
 		}

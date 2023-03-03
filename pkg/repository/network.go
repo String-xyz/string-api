@@ -14,7 +14,7 @@ type Network interface {
 	Create(model.Network) (model.Network, error)
 	GetById(id string) (model.Network, error)
 	GetByChainId(chainId uint64) (model.Network, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type network[T any] struct {

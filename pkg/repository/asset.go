@@ -14,7 +14,7 @@ type Asset interface {
 	Create(model.Asset) (model.Asset, error)
 	GetById(id string) (model.Asset, error)
 	GetByName(name string) (model.Asset, error)
-	Update(ID string, updates any) error
+	Update(Id string, updates any) error
 }
 
 type asset[T any] struct {

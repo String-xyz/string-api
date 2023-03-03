@@ -13,12 +13,12 @@ type Device interface {
 	Create(model.Device) (model.Device, error)
 	GetById(id string) (model.Device, error)
 
-	// GetByUserIdAndFingerprint gets a device by fingerprint ID and userID, using a compound index
+	// GetByUserIdAndFingerprint gets a device by fingerprint ID and userId, using a compound index
 	// the visitor might exisit for two users but the uniqueness comes from (userId, fingerprint)
-	GetByUserIdAndFingerprint(userID string, fingerprint string) (model.Device, error)
-	GetByUserId(userID string) (model.Device, error)
-	ListByUserId(userID string, imit int, offset int) ([]model.Device, error)
-	Update(ID string, updates any) error
+	GetByUserIdAndFingerprint(userId string, fingerprint string) (model.Device, error)
+	GetByUserId(userId string) (model.Device, error)
+	ListByUserId(userId string, imit int, offset int) ([]model.Device, error)
+	Update(id string, updates any) error
 }
 
 type device[T any] struct {
@@ -49,9 +49,9 @@ func (d device[T]) Create(insert model.Device) (model.Device, error) {
 	return m, nil
 }
 
-func (d device[T]) GetByUserIdAndFingerprint(userID, fingerprint string) (model.Device, error) {
+func (d device[T]) GetByUserIdAndFingerprint(userId, fingerprint string) (model.Device, error) {
 	m := model.Device{}
-	err := d.store.Get(&m, "SELECT * FROM device WHERE user_id = $1 AND fingerprint = $2 LIMIT 1", userID, fingerprint)
+	err := d.store.Get(&m, "SELECT * FROM device WHERE user_id = $1 AND fingerprint = $2 LIMIT 1", userId, fingerprint)
 	if err != nil && err == sql.ErrNoRows {
 		return m, ErrNotFound
 	}

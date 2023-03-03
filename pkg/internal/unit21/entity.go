@@ -35,19 +35,19 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := e.getCommunications(user.ID)
+	communications, err := e.getCommunications(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := e.getEntityDigitalData(user.ID)
+	digitalData, err := e.getEntityDigitalData(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		return "", common.StringError(err)
 	}
 
-	customData, err := e.getCustomData(user.ID)
+	customData, err := e.getCustomData(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
 		return "", common.StringError(err)
@@ -77,21 +77,21 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := e.getCommunications(user.ID)
+	communications, err := e.getCommunications(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
 		err = common.StringError(err)
 		return
 	}
 
-	digitalData, err := e.getEntityDigitalData(user.ID)
+	digitalData, err := e.getEntityDigitalData(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		err = common.StringError(err)
 		return
 	}
 
-	customData, err := e.getCustomData(user.ID)
+	customData, err := e.getCustomData(user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
 		err = common.StringError(err)
@@ -99,7 +99,7 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 	}
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + user.ID + "/update"
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + user.Id + "/update"
 	body, err := u21Put(url, mapUserToEntity(user, communications, digitalData, customData))
 
 	if err != nil {
@@ -182,7 +182,7 @@ func (e entity) getCustomData(userId string) (customData entityCustomData, err e
 	}
 
 	for _, platform := range devices {
-		customData.Platforms = append(customData.Platforms, platform.PlatformID)
+		customData.Platforms = append(customData.Platforms, platform.PlatformId)
 	}
 	return
 }
@@ -197,7 +197,7 @@ func mapUserToEntity(user model.User, communication entityCommunication, digital
 
 	jsonBody := &u21Entity{
 		GeneralData: &entityGeneral{
-			EntityId:     user.ID,
+			EntityId:     user.Id,
 			EntityType:   "user",
 			Status:       user.Status,
 			RegisteredAt: int(user.CreatedAt.Unix()),

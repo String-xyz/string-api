@@ -32,9 +32,9 @@ func (a action) Create(
 	actionData := actionData{
 		ActionType:    instrument.Type,
 		ActionDetails: actionDetails,
-		EntityId:      instrument.UserID,
+		EntityId:      instrument.UserId,
 		EntityType:    "user",
-		InstrumentId:  instrument.ID,
+		InstrumentId:  instrument.Id,
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"

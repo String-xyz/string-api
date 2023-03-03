@@ -72,7 +72,7 @@ func (u user) Create(c echo.Context) error {
 }
 
 func (u user) Status(c echo.Context) error {
-	valid, userId := validUserID(IDParam(c), c)
+	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
 		return Unauthorized(c)
 	}
@@ -92,7 +92,7 @@ func (u user) Update(c echo.Context) error {
 		LogStringError(c, err, "user: update bind")
 		return BadRequestError(c)
 	}
-	_, userId := validUserID(IDParam(c), c)
+	_, userId := validUserId(IdParam(c), c)
 	user, err := u.userService.Update(userId, body)
 	if err != nil {
 		LogStringError(c, err, "user: update")
@@ -105,7 +105,7 @@ func (u user) Update(c echo.Context) error {
 // VerifyEmail send an email with a link, the user must click on the link for the email to be verified
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
-	_, userId := validUserID(IDParam(c), c)
+	_, userId := validUserId(IdParam(c), c)
 	email := c.QueryParam("email")
 	if email == "" {
 		return BadRequestError(c, "Missing or invalid email")
@@ -145,12 +145,12 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 }
 
 // get userId from context and also compare if both are valid
-// this is useful for path params validation and userID from JWT
-func validUserID(userID string, c echo.Context) (bool, string) {
-	userId := c.Get("userId").(string)
-	return userId == userID, userId
+// this is useful for path params validation and userId from JWT
+func validUserId(userId string, c echo.Context) (bool, string) {
+	_userId := c.Get("userId").(string)
+	return _userId == userId, _userId
 }
 
-func IDParam(c echo.Context) string {
+func IdParam(c echo.Context) string {
 	return c.Param("id")
 }

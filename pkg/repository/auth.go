@@ -29,14 +29,14 @@ const (
 type AuthStrategy interface {
 	Create(authType AuthType, m model.AuthStrategy) error
 	CreateAny(key string, val any, expire time.Duration) error
-	CreateAPIKey(entityID string, authType AuthType, apiKey string, persistOnly bool) (model.AuthStrategy, error)
+	CreateAPIKey(entityId string, authType AuthType, apiKey string, persistOnly bool) (model.AuthStrategy, error)
 	CreateJWTRefresh(key string, val string) (model.AuthStrategy, error)
 	GetUserIdFromRefreshToken(key string) (string, error)
 	Get(string) (model.AuthStrategy, error)
 	GetKeyString(key string) (string, error)
 	List(limit, offset int) ([]model.AuthStrategy, error)
 	ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error)
-	UpdateStatus(ID, status string) (model.AuthStrategy, error)
+	UpdateStatus(Id, status string) (model.AuthStrategy, error)
 	Delete(key string) error
 }
 
@@ -66,7 +66,7 @@ func (a auth) CreateAny(key string, val any, expire time.Duration) error {
 }
 
 // CreateAPIKey creates and persists an API Key for a platform
-func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persistOnly bool) (model.AuthStrategy, error) {
+func (a auth) CreateAPIKey(entityId string, authType AuthType, key string, persistOnly bool) (model.AuthStrategy, error) {
 	// only insert to postgres and skip redis cache
 	if persistOnly {
 		rows, err := a.store.Queryx("INSERT INTO auth_strategy(type,data) VALUES($1, $2) RETURNING *", authType, key)
@@ -82,7 +82,7 @@ func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persi
 	}
 
 	m := model.AuthStrategy{
-		EntityID:   entityID,
+		EntityId:   entityId,
 		CreatedAt:  time.Now(),
 		Type:       string(authType),
 		EntityType: string(EntityTypePlatform),
@@ -96,7 +96,7 @@ func (a auth) CreateAPIKey(entityID string, authType AuthType, key string, persi
 func (a auth) CreateJWTRefresh(key string, userId string) (model.AuthStrategy, error) {
 	expireAt := time.Hour * 24 * 7 // 7 days expiration
 	m := model.AuthStrategy{
-		ID:         key,
+		Id:         key,
 		CreatedAt:  time.Now(),
 		Type:       string(AuthTypeJWT),
 		EntityType: string(EntityTypeUser),
@@ -169,9 +169,8 @@ func (a auth) ListByStatus(limit, offset int, status string) ([]model.AuthStrate
 }
 
 // UpdateStatus updates the status on postgres db and returns the updated row
-func (a auth) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
-	fmt.Println("Status and ID", status, ID)
-	row := a.store.QueryRowx("UPDATE auth_strategy SET status = $2 WHERE id = $1 RETURNING *", ID, status)
+func (a auth) UpdateStatus(Id, status string) (model.AuthStrategy, error) {
+	row := a.store.QueryRowx("UPDATE auth_strategy SET status = $2 WHERE id = $1 RETURNING *", Id, status)
 	m := model.AuthStrategy{}
 	err := row.StructScan(&m)
 	return m, err

@@ -5,6 +5,7 @@ package service
 import (
 	"math"
 	"os"
+	"strings"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/checkout/checkout-sdk-go"
@@ -49,7 +50,7 @@ func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
 }
 
 type AuthorizedCharge struct {
-	AuthID              string
+	AuthId              string
 	CheckoutFingerprint string
 	Last4               string
 	Issuer              string
@@ -67,7 +68,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	client := payments.NewClient(*config)
 
-	var paymentTokenID string
+	var paymentTokenId string
 	if common.IsLocalEnv() {
 		// Generate a payment token ID in case we don't yet have one in the front end
 		// For testing purposes only
@@ -86,28 +87,32 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		if err != nil {
 			return p, common.StringError(err)
 		}
-		paymentTokenID = paymentToken.Created.Token
+		paymentTokenId = paymentToken.Created.Token
 		if p.executionRequest.CardToken != "" {
-			paymentTokenID = p.executionRequest.CardToken
+			paymentTokenId = p.executionRequest.CardToken
 		}
 	} else {
-		paymentTokenID = p.executionRequest.CardToken
+		paymentTokenId = p.executionRequest.CardToken
 	}
 
-	usd := convertAmount(p.executionRequest.TotalUSD)
+	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
+	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
 
+	usd := convertAmount(p.executionRequest.TotalUSD)
 	capture := false
 	request := &payments.Request{
 		Source: payments.TokenSource{
 			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenID,
+			Token: paymentTokenId,
 		},
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
-			Name: p.executionRequest.UserAddress,
+			Name:  fullName,
+			Email: p.user.Email, // Replace with more robust email from platform and user
 		},
-		Capture: &capture,
+		Capture:   &capture,
+		PaymentIP: p.transactionModel.IPAddress,
 	}
 
 	idempotencyKey := checkout.NewIdempotencyKey()
@@ -121,7 +126,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 
 	// Collect authorization ID and Instrument ID
 	if response.Processed != nil {
-		auth.AuthID = response.Processed.ID
+		auth.AuthId = response.Processed.ID
 		auth.Approved = *response.Processed.Approved
 		auth.Status = string(response.Processed.Status)
 		auth.Summary = response.Processed.ResponseSummary
@@ -155,14 +160,14 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 		Amount: usd,
 	}
 
-	capture, err := client.Captures(p.cardAuthorization.AuthID, &request, &params)
+	capture, err := client.Captures(p.cardAuthorization.AuthId, &request, &params)
 	if err != nil {
 		return p, common.StringError(err)
 	}
 
 	p.cardCapture = capture
 
-	// TODO: call action, err = client.Actions(capture.Accepted.ActionID) in another service to check on
+	// TODO: call action, err = client.Actions(capture.Accepted.ActionId) in another service to check on
 
 	// TODO: Create entry for capture in our DB associated with userWallet
 	return p, nil

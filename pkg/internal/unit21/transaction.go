@@ -117,7 +117,7 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 	}
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.Id + "/update"
 	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 
 	if err != nil {
@@ -136,28 +136,28 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 }
 
 func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
-	senderData, err := t.repos.TxLeg.GetById(transaction.OriginTxLegID)
+	senderData, err := t.repos.TxLeg.GetById(transaction.OriginTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverData, err := t.repos.TxLeg.GetById(transaction.DestinationTxLegID)
+	receiverData, err := t.repos.TxLeg.GetById(transaction.DestinationTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	senderAsset, err := t.repos.Asset.GetById(senderData.AssetID)
+	senderAsset, err := t.repos.Asset.GetById(senderData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction sender asset")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverAsset, err := t.repos.Asset.GetById(receiverData.AssetID)
+	receiverAsset, err := t.repos.Asset.GetById(receiverData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction receiver asset")
 		err = common.StringError(err)
@@ -213,14 +213,14 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		Amount:               amount,
 		SentAmount:           senderAmount,
 		SentCurrency:         senderAsset.Name,
-		SenderEntityId:       senderData.UserID,
+		SenderEntityId:       senderData.UserId,
 		SenderEntityType:     "user",
-		SenderInstrumentId:   senderData.InstrumentID,
+		SenderInstrumentId:   senderData.InstrumentId,
 		ReceivedAmount:       receiverAmount,
 		ReceivedCurrency:     receiverAsset.Name,
-		ReceiverEntityId:     receiverData.UserID,
+		ReceiverEntityId:     receiverData.UserId,
 		ReceiverEntityType:   "user",
-		ReceiverInstrumentId: receiverData.InstrumentID,
+		ReceiverInstrumentId: receiverData.InstrumentId,
 		ExchangeRate:         exchangeRate,
 		TransactionHash:      transaction.TransactionHash,
 		USDConversionNotes:   "",
@@ -232,11 +232,11 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 }
 
 func (t transaction) getEventDigitalData(transaction model.Transaction) (digitalData eventDigitalData, err error) {
-	if transaction.DeviceID == "" {
+	if transaction.DeviceId == "" {
 		return
 	}
 
-	device, err := t.repos.Device.GetById(transaction.DeviceID)
+	device, err := t.repos.Device.GetById(transaction.DeviceId)
 	if err != nil {
 		log.Err(err).Msg("Failed to get transaction device")
 		err = common.StringError(err)
@@ -260,7 +260,7 @@ func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData 
 
 	jsonBody := &u21Event{
 		GeneralData: &eventGeneral{
-			EventId:      transaction.ID,                    //required
+			EventId:      transaction.Id,                    //required
 			EventType:    "transaction",                     //required
 			EventTime:    int(transaction.CreatedAt.Unix()), //required
 			EventSubtype: "Fiat to Crypto",                  //required for RTR

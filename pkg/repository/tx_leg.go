@@ -10,7 +10,7 @@ type TxLeg interface {
 	Transactable
 	Create(model.TxLeg) (model.TxLeg, error)
 	GetById(id string) (model.TxLeg, error)
-	Update(ID string, updates any) error
+	Update(id string, updates any) error
 }
 
 type txLeg[T any] struct {

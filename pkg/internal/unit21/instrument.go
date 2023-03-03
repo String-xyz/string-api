@@ -32,25 +32,25 @@ func NewInstrument(r InstrumentRepos, a Action) Instrument {
 
 func (i instrument) Create(instrument model.Instrument) (unit21Id string, err error) {
 
-	source, err := i.getSource(instrument.UserID)
+	source, err := i.getSource(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument source")
 		return "", common.StringError(err)
 	}
 
-	entities, err := i.getEntities(instrument.UserID)
+	entities, err := i.getEntities(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := i.getInstrumentDigitalData(instrument.UserID)
+	digitalData, err := i.getInstrumentDigitalData(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		return "", common.StringError(err)
 	}
 
-	locationData, err := i.getLocationData(instrument.LocationID.String)
+	locationData, err := i.getLocationData(instrument.LocationId.String)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", common.StringError(err)
@@ -84,32 +84,32 @@ func (i instrument) Create(instrument model.Instrument) (unit21Id string, err er
 
 func (i instrument) Update(instrument model.Instrument) (unit21Id string, err error) {
 
-	source, err := i.getSource(instrument.UserID)
+	source, err := i.getSource(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument source")
 		return "", common.StringError(err)
 	}
 
-	entities, err := i.getEntities(instrument.UserID)
+	entities, err := i.getEntities(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := i.getInstrumentDigitalData(instrument.UserID)
+	digitalData, err := i.getInstrumentDigitalData(instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
 		return "", common.StringError(err)
 	}
 
-	locationData, err := i.getLocationData(instrument.LocationID.String)
+	locationData, err := i.getLocationData(instrument.LocationId.String)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", common.StringError(err)
 	}
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.ID + "/update"
+	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.Id + "/update"
 	body, err := u21Put(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 
 	if err != nil {
@@ -227,7 +227,7 @@ func mapToUnit21Instrument(instrument model.Instrument, source string, entityDat
 	entityArray = append(entityArray, entityData)
 
 	jsonBody := &u21Instrument{
-		InstrumentId:   instrument.ID,
+		InstrumentId:   instrument.Id,
 		InstrumentType: instrument.Type,
 		// InstrumentSubtype:  "",
 		// Source:             "internal",

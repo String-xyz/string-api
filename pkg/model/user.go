@@ -10,8 +10,8 @@ type WalletSignaturePayload struct {
 }
 
 type FingerprintPayload struct {
-	VisitorID string `json:"visitorId"`
-	RequestID string `json:"requestId"`
+	VisitorId string `json:"visitorId"`
+	RequestId string `json:"requestId"`
 }
 
 type WalletSignaturePayloadSigned struct {

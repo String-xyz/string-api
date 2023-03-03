@@ -14,7 +14,7 @@ func (v *Verification) SetError(e error) {
 	v.Error = e
 }
 
-func (v Verification) SendEmailVerification(userID string, email string) error {
+func (v Verification) SendEmailVerification(userId string, email string) error {
 	return v.Error
 }
 
@@ -22,7 +22,7 @@ func (v Verification) VerifyEmail(encrypted string) error {
 	return v.Error
 }
 
-func (v Verification) SendDeviceVerification(userID string, deviceID string, deviceDescription string) error {
+func (v Verification) SendDeviceVerification(userId string, deviceId string, deviceDescription string) error {
 	return v.Error
 }
 
@@ -50,7 +50,7 @@ func (u *User) SetUser(user model.User) {
 	u.User = user
 }
 
-func (u User) GetStatus(ID string) (model.UserOnboardingStatus, error) {
+func (u User) GetStatus(id string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
 
@@ -58,7 +58,7 @@ func (u User) Create(request model.WalletSignaturePayloadSigned) (service.UserCr
 	return u.UserCreateResponse, u.Error
 }
 
-func (u User) Update(userID string, request service.UserUpdates) (model.User, error) {
+func (u User) Update(userId string, request service.UserUpdates) (model.User, error) {
 	return u.User, u.Error
 }
 

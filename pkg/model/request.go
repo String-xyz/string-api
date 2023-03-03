@@ -15,19 +15,19 @@ type TransactionUpdates struct {
 	Type               *string         `json:"type" db:"type"`
 	Status             *string         `json:"status" db:"status"`
 	Tags               *types.JSONText `json:"tags" db:"tags"`
-	DeviceID           *string         `json:"deviceId" db:"device_id"`
+	DeviceId           *string         `json:"deviceId" db:"device_id"`
 	IPAddress          *string         `json:"ipAddress" db:"ip_address"`
-	PlatformID         *string         `json:"platformId" db:"platform_id"`
+	PlatformId         *string         `json:"platformId" db:"platform_id"`
 	TransactionHash    *string         `json:"transactionHash" db:"transaction_hash"`
-	NetworkID          *string         `json:"networkId" db:"network_id"`
+	NetworkId          *string         `json:"networkId" db:"network_id"`
 	NetworkFee         *string         `json:"networkFee" db:"network_fee"`
 	ContractParams     *pq.StringArray `json:"contractParameters" db:"contract_params"`
 	ContractFunc       *string         `json:"contractFunc" db:"contract_func"`
 	TransactionAmount  *string         `json:"transactionAmount" db:"transaction_amount"`
-	OriginTxLegID      *string         `json:"originTxLegId" db:"origin_tx_leg_id"`
-	ReceiptTxLegID     *string         `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
-	ResponseTxLegID    *string         `json:"responseTxLegId" db:"response_tx_leg_id"`
-	DestinationTxLegID *string         `json:"destinationTxLegId" db:"destination_tx_leg_id"`
+	OriginTxLegId      *string         `json:"originTxLegId" db:"origin_tx_leg_id"`
+	ReceiptTxLegId     *string         `json:"receiptTxLegId" db:"receipt_tx_leg_id"`
+	ResponseTxLegId    *string         `json:"responseTxLegId" db:"response_tx_leg_id"`
+	DestinationTxLegId *string         `json:"destinationTxLegId" db:"destination_tx_leg_id"`
 	ProcessingFee      *string         `json:"processingFee" db:"processing_fee"`
 	ProcessingFeeAsset *string         `json:"processingFeeAsset" db:"processing_fee_asset"`
 	StringFee          *string         `json:"stringFee" db:"string_fee"`
@@ -41,17 +41,17 @@ type InstrumentUpdates struct {
 	Network    *string         `json:"network" db:"network"`
 	PublicKey  *string         `json:"publicKey" db:"public_key"`
 	Last4      *string         `json:"last4" db:"last_4"`
-	UserID     *string         `json:"userId" db:"user_id"`
-	LocationID *sql.NullString `json:"locationId" db:"location_id"`
+	UserId     *string         `json:"userId" db:"user_id"`
+	LocationId *sql.NullString `json:"locationId" db:"location_id"`
 }
 
 type TxLegUpdates struct {
 	Timestamp    *time.Time `json:"timestamp" db:"timestamp"`
 	Amount       *string    `json:"amount" db:"amount"`
 	Value        *string    `json:"value" db:"value"`
-	AssetID      *string    `json:"assetId" db:"asset_id"`
-	UserID       *string    `json:"userId" db:"user_id"`
-	InstrumentID *string    `json:"instrumentId" db:"instrument_id"`
+	AssetId      *string    `json:"assetId" db:"asset_id"`
+	UserId       *string    `json:"userId" db:"user_id"`
+	InstrumentId *string    `json:"instrumentId" db:"instrument_id"`
 }
 
 type UserRegister struct {
@@ -124,7 +124,7 @@ type UpdateStatus struct {
 }
 
 type NetworkUpdates struct {
-	GasTokenID *string `json:"gasTokenId" db:"gas_token_id"`
+	GasTokenId *string `json:"gasTokenId" db:"gas_token_id"`
 }
 
 type DeviceUpdates struct {

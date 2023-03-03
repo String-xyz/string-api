@@ -10,7 +10,7 @@ import (
 
 // See STRING_USER in Migrations 0001
 type User struct {
-	ID            string     `json:"id" db:"id"`
+	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
@@ -25,7 +25,7 @@ type User struct {
 
 // See PLATFORM in Migrations 0005
 type Platform struct {
-	ID            string         `json:"id,omitempty" db:"id"`
+	Id            string         `json:"id,omitempty" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
@@ -38,14 +38,14 @@ type Platform struct {
 
 // See NETWORK in Migrations 0001
 type Network struct {
-	ID            string     `json:"id" db:"id"`
+	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Name          string     `json:"name" db:"name"`
-	NetworkID     uint64     `json:"networkId" db:"network_id"`
-	ChainID       uint64     `json:"chainId" db:"chain_id"`
-	GasTokenID    string     `json:"gasTokenId" db:"gas_token_id"`
+	NetworkId     uint64     `json:"networkId" db:"network_id"`
+	ChainId       uint64     `json:"chainId" db:"chain_id"`
+	GasTokenId    string     `json:"gasTokenId" db:"gas_token_id"`
 	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
 	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
 	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
@@ -53,7 +53,7 @@ type Network struct {
 
 // See ASSET in Migrations 0001
 type Asset struct {
-	ID            string         `json:"id" db:"id"`
+	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
@@ -61,19 +61,19 @@ type Asset struct {
 	Description   string         `json:"description" db:"description"`
 	Decimals      uint64         `json:"decimals" db:"decimals"`
 	IsCrypto      bool           `json:"isCrypto" db:"is_crypto"`
-	NetworkID     sql.NullString `json:"networkId" db:"network_id"`
+	NetworkId     sql.NullString `json:"networkId" db:"network_id"`
 	ValueOracle   sql.NullString `json:"valueOracle" db:"value_oracle"`
 }
 
 // See USER_PLATFORM in Migrations 0002
 type UserToPlatform struct {
-	UserID     string `json:"userId" db:"user_id"`
-	PlatformID string `json:"platformId" db:"platform_id"`
+	UserId     string `json:"userId" db:"user_id"`
+	PlatformId string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE in Migrations 0002
 type Device struct {
-	ID            string         `json:"id" db:"id"`
+	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
 	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
@@ -83,13 +83,13 @@ type Device struct {
 	Description   string         `json:"description" db:"description"`
 	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
 	IpAddresses   pq.StringArray `json:"ipAddresses,omitempty" db:"ip_addresses"`
-	UserID        string         `json:"userId" db:"user_id"`
+	UserId        string         `json:"userId" db:"user_id"`
 }
 
 // See CONTACT in Migrations 0002
 type Contact struct {
-	ID                  string     `json:"id" db:"id"`
-	UserID              string     `json:"userId" db:"user_id"`
+	Id                  string     `json:"id" db:"id"`
+	UserId              string     `json:"userId" db:"user_id"`
 	CreatedAt           time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt           time.Time  `json:"updatedAt" db:"updated_at"`
 	LastAuthenticatedAt *time.Time `json:"lastAuthenticatedAt" db:"last_authenticated_at"`
@@ -102,8 +102,8 @@ type Contact struct {
 
 // See LOCATION in Migrations 0002
 type Location struct {
-	ID             string     `json:"id" db:"id"`
-	UserID         string     `json:"userId" db:"user_id"`
+	Id             string     `json:"id" db:"id"`
+	UserId         string     `json:"userId" db:"user_id"`
 	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
@@ -121,7 +121,7 @@ type Location struct {
 
 // See INSTRUMENT in Migrations 0002
 type Instrument struct {
-	ID            string         `json:"id" db:"id"`
+	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
@@ -131,58 +131,58 @@ type Instrument struct {
 	Network       string         `json:"network" db:"network"`
 	PublicKey     string         `json:"publicKey" db:"public_key"`
 	Last4         string         `json:"last4" db:"last_4"`
-	UserID        string         `json:"userId" db:"user_id"`
-	LocationID    sql.NullString `json:"locationId" db:"location_id"`
+	UserId        string         `json:"userId" db:"user_id"`
+	LocationId    sql.NullString `json:"locationId" db:"location_id"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
 type ContactToPlatform struct {
-	ContactID  string `json:"contactId" db:"contact_id"`
-	PlatformID string `json:"platformId" db:"platform_id"`
+	ContactId  string `json:"contactId" db:"contact_id"`
+	PlatformId string `json:"platformId" db:"platform_id"`
 }
 
 // See DEVICE_INSTRUMENT in Migrations 0003
 type DeviceToInstrument struct {
-	DeviceID     string `json:"deviceId" db:"device_id"`
-	InstrumentID string `json:"instrumentId" db:"instrument_id"`
+	DeviceId     string `json:"deviceId" db:"device_id"`
+	InstrumentId string `json:"instrumentId" db:"instrument_id"`
 }
 
 // See Tx_LEG in Migrations 0003
 type TxLeg struct {
-	ID            string     `json:"id" db:"id"`
+	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Timestamp     time.Time  `json:"timestamp" db:"timestamp"`
 	Amount        string     `json:"amount" db:"amount"`
 	Value         string     `json:"value" db:"value"`
-	AssetID       string     `json:"assetId" db:"asset_id"`
-	UserID        string     `json:"userId" db:"user_id"`
-	InstrumentID  string     `json:"instrumentId" db:"instrument_id"`
+	AssetId       string     `json:"assetId" db:"asset_id"`
+	UserId        string     `json:"userId" db:"user_id"`
+	InstrumentId  string     `json:"instrumentId" db:"instrument_id"`
 }
 
 // See TRANSACTION in Migrations 0003
 type Transaction struct {
-	ID                 string         `json:"id" db:"id"`
+	Id                 string         `json:"id" db:"id"`
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
 	DeactivatedAt      *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type               string         `json:"type,omitempty" db:"type"`
 	Status             string         `json:"status,omitempty" db:"status"`
 	Tags               StringMap      `json:"tags,omitempty" db:"tags"`
-	DeviceID           string         `json:"deviceId,omitempty" db:"device_id"`
+	DeviceId           string         `json:"deviceId,omitempty" db:"device_id"`
 	IPAddress          string         `json:"ipAddress,omitempty" db:"ip_address"`
-	PlatformID         string         `json:"platformId,omitempty" db:"platform_id"`
+	PlatformId         string         `json:"platformId,omitempty" db:"platform_id"`
 	TransactionHash    string         `json:"transactionHash,omitempty" db:"transaction_hash"`
-	NetworkID          string         `json:"networkId,omitempty" db:"network_id"`
+	NetworkId          string         `json:"networkId,omitempty" db:"network_id"`
 	NetworkFee         string         `json:"networkFee,omitempty" db:"network_fee"`
 	ContractParams     pq.StringArray `json:"contractParameters,omitempty" db:"contract_params"`
 	ContractFunc       string         `json:"contractFunc,omitempty" db:"contract_func"`
 	TransactionAmount  string         `json:"transactionAmount,omitempty" db:"transaction_amount"`
-	OriginTxLegID      string         `json:"originTxLegId,omitempty" db:"origin_tx_leg_id"`
-	ReceiptTxLegID     sql.NullString `json:"receiptTxLegId,omitempty" db:"receipt_tx_leg_id"`
-	ResponseTxLegID    sql.NullString `json:"responseTxLegId,omitempty" db:"response_tx_leg_id"`
-	DestinationTxLegID string         `json:"destinationTxLegId,omitempty" db:"destination_tx_leg_id"`
+	OriginTxLegId      string         `json:"originTxLegId,omitempty" db:"origin_tx_leg_id"`
+	ReceiptTxLegId     sql.NullString `json:"receiptTxLegId,omitempty" db:"receipt_tx_leg_id"`
+	ResponseTxLegId    sql.NullString `json:"responseTxLegId,omitempty" db:"response_tx_leg_id"`
+	DestinationTxLegId string         `json:"destinationTxLegId,omitempty" db:"destination_tx_leg_id"`
 	ProcessingFee      string         `json:"processingFee,omitempty" db:"processing_fee"`
 	ProcessingFeeAsset string         `json:"processingFeeAsset,omitempty" db:"processing_fee_asset"`
 	StringFee          string         `json:"stringFee,omitempty" db:"string_fee"`
@@ -190,13 +190,13 @@ type Transaction struct {
 }
 
 type AuthStrategy struct {
-	ID            string         `json:"id,omitempty" db:"id"`
+	Id            string         `json:"id,omitempty" db:"id"`
 	Status        string         `json:"status" db:"status"`
-	EntityID      string         `json:"entityId,omitempty"` // for redis use only
+	EntityId      string         `json:"entityId,omitempty"` // for redis use only
 	Type          string         `json:"authType" db:"type"`
 	EntityType    string         `json:"entityType,omitempty"`  // for redis use only
 	ContactData   string         `json:"contactData,omitempty"` // for redis use only
-	ContactID     NullableString `json:"contactId,omitempty" db:"contact_id"`
+	ContactId     NullableString `json:"contactId,omitempty" db:"contact_id"`
 	Data          string         `json:"data" data:"data"`
 	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`

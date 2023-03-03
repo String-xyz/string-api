@@ -101,26 +101,26 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	if err != nil {
 		return resp, common.StringError(err)
 	}
-	user, err := a.repos.User.GetById(instrument.UserID)
+	user, err := a.repos.User.GetById(instrument.UserId)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
+	// TODO: remove user.Email and replace with association with contact via user and platform
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
 
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
-
-	device, err := a.device.CreateDeviceIfNeeded(user.ID, request.Fingerprint.VisitorID, request.Fingerprint.RequestID)
+	device, err := a.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, common.StringError(err)
 	}
 
 	// Send verification email if device is unknown and user has a validated email
 	if user.Email != "" && !isDeviceValidated(device) {
-		go a.verification.SendDeviceVerification(user.ID, user.Email, device.ID, device.Description)
+		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
 		return resp, common.StringError(errors.New("unknown device"))
 	}
 
 	// Create the JWT
-	jwt, err := a.GenerateJWT(user.ID, device)
+	jwt, err := a.GenerateJWT(user.Id, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -145,7 +145,7 @@ func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 
 	// set device id if available
 	if len(m) > 0 {
-		claims.DeviceId = m[0].ID
+		claims.DeviceId = m[0].Id
 	}
 
 	claims.UserId = userId
@@ -212,7 +212,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 		return resp, common.StringError(err)
 	}
 
-	if instrument.UserID != userId {
+	if instrument.UserId != userId {
 		return resp, common.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 	}
 
@@ -235,13 +235,13 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 		return resp, common.StringError(err)
 	}
 
-	user, err := a.repos.User.GetById(instrument.UserID)
+	user, err := a.repos.User.GetById(instrument.UserId)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
 
 	// get email
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.ID)
+	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
 	resp.User = user
 
 	return resp, nil

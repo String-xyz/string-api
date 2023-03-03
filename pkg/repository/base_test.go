@@ -19,7 +19,7 @@ func TestBaseUpdate(t *testing.T) {
 	mType := "type"
 	m := model.ContactUpdates{Type: &mType}
 
-	NewContact(sqlxDB).Update("ID", m)
+	NewContact(sqlxDB).Update("Id", m)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, while updating a contact", err)
 	}

@@ -26,7 +26,7 @@ func TestGetLocation(t *testing.T) {
 
 	location, err := NewLocation(sqlxDB).GetById(id)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, location.ID)
+	assert.NotEmpty(t, location.Id)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting location by id", err)
 	}
