@@ -146,7 +146,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 		return p, common.StringError(err)
 	}
 	email, err := t.repos.Contact.GetByUserIdAndType(user.Id, "email")
-	if err != nil {
+	if err != nil && errors.Cause(err).Error() != "not found" {
 		return p, common.StringError(err)
 	}
 	user.Email = email.Data
