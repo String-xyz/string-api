@@ -112,16 +112,16 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	}
 
 	// Round up to nearest cent
-	transactionCost = nearestUpperCent(transactionCost)
-	gasInUSD = nearestUpperCent(gasInUSD)
-	tokenCost = nearestUpperCent(tokenCost)
-	serviceFee = nearestUpperCent(serviceFee)
+	transactionCost = centCeiling(transactionCost)
+	gasInUSD = centCeiling(gasInUSD)
+	tokenCost = centCeiling(tokenCost)
+	serviceFee = centCeiling(serviceFee)
 
 	// sum total
 	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
 
 	// Round that up as well to account for any floating imprecision
-	totalUSD = nearestUpperCent(totalUSD)
+	totalUSD = centCeiling(totalUSD)
 
 	// Fill out CostEstimate and return
 	return model.Quote{
@@ -134,7 +134,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	}, nil
 }
 
-func nearestUpperCent(value float64) float64 {
+func centCeiling(value float64) float64 {
 	return math.Ceil(value*100) / 100
 }
 
