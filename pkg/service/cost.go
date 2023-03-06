@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"math/big"
 	"os"
 	"time"
@@ -110,7 +111,17 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		gasInUSD = 0.01
 	}
 
+	// Round up to nearest cent
+	transactionCost = centCeiling(transactionCost)
+	gasInUSD = centCeiling(gasInUSD)
+	tokenCost = centCeiling(tokenCost)
+	serviceFee = centCeiling(serviceFee)
+
+	// sum total
 	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
+
+	// Round that up as well to account for any floating imprecision
+	totalUSD = centCeiling(totalUSD)
 
 	// Fill out CostEstimate and return
 	return model.Quote{
@@ -121,6 +132,10 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		ServiceUSD: serviceFee,
 		TotalUSD:   totalUSD,
 	}, nil
+}
+
+func centCeiling(value float64) float64 {
+	return math.Ceil(value*100) / 100
 }
 
 func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntries uint32) int64 {

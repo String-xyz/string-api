@@ -24,7 +24,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
-	var body model.ExecutionRequest
+	var body model.PrecisionSafeExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "transact: execute bind")

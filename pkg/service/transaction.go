@@ -20,8 +20,8 @@ import (
 )
 
 type Transaction interface {
-	Quote(d model.TransactionRequest) (model.ExecutionRequest, error)
-	Execute(e model.ExecutionRequest, userId string, deviceId string, ip string) (model.TransactionReceipt, error)
+	Quote(d model.TransactionRequest) (model.PrecisionSafeExecutionRequest, error)
+	Execute(e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (model.TransactionReceipt, error)
 }
 
 type TransactionRepos struct {
@@ -55,27 +55,28 @@ func NewTransaction(repos repository.Repositories, redis store.RedisStore, unit2
 }
 
 type transactionProcessingData struct {
-	userId             *string
-	user               *model.User
-	deviceId           *string
-	ip                 *string
-	executor           *Executor
-	processingFeeAsset *model.Asset
-	transactionModel   *model.Transaction
-	chain              *Chain
-	executionRequest   *model.ExecutionRequest
-	cardAuthorization  *AuthorizedCharge
-	cardCapture        *payments.CapturesResponse
-	preBalance         *float64
-	recipientWalletId  *string
-	txId               *string
-	cumulativeValue    *big.Int
-	trueGas            *uint64
+	userId                        *string
+	user                          *model.User
+	deviceId                      *string
+	ip                            *string
+	executor                      *Executor
+	processingFeeAsset            *model.Asset
+	transactionModel              *model.Transaction
+	chain                         *Chain
+	executionRequest              *model.ExecutionRequest
+	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
+	cardAuthorization             *AuthorizedCharge
+	cardCapture                   *payments.CapturesResponse
+	preBalance                    *float64
+	recipientWalletId             *string
+	txId                          *string
+	cumulativeValue               *big.Int
+	trueGas                       *uint64
 }
 
-func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, error) {
+func (t transaction) Quote(d model.TransactionRequest) (model.PrecisionSafeExecutionRequest, error) {
 	// TODO: use prefab service to parse d and fill out known params
-	res := model.ExecutionRequest{TransactionRequest: d}
+	res := model.PrecisionSafeExecutionRequest{TransactionRequest: d}
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(uint64(d.ChainId), t.repos.Network, t.repos.Asset)
 	if err != nil {
@@ -91,7 +92,7 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	res.Quote = estimateUSD
+	res.PrecisionSafeQuote = common.QuoteToPrecise(estimateUSD)
 	executor.Close()
 
 	// Sign entire payload
@@ -108,9 +109,9 @@ func (t transaction) Quote(d model.TransactionRequest) (model.ExecutionRequest, 
 	return res, nil
 }
 
-func (t transaction) Execute(e model.ExecutionRequest, userId string, deviceId string, ip string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip}
+	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(p)
@@ -153,7 +154,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	p.user = &user
 
 	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(uint64(p.executionRequest.ChainId), t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(p.precisionSafeExecutionRequest.ChainId, t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -167,7 +168,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(*p.executionRequest, updateDB)
+	processingFeeAsset, err := t.populateInitialTxModelData(*p.precisionSafeExecutionRequest, updateDB)
 	p.processingFeeAsset = &processingFeeAsset
 	if err != nil {
 		return p, common.StringError(err)
@@ -196,7 +197,7 @@ func (t transaction) transactionSetup(p transactionProcessingData) (transactionP
 
 func (t transaction) safetyCheck(p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.executionRequest.TransactionRequest, *p.chain, false)
+	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -206,7 +207,7 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	}
 
 	// Verify the Quote and update model status
-	_, err = verifyQuote(*p.executionRequest, estimateUSD)
+	_, err = verifyQuote(*p.precisionSafeExecutionRequest, estimateUSD)
 	if err != nil {
 		return p, common.StringError(err)
 	}
@@ -214,6 +215,7 @@ func (t transaction) safetyCheck(p transactionProcessingData) (transactionProces
 	if err != nil {
 		return p, common.StringError(err)
 	}
+	*p.executionRequest = common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
 
 	// Get current balance of primary token
 	preBalance, err := (*p.executor).GetBalance()
@@ -442,7 +444,7 @@ func (t transaction) postProcess(p transactionProcessingData) {
 	}
 }
 
-func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
 	// TODO populate transactionModel.Tags with key-val pairs for Unit21
@@ -510,7 +512,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	return res, eth, nil
 }
 
-func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error) {
+func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote) (bool, error) {
 	// Null out values which have changed since payload was signed
 	dataToValidate := e
 	dataToValidate.Signature = ""
@@ -529,7 +531,11 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Quote) (bool, error
 	if newEstimate.Timestamp-e.Timestamp > 20 {
 		return false, common.StringError(errors.New("verifyQuote: quote expired"))
 	}
-	if newEstimate.TotalUSD > e.TotalUSD {
+	quotedTotal, err := strconv.ParseFloat(e.TotalUSD, 64)
+	if err != nil {
+		return false, common.StringError(err)
+	}
+	if newEstimate.TotalUSD > quotedTotal {
 		return false, common.StringError(errors.New("verifyQuote: price too volatile"))
 	}
 	return true, nil

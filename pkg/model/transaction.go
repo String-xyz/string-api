@@ -24,10 +24,26 @@ type ExecutionRequest struct {
 	CardToken string `json:"cardToken"`
 }
 
+type PrecisionSafeQuote struct {
+	Timestamp  int64  `json:"timestamp"`
+	BaseUSD    string `json:"baseUSD"`
+	GasUSD     string `json:"gasUSD"`
+	TokenUSD   string `json:"tokenUSD"`
+	ServiceUSD string `json:"serviceUSD"`
+	TotalUSD   string `json:"totalUSD"`
+}
+
+type PrecisionSafeExecutionRequest struct {
+	TransactionRequest
+	PrecisionSafeQuote
+	Signature string `json:"signature"`
+	CardToken string `json:"cardToken"`
+}
+
 // User will pass this in for a quote and receive Execution Parameters
 type TransactionRequest struct {
 	UserAddress string   `json:"userAddress"`        // Used to keep track of user ie "0x44A4b9E2A69d86BA382a511f845CbF2E31286770"
-	ChainId     int      `json:"chainId"`            // Chain ID to execute on e.g. 80000
+	ChainId     uint64   `json:"chainId"`            // Chain ID to execute on e.g. 80000
 	CxAddr      string   `json:"contractAddress"`    // Address of contract ie "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 	CxFunc      string   `json:"contractFunction"`   // Function declaration ie "mintTo(address) payable"
 	CxReturn    string   `json:"contractReturn"`     // Function return type ie "uint256"
