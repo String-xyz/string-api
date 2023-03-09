@@ -2,11 +2,13 @@ package service
 
 import (
 	"os"
+	"time"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type UserRequest = model.UserRequest
@@ -98,9 +100,17 @@ func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResp
 
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
-
 	if err != nil && errors.Cause(err).Error() != "not found" {
 		return resp, common.StringError(err)
+	}
+
+	if device.Fingerprint != "" {
+		// validate that device on user creation
+		now := time.Now()
+		err = u.repos.Device.Update(device.Id, model.DeviceUpdates{ValidatedAt: &now})
+		if err == nil {
+			log.Err(err).Msg("Failed to verify user device")
+		}
 	}
 
 	jwt, err := u.auth.GenerateJWT(user.Id, device)

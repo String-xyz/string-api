@@ -1,7 +1,6 @@
 package unit21
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
