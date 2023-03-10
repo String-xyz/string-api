@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
@@ -36,13 +37,13 @@ func NewLogin(route *echo.Echo, service service.Auth, device service.Device) Log
 func (l login) NoncePayload(c echo.Context) error {
 	walletAddress := c.QueryParam("walletAddress")
 	if walletAddress == "" {
-		return BadRequestError(c, "WalletAddress must be provided")
+		return httperror.BadRequestError(c, "WalletAddress must be provided")
 	}
 	SanitizeChecksums(&walletAddress)
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		LogStringError(c, err, "login: request wallet login")
-		return InternalError(c)
+		return httperror.InternalError(c)
 	}
 
 	encodedNonce := b64.StdEncoding.EncodeToString([]byte(payload.Nonce))
@@ -54,32 +55,32 @@ func (l login) VerifySignature(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: binding body")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
-		return InvalidPayloadError(c, err)
+		return httperror.InvalidPayloadError(c, err)
 	}
 
 	// base64 decode nonce
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
 		LogStringError(c, err, "login: verify signature decode nonce")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
 
 	resp, err := l.Service.VerifySignedPayload(body)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown device") {
-			return Unprocessable(c)
+			return httperror.Unprocessable(c)
 		}
 		if strings.Contains(err.Error(), "invalid email") {
-			return InvalidEmail(c)
+			return httperror.BadRequestError(c, "Invalid Email")
 		}
 
 		LogStringError(c, err, "login: verify signature")
-		return BadRequestError(c, "Invalid Payload")
+		return httperror.BadRequestError(c, "Invalid Payload")
 	}
 
 	// Upsert IP address in user's device
@@ -94,7 +95,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "login: unable to set auth cookies")
-		return InternalError(c)
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -105,11 +106,11 @@ func (l login) RefreshToken(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		LogStringError(c, err, "login: binding body")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
-		return InvalidPayloadError(c, err)
+		return httperror.InvalidPayloadError(c, err)
 	}
 
 	SanitizeChecksums(&body.WalletAddress)
@@ -117,24 +118,24 @@ func (l login) RefreshToken(c echo.Context) error {
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		LogStringError(c, err, "RefreshToken: unable to get refresh_token cookie")
-		return Unauthorized(c)
+		return httperror.Unauthorized(c)
 	}
 
 	resp, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet address not associated with this user") {
-			return BadRequestError(c, "wallet address not associated with this user")
+			return httperror.BadRequestError(c, "wallet address not associated with this user")
 		}
 
 		LogStringError(c, err, "login: refresh token")
-		return BadRequestError(c, "Invalid or expired token")
+		return httperror.BadRequestError(c, "Invalid or expired token")
 	}
 
 	// set auth in cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		LogStringError(c, err, "RefreshToken: unable to set auth cookies")
-		return InternalError(c)
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -146,7 +147,7 @@ func (l login) Logout(c echo.Context) error {
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		LogStringError(c, err, "Logout: unable to get refresh_token cookie")
-		return Unauthorized(c)
+		return httperror.Unauthorized(c)
 	}
 
 	// invalidate refresh token. Returns error if token is not found
@@ -160,7 +161,7 @@ func (l login) Logout(c echo.Context) error {
 	err = DeleteAuthCookies(c)
 	if err != nil {
 		LogStringError(c, err, "Logout: unable to delete auth cookies")
-		return InternalError(c)
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusNoContent, nil)

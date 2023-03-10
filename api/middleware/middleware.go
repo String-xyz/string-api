@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
@@ -85,14 +86,14 @@ func BearerAuth() echo.MiddlewareFunc {
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			if strings.Contains(err.Error(), "token is expired") {
-				return handler.TokenExpired(c)
+				return httperror.Unauthorized(c)
 			}
 
 			if strings.Contains(errors.Cause(err).Error(), "missing or malformed jwt") {
-				return handler.MissingToken(c)
+				return httperror.Unauthorized(c)
 			}
 
-			return handler.Unauthorized(c)
+			return httperror.Unauthorized(c)
 		},
 	}
 	return echoMiddleware.JWTWithConfig(config)

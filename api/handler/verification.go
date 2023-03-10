@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -33,7 +34,7 @@ func (v verification) VerifyEmail(c echo.Context) error {
 	err := v.service.VerifyEmail(token)
 	if err != nil {
 		LogStringError(c, err, "verification: email verification")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
 }
@@ -43,7 +44,7 @@ func (v verification) VerifyDevice(c echo.Context) error {
 	err := v.deviceService.VerifyDevice(token)
 	if err != nil {
 		LogStringError(c, err, "verification: device verification")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Device successfully verified"})
 }
@@ -51,7 +52,7 @@ func (v verification) VerifyDevice(c echo.Context) error {
 func (v verification) verify(c echo.Context) error {
 	verificationType := c.QueryParam("type")
 	if verificationType == "" {
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	if verificationType == "email" {
 		return v.VerifyEmail(c)

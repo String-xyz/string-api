@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -28,7 +29,7 @@ func (q quote) Quote(c echo.Context) error {
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		LogStringError(c, err, "quote: quote bind")
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
@@ -39,10 +40,10 @@ func (q quote) Quote(c echo.Context) error {
 	// userId := c.Get("userId").(string)
 	res, err := q.Service.Quote(body) // TODO: pass in userId and use it
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
-		return c.JSON(http.StatusBadRequest, JSONError{Message: "The requested blockchain operation will revert"})
+		return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 	} else if err != nil {
 		LogStringError(c, err, "quote: quote")
-		return c.JSON(http.StatusInternalServerError, JSONError{Message: "Quote Service Failed"})
+		return httperror.InternalError(c, "Quote Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
 }
