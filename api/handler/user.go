@@ -34,6 +34,7 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 }
 
 func (u user) Create(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
@@ -53,7 +54,7 @@ func (u user) Create(c echo.Context) error {
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := u.userService.Create(body)
+	resp, err := u.userService.Create(ctx, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet already associated with user") {
 			return httperror.ConflictError(c)
@@ -73,12 +74,13 @@ func (u user) Create(c echo.Context) error {
 }
 
 func (u user) Status(c echo.Context) error {
+	ctx := c.Request().Context()
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
 		return httperror.Unauthorized(c)
 	}
 
-	status, err := u.userService.GetStatus(userId)
+	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
 		LogStringError(c, err, "user: get status")
 		return httperror.InternalError(c)
@@ -87,6 +89,7 @@ func (u user) Status(c echo.Context) error {
 }
 
 func (u user) Update(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.UpdateUserName
 	err := c.Bind(&body)
 	if err != nil {
@@ -94,7 +97,7 @@ func (u user) Update(c echo.Context) error {
 		return httperror.BadRequestError(c)
 	}
 	_, userId := validUserId(IdParam(c), c)
-	user, err := u.userService.Update(userId, body)
+	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
 		LogStringError(c, err, "user: update")
 		return httperror.InternalError(c)
@@ -106,13 +109,14 @@ func (u user) Update(c echo.Context) error {
 // VerifyEmail send an email with a link, the user must click on the link for the email to be verified
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
+	ctx := c.Request().Context()
 	_, userId := validUserId(IdParam(c), c)
 	email := c.QueryParam("email")
 	if email == "" {
 		return httperror.BadRequestError(c, "Missing or invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(userId, email)
+	err := u.verificationService.SendEmailVerification(ctx, userId, email)
 	if err != nil {
 		if strings.Contains(err.Error(), "email already verified") {
 			return httperror.ConflictError(c)

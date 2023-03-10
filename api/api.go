@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 	"github.com/String-xyz/string-api/api/validator"
@@ -40,7 +41,7 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, handler.IsLocalEnv())
+	AuthAPIKey(services, e, common.IsLocalEnv())
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)

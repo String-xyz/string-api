@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -33,6 +34,7 @@ func DataSeeding() {
 	}
 
 	repos := api.NewRepos(config)
+	ctx := context.Background()
 	// api.Start(config)
 
 	// Write to repos
@@ -95,35 +97,35 @@ func DataSeeding() {
 	}
 
 	// Update Networks with GasTokenIds
-	err = repos.Network.Update(networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
+	err = repos.Network.Update(ctx, networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
+	err = repos.Network.Update(ctx, networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
+	err = repos.Network.Update(ctx, networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
+	err = repos.Network.Update(ctx, networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
+	err = repos.Network.Update(ctx, networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +147,7 @@ func DataSeeding() {
 	}
 
 	updateId := UpdateId{Id: internalId}
-	userString, err = repos.User.Update(userString.Id, updateId)
+	userString, err = repos.User.Update(ctx, userString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +164,7 @@ func DataSeeding() {
 	}
 
 	updateId = UpdateId{Id: bankId}
-	err = repos.Instrument.Update(bankString.Id, updateId)
+	err = repos.Instrument.Update(ctx, bankString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -179,7 +181,7 @@ func DataSeeding() {
 	}
 
 	updateId = UpdateId{Id: walletId}
-	err = repos.Instrument.Update(walletString.Id, updateId)
+	err = repos.Instrument.Update(ctx, walletString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -198,7 +200,7 @@ func DataSeeding() {
 	}
 
 	updateId = UpdateId{Id: platformId}
-	err = repos.Platform.Update(placeholderPlatform.Id, updateId)
+	err = repos.Platform.Update(ctx, placeholderPlatform.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -221,6 +223,8 @@ func MockSeeding() {
 	}
 
 	repos := api.NewRepos(config)
+	ctx := context.Background()
+
 	// api.Start(config)
 
 	// Write to repos
@@ -283,35 +287,35 @@ func MockSeeding() {
 	}
 
 	// Update Networks with GasTokenIds
-	err = repos.Network.Update(networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
+	err = repos.Network.Update(ctx, networkPolygon.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
+	err = repos.Network.Update(ctx, networkMumbai.Id, model.NetworkUpdates{GasTokenId: &assetMatic.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkGoerli.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkEthereum.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
+	err = repos.Network.Update(ctx, networkFuji.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
+	err = repos.Network.Update(ctx, networkAvalanche.Id, model.NetworkUpdates{GasTokenId: &assetAvalanche.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
+	err = repos.Network.Update(ctx, networkNitroGoerli.Id, model.NetworkUpdates{GasTokenId: &assetGoerliEth.Id})
 	if err != nil {
 		panic(err)
 	}
-	err = repos.Network.Update(networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
+	err = repos.Network.Update(ctx, networkArbitrumNova.Id, model.NetworkUpdates{GasTokenId: &assetEthereum.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -333,7 +337,7 @@ func MockSeeding() {
 	}
 
 	updateId := UpdateId{Id: internalId}
-	userString, err = repos.User.Update(userString.Id, updateId)
+	userString, err = repos.User.Update(ctx, userString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -354,7 +358,7 @@ func MockSeeding() {
 	}
 
 	updateId = UpdateId{Id: bankId}
-	err = repos.Instrument.Update(bankString.Id, updateId)
+	err = repos.Instrument.Update(ctx, bankString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -371,7 +375,7 @@ func MockSeeding() {
 	}
 
 	updateId = UpdateId{Id: walletId}
-	err = repos.Instrument.Update(walletString.Id, updateId)
+	err = repos.Instrument.Update(ctx, walletString.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
@@ -389,7 +393,7 @@ func MockSeeding() {
 	}
 
 	updateId = UpdateId{Id: platformId}
-	err = repos.Platform.Update(placeholderPlatform.Id, updateId)
+	err = repos.Platform.Update(ctx, placeholderPlatform.Id, updateId)
 	if err != nil {
 		panic(err)
 	}

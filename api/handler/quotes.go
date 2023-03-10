@@ -25,6 +25,7 @@ func NewQuote(route *echo.Echo, service service.Transaction) Quotes {
 }
 
 func (q quote) Quote(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.TransactionRequest
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
@@ -38,7 +39,7 @@ func (q quote) Quote(c echo.Context) error {
 	}
 
 	// userId := c.Get("userId").(string)
-	res, err := q.Service.Quote(body) // TODO: pass in userId and use it
+	res, err := q.Service.Quote(ctx, body) // TODO: pass in userId and use it
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
 		return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 	} else if err != nil {

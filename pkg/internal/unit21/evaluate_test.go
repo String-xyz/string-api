@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 // This transaction should pass
 func TestEvaluateTransactionPass(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -24,13 +26,14 @@ func TestEvaluateTransactionPass(t *testing.T) {
 	instrumentId1 := uuid.NewString()
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-	pass, err := evaluateMockTransaction(transaction, sqlxDB)
+	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.True(t, pass)
 }
 
 // Entity makes a credit card purchase over $1,500
 func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -42,7 +45,7 @@ func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
 	instrumentId1 := uuid.NewString()
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-	pass, err := evaluateMockTransaction(transaction, sqlxDB)
+	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.False(t, pass)
 }
@@ -50,6 +53,7 @@ func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
 // User links more than 5 cards to their account in a 1 hour span
 // Not currently functioning due to lag in Unit21 data ingestion
 func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -80,13 +84,14 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	time.Sleep(10 * time.Second)
-	pass, err := evaluateMockTransaction(transaction, sqlxDB)
+	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.False(t, pass)
 }
 
 // 10 or more FAILED transactions in a 1 hour span
 func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -102,12 +107,12 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 		instrumentId1 := uuid.NewString()
 		instrumentId2 := uuid.NewString()
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-		pass, err := evaluateMockTransaction(transaction, sqlxDB)
+		pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 		assert.NoError(t, err)
 		assert.False(t, pass)
 		transaction.Status = "Failed"
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-		u21TransactionId, err := executeMockTransactionForUser(transaction, sqlxDB)
+		u21TransactionId, err := executeMockTransactionForUser(ctx, transaction, sqlxDB)
 		assert.NoError(t, err)
 		assert.Greater(t, len([]rune(u21TransactionId)), 0)
 	}
@@ -120,7 +125,7 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	time.Sleep(10 * time.Second)
-	pass, err := evaluateMockTransaction(transaction, sqlxDB)
+	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.False(t, pass)
 }
@@ -128,6 +133,7 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 // User onboarded in the last 48 hours and has
 // transacted more than 7.5K in the last 90 minutes
 func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -143,11 +149,11 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 		instrumentId1 := uuid.NewString()
 		instrumentId2 := uuid.NewString()
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-		pass, err := evaluateMockTransaction(transaction, sqlxDB)
+		pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 		assert.NoError(t, err)
 		assert.True(t, pass)
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-		u21TransactionId, err := executeMockTransactionForUser(transaction, sqlxDB)
+		u21TransactionId, err := executeMockTransactionForUser(ctx, transaction, sqlxDB)
 		assert.NoError(t, err)
 		assert.Greater(t, len([]rune(u21TransactionId)), 0)
 	}
@@ -160,12 +166,12 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	time.Sleep(10 * time.Second)
-	pass, err := evaluateMockTransaction(transaction, sqlxDB)
+	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.False(t, pass)
 }
 
-func evaluateMockTransaction(transaction model.Transaction, sqlxDB *sqlx.DB) (pass bool, err error) {
+func evaluateMockTransaction(ctx context.Context, transaction model.Transaction, sqlxDB *sqlx.DB) (pass bool, err error) {
 	repos := TransactionRepos{
 		TxLeg: repository.NewTxLeg((sqlxDB)),
 		User:  repository.NewUser(sqlxDB),
@@ -174,7 +180,7 @@ func evaluateMockTransaction(transaction model.Transaction, sqlxDB *sqlx.DB) (pa
 
 	u21Transaction := NewTransaction(repos)
 
-	pass, err = u21Transaction.Evaluate(transaction)
+	pass, err = u21Transaction.Evaluate(ctx, transaction)
 
 	return
 }

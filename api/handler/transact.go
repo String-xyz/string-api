@@ -25,6 +25,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.PrecisionSafeExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
@@ -41,7 +42,7 @@ func (t transaction) Transact(c echo.Context) error {
 	deviceId := c.Get("deviceId").(string)
 	ip := c.RealIP()
 
-	res, err := t.Service.Execute(body, userId, deviceId, ip)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, ip)
 	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
 		LogStringError(c, err, "transact: execute")
 		return httperror.Unprocessable(c)

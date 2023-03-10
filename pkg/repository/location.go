@@ -1,29 +1,33 @@
 package repository
 
 import (
+	"context"
+
+	"github.com/String-xyz/go-lib/database"
+	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type Location interface {
-	Transactable
+	database.Transactable
 	Create(model.Location) (model.Location, error)
-	GetById(id string) (model.Location, error)
-	Update(id string, updates any) error
+	GetById(ctx context.Context, id string) (model.Location, error)
+	Update(ctx context.Context, id string, updates any) error
 }
 
 type location[T any] struct {
-	base[T]
+	baserepo.Base[T]
 }
 
 func NewLocation(db *sqlx.DB) Location {
-	return &location[model.Location]{base[model.Location]{store: db, table: "location"}}
+	return &location[model.Location]{baserepo.Base[model.Location]{Store: db, Table: "location"}}
 }
 
 func (i location[T]) Create(insert model.Location) (model.Location, error) {
 	m := model.Location{}
-	rows, err := i.store.NamedQuery(`
+	rows, err := i.Store.NamedQuery(`
 		INSERT INTO location (name) 
 		VALUES(:name) 	RETURNING *`, insert)
 	if err != nil {

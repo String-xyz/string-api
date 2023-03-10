@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type Transaction interface {
-	Evaluate(transaction model.Transaction) (pass bool, err error)
-	Create(transaction model.Transaction) (unit21Id string, err error)
-	Update(transaction model.Transaction) (unit21Id string, err error)
+	Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error)
+	Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
+	Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
 }
 
 type TransactionRepos struct {
@@ -31,14 +32,14 @@ func NewTransaction(r TransactionRepos) Transaction {
 	return &transaction{repos: r}
 }
 
-func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return false, common.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
 		return false, common.StringError(err)
@@ -72,14 +73,14 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 	return true, nil
 }
 
-func (t transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
 		return "", common.StringError(err)
@@ -103,14 +104,14 @@ func (t transaction) Create(transaction model.Transaction) (unit21Id string, err
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
 		return "", common.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
 		return "", common.StringError(err)
@@ -135,29 +136,29 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
-	senderData, err := t.repos.TxLeg.GetById(transaction.OriginTxLegId)
+func (t transaction) getTransactionData(ctx context.Context, transaction model.Transaction) (txData transactionData, err error) {
+	senderData, err := t.repos.TxLeg.GetById(ctx, transaction.OriginTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverData, err := t.repos.TxLeg.GetById(transaction.DestinationTxLegId)
+	receiverData, err := t.repos.TxLeg.GetById(ctx, transaction.DestinationTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
 		err = common.StringError(err)
 		return
 	}
 
-	senderAsset, err := t.repos.Asset.GetById(senderData.AssetId)
+	senderAsset, err := t.repos.Asset.GetById(ctx, senderData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction sender asset")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverAsset, err := t.repos.Asset.GetById(receiverData.AssetId)
+	receiverAsset, err := t.repos.Asset.GetById(ctx, receiverData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction receiver asset")
 		err = common.StringError(err)
@@ -231,12 +232,12 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func (t transaction) getEventDigitalData(transaction model.Transaction) (digitalData eventDigitalData, err error) {
+func (t transaction) getEventDigitalData(ctx context.Context, transaction model.Transaction) (digitalData eventDigitalData, err error) {
 	if transaction.DeviceId == "" {
 		return
 	}
 
-	device, err := t.repos.Device.GetById(transaction.DeviceId)
+	device, err := t.repos.Device.GetById(ctx, transaction.DeviceId)
 	if err != nil {
 		log.Err(err).Msg("Failed to get transaction device")
 		err = common.StringError(err)

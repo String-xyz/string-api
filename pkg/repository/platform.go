@@ -1,11 +1,13 @@
 package repository
 
 import (
+	"context"
 	"time"
 
+	"github.com/String-xyz/go-lib/database"
+	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/types"
 )
 
@@ -17,24 +19,24 @@ type PlaformUpdates struct {
 }
 
 type Platform interface {
-	Transactable
+	database.Transactable
 	Create(model.Platform) (model.Platform, error)
-	GetById(id string) (model.Platform, error)
-	List(limit int, offset int) ([]model.Platform, error)
-	Update(id string, updates any) error
+	GetById(ctx context.Context, id string) (model.Platform, error)
+	List(ctx context.Context, limit int, offset int) ([]model.Platform, error)
+	Update(ctx context.Context, id string, updates any) error
 }
 
 type platform[T any] struct {
-	base[T]
+	baserepo.Base[T]
 }
 
-func NewPlatform(db *sqlx.DB) Platform {
-	return &platform[model.Platform]{base: base[model.Platform]{store: db, table: "platform"}}
+func NewPlatform(db database.Queryable) Platform {
+	return &platform[model.Platform]{baserepo.Base[model.Platform]{Store: db, Table: "platform"}}
 }
 
 func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 	plat := model.Platform{}
-	rows, err := p.store.NamedQuery(`
+	rows, err := p.Store.NamedQuery(`
 		INSERT INTO platform (name, description) 
 		VALUES(:name, :description) RETURNING *`, m)
 

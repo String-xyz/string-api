@@ -1,6 +1,8 @@
 package stubs
 
 import (
+	"context"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 )
@@ -14,15 +16,15 @@ func (v *Verification) SetError(e error) {
 	v.Error = e
 }
 
-func (v Verification) SendEmailVerification(userId string, email string) error {
+func (v Verification) SendEmailVerification(ctx context.Context, userId string, email string) error {
 	return v.Error
 }
 
-func (v Verification) VerifyEmail(encrypted string) error {
+func (v Verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	return v.Error
 }
 
-func (v Verification) SendDeviceVerification(userId string, deviceId string, deviceDescription string) error {
+func (v Verification) SendDeviceVerification(userId string, email string, deviceId string, deviceDescription string) error {
 	return v.Error
 }
 
@@ -50,15 +52,15 @@ func (u *User) SetUser(user model.User) {
 	u.User = user
 }
 
-func (u User) GetStatus(id string) (model.UserOnboardingStatus, error) {
+func (u User) GetStatus(ctx context.Context, id string) (model.UserOnboardingStatus, error) {
 	return u.UserOnboardingStatus, u.Error
 }
 
-func (u User) Create(request model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
+func (u User) Create(ctx context.Context, request model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
 	return u.UserCreateResponse, u.Error
 }
 
-func (u User) Update(userId string, request service.UserUpdates) (model.User, error) {
+func (u User) Update(ctx context.Context, userId string, request service.UserUpdates) (model.User, error) {
 	return u.User, u.Error
 }
 
@@ -90,11 +92,11 @@ func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error
 	return a.SignablePayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
+func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
 	return a.UserCreateResponse, a.Error
 }
 
-func (a Auth) GenerateJWT(model.Device) (service.JWT, error) {
+func (a Auth) GenerateJWT(string, ...model.Device) (service.JWT, error) {
 	return a.JWT, a.Error
 }
 
@@ -102,6 +104,35 @@ func (a Auth) ValidateAPIKey(key string) bool {
 	return true
 }
 
-func (a Auth) RefreshToken(token string) (service.JWT, error) {
-	return a.JWT, a.Error
+func (a Auth) RefreshToken(ctx context.Context, token string, walletAddress string) (service.UserCreateResponse, error) {
+	return service.UserCreateResponse{}, a.Error
+}
+
+func (a Auth) InvalidateRefreshToken(token string) error {
+	return a.Error
+}
+
+type Device struct {
+	Device model.Device
+	Error  error
+}
+
+func (d Device) VerifyDevice(ctx context.Context, encrypted string) error {
+	return d.Error
+}
+
+func (d Device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) error {
+	return d.Error
+}
+
+func (d Device) InvalidateUnknownDevice(ctx context.Context, device model.Device) error {
+	return d.Error
+}
+
+func (d Device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model.Device, error) {
+	return d.Device, d.Error
+}
+
+func (d Device) CreateUnknownDevice(userId string) (model.Device, error) {
+	return d.Device, d.Error
 }

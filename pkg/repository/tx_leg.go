@@ -1,29 +1,32 @@
 package repository
 
 import (
+	"context"
+
+	"github.com/String-xyz/go-lib/database"
+	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 )
 
 type TxLeg interface {
-	Transactable
+	database.Transactable
 	Create(model.TxLeg) (model.TxLeg, error)
-	GetById(id string) (model.TxLeg, error)
-	Update(id string, updates any) error
+	GetById(ctx context.Context, id string) (model.TxLeg, error)
+	Update(ctx context.Context, id string, updates any) error
 }
 
 type txLeg[T any] struct {
-	base[T]
+	baserepo.Base[T]
 }
 
-func NewTxLeg(db *sqlx.DB) TxLeg {
-	return &txLeg[model.TxLeg]{base[model.TxLeg]{store: db, table: "tx_leg"}}
+func NewTxLeg(db database.Queryable) TxLeg {
+	return &txLeg[model.TxLeg]{baserepo.Base[model.TxLeg]{Store: db, Table: "tx_leg"}}
 }
 
 func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 	m := model.TxLeg{}
-	rows, err := t.store.NamedQuery(`
+	rows, err := t.Store.NamedQuery(`
 		INSERT INTO tx_leg (timestamp, amount, value, asset_id, user_id, instrument_id) 
 		VALUES(:timestamp, :amount, :value, :asset_id, :user_id, :instrument_id) 	RETURNING *`, insert)
 	if err != nil {

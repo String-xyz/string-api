@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -31,6 +32,7 @@ func TestCreateEntity(t *testing.T) {
 }
 
 func TestUpdateEntity(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -74,7 +76,7 @@ func TestUpdateEntity(t *testing.T) {
 	u21Entity := NewEntity(repos)
 
 	// update in u21
-	u21EntityId, err = u21Entity.Update(user)
+	u21EntityId, err = u21Entity.Update(ctx, user)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21EntityId)), 0)
 
@@ -117,6 +119,7 @@ func TestAddInstruments(t *testing.T) {
 }
 
 func createMockUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, unit21Id string, err error) {
+	ctx := context.Background()
 	entityId = uuid.NewString()
 	user := model.User{
 		Id:            entityId,
@@ -151,12 +154,13 @@ func createMockUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, uni
 
 	u21Entity := NewEntity(repos)
 
-	u21EntityId, err := u21Entity.Create(user)
+	u21EntityId, err := u21Entity.Create(ctx, user)
 
 	return entityId, u21EntityId, err
 }
 
 func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (instrument model.Instrument, unit21Id string, err error) {
+	ctx := context.Background()
 	instrumentId := uuid.NewString()
 	locationId := uuid.NewString()
 
@@ -201,7 +205,7 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 
 	u21Instrument := NewInstrument(repos, action)
 
-	u21InstrumentId, err := u21Instrument.Create(instrument)
+	u21InstrumentId, err := u21Instrument.Create(ctx, instrument)
 
 	return instrument, u21InstrumentId, err
 }

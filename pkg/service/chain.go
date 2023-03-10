@@ -3,6 +3,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
@@ -23,12 +25,12 @@ func stringFee(chainId uint64) (float64, error) {
 	return 0.03, nil
 }
 
-func ChainInfo(chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
+func ChainInfo(ctx context.Context, chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
 	network, err := networkRepo.GetByChainId(chainId)
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}
-	asset, err := assetRepo.GetById(network.GasTokenId)
+	asset, err := assetRepo.GetById(ctx, network.GasTokenId)
 	if err != nil {
 		return Chain{}, common.StringError(err)
 	}

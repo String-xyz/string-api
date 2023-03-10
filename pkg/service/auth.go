@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	netmail "net/mail"
 	"os"
 	"regexp"
@@ -48,11 +49,11 @@ type Auth interface {
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signaure is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
+	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
 	GenerateJWT(string, ...model.Device) (JWT, error)
 	ValidateAPIKey(key string) bool
-	RefreshToken(token string, walletAddress string) (UserCreateResponse, error)
+	RefreshToken(ctx context.Context, token string, walletAddress string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
 
@@ -84,7 +85,7 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
 }
 
-func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
+func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
@@ -101,7 +102,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	if err != nil {
 		return resp, common.StringError(err)
 	}
-	user, err := a.repos.User.GetById(instrument.UserId)
+	user, err := a.repos.User.GetById(ctx, instrument.UserId)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -126,7 +127,7 @@ func (a auth) VerifySignedPayload(request model.WalletSignaturePayloadSigned) (U
 	}
 
 	// Invalidate device if it is unknown and was validated so it cannot be used again
-	err = a.device.InvalidateUnknownDevice(device)
+	err = a.device.InvalidateUnknownDevice(ctx, device)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -193,7 +194,7 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreateResponse, error) {
+func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 
 	// get user id from refresh token
@@ -217,7 +218,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 	}
 
 	// get device
-	device, err := a.repos.Device.GetByUserId(userId)
+	device, err := a.repos.Device.GetByUserId(ctx, userId)
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -235,7 +236,7 @@ func (a auth) RefreshToken(refreshToken string, walletAddress string) (UserCreat
 		return resp, common.StringError(err)
 	}
 
-	user, err := a.repos.User.GetById(instrument.UserId)
+	user, err := a.repos.User.GetById(ctx, instrument.UserId)
 	if err != nil {
 		return resp, common.StringError(err)
 	}

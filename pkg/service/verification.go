@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -29,10 +30,10 @@ type DeviceVerification struct {
 
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
-	SendEmailVerification(userId string, email string) error
+	SendEmailVerification(ctx context.Context, userId string, email string) error
 
 	// VerifyEmail verifies the provided email and creates a contact
-	VerifyEmail(encrypted string) error
+	VerifyEmail(ctx context.Context, encrypted string) error
 
 	SendDeviceVerification(userId, email string, deviceId string, deviceDescription string) error
 }
@@ -46,12 +47,12 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 	return &verification{repos, unit21}
 }
 
-func (v verification) SendEmailVerification(userId, email string) error {
+func (v verification) SendEmailVerification(ctx context.Context, userId, email string) error {
 	if !validEmail(email) {
 		return common.StringError(errors.New("missing or invalid email"))
 	}
 
-	user, err := v.repos.User.GetById(userId)
+	user, err := v.repos.User.GetById(ctx, userId)
 	if err != nil || user.Id != userId {
 		return common.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
 	}
@@ -140,7 +141,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	return nil
 }
 
-func (v verification) VerifyEmail(encrypted string) error {
+func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := common.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
@@ -163,7 +164,7 @@ func (v verification) VerifyEmail(encrypted string) error {
 		return common.StringError(errors.New("User email verify error - userId: " + user.Id))
 	}
 
-	go v.unit21.Entity.Update(user)
+	go v.unit21.Entity.Update(ctx, user)
 
 	return nil
 }

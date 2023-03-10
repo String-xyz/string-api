@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"

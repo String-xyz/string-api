@@ -51,6 +51,7 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
@@ -70,7 +71,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := l.Service.VerifySignedPayload(body)
+	resp, err := l.Service.VerifySignedPayload(ctx, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown device") {
 			return httperror.Unprocessable(c)
@@ -89,7 +90,7 @@ func (l login) VerifySignature(c echo.Context) error {
 		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 	ip := c.RealIP()
-	l.Device.UpsertDeviceIP(claims.DeviceId, ip)
+	l.Device.UpsertDeviceIP(ctx, claims.DeviceId, ip)
 
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
@@ -102,6 +103,7 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.RefreshTokenPayload
 	err := c.Bind(&body)
 	if err != nil {
@@ -121,7 +123,7 @@ func (l login) RefreshToken(c echo.Context) error {
 		return httperror.Unauthorized(c)
 	}
 
-	resp, err := l.Service.RefreshToken(cookie.Value, body.WalletAddress)
+	resp, err := l.Service.RefreshToken(ctx, cookie.Value, body.WalletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet address not associated with this user") {
 			return httperror.BadRequestError(c, "wallet address not associated with this user")

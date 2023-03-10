@@ -1,22 +1,25 @@
 package service
 
 import (
+	"context"
 	"os"
 	"time"
 
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
 type Device interface {
-	VerifyDevice(encrypted string) error
-	UpsertDeviceIP(deviceId string, Ip string) (err error)
+	VerifyDevice(ctx context.Context, encrypted string) error
+	UpsertDeviceIP(ctx context.Context, deviceId string, Ip string) (err error)
+	InvalidateUnknownDevice(ctx context.Context, device model.Device) error
 	CreateDeviceIfNeeded(userId, visitorId, requestId string) (model.Device, error)
 	CreateUnknownDevice(userId string) (model.Device, error)
-	InvalidateUnknownDevice(device model.Device) error
 }
 
 type device struct {
@@ -28,7 +31,7 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 	return &device{repos, f}
 }
 
-func (d device) VerifyDevice(encrypted string) error {
+func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := common.Decrypt[DeviceVerification](encrypted, key)
 	if err != nil {
@@ -39,12 +42,12 @@ func (d device) VerifyDevice(encrypted string) error {
 	if now.Unix()-received.Timestamp > (60 * 15) {
 		return common.StringError(errors.New("link expired"))
 	}
-	err = d.repos.Device.Update(received.DeviceId, model.DeviceUpdates{ValidatedAt: &now})
+	err = d.repos.Device.Update(ctx, received.DeviceId, model.DeviceUpdates{ValidatedAt: &now})
 	return err
 }
 
-func (d device) UpsertDeviceIP(deviceId string, ip string) (err error) {
-	device, err := d.repos.Device.GetById(deviceId)
+func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) (err error) {
+	device, err := d.repos.Device.GetById(ctx, deviceId)
 	if err != nil {
 		return
 	}
@@ -52,7 +55,7 @@ func (d device) UpsertDeviceIP(deviceId string, ip string) (err error) {
 	if !contains {
 		ipAddresses := append(device.IpAddresses, ip)
 		updates := &model.DeviceUpdates{IpAddresses: &ipAddresses}
-		err = d.repos.Device.Update(deviceId, updates)
+		err = d.repos.Device.Update(ctx, deviceId, updates)
 		if err != nil {
 			return
 		}
@@ -82,7 +85,7 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 		}
 
 		/* create device only if the error is not found */
-		if err == repository.ErrNotFound {
+		if serror.IsError(err, serror.NOT_FOUND) {
 			visitor, fpErr := d.fingerprint.GetVisitor(visitorId, requestId)
 			if fpErr != nil {
 				return model.Device{}, common.StringError(fpErr)
@@ -105,13 +108,13 @@ func (d device) CreateUnknownDevice(userId string) (model.Device, error) {
 	return device, common.StringError(err)
 }
 
-func (d device) InvalidateUnknownDevice(device model.Device) error {
+func (d device) InvalidateUnknownDevice(ctx context.Context, device model.Device) error {
 	if device.Fingerprint != "unknown" {
 		return nil // only unknown devices can be invalidated
 	}
 
 	device.ValidatedAt = &time.Time{} // Zero time to set it to nil
-	return d.repos.Device.Update(device.Id, device)
+	return d.repos.Device.Update(ctx, device.Id, device)
 }
 
 func (d device) createDevice(userId string, visitor FPVisitor, description string) (model.Device, error) {
@@ -134,7 +137,7 @@ func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device
 	var device model.Device
 
 	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "unknown")
-	if err != nil && err != repository.ErrNotFound {
+	if err != nil && !serror.IsError(err, serror.NOT_FOUND) {
 		return device, common.StringError(err)
 	}
 

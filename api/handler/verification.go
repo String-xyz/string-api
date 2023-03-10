@@ -30,8 +30,9 @@ func NewVerification(route *echo.Echo, service service.Verification, deviceServi
 }
 
 func (v verification) VerifyEmail(c echo.Context) error {
+	ctx := c.Request().Context()
 	token := c.QueryParam("token")
-	err := v.service.VerifyEmail(token)
+	err := v.service.VerifyEmail(ctx, token)
 	if err != nil {
 		LogStringError(c, err, "verification: email verification")
 		return httperror.BadRequestError(c)
@@ -40,8 +41,9 @@ func (v verification) VerifyEmail(c echo.Context) error {
 }
 
 func (v verification) VerifyDevice(c echo.Context) error {
+	ctx := c.Request().Context()
 	token := c.QueryParam("token")
-	err := v.deviceService.VerifyDevice(token)
+	err := v.deviceService.VerifyDevice(ctx, token)
 	if err != nil {
 		LogStringError(c, err, "verification: device verification")
 		return httperror.BadRequestError(c)
