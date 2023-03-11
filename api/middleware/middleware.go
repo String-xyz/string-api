@@ -3,7 +3,6 @@ package middleware
 import (
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
@@ -11,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
 )
 
 func BearerAuth() echo.MiddlewareFunc {
@@ -29,13 +27,6 @@ func BearerAuth() echo.MiddlewareFunc {
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
-			if strings.Contains(err.Error(), "token is expired") {
-				return httperror.Unauthorized(c)
-			}
-
-			if strings.Contains(errors.Cause(err).Error(), "missing or malformed jwt") {
-				return httperror.Unauthorized(c)
-			}
 
 			return httperror.Unauthorized(c)
 		},

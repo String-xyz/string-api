@@ -8,6 +8,7 @@ import (
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	_common "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -147,7 +148,7 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntri
 func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	cacheName := "usd_value_" + coin
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
-	if err != nil && errors.Cause(err).Error() != "redis: nil" {
+	if err != nil && serror.IsError(err, serror.NOT_FOUND) {
 		return 0.0, common.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {

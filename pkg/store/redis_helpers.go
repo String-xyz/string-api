@@ -7,13 +7,14 @@ import (
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/pkg/errors"
 )
 
 func GetObjectFromCache[T any](redis database.RedisStore, key string) (T, error) {
 	var result *T = new(T)
 	bytes, err := redis.Get(key)
-	if err != nil && errors.Cause(err).Error() == "redis: nil" && len(bytes) == 0 {
+	if err != nil && serror.IsError(err, serror.NOT_FOUND) && len(bytes) == 0 {
 		return *result, nil // object doesn't exist yet, create it down the stack
 	} else if err != nil {
 		// Work around the way that redis go api scopes error
