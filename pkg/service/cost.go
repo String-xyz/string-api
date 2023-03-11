@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
 	_common "github.com/String-xyz/string-api/pkg/internal/common"
-
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
@@ -49,10 +49,10 @@ type Cost interface {
 }
 
 type cost struct {
-	redis store.RedisStore // cached token and gas costs
+	redis database.RedisStore // cached token and gas costs
 }
 
-func NewCost(redis store.RedisStore) Cost {
+func NewCost(redis database.RedisStore) Cost {
 	return &cost{
 		redis: redis,
 	}

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/pkg/store"
+	"github.com/String-xyz/go-lib/database"
 	"github.com/pkg/errors"
 )
 
@@ -20,10 +20,10 @@ type Geofencing interface {
 }
 
 type geofencing struct {
-	redis store.RedisStore
+	redis database.RedisStore
 }
 
-func NewGeofencing(redis store.RedisStore) Geofencing {
+func NewGeofencing(redis database.RedisStore) Geofencing {
 	return &geofencing{redis}
 }
 

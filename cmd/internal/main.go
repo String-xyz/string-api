@@ -29,10 +29,13 @@ func main() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	db := store.MustNewPG()
 	lg := zerolog.New(os.Stdout)
+
+	redis := store.NewRedis()
+
 	// setup api
 	api.StartInternal(api.APIConfig{
 		DB:     db,
-		Redis:  store.NewRedisStore(),
+		Redis:  redis,
 		Port:   port,
 		Logger: &lg,
 	})

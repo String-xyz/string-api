@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
+
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -30,10 +31,12 @@ func main() {
 	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
 
+	redis := store.NewRedis()
+
 	// setup api
 	api.Start(api.APIConfig{
 		DB:     db,
-		Redis:  store.NewRedisStore(),
+		Redis:  redis,
 		Port:   port,
 		Logger: &lg,
 	})

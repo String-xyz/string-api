@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+
 	_common "github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	repository "github.com/String-xyz/string-api/pkg/repository"
-	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -48,12 +49,12 @@ type InternalIds struct {
 
 type transaction struct {
 	repos  repository.Repositories
-	redis  store.RedisStore
+	redis  database.RedisStore
 	ids    InternalIds
 	unit21 Unit21
 }
 
-func NewTransaction(repos repository.Repositories, redis store.RedisStore, unit21 Unit21) Transaction {
+func NewTransaction(repos repository.Repositories, redis database.RedisStore, unit21 Unit21) Transaction {
 	return &transaction{repos: repos, redis: redis, unit21: unit21}
 }
 

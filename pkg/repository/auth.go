@@ -10,7 +10,6 @@ import (
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/store"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -43,10 +42,10 @@ type AuthStrategy interface {
 
 type auth[T any] struct {
 	baserepo.Base[T]
-	redis store.RedisStore
+	redis database.RedisStore
 }
 
-func NewAuth(redis store.RedisStore, db database.Queryable) AuthStrategy {
+func NewAuth(redis database.RedisStore, db database.Queryable) AuthStrategy {
 	return &auth[model.AuthStrategy]{baserepo.Base[model.AuthStrategy]{Store: db, Table: "auth_strategy"}, redis}
 }
 

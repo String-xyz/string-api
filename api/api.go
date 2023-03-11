@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/service"
-	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -16,7 +16,7 @@ import (
 
 type APIConfig struct {
 	DB     *sqlx.DB
-	Redis  store.RedisStore
+	Redis  database.RedisStore
 	Logger *zerolog.Logger
 	Port   string
 }

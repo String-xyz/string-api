@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
 	"github.com/pkg/errors"
 )
 
-func GetObjectFromCache[T any](redis RedisStore, key string) (T, error) {
+func GetObjectFromCache[T any](redis database.RedisStore, key string) (T, error) {
 	var result *T = new(T)
 	bytes, err := redis.Get(key)
 	if err != nil && errors.Cause(err).Error() == "redis: nil" && len(bytes) == 0 {
@@ -25,7 +26,7 @@ func GetObjectFromCache[T any](redis RedisStore, key string) (T, error) {
 	return *result, nil
 }
 
-func PutObjectInCache(redis RedisStore, key string, object any, optionalTimeout ...time.Duration) error {
+func PutObjectInCache(redis database.RedisStore, key string, object any, optionalTimeout ...time.Duration) error {
 	// Safeguard against missing tags
 	val := reflect.ValueOf(object)
 	for i := 0; i < val.Type().NumField(); i++ {
