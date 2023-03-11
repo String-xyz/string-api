@@ -5,8 +5,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 
@@ -51,7 +53,7 @@ func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) 
 	if err != nil {
 		return
 	}
-	contains := common.SliceContains(device.IpAddresses, ip)
+	contains := _common.SliceContains(device.IpAddresses, ip)
 	if !contains {
 		ipAddresses := append(device.IpAddresses, ip)
 		updates := &model.DeviceUpdates{IpAddresses: &ipAddresses}

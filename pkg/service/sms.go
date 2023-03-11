@@ -4,7 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+
 	"github.com/pkg/errors"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"

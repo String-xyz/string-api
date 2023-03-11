@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
 )

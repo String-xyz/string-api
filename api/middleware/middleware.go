@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
-	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -127,7 +127,7 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 			if err != nil || !isAllowed {
 				if err != nil {
 					// TODO: Move the common.go file to the upper level
-					handler.LogStringError(c, err, "Error in georestrict middleware")
+					common.LogStringError(c, err, "Error in georestrict middleware")
 				}
 				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
 			}

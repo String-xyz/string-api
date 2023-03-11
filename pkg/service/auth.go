@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -161,7 +163,7 @@ func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 	t.Token = signed
 
 	// create and save
-	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), userId)
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(_common.ToSha256(refreshToken), userId)
 	if err != nil {
 		return *t, err
 	}
@@ -182,7 +184,7 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 }
 
 func (a auth) ValidateAPIKey(key string) bool {
-	hashed := common.ToSha256(key)
+	hashed := _common.ToSha256(key)
 	authKey, err := a.repos.Auth.Get(hashed)
 	if err != nil {
 		return false
@@ -191,14 +193,14 @@ func (a auth) ValidateAPIKey(key string) bool {
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {
-	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
+	return a.repos.Auth.Delete(_common.ToSha256(refreshToken))
 }
 
 func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 
 	// get user id from refresh token
-	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
+	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(_common.ToSha256(refreshToken))
 	if err != nil {
 		return resp, common.StringError(err)
 	}
@@ -256,7 +258,7 @@ func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) erro
 	}
 	// Verify users signature
 	bytes := []byte(request.Nonce)
-	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, bytes, true) // true: expect eip131
+	valid, err := _common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, bytes, true) // true: expect eip131
 	if err != nil {
 		return common.StringError(err)
 	}

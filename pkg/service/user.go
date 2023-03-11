@@ -5,7 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	repositories "github.com/String-xyz/string-api/pkg/repository"
 
@@ -86,7 +87,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// Make sure address is a wallet and not a smart contract
-	if !common.IsWallet(addr) {
+	if !_common.IsWallet(addr) {
 		return resp, common.StringError(errors.New("address provided is not a valid wallet"))
 	}
 

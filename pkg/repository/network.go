@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 )
 

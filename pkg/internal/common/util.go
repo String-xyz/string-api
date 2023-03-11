@@ -11,6 +11,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/String-xyz/go-lib/common"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	ethcomm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -31,7 +33,7 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 	msg := accounts.TextHash([]byte(message))
 	recovered, err := crypto.SigToPub(msg, sig)
 	if err != nil {
-		return ethcomm.Address{}, StringError(err)
+		return ethcomm.Address{}, common.StringError(err)
 	}
 	return crypto.PubkeyToAddress(*recovered), nil
 }
@@ -40,7 +42,7 @@ func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, e
 	floatReturn, err = strconv.ParseFloat(bigNumber, 64)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert bigNumber to float")
-		err = StringError(err)
+		err = common.StringError(err)
 		return
 	}
 	floatReturn = floatReturn * math.Pow(10, -float64(decimals))
@@ -59,7 +61,7 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 	bodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
 		log.Err(err).Interface("body", jsonBody).Msg("Could not encode to bytes")
-		return betterString, StringError(err)
+		return betterString, common.StringError(err)
 	}
 
 	bodyReader := bytes.NewReader(bodyBytes)
@@ -67,7 +69,7 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 	betterBytes, err := io.ReadAll(bodyReader)
 	betterString = string(betterBytes)
 	if err != nil {
-		return betterString, StringError(err)
+		return betterString, common.StringError(err)
 	}
 
 	return

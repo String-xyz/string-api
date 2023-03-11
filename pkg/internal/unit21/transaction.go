@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -165,21 +167,21 @@ func (t transaction) getTransactionData(ctx context.Context, transaction model.T
 		return
 	}
 
-	amount, err := common.BigNumberToFloat(senderData.Value, 6)
+	amount, err := _common.BigNumberToFloat(senderData.Value, 6)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert amount")
 		err = common.StringError(err)
 		return
 	}
 
-	senderAmount, err := common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
+	senderAmount, err := _common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert senderAmount")
 		err = common.StringError(err)
 		return
 	}
 
-	receiverAmount, err := common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
+	receiverAmount, err := _common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert receiverAmount")
 		err = common.StringError(err)
@@ -187,7 +189,7 @@ func (t transaction) getTransactionData(ctx context.Context, transaction model.T
 	}
 	var stringFee float64
 	if transaction.StringFee != "" {
-		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
+		stringFee, err = _common.BigNumberToFloat(transaction.StringFee, 6)
 		if err != nil {
 			log.Err(err).Msg("Failed to convert stringFee")
 			err = common.StringError(err)
@@ -197,7 +199,7 @@ func (t transaction) getTransactionData(ctx context.Context, transaction model.T
 
 	var processingFee float64
 	if transaction.ProcessingFee != "" {
-		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
+		processingFee, err = _common.BigNumberToFloat(transaction.ProcessingFee, 6)
 		if err != nil {
 			log.Err(err).Msg("Failed to convert processingFee")
 			err = common.StringError(err)

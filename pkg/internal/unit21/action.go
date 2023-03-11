@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/rs/zerolog/log"
 )
@@ -80,7 +82,7 @@ func mapToUnit21ActionEvent(instrument model.Instrument, actionData actionData, 
 		CustomData:   nil,
 	}
 
-	actionBody, err := common.BetterStringify(jsonBody)
+	actionBody, err := _common.BetterStringify(jsonBody)
 	if err != nil {
 		log.Err(err).Msg("Error creating action body")
 		return jsonBody

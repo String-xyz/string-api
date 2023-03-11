@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -29,7 +30,7 @@ func (q quote) Quote(c echo.Context) error {
 	var body model.TransactionRequest
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
-		LogStringError(c, err, "quote: quote bind")
+		common.LogStringError(c, err, "quote: quote bind")
 		return httperror.BadRequestError(c)
 	}
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
@@ -43,7 +44,7 @@ func (q quote) Quote(c echo.Context) error {
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
 		return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 	} else if err != nil {
-		LogStringError(c, err, "quote: quote")
+		common.LogStringError(c, err, "quote: quote")
 		return httperror.InternalError(c, "Quote Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)

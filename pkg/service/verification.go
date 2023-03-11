@@ -7,7 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/pkg/errors"
@@ -70,7 +72,7 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
-	baseURL := common.GetBaseURL()
+	baseURL := _common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
 	subject := "String Email Verification"
 	to := mail.NewEmail("New String User", email)
@@ -119,7 +121,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	}
 	code = url.QueryEscape(code)
 
-	baseURL := common.GetBaseURL()
+	baseURL := _common.GetBaseURL()
 	from := mail.NewEmail("String XYZ", "auth@string.xyz")
 	subject := "New Device Login Verification"
 	to := mail.NewEmail("New Device Login", email)

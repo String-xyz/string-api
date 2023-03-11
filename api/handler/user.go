@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -38,7 +39,7 @@ func (u user) Create(c echo.Context) error {
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "user:create user bind")
+		common.LogStringError(c, err, "user:create user bind")
 		return httperror.BadRequestError(c)
 	}
 
@@ -49,7 +50,7 @@ func (u user) Create(c echo.Context) error {
 	// base64 decode nonce
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
-		LogStringError(c, err, "user: create user decode nonce")
+		common.LogStringError(c, err, "user: create user decode nonce")
 		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
@@ -60,13 +61,13 @@ func (u user) Create(c echo.Context) error {
 			return httperror.ConflictError(c)
 		}
 
-		LogStringError(c, err, "user: creating user")
+		common.LogStringError(c, err, "user: creating user")
 		return httperror.InternalError(c)
 	}
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
-		LogStringError(c, err, "user: unable to set auth cookies")
+		common.LogStringError(c, err, "user: unable to set auth cookies")
 		return httperror.InternalError(c)
 	}
 
@@ -82,7 +83,7 @@ func (u user) Status(c echo.Context) error {
 
 	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
-		LogStringError(c, err, "user: get status")
+		common.LogStringError(c, err, "user: get status")
 		return httperror.InternalError(c)
 	}
 	return c.JSON(http.StatusOK, status)
@@ -93,13 +94,13 @@ func (u user) Update(c echo.Context) error {
 	var body model.UpdateUserName
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "user: update bind")
+		common.LogStringError(c, err, "user: update bind")
 		return httperror.BadRequestError(c)
 	}
 	_, userId := validUserId(IdParam(c), c)
 	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
-		LogStringError(c, err, "user: update")
+		common.LogStringError(c, err, "user: update")
 		return httperror.InternalError(c)
 	}
 
@@ -126,7 +127,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 			return httperror.ForbiddenError(c, "Link expired, please request a new one")
 		}
 
-		LogStringError(c, err, "user: email verification")
+		common.LogStringError(c, err, "user: email verification")
 		return httperror.InternalError(c, "Unable to send email verification")
 	}
 

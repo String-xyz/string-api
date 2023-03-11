@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
-	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"golang.org/x/crypto/bcrypt"

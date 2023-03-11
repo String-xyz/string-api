@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	repository "github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -93,7 +95,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	res.PrecisionSafeQuote = common.QuoteToPrecise(estimateUSD)
+	res.PrecisionSafeQuote = _common.QuoteToPrecise(estimateUSD)
 	executor.Close()
 
 	// Sign entire payload
@@ -101,7 +103,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 	if err != nil {
 		return res, common.StringError(err)
 	}
-	signature, err := common.EVMSign(bytes, true)
+	signature, err := _common.EVMSign(bytes, true)
 	if err != nil {
 		return res, common.StringError(err)
 	}
@@ -216,7 +218,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	if err != nil {
 		return p, common.StringError(err)
 	}
-	*p.executionRequest = common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
+	*p.executionRequest = _common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
 
 	// Get current balance of primary token
 	preBalance, err := (*p.executor).GetBalance()
@@ -291,7 +293,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 	p.txId = &txId
 
 	// Create Response Tx leg
-	eth := common.WeiToEther(value)
+	eth := _common.WeiToEther(value)
 	wei := floatToFixedString(eth, 18)
 	usd := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
 	responseLeg := model.TxLeg{
@@ -488,7 +490,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	gas := new(big.Int)
 	gas.SetUint64(estimateEVM.Gas)
 	wei := gas.Add(&estimateEVM.Value, gas)
-	eth := common.WeiToEther(wei)
+	eth := _common.WeiToEther(wei)
 
 	chainId, err := executor.GetByChainId()
 	if err != nil {
@@ -522,7 +524,7 @@ func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote)
 	if err != nil {
 		return false, common.StringError(err)
 	}
-	valid, err := common.ValidateEVMSignature(e.Signature, bytesToValidate, true)
+	valid, err := _common.ValidateEVMSignature(e.Signature, bytesToValidate, true)
 	if err != nil {
 		return false, common.StringError(err)
 	}
@@ -685,7 +687,7 @@ func confirmTx(executor Executor, txId string) (uint64, error) {
 func (t transaction) tenderTransaction(ctx context.Context, p transactionProcessingData) (float64, error) {
 	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
-	trueEth := common.WeiToEther(trueWei)
+	trueEth := _common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(p.chain.CoingeckoName, trueEth)
 	if err != nil {
 		return 0, common.StringError(err)
@@ -768,7 +770,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	if name == "" {
 		name = "User"
 	}
-	receiptParams := common.ReceiptGenerationParams{
+	receiptParams := _common.ReceiptGenerationParams{
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   p.transactionModel.Id,
@@ -783,12 +785,12 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		{"Platform", "String Demo"},            // TODO: retrieve dynamically
 		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
 		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
-		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
-		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
-		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
-		{"Total Charge", common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
+		{"Subtotal", _common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
+		{"Network Fee:", _common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
+		{"Processing Fee", _common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
+		{"Total Charge", _common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
 	}
-	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+	err = _common.EmailReceipt(contact.Data, receiptParams, receiptBody)
 	if err != nil {
 		log.Err(err).Msg("Error sending email receipt to user")
 		return common.StringError(err)

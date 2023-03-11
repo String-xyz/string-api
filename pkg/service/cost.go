@@ -6,7 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/go-lib/common"
+	_common "github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
@@ -68,9 +70,9 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
-		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainId)
+		nativeCost *= 1.0 + _common.NativeTokenBuffer(chain.ChainId)
 	}
-	costEth := common.WeiToEther(&p.CostETH)
+	costEth := _common.WeiToEther(&p.CostETH)
 	// transactionCost is for native token transaction cost (tx_value)
 	transactionCost := costEth * nativeCost
 
@@ -83,11 +85,11 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
-		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainId)
+		gasInUSD *= 1.0 + _common.GasBuffer(chain.ChainId)
 	}
 
 	// Query cost of token in USD if used and apply buffer
-	costToken := common.WeiToEther(&p.CostToken)
+	costToken := _common.WeiToEther(&p.CostToken)
 	// tokenCost in contract call ERC-20 token costs
 	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
@@ -95,7 +97,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		return model.Quote{}, common.StringError(err)
 	}
 	if p.UseBuffer {
-		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
+		tokenCost *= 1.0 + _common.TokenBuffer(p.TokenName)
 	}
 
 	// Compute service fee
@@ -187,7 +189,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := common.GetJsonGeneric(requestURL, &res)
+	err := _common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
@@ -212,7 +214,7 @@ func (c cost) owlracle(network string) (float64, error) {
 		os.Getenv("OWLRACLE_API_KEY") +
 		"&accept=100"
 	var res OwlracleJSON
-	err := common.GetJsonGeneric(requestURL, &res)
+	err := _common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, common.StringError(err)
 	}
