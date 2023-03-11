@@ -5,9 +5,11 @@ import (
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/go-lib/middleware"
 	validator "github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/api/handler"
-	"github.com/String-xyz/string-api/api/middleware"
+	_middleware "github.com/String-xyz/string-api/api/middleware"
+
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -32,7 +34,7 @@ func Start(config APIConfig) {
 
 	// not internal middlewares
 	geofencingService := service.NewGeofencing(config.Redis)
-	e.Use(middleware.Georestrict(geofencingService))
+	e.Use(_middleware.Georestrict(geofencingService))
 
 	e.GET("/heartbeat", heartbeat)
 
@@ -70,7 +72,7 @@ func StartInternal(config APIConfig) {
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.Tracer())
 	e.Use(middleware.CORS())
-	e.Use(middleware.RequestId())
+	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
 	e.Use(middleware.LogRequest())
@@ -78,7 +80,7 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 
 func platformRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewPlatform(services.Platform)
-	handler.RegisterRoutes(e.Group("/platforms"), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/platforms"), _middleware.BearerAuth())
 }
 
 func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
@@ -88,17 +90,17 @@ func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
 
 func transactRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewTransaction(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/transactions"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/transactions"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
 }
 
 func userRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewUser(e, services.User, services.Verification)
-	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/users"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewLogin(e, services.Auth, services.Device)
-	handler.RegisterRoutes(e.Group("/login"), middleware.APIKeyAuth(services.Auth))
+	handler.RegisterRoutes(e.Group("/login"), _middleware.APIKeyAuth(services.Auth))
 }
 
 func verificationRoute(services service.Services, e *echo.Echo) {
@@ -108,5 +110,5 @@ func verificationRoute(services service.Services, e *echo.Echo) {
 
 func quoteRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewQuote(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/quotes"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/quotes"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
 }
