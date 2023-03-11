@@ -5,9 +5,9 @@ import (
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	validator "github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
-	"github.com/String-xyz/string-api/api/validator"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
