@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -38,13 +38,13 @@ func (u user[T]) Create(insert model.User) (model.User, error) {
 		INSERT INTO string_user (type, status, first_name, middle_name, last_name) 
 		VALUES(:type, :status, :first_name, :middle_name, :last_name) 	RETURNING *`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, commonlib.StringError(err)
 		}
 	}
 
@@ -52,16 +52,16 @@ func (u user[T]) Create(insert model.User) (model.User, error) {
 }
 
 func (u user[T]) Update(ctx context.Context, id string, updates any) (model.User, error) {
-	names, keyToUpdate := common.KeysAndValues(updates)
+	names, keyToUpdate := commonlib.KeysAndValues(updates)
 	var user model.User
 	if len(names) == 0 {
-		return user, common.StringError(errors.New("no fields to update"))
+		return user, commonlib.StringError(errors.New("no fields to update"))
 	}
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s' RETURNING *", u.Table, strings.Join(names, ", "), id)
 	rows, err := u.Store.NamedQuery(query, keyToUpdate)
 
 	if err != nil {
-		return user, common.StringError(err)
+		return user, commonlib.StringError(err)
 	}
 	defer rows.Close()
 
@@ -70,7 +70,7 @@ func (u user[T]) Update(ctx context.Context, id string, updates any) (model.User
 	}
 
 	if err != nil {
-		return user, common.StringError(err)
+		return user, commonlib.StringError(err)
 	}
 	return user, err
 }
@@ -80,7 +80,7 @@ func (u user[T]) UpdateStatus(id string, status string) (model.User, error) {
 	m := model.User{}
 	err := u.Store.Get(&m, fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 RETURNING *", u.Table), status, id)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	return m, nil
 }
@@ -91,7 +91,7 @@ func (u user[T]) GetByType(label string) (model.User, error) {
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	return m, nil
 }

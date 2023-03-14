@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/String-xyz/go-lib/common"
-	_common "github.com/String-xyz/string-api/pkg/internal/common"
+	commonlib "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -51,28 +51,28 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 
 func (v verification) SendEmailVerification(ctx context.Context, userId, email string) error {
 	if !validEmail(email) {
-		return common.StringError(errors.New("missing or invalid email"))
+		return commonlib.StringError(errors.New("missing or invalid email"))
 	}
 
 	user, err := v.repos.User.GetById(ctx, userId)
 	if err != nil || user.Id != userId {
-		return common.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
+		return commonlib.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
 	}
 
 	contact, _ := v.repos.Contact.GetByData(email)
 	if contact.Status == "validated" {
-		return common.StringError(errors.New("email already verified"))
+		return commonlib.StringError(errors.New("email already verified"))
 	}
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	code, err := common.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId}, key)
+	code, err := commonlib.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId}, key)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
-	baseURL := _common.GetBaseURL()
+	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", "auth@string.xyz")
 	subject := "String Email Verification"
 	to := mail.NewEmail("New String User", email)
@@ -83,7 +83,7 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	_, err = client.Send(message)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	// Wait for up to 15 minutes, final timeout TBD
 	now, lastPolled := time.Now().Unix(), time.Now().Unix()
@@ -96,32 +96,32 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 		lastPolled = now
 		contact, err := v.repos.Contact.GetByData(email)
 		if err != nil && errors.Cause(err).Error() != "not found" {
-			return common.StringError(err)
+			return commonlib.StringError(err)
 		} else if err == nil && contact.Data == email {
 			// success
 			// update user status
 			user, err := v.repos.User.UpdateStatus(userId, "email_verified")
 			if err != nil {
-				return common.StringError(errors.New("User email verify error - userId: " + user.Id))
+				return commonlib.StringError(errors.New("User email verify error - userId: " + user.Id))
 			}
 
 			return nil
 		}
 	}
 	// timed out
-	return common.StringError(errors.New("link expired"))
+	return commonlib.StringError(errors.New("link expired"))
 }
 
 func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
 	log.Info().Str("email", email)
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	code, err := common.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceId: deviceId, UserId: userId}, key)
+	code, err := commonlib.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceId: deviceId, UserId: userId}, key)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	code = url.QueryEscape(code)
 
-	baseURL := _common.GetBaseURL()
+	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String XYZ", "auth@string.xyz")
 	subject := "New Device Login Verification"
 	to := mail.NewEmail("New Device Login", email)
@@ -137,7 +137,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	_, err = client.Send(message)
 	if err != nil {
 		log.Err(err).Msg("error sending device validation")
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 
 	return nil
@@ -145,25 +145,25 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 
 func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	received, err := common.Decrypt[EmailVerification](encrypted, key)
+	received, err := commonlib.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	// Wait for up to 15 minutes, final timeout TBD
 	now := time.Now()
 	if now.Unix()-received.Timestamp > (60 * 15) {
-		return common.StringError(errors.New("link expired"))
+		return commonlib.StringError(errors.New("link expired"))
 	}
 	contact := model.Contact{UserId: received.UserId, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
 	contact, err = v.repos.Contact.Create(contact)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 
 	// update user status
 	user, err := v.repos.User.UpdateStatus(received.UserId, "email_verified")
 	if err != nil {
-		return common.StringError(errors.New("User email verify error - userId: " + user.Id))
+		return commonlib.StringError(errors.New("User email verify error - userId: " + user.Id))
 	}
 
 	go v.unit21.Entity.Update(ctx, user)

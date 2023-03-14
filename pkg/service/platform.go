@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/String-xyz/go-lib/common"
-	_common "github.com/String-xyz/string-api/pkg/internal/common"
+	commonlib "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
@@ -23,18 +23,18 @@ func NewPlatform(repos repository.Repositories) Platform {
 
 func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 	uuiKey := "str." + uuidWithoutHyphens()
-	hashed := _common.ToSha256(uuiKey)
+	hashed := common.ToSha256(uuiKey)
 	m := model.Platform{}
 
 	plat, err := a.repos.Platform.Create(m)
 	if err != nil {
-		return model.Platform{}, common.StringError(err)
+		return model.Platform{}, commonlib.StringError(err)
 	}
 
 	_, err = a.repos.Auth.CreateAPIKey(plat.Id, c.Authentication, hashed, false)
 	pt := &plat
 	if err != nil {
-		return *pt, common.StringError(err)
+		return *pt, commonlib.StringError(err)
 	}
 
 	return plat, nil

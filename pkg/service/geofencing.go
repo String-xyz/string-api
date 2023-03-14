@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/pkg/errors"
 )
@@ -41,12 +41,12 @@ func (g geofencing) IsAllowed(ip string) (bool, error) {
 	// if err != nil {
 	// 	location, err = getLocationFromAPI(ip)
 	// 	if err != nil {
-	// 		return false, common.StringError(err)
+	// 		return false, commonlib.StringError(err)
 	// 	}
 
 	// 	err = g.setLocation(ip, location)
 	// 	if err != nil {
-	// 		return false, common.StringError(err)
+	// 		return false, commonlib.StringError(err)
 	// 	}
 	// }
 
@@ -57,12 +57,12 @@ func (g geofencing) IsAllowed(ip string) (bool, error) {
 func (c geofencing) setLocation(ip string, location GeoLocation) error {
 	locationStr, err := json.Marshal(location)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 
 	err = c.redis.Set("location-ip"+ip, locationStr, A_DAY_IN_NANOSEC)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	return nil
 }
@@ -70,17 +70,17 @@ func (c geofencing) setLocation(ip string, location GeoLocation) error {
 func (g geofencing) getLocation(ip string) (GeoLocation, error) {
 	cachedData, err := g.redis.Get("location-ip" + ip)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, commonlib.StringError(err)
 	}
 
 	location := GeoLocation{}
 
 	if cachedData == nil {
-		return location, common.StringError(err)
+		return location, commonlib.StringError(err)
 	}
 	err = json.Unmarshal(cachedData, &location)
 	if err != nil {
-		return location, common.StringError(err)
+		return location, commonlib.StringError(err)
 	}
 
 	return location, nil
@@ -91,14 +91,14 @@ func getLocationFromAPI(ip string) (GeoLocation, error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, commonlib.StringError(err)
 	}
 
 	// read the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, commonlib.StringError(err)
 	}
 
 	dataObj := GeoLocation{}
@@ -106,11 +106,11 @@ func getLocationFromAPI(ip string) (GeoLocation, error) {
 	// unmarshal the json into our struct
 	err = json.Unmarshal(body, &dataObj)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, commonlib.StringError(err)
 	}
 
 	if dataObj.Ip != ip || dataObj.CountryCode == "" || dataObj.RegionCode == "" {
-		return GeoLocation{}, common.StringError(errors.New("The Data returned by the external location service is invalid"))
+		return GeoLocation{}, commonlib.StringError(errors.New("The Data returned by the external location service is invalid"))
 	}
 
 	return dataObj, nil

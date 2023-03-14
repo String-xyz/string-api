@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -32,12 +32,12 @@ func (u userToPlatform[T]) Create(insert model.UserToPlatform) (model.UserToPlat
 		INSERT INTO user_to_platform (user_id, platform_id) 
 		VALUES(:user_id, :platform_id) RETURNING *`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, commonlib.StringError(err)
 		}
 	}
 	defer rows.Close()

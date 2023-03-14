@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -25,13 +25,13 @@ func (p platform) Create(c echo.Context) error {
 	body := service.CreatePlatform{}
 	err := c.Bind(&body)
 	if err != nil {
-		common.LogStringError(c, err, "platform: create bind")
+		commonlib.LogStringError(c, err, "platform: create bind")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
 	m, err := p.service.Create(body)
 	if err != nil {
-		common.LogStringError(c, err, "platform: create")
+		commonlib.LogStringError(c, err, "platform: create")
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusCreated, m)

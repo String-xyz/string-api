@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -30,12 +30,12 @@ func (t txLeg[T]) Create(insert model.TxLeg) (model.TxLeg, error) {
 		INSERT INTO tx_leg (timestamp, amount, value, asset_id, user_id, instrument_id) 
 		VALUES(:timestamp, :amount, :value, :asset_id, :user_id, :instrument_id) 	RETURNING *`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, commonlib.StringError(err)
 		}
 	}
 

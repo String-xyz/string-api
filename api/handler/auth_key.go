@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -30,7 +30,7 @@ func NewAuthAPIKey(service service.APIKeyStrategy, internal bool) AuthAPIKey {
 func (o authAPIKey) Create(c echo.Context) error {
 	key, err := o.service.Create()
 	if err != nil {
-		common.LogStringError(c, err, "authKey approve: create")
+		commonlib.LogStringError(c, err, "authKey approve: create")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.JSON(http.StatusOK, key)
@@ -47,12 +47,12 @@ func (o authAPIKey) List(c echo.Context) error {
 	}{}
 	err := c.Bind(&body)
 	if err != nil {
-		common.LogStringError(c, err, "authKey list: bind")
+		commonlib.LogStringError(c, err, "authKey list: bind")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 	list, err := o.service.List(body.Limit, body.Offset, body.Status)
 	if err != nil {
-		common.LogStringError(c, err, "authKey list")
+		commonlib.LogStringError(c, err, "authKey list")
 		return echo.NewHTTPError(http.StatusInternalServerError, "ApiKey Service Failed")
 	}
 	return c.JSON(http.StatusCreated, list)
@@ -68,12 +68,12 @@ func (o authAPIKey) Approve(c echo.Context) error {
 	err := c.Bind(&params)
 
 	if err != nil {
-		common.LogStringError(c, err, "authKey approve: bind")
+		commonlib.LogStringError(c, err, "authKey approve: bind")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	err = o.service.Approve(params.Id)
 	if err != nil {
-		common.LogStringError(c, err, "authKey approve: approve")
+		commonlib.LogStringError(c, err, "authKey approve: approve")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Success"})

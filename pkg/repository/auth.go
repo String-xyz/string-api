@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -54,7 +54,7 @@ func NewAuth(redis database.RedisStore, db database.Queryable) AuthStrategy {
 func (a auth[T]) Create(authType AuthType, m model.AuthStrategy) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(m.Data), 8)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	strat := &m
 	strat.Data = string(hash)
@@ -110,12 +110,12 @@ func (a auth[T]) CreateJWTRefresh(key string, userId string) (model.AuthStrategy
 func (a auth[T]) Get(key string) (model.AuthStrategy, error) {
 	m, err := a.redis.Get(key)
 	if err != nil {
-		return model.AuthStrategy{}, common.StringError(err)
+		return model.AuthStrategy{}, commonlib.StringError(err)
 	}
 	authStrat := model.AuthStrategy{}
 	err = json.Unmarshal(m, &authStrat)
 	if err != nil {
-		return model.AuthStrategy{}, common.StringError(err)
+		return model.AuthStrategy{}, commonlib.StringError(err)
 	}
 
 	return authStrat, nil
@@ -126,15 +126,15 @@ func (a auth[T]) GetUserIdFromRefreshToken(refreshToken string) (string, error) 
 	authStrat, err := a.Get(refreshToken)
 
 	if err != nil {
-		return "", common.StringError(err)
+		return "", commonlib.StringError(err)
 	}
 	// assert token has not expired
 	if authStrat.ExpiresAt.Before(time.Now()) {
-		return "", common.StringError(fmt.Errorf("refresh token expired"))
+		return "", commonlib.StringError(fmt.Errorf("refresh token expired"))
 	}
 	// assert token has not been deactivated
 	if authStrat.DeactivatedAt != nil {
-		return "", common.StringError(fmt.Errorf("refresh token deactivated at %s", authStrat.DeactivatedAt))
+		return "", commonlib.StringError(fmt.Errorf("refresh token deactivated at %s", authStrat.DeactivatedAt))
 	}
 	// if all is well, return the user id
 	return authStrat.Data, nil
@@ -143,7 +143,7 @@ func (a auth[T]) GetUserIdFromRefreshToken(refreshToken string) (string, error) 
 func (a auth[T]) GetKeyString(key string) (string, error) {
 	m, err := a.redis.Get(key)
 	if err != nil {
-		return "", common.StringError(err)
+		return "", commonlib.StringError(err)
 	}
 	return string(m), nil
 }

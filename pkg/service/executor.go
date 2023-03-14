@@ -8,9 +8,8 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/String-xyz/go-lib/common"
-	_common "github.com/String-xyz/string-api/pkg/internal/common"
-
+	commonlib "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -58,12 +57,12 @@ func (e *executor) Initialize(RPC string) error {
 	var err error
 	e.client, err = w3.Dial(RPC)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	// Do it again for our low-level client
 	e.geth, err = ethclient.Dial(RPC)
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	return nil
 }
@@ -71,7 +70,7 @@ func (e *executor) Initialize(RPC string) error {
 func (e *executor) Close() error {
 	err := e.client.Close()
 	if err != nil {
-		return common.StringError(err)
+		return commonlib.StringError(err)
 	}
 	e.geth.Close()
 	return nil
@@ -79,13 +78,13 @@ func (e *executor) Close() error {
 
 func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get private key
-	skStr, err := _common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	skStr, err := common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 	sk, err := crypto.ToECDSA(ethcommon.FromHex(skStr))
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
@@ -93,7 +92,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return CallEstimate{}, common.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
+		return CallEstimate{}, commonlib.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
@@ -101,14 +100,14 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 
 	// Get sender nonce
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 
 	// Get dynamic fee tx gas params
@@ -118,13 +117,13 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 
 	// Encode function parameters
-	data, err := _common.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
+	data, err := common.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
-		return CallEstimate{}, common.StringError(err)
+		return CallEstimate{}, commonlib.StringError(err)
 	}
 
 	// Generate blockchain message
@@ -142,20 +141,20 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
 	if err != nil {
 		// Execution Will Revert!
-		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, common.StringError(err)
+		return CallEstimate{Value: *value, Gas: estimatedGas, Success: false}, commonlib.StringError(err)
 	}
 	return CallEstimate{Value: *value, Gas: estimatedGas, Success: true}, nil
 }
 
 func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get private key
-	skStr, err := _common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	skStr, err := common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 	sk, err := crypto.ToECDSA(ethcommon.FromHex(skStr))
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 	// TODO: avoid panicking so that we get an intelligible error message
 	to := w3.A(call.CxAddr)
@@ -163,7 +162,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return "", nil, common.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
+		return "", nil, commonlib.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
 	}
 	sender := crypto.PubkeyToAddress(*publicKeyECDSA)
 
@@ -174,14 +173,14 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	var chainId64 uint64
 	err = e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 
 	// Get sender nonce
 	var nonce uint64
 	err = e.client.Call(eth.Nonce(sender, nil).Returns(&nonce))
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 
 	// Get dynamic fee tx gas params
@@ -191,13 +190,13 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 
 	// Encode function parameters
-	data, err := _common.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
+	data, err := common.ParseEncoding(funcEVM, call.CxFunc, call.CxParams)
 	if err != nil {
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 
 	// Type conversion for chainId
@@ -225,7 +224,7 @@ func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
 	err = e.client.Call(eth.SendTx(tx).Returns(&hash))
 	if err != nil {
 		// Execution failed!
-		return "", nil, common.StringError(err)
+		return "", nil, commonlib.StringError(err)
 	}
 	return hash.String(), value, nil
 }
@@ -237,7 +236,7 @@ func (e executor) TxWait(txId string) (uint64, error) {
 		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
 		// TransactionReceipt returns error "not found" while tx is pending
 		if err != nil && err.Error() != "not found" {
-			return 0, common.StringError(err)
+			return 0, commonlib.StringError(err)
 		}
 		if pendingReceipt != nil {
 			receipt = *pendingReceipt
@@ -252,32 +251,32 @@ func (e executor) GetByChainId() (uint64, error) {
 	var chainId64 uint64
 	err := e.client.Call(eth.ChainID().Returns(&chainId64))
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	return chainId64, nil
 }
 
 func (e executor) GetBalance() (float64, error) {
 	// Get private key
-	skStr, err := _common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	skStr, err := common.DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	sk, err := crypto.ToECDSA(ethcommon.FromHex(skStr))
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	// Get public key
 	publicKeyECDSA, ok := sk.Public().(*ecdsa.PublicKey)
 	if !ok {
-		return 0, common.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
+		return 0, commonlib.StringError(errors.New("Estimate: Error casting public key to ECDSA"))
 	}
 	account := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	wei := big.Int{}
 	err = e.client.Call(eth.Balance(account, nil).Returns(&wei))
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	fwei := new(big.Float)
 	fwei.SetString(wei.String())

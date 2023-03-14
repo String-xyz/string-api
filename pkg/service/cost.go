@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	_common "github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
@@ -66,39 +66,39 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query cost of native token in USD
 	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
 	if err != nil {
-		return model.Quote{}, common.StringError(err)
+		return model.Quote{}, commonlib.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
-		nativeCost *= 1.0 + _common.NativeTokenBuffer(chain.ChainId)
+		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainId)
 	}
-	costEth := _common.WeiToEther(&p.CostETH)
+	costEth := common.WeiToEther(&p.CostETH)
 	// transactionCost is for native token transaction cost (tx_value)
 	transactionCost := costEth * nativeCost
 
 	// Query owlracle for gas
 	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
-		return model.Quote{}, common.StringError(err)
+		return model.Quote{}, commonlib.StringError(err)
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
-		gasInUSD *= 1.0 + _common.GasBuffer(chain.ChainId)
+		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainId)
 	}
 
 	// Query cost of token in USD if used and apply buffer
-	costToken := _common.WeiToEther(&p.CostToken)
+	costToken := common.WeiToEther(&p.CostToken)
 	// tokenCost in contract call ERC-20 token costs
 	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
 	if err != nil {
-		return model.Quote{}, common.StringError(err)
+		return model.Quote{}, commonlib.StringError(err)
 	}
 	if p.UseBuffer {
-		tokenCost *= 1.0 + _common.TokenBuffer(p.TokenName)
+		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
 	}
 
 	// Compute service fee
@@ -149,17 +149,17 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	cacheName := "usd_value_" + coin
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil && serror.IsError(err, serror.NOT_FOUND) {
-		return 0.0, common.StringError(err)
+		return 0.0, commonlib.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, commonlib.StringError(err)
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, commonlib.StringError(err)
 		}
 	}
 
@@ -170,17 +170,17 @@ func (c cost) lookupGas(network string) (float64, error) {
 	cacheName := "gas_price_" + network
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(1.6, 6) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.owlracle(network)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, commonlib.StringError(err)
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, commonlib.StringError(err)
 		}
 	}
 
@@ -190,9 +190,9 @@ func (c cost) lookupGas(network string) (float64, error) {
 func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := _common.GetJsonGeneric(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	prices, found := res[coin]
 	if found {
@@ -202,7 +202,7 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 			return usd.(float64), nil
 		}
 	}
-	// return 0, common.StringError(errors.New("Price not found for " + coin))
+	// return 0, commonlib.StringError(errors.New("Price not found for " + coin))
 	// fmt.Printf("\n\nPRICE LOOKUP %+v", coin)
 	// TODO: this is getting hit somewhere, figure out why
 	return 0, nil
@@ -215,9 +215,9 @@ func (c cost) owlracle(network string) (float64, error) {
 		os.Getenv("OWLRACLE_API_KEY") +
 		"&accept=100"
 	var res OwlracleJSON
-	err := _common.GetJsonGeneric(requestURL, &res)
+	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, commonlib.StringError(err)
 	}
 	if len(res.Speeds) > 0 {
 		return res.Speeds[0].MaxFeePerGas, nil

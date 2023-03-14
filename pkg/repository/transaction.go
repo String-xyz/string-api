@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/String-xyz/go-lib/common"
+	commonlib "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -31,12 +31,12 @@ func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, err
 		INSERT INTO transaction (status, network_id, device_id, platform_id, ip_address)
 		VALUES(:status, :network_id, :device_id, :platform_id, :ip_address) RETURNING id`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, commonlib.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.Scan(&m.Id)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, commonlib.StringError(err)
 		}
 	}
 

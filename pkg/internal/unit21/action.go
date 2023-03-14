@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/String-xyz/go-lib/common"
-	_common "github.com/String-xyz/string-api/pkg/internal/common"
+	commonlib "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/rs/zerolog/log"
@@ -43,14 +43,14 @@ func (a action) Create(
 	body, err := u21Post(url, mapToUnit21ActionEvent(instrument, actionData, unit21InstrumentId, eventSubtype))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Action create failed")
-		return "", common.StringError(err)
+		return "", commonlib.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", common.StringError(err)
+		return "", commonlib.StringError(err)
 	}
 
 	log.Info().Str("unit21Id", u21Response.Unit21Id).Msg("Create Action")
@@ -82,7 +82,7 @@ func mapToUnit21ActionEvent(instrument model.Instrument, actionData actionData, 
 		CustomData:   nil,
 	}
 
-	actionBody, err := _common.BetterStringify(jsonBody)
+	actionBody, err := common.BetterStringify(jsonBody)
 	if err != nil {
 		log.Err(err).Msg("Error creating action body")
 		return jsonBody
