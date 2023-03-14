@@ -121,7 +121,6 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		IdempotencyKey: &idempotencyKey,
 	}
 	response, err := client.Request(request, &params)
-	_request, _ := common.BetterStringify(request)
 	if err != nil {
 		return p, common.StringError(err)
 	}
