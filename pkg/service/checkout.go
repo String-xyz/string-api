@@ -3,7 +3,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -123,9 +122,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	response, err := client.Request(request, &params)
 	_request, _ := common.BetterStringify(request)
-	fmt.Printf(">>>>>>>>>>>>>>>> request: ", _request)
 	if err != nil {
-		fmt.Printf(">>>>>>>>>>>>>>err: ", err.Error())
 		return p, common.StringError(err)
 	}
 
