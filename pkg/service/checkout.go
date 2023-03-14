@@ -70,26 +70,27 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 
 	var paymentTokenId string
 	if common.IsLocalEnv() {
-		// Generate a payment token ID in case we don't yet have one in the front end
-		// For testing purposes only
-		card := tokens.Card{
-			Type:   checkoutCommon.Card,
-			Number: "4242424242424242", // Success
-			// Number: "4273149019799094", // succeed authorize, fail capture
-			// Number: "4544249167673670", // Declined - Insufficient funds
-			// Number:      "5148447461737269", // Invalid transaction (debit card)
-			ExpiryMonth: 2,
-			ExpiryYear:  2024,
-			Name:        "Customer Name",
-			CVV:         "100",
-		}
-		paymentToken, err := CreateToken(&card)
-		if err != nil {
-			return p, common.StringError(err)
-		}
-		paymentTokenId = paymentToken.Created.Token
 		if p.executionRequest.CardToken != "" {
 			paymentTokenId = p.executionRequest.CardToken
+		} else {
+			// Generate a payment token ID in case we don't yet have one in the front end
+			// For testing purposes only
+			card := tokens.Card{
+				Type:   checkoutCommon.Card,
+				Number: "4242424242424242", // Success
+				// Number: "4273149019799094", // succeed authorize, fail capture
+				// Number: "4544249167673670", // Declined - Insufficient funds
+				// Number:      "5148447461737269", // Invalid transaction (debit card)
+				ExpiryMonth: 2,
+				ExpiryYear:  2024,
+				Name:        "Customer Name",
+				CVV:         "100",
+			}
+			paymentToken, err := CreateToken(&card)
+			if err != nil {
+				return p, common.StringError(err)
+			}
+			paymentTokenId = paymentToken.Created.Token
 		}
 	} else {
 		paymentTokenId = p.executionRequest.CardToken
