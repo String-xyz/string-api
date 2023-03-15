@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -35,7 +35,7 @@ func (n network[T]) Create(insert model.Network) (model.Network, error) {
 		VALUES(:name, :network_id, :chain_id, :gas_oracle, :rpc_url, :explorer_url) 	RETURNING *`, insert)
 
 	if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 
 	defer rows.Close()
@@ -43,7 +43,7 @@ func (n network[T]) Create(insert model.Network) (model.Network, error) {
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, commonlib.StringError(err)
+			return m, libCommon.StringError(err)
 		}
 	}
 

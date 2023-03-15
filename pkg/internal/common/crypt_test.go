@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,10 +40,10 @@ func TestEncodeDecodeObject(t *testing.T) {
 func TestEncryptDecryptString(t *testing.T) {
 	str := "this is a string"
 
-	strEncrypted, err := commonlib.EncryptString(str, "secret_encryption_key_0123456789")
+	strEncrypted, err := libCommon.EncryptString(str, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	strDecrypted, err := commonlib.DecryptString(strEncrypted, "secret_encryption_key_0123456789")
+	strDecrypted, err := libCommon.DecryptString(strEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
 	assert.Equal(t, str, strDecrypted)
@@ -55,10 +55,10 @@ func TestEncryptDecryptObject(t *testing.T) {
 	objEncoded, err := EncodeToBase64(obj)
 	assert.NoError(t, err)
 
-	objEncrypted, err := commonlib.EncryptString(objEncoded, "secret_encryption_key_0123456789")
+	objEncrypted, err := libCommon.EncryptString(objEncoded, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	objDecrypted, err := commonlib.DecryptString(objEncrypted, "secret_encryption_key_0123456789")
+	objDecrypted, err := libCommon.DecryptString(objEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
 	objDecoded, err := DecodeFromBase64[randomObject1](objDecrypted)
@@ -69,10 +69,10 @@ func TestEncryptDecryptObject(t *testing.T) {
 func TestEncryptDecryptUnencoded(t *testing.T) {
 	obj := randomObject1{Timestamp: time.Now().Unix(), Email: "test@test.com", Address: "0xdecafbabe"}
 
-	objEncrypted, err := commonlib.Encrypt(obj, "secret_encryption_key_0123456789")
+	objEncrypted, err := libCommon.Encrypt(obj, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	objDecrypted, err := commonlib.Decrypt[randomObject1](objEncrypted, "secret_encryption_key_0123456789")
+	objDecrypted, err := libCommon.Decrypt[randomObject1](objEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 	assert.Equal(t, obj, objDecrypted)
 }

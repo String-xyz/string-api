@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
@@ -25,7 +25,7 @@ func strConnection() string {
 
 	var SSLMode string
 
-	if commonlib.IsLocalEnv() {
+	if libCommon.IsLocalEnv() {
 		SSLMode = "disable"
 	} else {
 		SSLMode = "require"

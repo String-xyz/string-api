@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -75,14 +75,14 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	signable := SignablePayload{}
 
 	if !hexRegex.MatchString(walletAddress) {
-		return signable, commonlib.StringError(errors.New("missing or invalid address"))
+		return signable, libCommon.StringError(errors.New("missing or invalid address"))
 	}
 	payload.Address = walletAddress
 	payload.Timestamp = time.Now().Unix()
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	encrypted, err := commonlib.Encrypt(payload, key)
+	encrypted, err := libCommon.Encrypt(payload, key)
 	if err != nil {
-		return signable, commonlib.StringError(err)
+		return signable, libCommon.StringError(err)
 	}
 	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
 }
@@ -90,48 +90,48 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := commonlib.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+	payload, err := libCommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	if err := verifyWalletAuthentication(request); err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWalletByAddr(payload.Address)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 	user, err := a.repos.User.GetById(ctx, instrument.UserId)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 	// TODO: remove user.Email and replace with association with contact via user and platform
 	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
 
 	device, err := a.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// Send verification email if device is unknown and user has a validated email
 	if user.Email != "" && !isDeviceValidated(device) {
 		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
-		return resp, commonlib.StringError(errors.New("unknown device"))
+		return resp, libCommon.StringError(errors.New("unknown device"))
 	}
 
 	// Create the JWT
 	jwt, err := a.GenerateJWT(user.Id, device)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// Invalidate device if it is unknown and was validated so it cannot be used again
 	err = a.device.InvalidateUnknownDevice(ctx, device)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	return UserCreateResponse{JWT: jwt, User: user}, nil
@@ -202,7 +202,7 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// verify wallet address
@@ -210,37 +210,37 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return resp, commonlib.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+			return resp, libCommon.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 		}
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	if instrument.UserId != userId {
-		return resp, commonlib.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		return resp, libCommon.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
 	}
 
 	// get device
 	device, err := a.repos.Device.GetByUserId(ctx, userId)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// create new jwt
 	jwt, err := a.GenerateJWT(userId, device)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 	resp.JWT = jwt
 
 	// delete old refresh token
 	err = a.InvalidateRefreshToken(refreshToken)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	user, err := a.repos.User.GetById(ctx, instrument.UserId)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// get email
@@ -252,23 +252,23 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	preSignedPayload, err := commonlib.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+	preSignedPayload, err := libCommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
-		return commonlib.StringError(err)
+		return libCommon.StringError(err)
 	}
 	// Verify users signature
 	bytes := []byte(request.Nonce)
 	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, bytes, true) // true: expect eip131
 	if err != nil {
-		return commonlib.StringError(err)
+		return libCommon.StringError(err)
 	}
 	if !valid {
-		return commonlib.StringError(errors.New("user signature invalid"))
+		return libCommon.StringError(errors.New("user signature invalid"))
 	}
 
 	// Verify timestamp is not expired past 15 minutes
 	if time.Now().Unix() > preSignedPayload.Timestamp+(15*60) {
-		return commonlib.StringError(errors.New("login payload expired"))
+		return libCommon.StringError(errors.New("login payload expired"))
 	}
 
 	return nil

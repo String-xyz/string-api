@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -36,39 +36,39 @@ func (i instrument) Create(ctx context.Context, instrument model.Instrument) (un
 	source, err := i.getSource(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument source")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	entities, err := i.getEntities(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	digitalData, err := i.getInstrumentDigitalData(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	locationData, err := i.getLocationData(ctx, instrument.LocationId.String)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/instruments/create"
 	body, err := u21Post(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Instrument create failed")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	var u21Response *createInstrumentResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	log.Info().Str("Unit21Id", u21Response.Unit21Id).Send()
@@ -77,7 +77,7 @@ func (i instrument) Create(ctx context.Context, instrument model.Instrument) (un
 	_, err = i.action.Create(instrument, "Creation", u21Response.Unit21Id, "Creation")
 	if err != nil {
 		log.Err(err).Msg("Error creating a new instrument action in Unit21")
-		return u21Response.Unit21Id, commonlib.StringError(err)
+		return u21Response.Unit21Id, libCommon.StringError(err)
 	}
 
 	return u21Response.Unit21Id, nil
@@ -88,25 +88,25 @@ func (i instrument) Update(ctx context.Context, instrument model.Instrument) (un
 	source, err := i.getSource(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument source")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	entities, err := i.getEntities(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument entity")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	digitalData, err := i.getInstrumentDigitalData(ctx, instrument.UserId)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	locationData, err := i.getLocationData(ctx, instrument.LocationId.String)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
@@ -115,14 +115,14 @@ func (i instrument) Update(ctx context.Context, instrument model.Instrument) (un
 
 	if err != nil {
 		log.Err(err).Msg("Unit21 Instrument create failed")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	var u21Response *updateInstrumentResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	log.Info().Str("Unit21Id", u21Response.Unit21Id).Send()
@@ -138,7 +138,7 @@ func (i instrument) getSource(ctx context.Context, userId string) (source string
 	user, err := i.repos.User.GetById(ctx, userId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get user contacts")
-		return "", commonlib.StringError(err)
+		return "", libCommon.StringError(err)
 	}
 
 	if user.Tags["internal"] == "true" {
@@ -156,7 +156,7 @@ func (i instrument) getEntities(ctx context.Context, userId string) (entity inst
 	user, err := i.repos.User.GetById(ctx, userId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get user contacts")
-		err = commonlib.StringError(err)
+		err = libCommon.StringError(err)
 		return
 	}
 
@@ -177,7 +177,7 @@ func (i instrument) getInstrumentDigitalData(ctx context.Context, userId string)
 	devices, err := i.repos.Device.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user devices")
-		err = commonlib.StringError(err)
+		err = libCommon.StringError(err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (i instrument) getLocationData(ctx context.Context, locationId string) (loc
 	location, err := i.repos.Location.GetById(ctx, locationId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get instrument location")
-		err = commonlib.StringError(err)
+		err = libCommon.StringError(err)
 		return
 	}
 	if location.CreatedAt.Unix() != 0 {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
@@ -57,7 +57,7 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 			// For now we are denying
 			if err != nil || !isAllowed {
 				if err != nil {
-					commonlib.LogStringError(c, err, "Error in georestrict middleware")
+					libCommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
 				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
 			}

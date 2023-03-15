@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -66,7 +66,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query cost of native token in USD
 	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
 	if err != nil {
-		return model.Quote{}, commonlib.StringError(err)
+		return model.Quote{}, libCommon.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
@@ -80,7 +80,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query owlracle for gas
 	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
-		return model.Quote{}, commonlib.StringError(err)
+		return model.Quote{}, libCommon.StringError(err)
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
@@ -95,7 +95,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
 	if err != nil {
-		return model.Quote{}, commonlib.StringError(err)
+		return model.Quote{}, libCommon.StringError(err)
 	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
@@ -149,17 +149,17 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	cacheName := "usd_value_" + coin
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil && serror.IsError(err, serror.NOT_FOUND) {
-		return 0.0, commonlib.StringError(err)
+		return 0.0, libCommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
 		if err != nil {
-			return 0, commonlib.StringError(err)
+			return 0, libCommon.StringError(err)
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, commonlib.StringError(err)
+			return 0, libCommon.StringError(err)
 		}
 	}
 
@@ -170,17 +170,17 @@ func (c cost) lookupGas(network string) (float64, error) {
 	cacheName := "gas_price_" + network
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
-		return 0, commonlib.StringError(err)
+		return 0, libCommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(1.6, 6) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.owlracle(network)
 		if err != nil {
-			return 0, commonlib.StringError(err)
+			return 0, libCommon.StringError(err)
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, commonlib.StringError(err)
+			return 0, libCommon.StringError(err)
 		}
 	}
 
@@ -192,7 +192,7 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, commonlib.StringError(err)
+		return 0, libCommon.StringError(err)
 	}
 	prices, found := res[coin]
 	if found {
@@ -202,7 +202,7 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 			return usd.(float64), nil
 		}
 	}
-	// return 0, commonlib.StringError(errors.New("Price not found for " + coin))
+	// return 0, libCommon.StringError(errors.New("Price not found for " + coin))
 	// fmt.Printf("\n\nPRICE LOOKUP %+v", coin)
 	// TODO: this is getting hit somewhere, figure out why
 	return 0, nil
@@ -217,7 +217,7 @@ func (c cost) owlracle(network string) (float64, error) {
 	var res OwlracleJSON
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, commonlib.StringError(err)
+		return 0, libCommon.StringError(err)
 	}
 	if len(res.Speeds) > 0 {
 		return res.Speeds[0].MaxFeePerGas, nil

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/pkg/errors"
@@ -18,11 +18,11 @@ func GetObjectFromCache[T any](redis database.RedisStore, key string) (T, error)
 		return *result, nil // object doesn't exist yet, create it down the stack
 	} else if err != nil {
 		// Work around the way that redis go api scopes error
-		return *result, commonlib.StringError(errors.New(err.Error()))
+		return *result, libCommon.StringError(errors.New(err.Error()))
 	}
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
-		return *result, commonlib.StringError(err)
+		return *result, libCommon.StringError(err)
 	}
 	return *result, nil
 }
@@ -32,7 +32,7 @@ func PutObjectInCache(redis database.RedisStore, key string, object any, optiona
 	val := reflect.ValueOf(object)
 	for i := 0; i < val.Type().NumField(); i++ {
 		if val.Type().Field(i).Tag.Get("json") == "" {
-			return commonlib.StringError(errors.New("object missing json tags"))
+			return libCommon.StringError(errors.New("object missing json tags"))
 		}
 	}
 
@@ -43,13 +43,13 @@ func PutObjectInCache(redis database.RedisStore, key string, object any, optiona
 
 	bytes, err := json.Marshal(object)
 	if err != nil {
-		return commonlib.StringError(err)
+		return libCommon.StringError(err)
 	}
 
 	err = redis.Set(key, bytes, timeout)
 	if err != nil {
 		// Work around the way that redis go API scopes error
-		return commonlib.StringError(errors.New(err.Error()))
+		return libCommon.StringError(errors.New(err.Error()))
 	}
 	return nil
 }

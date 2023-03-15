@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -40,12 +40,12 @@ func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error)
 		INSERT INTO instrument (type, status, network, public_key, user_id, last_4) 
 		VALUES(:type, :status, :network, :public_key, :user_id, :last_4) 	RETURNING *`, insert)
 	if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, commonlib.StringError(err)
+			return m, libCommon.StringError(err)
 		}
 	}
 
@@ -59,7 +59,7 @@ func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	return m, nil
 }
@@ -74,7 +74,7 @@ func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	return m, nil
 }
@@ -85,7 +85,7 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	return m, nil
 }
@@ -94,11 +94,11 @@ func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	wallet, err := i.GetWalletByAddr(addr)
 
 	if err != nil && errors.Cause(err).Error() != "not found" { // because we are wrapping error and care about its value
-		return true, commonlib.StringError(err)
+		return true, libCommon.StringError(err)
 	} else if err == nil && wallet.UserId != "" {
-		return true, commonlib.StringError(errors.New("wallet already associated with user"))
+		return true, libCommon.StringError(errors.New("wallet already associated with user"))
 	} else if err == nil && wallet.PublicKey == addr {
-		return true, commonlib.StringError(errors.New("wallet already exists"))
+		return true, libCommon.StringError(errors.New("wallet already exists"))
 	}
 
 	return false, nil

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -39,12 +39,12 @@ func (d device[T]) Create(insert model.Device) (model.Device, error) {
 		VALUES(:last_used_at,:validated_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
 		RETURNING *`, insert)
 	if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, commonlib.StringError(err)
+			return m, libCommon.StringError(err)
 		}
 	}
 

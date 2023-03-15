@@ -3,12 +3,12 @@ package api
 import (
 	"net/http"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/go-lib/middleware"
 	validator "github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/api/handler"
-	_middleware "github.com/String-xyz/string-api/api/middleware"
+	libMiddleware "github.com/String-xyz/string-api/api/middleware"
 
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/jmoiron/sqlx"
@@ -34,7 +34,7 @@ func Start(config APIConfig) {
 
 	// not internal middlewares
 	geofencingService := service.NewGeofencing(config.Redis)
-	e.Use(_middleware.Georestrict(geofencingService))
+	e.Use(libMiddleware.Georestrict(geofencingService))
 
 	e.GET("/heartbeat", heartbeat)
 
@@ -43,7 +43,7 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, commonlib.IsLocalEnv())
+	AuthAPIKey(services, e, libCommon.IsLocalEnv())
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)
@@ -80,7 +80,7 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 
 func platformRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewPlatform(services.Platform)
-	handler.RegisterRoutes(e.Group("/platforms"), _middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/platforms"), libMiddleware.BearerAuth())
 }
 
 func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
@@ -90,17 +90,17 @@ func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
 
 func transactRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewTransaction(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/transactions"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/transactions"), libMiddleware.APIKeyAuth(services.Auth), libMiddleware.BearerAuth())
 }
 
 func userRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewUser(e, services.User, services.Verification)
-	handler.RegisterRoutes(e.Group("/users"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/users"), libMiddleware.APIKeyAuth(services.Auth), libMiddleware.BearerAuth())
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewLogin(e, services.Auth, services.Device)
-	handler.RegisterRoutes(e.Group("/login"), _middleware.APIKeyAuth(services.Auth))
+	handler.RegisterRoutes(e.Group("/login"), libMiddleware.APIKeyAuth(services.Auth))
 }
 
 func verificationRoute(services service.Services, e *echo.Echo) {
@@ -110,5 +110,5 @@ func verificationRoute(services service.Services, e *echo.Echo) {
 
 func quoteRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewQuote(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/quotes"), _middleware.APIKeyAuth(services.Auth), _middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/quotes"), libMiddleware.APIKeyAuth(services.Auth), libMiddleware.BearerAuth())
 }

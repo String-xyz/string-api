@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/pkg/errors"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
@@ -30,7 +30,7 @@ func SendSMS(message string, recipients []string) error {
 		}
 	}
 	if errs != nil {
-		return commonlib.StringError(errs)
+		return libCommon.StringError(errs)
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ func MessageStaff(message string) error {
 	recipients := strings.Split(devNumbers, ",")
 	err := SendSMS(message, recipients)
 	if err != nil {
-		return commonlib.StringError(err)
+		return libCommon.StringError(err)
 	}
 	return nil
 }

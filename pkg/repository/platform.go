@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -41,13 +41,13 @@ func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
 		VALUES(:name, :description) RETURNING *`, m)
 
 	if err != nil {
-		return plat, commonlib.StringError(err)
+		return plat, libCommon.StringError(err)
 	}
 
 	for rows.Next() {
 		err := rows.StructScan(&plat)
 		if err != nil {
-			return plat, commonlib.StringError(err)
+			return plat, libCommon.StringError(err)
 		}
 	}
 	defer rows.Close()

@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -35,7 +35,7 @@ func (v verification) VerifyEmail(c echo.Context) error {
 	token := c.QueryParam("token")
 	err := v.service.VerifyEmail(ctx, token)
 	if err != nil {
-		commonlib.LogStringError(c, err, "verification: email verification")
+		libCommon.LogStringError(c, err, "verification: email verification")
 		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
@@ -46,7 +46,7 @@ func (v verification) VerifyDevice(c echo.Context) error {
 	token := c.QueryParam("token")
 	err := v.deviceService.VerifyDevice(ctx, token)
 	if err != nil {
-		commonlib.LogStringError(c, err, "verification: device verification")
+		libCommon.LogStringError(c, err, "verification: device verification")
 		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Device successfully verified"})

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	repositories "github.com/String-xyz/string-api/pkg/repository"
@@ -53,47 +53,47 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 
 	user, err := u.repos.User.GetById(ctx, userId)
 	if err != nil {
-		return res, commonlib.StringError(err)
+		return res, libCommon.StringError(err)
 	}
 
 	if user.Status != "" {
 		res.Status = user.Status
 		return res, nil
 	}
-	return res, commonlib.StringError(errors.New("not found"))
+	return res, libCommon.StringError(errors.New("not found"))
 }
 
 func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := commonlib.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+	payload, err := libCommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	addr := payload.Address
 	if addr == "" {
-		return resp, commonlib.StringError(errors.New("no wallet address provided"))
+		return resp, libCommon.StringError(errors.New("no wallet address provided"))
 	}
 
 	// Make sure wallet does not already exist
 	exists, err := u.repos.Instrument.WalletAlreadyExists(addr)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	if exists {
-		return resp, commonlib.StringError(errors.New("wallet already exists"))
+		return resp, libCommon.StringError(errors.New("wallet already exists"))
 	}
 
 	// Make sure address is a wallet and not a smart contract
 	if !common.IsWallet(addr) {
-		return resp, commonlib.StringError(errors.New("address provided is not a valid wallet"))
+		return resp, libCommon.StringError(errors.New("address provided is not a valid wallet"))
 	}
 
 	// Verify payload integrity
 	if err := verifyWalletAuthentication(request); err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	user, err := u.createUserData(ctx, addr)
@@ -104,7 +104,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && errors.Cause(err).Error() != "not found" {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	if device.Fingerprint != "" {
@@ -118,7 +118,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 
 	jwt, err := u.auth.GenerateJWT(user.Id, device)
 	if err != nil {
-		return resp, commonlib.StringError(err)
+		return resp, libCommon.StringError(err)
 	}
 
 	// deviceService.RegisterNewUserDevice()
@@ -139,17 +139,17 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 	user, err := u.repos.User.Create(user)
 	if err != nil {
 		u.repos.User.Rollback()
-		return user, commonlib.StringError(err)
+		return user, libCommon.StringError(err)
 	}
 	// Create a new wallet instrument and associate it with the new user
 	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
-		return user, commonlib.StringError(err)
+		return user, libCommon.StringError(err)
 	}
 	if err := u.repos.User.Commit(); err != nil {
-		return user, commonlib.StringError(errors.New("error commiting transaction"))
+		return user, libCommon.StringError(errors.New("error commiting transaction"))
 	}
 
 	go u.unit21.Instrument.Create(ctx, instrument)
@@ -161,7 +161,7 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}
 	user, err := u.repos.User.Update(ctx, userId, updates)
 	if err != nil {
-		return user, commonlib.StringError(err)
+		return user, libCommon.StringError(err)
 	}
 
 	go u.unit21.Entity.Update(ctx, user)

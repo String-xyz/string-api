@@ -1,7 +1,7 @@
 package service
 
 import (
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -28,13 +28,13 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 
 	plat, err := a.repos.Platform.Create(m)
 	if err != nil {
-		return model.Platform{}, commonlib.StringError(err)
+		return model.Platform{}, libCommon.StringError(err)
 	}
 
 	_, err = a.repos.Auth.CreateAPIKey(plat.Id, c.Authentication, hashed, false)
 	pt := &plat
 	if err != nil {
-		return *pt, commonlib.StringError(err)
+		return *pt, libCommon.StringError(err)
 	}
 
 	return plat, nil

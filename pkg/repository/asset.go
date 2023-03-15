@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	commonlib "github.com/String-xyz/go-lib/common"
+	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -34,7 +34,7 @@ func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
 		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle) 
 		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle) 	RETURNING *`, insert)
 	if err != nil {
-		return m, commonlib.StringError(err)
+		return m, libCommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
