@@ -166,7 +166,9 @@ func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 		return libcommon.StringError(errors.New("User email verify error - userId: " + user.Id))
 	}
 
-	go v.unit21.Entity.Update(ctx, user)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go v.unit21.Entity.Update(ctx2, user)
 
 	return nil
 }

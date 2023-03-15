@@ -122,7 +122,9 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// deviceService.RegisterNewUserDevice()
-	go u.unit21.Entity.Create(ctx, user)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Entity.Create(ctx2, user)
 
 	return UserCreateResponse{JWT: jwt, User: user}, nil
 }
@@ -152,7 +154,9 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 		return user, libcommon.StringError(errors.New("error commiting transaction"))
 	}
 
-	go u.unit21.Instrument.Create(ctx, instrument)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Instrument.Create(ctx2, instrument)
 
 	return user, nil
 }
@@ -164,7 +168,9 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 		return user, libcommon.StringError(err)
 	}
 
-	go u.unit21.Entity.Update(ctx, user)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Entity.Update(ctx2, user)
 
 	return user, nil
 }

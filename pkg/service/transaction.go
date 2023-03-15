@@ -138,8 +138,9 @@ func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecution
 	// this Executor will not exist in scope of postProcess
 	(*p.executor).Close()
 
-	// Send required information to new thread and return txId to the endpoint
-	go t.postProcess(ctx, p)
+	// Send required information to new thread and return txId to the endpoint. Create a new context since this will run in background
+	ctx2 := context.Background()
+	go t.postProcess(ctx2, p)
 
 	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
 }
@@ -546,12 +547,15 @@ func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote)
 }
 
 func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
+	// Create a new context since there are sub routines that run in background
+	ctx2 := context.Background()
+
 	instrument, err := t.repos.Instrument.GetCardByFingerprint(p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.UserId != "" {
-		go t.unit21.Instrument.Update(ctx, instrument) // if instrument already exists, update it anyways
-		return instrument.Id, nil                      // return if instrument already exists
+		go t.unit21.Instrument.Update(ctx2, instrument) // if instrument already exists, update it anyways
+		return instrument.Id, nil                       // return if instrument already exists
 	}
 
 	// We should gather type from the payment processor
@@ -572,18 +576,21 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		return "", libcommon.StringError(err)
 	}
 
-	go t.unit21.Instrument.Create(ctx, instrument)
+	go t.unit21.Instrument.Create(ctx2, instrument)
 
 	return instrument.Id, nil
 }
 
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+
 	instrument, err := t.repos.Instrument.GetWalletByAddr(address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.PublicKey == address {
-		go t.unit21.Instrument.Update(ctx, instrument) // if instrument already exists, update it anyways
-		return instrument.Id, nil                      // return if instrument already exists
+		go t.unit21.Instrument.Update(ctx2, instrument) // if instrument already exists, update it anyways
+		return instrument.Id, nil                       // return if instrument already exists
 	}
 
 	// Create a new instrument
@@ -593,7 +600,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 		return "", libcommon.StringError(err)
 	}
 
-	go t.unit21.Instrument.Create(ctx, instrument)
+	go t.unit21.Instrument.Create(ctx2, instrument)
 
 	return instrument.Id, nil
 }
