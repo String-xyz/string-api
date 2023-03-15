@@ -3,7 +3,7 @@ package store
 import (
 	"os"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 )
 
@@ -12,7 +12,7 @@ func NewRedis() database.RedisStore {
 		Host:        os.Getenv("REDIS_HOST"),
 		Port:        os.Getenv("REDIS_PORT"),
 		Password:    os.Getenv("REDIS_PASSWORD"),
-		ClusterMode: !libCommon.IsLocalEnv(),
+		ClusterMode: !libcommon.IsLocalEnv(),
 	}
 	return database.NewRedisStore(opts)
 }

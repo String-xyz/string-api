@@ -5,7 +5,7 @@ package service
 import (
 	"context"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
 
@@ -28,15 +28,15 @@ func stringFee(chainId uint64) (float64, error) {
 func ChainInfo(ctx context.Context, chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
 	network, err := networkRepo.GetByChainId(chainId)
 	if err != nil {
-		return Chain{}, libCommon.StringError(err)
+		return Chain{}, libcommon.StringError(err)
 	}
 	asset, err := assetRepo.GetById(ctx, network.GasTokenId)
 	if err != nil {
-		return Chain{}, libCommon.StringError(err)
+		return Chain{}, libcommon.StringError(err)
 	}
 	fee, err := stringFee(chainId)
 	if err != nil {
-		return Chain{}, libCommon.StringError(err)
+		return Chain{}, libcommon.StringError(err)
 	}
 	return Chain{ChainId: chainId, RPC: network.RPCUrl, Explorer: network.ExplorerUrl, CoingeckoName: asset.ValueOracle.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.Id, GasTokenId: network.GasTokenId}, nil
 }

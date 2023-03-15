@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -43,14 +43,14 @@ func (a action) Create(
 	body, err := u21Post(url, mapToUnit21ActionEvent(instrument, actionData, unit21InstrumentId, eventSubtype))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Action create failed")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	log.Info().Str("unit21Id", u21Response.Unit21Id).Msg("Create Action")

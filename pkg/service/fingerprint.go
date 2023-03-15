@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 )
 
@@ -46,7 +46,7 @@ func NewFingerprint(client FPClient) Fingerprint {
 func (f fingerprint) GetVisitor(id, requestId string) (FPVisitor, error) {
 	visitor, err := f.client.GetVisitorById(id, common.FPVisitorOpts{Limit: 1, RequestId: requestId})
 	if err != nil {
-		return FPVisitor{}, libCommon.StringError(err)
+		return FPVisitor{}, libcommon.StringError(err)
 	}
 	return f.hydrateVisitor(visitor)
 }
@@ -56,7 +56,7 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 	// of the user, if we at some point want to return all the visit, we will need to create a different
 	// hydration method.
 	if len(visitor.Visits) == 0 || len(visitor.Visits) > 1 {
-		return FPVisitor{}, libCommon.StringError(errors.New("visitor history does not match"))
+		return FPVisitor{}, libcommon.StringError(errors.New("visitor history does not match"))
 	}
 
 	var state string

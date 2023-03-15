@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +19,7 @@ func TestRecoverSignature(t *testing.T) {
 func TestKeysAndValues(t *testing.T) {
 	mType := "type"
 	m := model.ContactUpdates{Type: &mType}
-	names, vals := libCommon.KeysAndValues(m)
+	names, vals := libcommon.KeysAndValues(m)
 	assert.Len(t, names, 1)
 	assert.Len(t, vals, 1)
 }

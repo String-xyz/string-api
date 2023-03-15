@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/pkg/errors"
 )
 
@@ -16,20 +16,20 @@ func GetJson(url string, target interface{}) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	response, err := client.Get(url)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	defer response.Body.Close()
 	jsonData, err := io.ReadAll(response.Body)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	targetType := reflect.TypeOf(target)
 	if len(jsonData) != int(targetType.Size()) {
-		return libCommon.StringError(errors.New("Malformed JSON Response"))
+		return libcommon.StringError(errors.New("Malformed JSON Response"))
 	}
 	err = json.Unmarshal([]byte(jsonData), target)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	return nil
 }
@@ -39,16 +39,16 @@ func GetJsonGeneric(url string, target interface{}) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	response, err := client.Get(url)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	defer response.Body.Close()
 	jsonData, err := io.ReadAll(response.Body)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	err = json.Unmarshal([]byte(jsonData), target)
 	if err != nil {
-		return libCommon.StringError(err)
+		return libcommon.StringError(err)
 	}
 	return nil
 }

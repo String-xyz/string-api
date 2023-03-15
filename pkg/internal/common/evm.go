@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -19,7 +19,7 @@ import (
 func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte, error) {
 	signatureArgs := strings.Split(strings.Split(strings.Split(signature, "(")[1], ")")[0], ",")
 	if len(signatureArgs) != len(params) {
-		return nil, libCommon.StringError(errors.New("executor parseParams: mismatched arguments"))
+		return nil, libcommon.StringError(errors.New("executor parseParams: mismatched arguments"))
 	}
 	args := []interface{}{}
 	for i, s := range signatureArgs {
@@ -35,13 +35,13 @@ func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte
 		case "uint8":
 			v, err := strconv.ParseUint(params[i], 0, 8)
 			if err != nil {
-				return nil, libCommon.StringError(err)
+				return nil, libcommon.StringError(err)
 			}
 			args = append(args, v)
 		case "uint32":
 			v, err := strconv.ParseUint(params[i], 0, 32)
 			if err != nil {
-				return nil, libCommon.StringError(err)
+				return nil, libcommon.StringError(err)
 			}
 			args = append(args, v)
 		case "uint256":
@@ -49,24 +49,24 @@ func ParseEncoding(function *w3.Func, signature string, params []string) ([]byte
 		case "int8":
 			v, err := strconv.ParseInt(params[i], 0, 8)
 			if err != nil {
-				return nil, libCommon.StringError(err)
+				return nil, libcommon.StringError(err)
 			}
 			args = append(args, v)
 		case "int32":
 			v, err := strconv.ParseInt(params[i], 0, 32)
 			if err != nil {
-				return nil, libCommon.StringError(err)
+				return nil, libcommon.StringError(err)
 			}
 			args = append(args, v)
 		case "int256":
 			args = append(args, w3.I(params[i]))
 		default:
-			return nil, libCommon.StringError(errors.New("executor: parseParams: unsupported type"))
+			return nil, libcommon.StringError(errors.New("executor: parseParams: unsupported type"))
 		}
 	}
 	result, err := function.EncodeArgs(args...)
 	if err != nil {
-		return nil, libCommon.StringError(err)
+		return nil, libcommon.StringError(err)
 	}
 	return result, nil
 }

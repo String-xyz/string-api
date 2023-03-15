@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"golang.org/x/crypto/sha3"
 
@@ -21,7 +21,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/"                       // Send cookie in every sub path request
-	cookie.Secure = !libCommon.IsLocalEnv() // in production allow https only
+	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -35,7 +35,7 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/"                 // Send cookie only in /login path request
-	cookie.Secure = !libCommon.IsLocalEnv() // in production allow https only
+	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -63,7 +63,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/" // Send cookie in every sub path request
-	cookie.Secure = !libCommon.IsLocalEnv()
+	cookie.Secure = !libcommon.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
@@ -72,7 +72,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/" // Send cookie only in refresh path request
-	cookie.Secure = !libCommon.IsLocalEnv()
+	cookie.Secure = !libcommon.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	return nil
@@ -85,7 +85,7 @@ func validAddress(addr string) bool {
 
 func getCookieSameSiteMode() http.SameSite {
 	sameSiteMode := http.SameSiteNoneMode // allow cors
-	if libCommon.IsLocalEnv() {
+	if libcommon.IsLocalEnv() {
 		sameSiteMode = http.SameSiteLaxMode // because SameSiteNoneMode is not allowed in localhost we use lax mode
 	}
 	return sameSiteMode

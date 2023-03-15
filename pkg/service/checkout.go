@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/payments"
@@ -26,7 +26,7 @@ func getConfig() (*checkout.Config, error) {
 
 	var config, err = checkout.SdkConfig(&sk, &pk, checkoutEnv)
 	if err != nil {
-		return nil, libCommon.StringError(err)
+		return nil, libcommon.StringError(err)
 	}
 	return config, err
 }
@@ -38,13 +38,13 @@ func convertAmount(amount float64) uint64 {
 func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
 	config, err := getConfig()
 	if err != nil {
-		return nil, libCommon.StringError(err)
+		return nil, libcommon.StringError(err)
 	}
 	client := tokens.NewClient(*config)
 
 	token, err = client.Request(&tokens.Request{Card: card})
 	if err != nil {
-		return token, libCommon.StringError(err)
+		return token, libcommon.StringError(err)
 	}
 	return token, nil
 }
@@ -64,12 +64,12 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	auth := AuthorizedCharge{}
 	config, err := getConfig()
 	if err != nil {
-		return p, libCommon.StringError(err)
+		return p, libcommon.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
 	var paymentTokenId string
-	if libCommon.IsLocalEnv() {
+	if libcommon.IsLocalEnv() {
 		// Generate a payment token ID in case we don't yet have one in the front end
 		// For testing purposes only
 		card := tokens.Card{
@@ -85,7 +85,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		}
 		paymentToken, err := CreateToken(&card)
 		if err != nil {
-			return p, libCommon.StringError(err)
+			return p, libcommon.StringError(err)
 		}
 		paymentTokenId = paymentToken.Created.Token
 		if p.executionRequest.CardToken != "" {
@@ -140,7 +140,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	response, err := client.Request(request, &params)
 	if err != nil {
-		return p, libCommon.StringError(err)
+		return p, libcommon.StringError(err)
 	}
 
 	// Collect authorization ID and Instrument ID
@@ -165,7 +165,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
 	config, err := getConfig()
 	if err != nil {
-		return p, libCommon.StringError(err)
+		return p, libcommon.StringError(err)
 	}
 	client := payments.NewClient(*config)
 
@@ -181,7 +181,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 
 	capture, err := client.Captures(p.cardAuthorization.AuthId, &request, &params)
 	if err != nil {
-		return p, libCommon.StringError(err)
+		return p, libcommon.StringError(err)
 	}
 
 	p.cardCapture = capture

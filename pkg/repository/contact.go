@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -40,12 +40,12 @@ func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 		INSERT INTO contact (user_id, data, type, status) 
 		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
 	if err != nil {
-		return m, libCommon.StringError(err)
+		return m, libcommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, libCommon.StringError(err)
+			return m, libcommon.StringError(err)
 		}
 	}
 
@@ -78,7 +78,7 @@ func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
-	return m, libCommon.StringError(err)
+	return m, libcommon.StringError(err)
 }
 
 func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Contact, error) {
@@ -87,7 +87,7 @@ func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Conta
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
-	return m, libCommon.StringError(err)
+	return m, libcommon.StringError(err)
 }
 
 func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, error) {
@@ -96,5 +96,5 @@ func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, 
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
-	return m, libCommon.StringError(err)
+	return m, libcommon.StringError(err)
 }

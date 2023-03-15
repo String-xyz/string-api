@@ -11,9 +11,9 @@ import (
 	"os"
 	"strconv"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/ethereum/go-ethereum/accounts"
-	ethcomm "github.com/ethereum/go-ethereum/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog/log"
@@ -24,7 +24,7 @@ func ToSha256(v string) string {
 	return hex.EncodeToString(bs[:])
 }
 
-func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
+func RecoverAddress(message string, signature string) (ethcommon.Address, error) {
 	sig := hexutil.MustDecode(signature)
 	if sig[crypto.RecoveryIDOffset] == 27 || sig[crypto.RecoveryIDOffset] == 28 {
 		sig[crypto.RecoveryIDOffset] -= 27
@@ -32,7 +32,7 @@ func RecoverAddress(message string, signature string) (ethcomm.Address, error) {
 	msg := accounts.TextHash([]byte(message))
 	recovered, err := crypto.SigToPub(msg, sig)
 	if err != nil {
-		return ethcomm.Address{}, libCommon.StringError(err)
+		return ethcommon.Address{}, libcommon.StringError(err)
 	}
 	return crypto.PubkeyToAddress(*recovered), nil
 }
@@ -41,7 +41,7 @@ func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, e
 	floatReturn, err = strconv.ParseFloat(bigNumber, 64)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert bigNumber to float")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 	floatReturn = floatReturn * math.Pow(10, -float64(decimals))
@@ -60,7 +60,7 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 	bodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
 		log.Err(err).Interface("body", jsonBody).Msg("Could not encode to bytes")
-		return betterString, libCommon.StringError(err)
+		return betterString, libcommon.StringError(err)
 	}
 
 	bodyReader := bytes.NewReader(bodyBytes)
@@ -68,7 +68,7 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 	betterBytes, err := io.ReadAll(bodyReader)
 	betterString = string(betterBytes)
 	if err != nil {
-		return betterString, libCommon.StringError(err)
+		return betterString, libcommon.StringError(err)
 	}
 
 	return

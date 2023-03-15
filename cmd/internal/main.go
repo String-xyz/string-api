@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
@@ -16,7 +16,7 @@ func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 
-	if !libCommon.IsLocalEnv() {
+	if !libcommon.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}

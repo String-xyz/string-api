@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -31,12 +31,12 @@ func (u contactToPlatform[T]) Create(insert model.ContactToPlatform) (model.Cont
 		INSERT INTO contact_to_platform (contact_id, platform_id) 
 		VALUES(:contact_id, :platform_id) RETURNING *`, insert)
 	if err != nil {
-		return m, libCommon.StringError(err)
+		return m, libcommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, libCommon.StringError(err)
+			return m, libcommon.StringError(err)
 		}
 	}
 	defer rows.Close()

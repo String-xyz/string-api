@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -39,33 +39,33 @@ func (e entity) Create(ctx context.Context, user model.User) (unit21Id string, e
 	communications, err := e.getCommunications(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	digitalData, err := e.getEntityDigitalData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	customData, err := e.getCustomData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/entities/create"
 	body, err := u21Post(url, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity create failed")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	var entity *createEntityResponse
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", libCommon.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	log.Info().Str("Unit21Id", entity.Unit21Id).Send()
@@ -81,21 +81,21 @@ func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, e
 	communications, err := e.getCommunications(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	digitalData, err := e.getEntityDigitalData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	customData, err := e.getCustomData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, e
 
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity create failed")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, e
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	_, err = u21Put(url, instruments)
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity Add Instruments failed")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (e entity) getCommunications(ctx context.Context, userId string) (communica
 	contacts, err := e.repo.Contact.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user contacts")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (e entity) getEntityDigitalData(ctx context.Context, userId string) (device
 	devices, err := e.repo.Device.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user devices")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -178,7 +178,7 @@ func (e entity) getCustomData(ctx context.Context, userId string) (customData en
 	devices, err := e.repo.UserToPlatform.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user platforms")
-		err = libCommon.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	libCommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
@@ -30,7 +30,7 @@ func (t transaction) Transact(c echo.Context) error {
 	var body model.PrecisionSafeExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
-		libCommon.LogStringError(c, err, "transact: execute bind")
+		libcommon.LogStringError(c, err, "transact: execute bind")
 		return httperror.BadRequestError(c)
 	}
 
@@ -45,11 +45,11 @@ func (t transaction) Transact(c echo.Context) error {
 
 	res, err := t.Service.Execute(ctx, body, userId, deviceId, ip)
 	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
-		libCommon.LogStringError(c, err, "transact: execute")
+		libcommon.LogStringError(c, err, "transact: execute")
 		return httperror.Unprocessable(c)
 	}
 	if err != nil {
-		libCommon.LogStringError(c, err, "transact: execute")
+		libcommon.LogStringError(c, err, "transact: execute")
 		return httperror.InternalError(c)
 	}
 
