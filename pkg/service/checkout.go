@@ -106,7 +106,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			}
 			paymentToken, err := CreateToken(&card)
 			if err != nil {
-				return p, commonlib.StringError(err)
+				return p, libcommon.StringError(err)
 			}
 			paymentTokenId = paymentToken.Created.Token
 		}

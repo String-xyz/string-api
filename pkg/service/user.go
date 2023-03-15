@@ -110,7 +110,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	if device.Fingerprint != "" {
 		// validate that device on user creation
 		now := time.Now()
-		err = u.repos.Device.Update(device.Id, model.DeviceUpdates{ValidatedAt: &now})
+		err = u.repos.Device.Update(ctx, device.Id, model.DeviceUpdates{ValidatedAt: &now})
 		if err == nil {
 			log.Err(err).Msg("Failed to verify user device")
 		}
