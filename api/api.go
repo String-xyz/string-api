@@ -6,7 +6,7 @@ import (
 	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/go-lib/middleware"
-	validator "github.com/String-xyz/go-lib/validator"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/api/handler"
 	libMiddleware "github.com/String-xyz/string-api/api/middleware"
 
@@ -72,7 +72,7 @@ func StartInternal(config APIConfig) {
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(middleware.Tracer())
 	e.Use(middleware.CORS())
-	e.Use(middleware.RequestID())
+	e.Use(middleware.RequestId())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger(logger))
 	e.Use(middleware.LogRequest())

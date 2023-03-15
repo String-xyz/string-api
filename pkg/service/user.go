@@ -8,7 +8,7 @@ import (
 	libCommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
-	repositories "github.com/String-xyz/string-api/pkg/repository"
+	"github.com/String-xyz/string-api/pkg/repository"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -37,14 +37,14 @@ type User interface {
 }
 
 type user struct {
-	repos       repositories.Repositories
+	repos       repository.Repositories
 	auth        Auth
 	fingerprint Fingerprint
 	device      Device
 	unit21      Unit21
 }
 
-func NewUser(repos repositories.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21) User {
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21) User {
 	return &user{repos, auth, fprint, device, unit21}
 }
 

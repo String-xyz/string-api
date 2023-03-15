@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	validator "github.com/String-xyz/go-lib/validator"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/test/stubs"
 	"github.com/labstack/echo/v4"
