@@ -1,54 +1,17 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"golang.org/x/crypto/sha3"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
-
-func LogError(c echo.Context, err error, handlerMsg string) {
-	lg := c.Get("logger").(*zerolog.Logger)
-	sp, _ := tracer.SpanFromContext(c.Request().Context())
-	lg.Error().Stack().Err(err).Uint64("trace_id", sp.Context().TraceID()).
-		Uint64("span_id", sp.Context().SpanID()).Msg(handlerMsg)
-}
-
-func LogStringError(c echo.Context, err error, handlerMsg string) {
-	type stackTracer interface {
-		StackTrace() errors.StackTrace
-	}
-
-	tracer, ok := errors.Cause(err).(stackTracer)
-	if !ok {
-		log.Warn().Str("error", err.Error()).Msg("error does not implement stack trace")
-		return
-	}
-
-	cause := errors.Cause(err)
-	st := tracer.StackTrace()
-
-	if IsLocalEnv() {
-		st2 := fmt.Sprintf("\nSTACK TRACE:\n%+v: [%+v ]\n\n", cause.Error(), st[0:5])
-		// delete the string_api docker path from the stack trace
-		st2 = strings.ReplaceAll(st2, "/string_api/", "")
-		fmt.Print(st2)
-		return
-	}
-
-	LogError(c, err, handlerMsg)
-}
 
 func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	cookie := new(http.Cookie)
@@ -57,8 +20,8 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	// cookie.HttpOnly = true // due the short expiration time it is not needed to be http only
 	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
-	cookie.Path = "/"             // Send cookie in every sub path request
-	cookie.Secure = !IsLocalEnv() // in production allow https only
+	cookie.Path = "/"                       // Send cookie in every sub path request
+	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -71,8 +34,8 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
-	cookie.Path = "/login/"       // Send cookie only in /login path request
-	cookie.Secure = !IsLocalEnv() // in production allow https only
+	cookie.Path = "/login/"                 // Send cookie only in /login path request
+	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -100,7 +63,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/" // Send cookie in every sub path request
-	cookie.Secure = !IsLocalEnv()
+	cookie.Secure = !libcommon.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
@@ -109,14 +72,10 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/" // Send cookie only in refresh path request
-	cookie.Secure = !IsLocalEnv()
+	cookie.Secure = !libcommon.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	return nil
-}
-
-func IsLocalEnv() bool {
-	return os.Getenv("ENV") == "local"
 }
 
 func validAddress(addr string) bool {
@@ -126,7 +85,7 @@ func validAddress(addr string) bool {
 
 func getCookieSameSiteMode() http.SameSite {
 	sameSiteMode := http.SameSiteNoneMode // allow cors
-	if IsLocalEnv() {
+	if libcommon.IsLocalEnv() {
 		sameSiteMode = http.SameSiteLaxMode // because SameSiteNoneMode is not allowed in localhost we use lax mode
 	}
 	return sameSiteMode

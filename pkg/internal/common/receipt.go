@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -65,7 +66,7 @@ func EmailReceipt(email string, params ReceiptGenerationParams, body [][2]string
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	_, err := client.Send(message)
 	if err != nil {
-		return StringError(err)
+		return libcommon.StringError(err)
 	}
 	return nil
 }

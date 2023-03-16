@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -33,70 +35,73 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 }
 
 func (u user) Create(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "user:create user bind")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "user:create user bind")
+		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
-		return InvalidPayloadError(c, err)
+		return httperror.InvalidPayloadError(c, err)
 	}
 
 	// base64 decode nonce
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
-		LogStringError(c, err, "user: create user decode nonce")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "user: create user decode nonce")
+		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := u.userService.Create(body)
+	resp, err := u.userService.Create(ctx, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet already associated with user") {
-			return Conflict(c)
+			return httperror.ConflictError(c)
 		}
 
-		LogStringError(c, err, "user: creating user")
-		return InternalError(c)
+		libcommon.LogStringError(c, err, "user: creating user")
+		return httperror.InternalError(c)
 	}
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
-		LogStringError(c, err, "user: unable to set auth cookies")
-		return InternalError(c)
+		libcommon.LogStringError(c, err, "user: unable to set auth cookies")
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, resp)
 }
 
 func (u user) Status(c echo.Context) error {
+	ctx := c.Request().Context()
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
-		return Unauthorized(c)
+		return httperror.Unauthorized(c)
 	}
 
-	status, err := u.userService.GetStatus(userId)
+	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
-		LogStringError(c, err, "user: get status")
-		return InternalError(c)
+		libcommon.LogStringError(c, err, "user: get status")
+		return httperror.InternalError(c)
 	}
 	return c.JSON(http.StatusOK, status)
 }
 
 func (u user) Update(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.UpdateUserName
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "user: update bind")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "user: update bind")
+		return httperror.BadRequestError(c)
 	}
 	_, userId := validUserId(IdParam(c), c)
-	user, err := u.userService.Update(userId, body)
+	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
-		LogStringError(c, err, "user: update")
-		return InternalError(c)
+		libcommon.LogStringError(c, err, "user: update")
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -105,24 +110,25 @@ func (u user) Update(c echo.Context) error {
 // VerifyEmail send an email with a link, the user must click on the link for the email to be verified
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
+	ctx := c.Request().Context()
 	_, userId := validUserId(IdParam(c), c)
 	email := c.QueryParam("email")
 	if email == "" {
-		return BadRequestError(c, "Missing or invalid email")
+		return httperror.BadRequestError(c, "Missing or invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(userId, email)
+	err := u.verificationService.SendEmailVerification(ctx, userId, email)
 	if err != nil {
 		if strings.Contains(err.Error(), "email already verified") {
-			return Conflict(c)
+			return httperror.ConflictError(c)
 		}
 
 		if strings.Contains(err.Error(), "link expired") {
-			return LinkExpired(c, "Link expired, please request a new one")
+			return httperror.ForbiddenError(c, "Link expired, please request a new one")
 		}
 
-		LogStringError(c, err, "user: email verification")
-		return InternalError(c, "Unable to send email verification")
+		libcommon.LogStringError(c, err, "user: email verification")
+		return httperror.InternalError(c, "Unable to send email verification")
 	}
 
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Verified"})

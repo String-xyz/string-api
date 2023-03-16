@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,10 +40,10 @@ func TestEncodeDecodeObject(t *testing.T) {
 func TestEncryptDecryptString(t *testing.T) {
 	str := "this is a string"
 
-	strEncrypted, err := EncryptString(str, "secret_encryption_key_0123456789")
+	strEncrypted, err := libcommon.EncryptString(str, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	strDecrypted, err := DecryptString(strEncrypted, "secret_encryption_key_0123456789")
+	strDecrypted, err := libcommon.DecryptString(strEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
 	assert.Equal(t, str, strDecrypted)
@@ -54,10 +55,10 @@ func TestEncryptDecryptObject(t *testing.T) {
 	objEncoded, err := EncodeToBase64(obj)
 	assert.NoError(t, err)
 
-	objEncrypted, err := EncryptString(objEncoded, "secret_encryption_key_0123456789")
+	objEncrypted, err := libcommon.EncryptString(objEncoded, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	objDecrypted, err := DecryptString(objEncrypted, "secret_encryption_key_0123456789")
+	objDecrypted, err := libcommon.DecryptString(objEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
 	objDecoded, err := DecodeFromBase64[randomObject1](objDecrypted)
@@ -68,10 +69,10 @@ func TestEncryptDecryptObject(t *testing.T) {
 func TestEncryptDecryptUnencoded(t *testing.T) {
 	obj := randomObject1{Timestamp: time.Now().Unix(), Email: "test@test.com", Address: "0xdecafbabe"}
 
-	objEncrypted, err := Encrypt(obj, "secret_encryption_key_0123456789")
+	objEncrypted, err := libcommon.Encrypt(obj, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 
-	objDecrypted, err := Decrypt[randomObject1](objEncrypted, "secret_encryption_key_0123456789")
+	objDecrypted, err := libcommon.Decrypt[randomObject1](objEncrypted, "secret_encryption_key_0123456789")
 	assert.NoError(t, err)
 	assert.Equal(t, obj, objDecrypted)
 }

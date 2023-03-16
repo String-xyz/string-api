@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -27,6 +28,7 @@ func TestCreateInstrument(t *testing.T) {
 }
 
 func TestUpdateInstrument(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -80,7 +82,7 @@ func TestUpdateInstrument(t *testing.T) {
 
 	u21Instrument := NewInstrument(repos, action)
 
-	u21InstrumentId, err = u21Instrument.Update(instrument)
+	u21InstrumentId, err = u21Instrument.Update(ctx, instrument)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21InstrumentId)), 0)
 

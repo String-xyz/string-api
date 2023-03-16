@@ -1,18 +1,19 @@
 package unit21
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
 )
 
 type Entity interface {
-	Create(user model.User) (unit21Id string, err error)
-	Update(user model.User) (unit21Id string, err error)
+	Create(ctx context.Context, user model.User) (unit21Id string, err error)
+	Update(ctx context.Context, user model.User) (unit21Id string, err error)
 	AddInstruments(entityId string, instrumentId []string) (err error)
 }
 
@@ -31,40 +32,40 @@ func NewEntity(r EntityRepos) Entity {
 }
 
 // https://docs.unit21.ai/reference/create_entity
-func (e entity) Create(user model.User) (unit21Id string, err error) {
+func (e entity) Create(ctx context.Context, user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := e.getCommunications(user.Id)
+	communications, err := e.getCommunications(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
-	digitalData, err := e.getEntityDigitalData(user.Id)
+	digitalData, err := e.getEntityDigitalData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
-	customData, err := e.getCustomData(user.Id)
+	customData, err := e.getCustomData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/entities/create"
 	body, err := u21Post(url, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity create failed")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	var entity *createEntityResponse
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	log.Info().Str("Unit21Id", entity.Unit21Id).Send()
@@ -73,28 +74,28 @@ func (e entity) Create(user model.User) (unit21Id string, err error) {
 }
 
 // https://docs.unit21.ai/reference/update_entity
-func (e entity) Update(user model.User) (unit21Id string, err error) {
+func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, err error) {
 
 	// ultimately may want a join here.
 
-	communications, err := e.getCommunications(user.Id)
+	communications, err := e.getCommunications(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity communications")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
-	digitalData, err := e.getEntityDigitalData(user.Id)
+	digitalData, err := e.getEntityDigitalData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity digitalData")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
-	customData, err := e.getCustomData(user.Id)
+	customData, err := e.getCustomData(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 entity customData")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -104,7 +105,7 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity create failed")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -112,7 +113,7 @@ func (e entity) Update(user model.User) (unit21Id string, err error) {
 	err = json.Unmarshal(body, &entity)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -131,19 +132,19 @@ func (e entity) AddInstruments(entityId string, instrumentIds []string) (err err
 	_, err = u21Put(url, instruments)
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity Add Instruments failed")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	return
 }
 
-func (e entity) getCommunications(userId string) (communications entityCommunication, err error) {
+func (e entity) getCommunications(ctx context.Context, userId string) (communications entityCommunication, err error) {
 	// Get user contacts
-	contacts, err := e.repo.Contact.ListByUserId(userId, 100, 0)
+	contacts, err := e.repo.Contact.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user contacts")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -158,11 +159,11 @@ func (e entity) getCommunications(userId string) (communications entityCommunica
 	return
 }
 
-func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalData, err error) {
-	devices, err := e.repo.Device.ListByUserId(userId, 100, 0)
+func (e entity) getEntityDigitalData(ctx context.Context, userId string) (deviceData entityDigitalData, err error) {
+	devices, err := e.repo.Device.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user devices")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
@@ -173,11 +174,11 @@ func (e entity) getEntityDigitalData(userId string) (deviceData entityDigitalDat
 	return
 }
 
-func (e entity) getCustomData(userId string) (customData entityCustomData, err error) {
-	devices, err := e.repo.UserToPlatform.ListByUserId(userId, 100, 0)
+func (e entity) getCustomData(ctx context.Context, userId string) (customData entityCustomData, err error) {
+	devices, err := e.repo.UserToPlatform.ListByUserId(ctx, userId, 100, 0)
 	if err != nil {
 		log.Err(err).Msg("Failed to get user platforms")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 

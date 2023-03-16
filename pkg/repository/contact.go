@@ -1,23 +1,25 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/go-lib/repository"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 )
 
 type Contact interface {
-	Transactable
-	Readable
+	database.Transactable
 	Create(model.Contact) (model.Contact, error)
-	GetById(id string) (model.Contact, error)
-	GetByUserId(userId string) (model.Contact, error)
-	ListByUserId(userId string, imit int, offset int) ([]model.Contact, error)
-	List(limit int, offset int) ([]model.Contact, error)
-	Update(id string, updates any) error
+	GetById(ctx context.Context, id string) (model.Contact, error)
+	GetByUserId(ctx context.Context, userId string) (model.Contact, error)
+	ListByUserId(ctx context.Context, userId string, imit int, offset int) ([]model.Contact, error)
+	List(ctx context.Context, limit int, offset int) ([]model.Contact, error)
+	Update(ctx context.Context, id string, updates any) error
 	GetByData(data string) (model.Contact, error)
 	GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
 	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
@@ -25,25 +27,25 @@ type Contact interface {
 }
 
 type contact[T any] struct {
-	base[T]
+	repository.Base[T]
 }
 
-func NewContact(db *sqlx.DB) Contact {
-	return &contact[model.Contact]{base: base[model.Contact]{store: db, table: "contact"}}
+func NewContact(db database.Queryable) Contact {
+	return &contact[model.Contact]{repository.Base[model.Contact]{Store: db, Table: "contact"}}
 }
 
 func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 	m := model.Contact{}
-	rows, err := u.store.NamedQuery(`
+	rows, err := u.Store.NamedQuery(`
 		INSERT INTO contact (user_id, data, type, status) 
 		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, libcommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, libcommon.StringError(err)
 		}
 	}
 
@@ -53,9 +55,9 @@ func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
 
 func (u contact[T]) GetByData(data string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", u.table), data)
+	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", u.Table), data)
 	if err != nil && err == sql.ErrNoRows {
-		return m, common.StringError(ErrNotFound)
+		return m, serror.NOT_FOUND
 	}
 	return m, nil
 }
@@ -63,7 +65,7 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 // TODO: replace references to GetByUserIdAndStatus with the following:
 func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf(`
+	err := u.Store.Get(&m, fmt.Sprintf(`
 	SELECT contact.*
 		FROM %s
 	LEFT JOIN contact_platform
@@ -72,27 +74,27 @@ func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (
 		ON contact_to_platform.platform_id = platform.id
 	WHERE contact.user_id = $1
 		AND platform.id = $2
-	`, u.table), userId, platformId)
+	`, u.Table), userId, platformId)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, serror.NOT_FOUND
 	}
-	return m, common.StringError(err)
+	return m, libcommon.StringError(err)
 }
 
 func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.table), userId, _type)
+	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.Table), userId, _type)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, serror.NOT_FOUND
 	}
-	return m, common.StringError(err)
+	return m, libcommon.StringError(err)
 }
 
 func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.table), userId, status)
+	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.Table), userId, status)
 	if err != nil && err == sql.ErrNoRows {
-		return m, ErrNotFound
+		return m, serror.NOT_FOUND
 	}
-	return m, common.StringError(err)
+	return m, libcommon.StringError(err)
 }

@@ -5,32 +5,34 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/pkg/errors"
 )
 
-func GetObjectFromCache[T any](redis RedisStore, key string) (T, error) {
+func GetObjectFromCache[T any](redis database.RedisStore, key string) (T, error) {
 	var result *T = new(T)
 	bytes, err := redis.Get(key)
-	if err != nil && errors.Cause(err).Error() == "redis: nil" && len(bytes) == 0 {
+	if err != nil && serror.IsError(err, serror.NOT_FOUND) && len(bytes) == 0 {
 		return *result, nil // object doesn't exist yet, create it down the stack
 	} else if err != nil {
 		// Work around the way that redis go api scopes error
-		return *result, common.StringError(errors.New(err.Error()))
+		return *result, libcommon.StringError(errors.New(err.Error()))
 	}
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
-		return *result, common.StringError(err)
+		return *result, libcommon.StringError(err)
 	}
 	return *result, nil
 }
 
-func PutObjectInCache(redis RedisStore, key string, object any, optionalTimeout ...time.Duration) error {
+func PutObjectInCache(redis database.RedisStore, key string, object any, optionalTimeout ...time.Duration) error {
 	// Safeguard against missing tags
 	val := reflect.ValueOf(object)
 	for i := 0; i < val.Type().NumField(); i++ {
 		if val.Type().Field(i).Tag.Get("json") == "" {
-			return common.StringError(errors.New("object missing json tags"))
+			return libcommon.StringError(errors.New("object missing json tags"))
 		}
 	}
 
@@ -41,13 +43,13 @@ func PutObjectInCache(redis RedisStore, key string, object any, optionalTimeout 
 
 	bytes, err := json.Marshal(object)
 	if err != nil {
-		return common.StringError(err)
+		return libcommon.StringError(err)
 	}
 
 	err = redis.Set(key, bytes, timeout)
 	if err != nil {
 		// Work around the way that redis go API scopes error
-		return common.StringError(errors.New(err.Error()))
+		return libcommon.StringError(errors.New(err.Error()))
 	}
 	return nil
 }

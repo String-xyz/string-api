@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 )
 
 func TestGetLocation(t *testing.T) {
+	ctx := context.Background()
 	id := uuid.NewString()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
@@ -24,7 +26,7 @@ func TestGetLocation(t *testing.T) {
 
 	mock.ExpectQuery("SELECT * FROM location WHERE id = $1 AND deactivated_at IS NULL").WillReturnRows(rows).WithArgs(id)
 
-	location, err := NewLocation(sqlxDB).GetById(id)
+	location, err := NewLocation(sqlxDB).GetById(ctx, id)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, location.Id)
 	if err := mock.ExpectationsWereMet(); err != nil {

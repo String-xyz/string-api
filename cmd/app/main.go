@@ -3,12 +3,13 @@ package main
 import (
 	"os"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
-	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
+
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -16,7 +17,7 @@ func main() {
 	// load .env file
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 	lg := zerolog.New(os.Stdout)
-	if !handler.IsLocalEnv() {
+	if !libcommon.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}
@@ -30,10 +31,12 @@ func main() {
 	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
 
+	redis := store.NewRedis()
+
 	// setup api
 	api.Start(api.APIConfig{
 		DB:     db,
-		Redis:  store.NewRedisStore(),
+		Redis:  redis,
 		Port:   port,
 		Logger: &lg,
 	})

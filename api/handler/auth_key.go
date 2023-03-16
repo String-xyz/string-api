@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -28,7 +30,7 @@ func NewAuthAPIKey(service service.APIKeyStrategy, internal bool) AuthAPIKey {
 func (o authAPIKey) Create(c echo.Context) error {
 	key, err := o.service.Create()
 	if err != nil {
-		LogStringError(c, err, "authKey approve: create")
+		libcommon.LogStringError(c, err, "authKey approve: create")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.JSON(http.StatusOK, key)
@@ -36,7 +38,7 @@ func (o authAPIKey) Create(c echo.Context) error {
 
 func (o authAPIKey) List(c echo.Context) error {
 	if !o.isInternal {
-		return NotAllowedError(c)
+		return httperror.NotAllowedError(c)
 	}
 	body := struct {
 		Status string `query:"status"`
@@ -45,12 +47,12 @@ func (o authAPIKey) List(c echo.Context) error {
 	}{}
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "authKey list: bind")
+		libcommon.LogStringError(c, err, "authKey list: bind")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 	list, err := o.service.List(body.Limit, body.Offset, body.Status)
 	if err != nil {
-		LogStringError(c, err, "authKey list")
+		libcommon.LogStringError(c, err, "authKey list")
 		return echo.NewHTTPError(http.StatusInternalServerError, "ApiKey Service Failed")
 	}
 	return c.JSON(http.StatusCreated, list)
@@ -58,7 +60,7 @@ func (o authAPIKey) List(c echo.Context) error {
 
 func (o authAPIKey) Approve(c echo.Context) error {
 	if !o.isInternal {
-		return NotAllowedError(c)
+		return httperror.NotAllowedError(c)
 	}
 	params := struct {
 		Id string `param:"id"`
@@ -66,12 +68,12 @@ func (o authAPIKey) Approve(c echo.Context) error {
 	err := c.Bind(&params)
 
 	if err != nil {
-		LogStringError(c, err, "authKey approve: bind")
+		libcommon.LogStringError(c, err, "authKey approve: bind")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	err = o.service.Approve(params.Id)
 	if err != nil {
-		LogStringError(c, err, "authKey approve: approve")
+		libcommon.LogStringError(c, err, "authKey approve: approve")
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to process request")
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Success"})

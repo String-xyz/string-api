@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -29,21 +31,23 @@ func NewVerification(route *echo.Echo, service service.Verification, deviceServi
 }
 
 func (v verification) VerifyEmail(c echo.Context) error {
+	ctx := c.Request().Context()
 	token := c.QueryParam("token")
-	err := v.service.VerifyEmail(token)
+	err := v.service.VerifyEmail(ctx, token)
 	if err != nil {
-		LogStringError(c, err, "verification: email verification")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "verification: email verification")
+		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
 }
 
 func (v verification) VerifyDevice(c echo.Context) error {
+	ctx := c.Request().Context()
 	token := c.QueryParam("token")
-	err := v.deviceService.VerifyDevice(token)
+	err := v.deviceService.VerifyDevice(ctx, token)
 	if err != nil {
-		LogStringError(c, err, "verification: device verification")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "verification: device verification")
+		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Device successfully verified"})
 }
@@ -51,7 +55,7 @@ func (v verification) VerifyDevice(c echo.Context) error {
 func (v verification) verify(c echo.Context) error {
 	verificationType := c.QueryParam("type")
 	if verificationType == "" {
-		return BadRequestError(c)
+		return httperror.BadRequestError(c)
 	}
 	if verificationType == "email" {
 		return v.VerifyEmail(c)

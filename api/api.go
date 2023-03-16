@@ -3,11 +3,14 @@ package api
 import (
 	"net/http"
 
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	libmiddleware "github.com/String-xyz/go-lib/middleware"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
-	"github.com/String-xyz/string-api/api/validator"
+
 	"github.com/String-xyz/string-api/pkg/service"
-	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -15,7 +18,7 @@ import (
 
 type APIConfig struct {
 	DB     *sqlx.DB
-	Redis  store.RedisStore
+	Redis  database.RedisStore
 	Logger *zerolog.Logger
 	Port   string
 }
@@ -40,7 +43,7 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, handler.IsLocalEnv())
+	AuthAPIKey(services, e, libcommon.IsLocalEnv())
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)
@@ -67,12 +70,12 @@ func StartInternal(config APIConfig) {
 }
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
-	e.Use(middleware.Tracer())
-	e.Use(middleware.CORS())
-	e.Use(middleware.RequestId())
-	e.Use(middleware.Recover())
-	e.Use(middleware.Logger(logger))
-	e.Use(middleware.LogRequest())
+	e.Use(libmiddleware.Tracer())
+	e.Use(libmiddleware.CORS())
+	e.Use(libmiddleware.RequestId())
+	e.Use(libmiddleware.Recover())
+	e.Use(libmiddleware.Logger(logger))
+	e.Use(libmiddleware.LogRequest())
 }
 
 func platformRoute(services service.Services, e *echo.Echo) {

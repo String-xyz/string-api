@@ -1,6 +1,7 @@
 package unit21
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestCreateTransaction(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -26,7 +28,7 @@ func TestCreateTransaction(t *testing.T) {
 	instrumentId1 := uuid.NewString()
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-	u21TransactionId, err := executeMockTransactionForUser(transaction, sqlxDB)
+	u21TransactionId, err := executeMockTransactionForUser(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
@@ -36,6 +38,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestUpdateTransaction(t *testing.T) {
+	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -47,7 +50,7 @@ func TestUpdateTransaction(t *testing.T) {
 	instrumentId1 := uuid.NewString()
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
-	u21TransactionId, err := executeMockTransactionForUser(transaction, sqlxDB)
+	u21TransactionId, err := executeMockTransactionForUser(ctx, transaction, sqlxDB)
 	assert.NoError(t, err)
 
 	OriginTxLegId := uuid.NewString()
@@ -92,7 +95,7 @@ func TestUpdateTransaction(t *testing.T) {
 
 	u21Transaction := NewTransaction(repos)
 
-	u21TransactionId, err = u21Transaction.Update(transaction)
+	u21TransactionId, err = u21Transaction.Update(ctx, transaction)
 	assert.NoError(t, err)
 	assert.Greater(t, len([]rune(u21TransactionId)), 0)
 
@@ -101,7 +104,7 @@ func TestUpdateTransaction(t *testing.T) {
 	// TODO: mock call to client once it's manually tested
 }
 
-func executeMockTransactionForUser(transaction model.Transaction, sqlxDB *sqlx.DB) (unit21Id string, err error) {
+func executeMockTransactionForUser(ctx context.Context, transaction model.Transaction, sqlxDB *sqlx.DB) (unit21Id string, err error) {
 	repos := TransactionRepos{
 		TxLeg: repository.NewTxLeg(sqlxDB),
 		User:  repository.NewUser(sqlxDB),
@@ -110,7 +113,7 @@ func executeMockTransactionForUser(transaction model.Transaction, sqlxDB *sqlx.D
 
 	u21Transaction := NewTransaction(repos)
 
-	unit21Id, err = u21Transaction.Create(transaction)
+	unit21Id, err = u21Transaction.Create(ctx, transaction)
 
 	return
 }

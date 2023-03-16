@@ -3,6 +3,7 @@ package common
 import (
 	"testing"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,10 +15,11 @@ func TestRecoverSignature(t *testing.T) {
 	assert.Equal(t, "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC", addr.Hex())
 }
 
+// TODO: This test should be moved to the go-lib repo
 func TestKeysAndValues(t *testing.T) {
 	mType := "type"
 	m := model.ContactUpdates{Type: &mType}
-	names, vals := KeysAndValues(m)
+	names, vals := libcommon.KeysAndValues(m)
 	assert.Len(t, names, 1)
 	assert.Len(t, vals, 1)
 }

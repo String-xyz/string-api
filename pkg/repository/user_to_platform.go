@@ -1,41 +1,43 @@
 package repository
 
 import (
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"context"
+
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	baserepo "github.com/String-xyz/go-lib/repository"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 )
 
 type UserToPlatform interface {
-	Transactable
-	Readable
+	database.Transactable
 	Create(model.UserToPlatform) (model.UserToPlatform, error)
-	GetById(id string) (model.UserToPlatform, error)
-	List(limit int, offset int) ([]model.UserToPlatform, error)
-	ListByUserId(userId string, imit int, offset int) ([]model.UserToPlatform, error)
-	Update(id string, updates any) error
+	GetById(ctx context.Context, id string) (model.UserToPlatform, error)
+	List(ctx context.Context, limit int, offset int) ([]model.UserToPlatform, error)
+	ListByUserId(ctx context.Context, userId string, imit int, offset int) ([]model.UserToPlatform, error)
+	Update(ctx context.Context, id string, updates any) error
 }
 
 type userToPlatform[T any] struct {
-	base[T]
+	baserepo.Base[T]
 }
 
-func NewUserToPlatform(db *sqlx.DB) UserToPlatform {
-	return &userToPlatform[model.UserToPlatform]{base: base[model.UserToPlatform]{store: db, table: "user_to_platform"}}
+func NewUserToPlatform(db database.Queryable) UserToPlatform {
+	return &userToPlatform[model.UserToPlatform]{baserepo.Base[model.UserToPlatform]{Store: db, Table: "user_to_platform"}}
 }
 
 func (u userToPlatform[T]) Create(insert model.UserToPlatform) (model.UserToPlatform, error) {
 	m := model.UserToPlatform{}
-	rows, err := u.store.NamedQuery(`
+	rows, err := u.Store.NamedQuery(`
 		INSERT INTO user_to_platform (user_id, platform_id) 
 		VALUES(:user_id, :platform_id) RETURNING *`, insert)
 	if err != nil {
-		return m, common.StringError(err)
+		return m, libcommon.StringError(err)
 	}
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
-			return m, common.StringError(err)
+			return m, libcommon.StringError(err)
 		}
 	}
 	defer rows.Close()

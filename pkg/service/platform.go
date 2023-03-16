@@ -1,6 +1,7 @@
 package service
 
 import (
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -27,13 +28,13 @@ func (a platform) Create(c CreatePlatform) (model.Platform, error) {
 
 	plat, err := a.repos.Platform.Create(m)
 	if err != nil {
-		return model.Platform{}, common.StringError(err)
+		return model.Platform{}, libcommon.StringError(err)
 	}
 
 	_, err = a.repos.Auth.CreateAPIKey(plat.Id, c.Authentication, hashed, false)
 	pt := &plat
 	if err != nil {
-		return *pt, common.StringError(err)
+		return *pt, libcommon.StringError(err)
 	}
 
 	return plat, nil

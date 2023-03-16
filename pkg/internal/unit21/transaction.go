@@ -1,19 +1,22 @@
 package unit21
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
 )
 
 type Transaction interface {
-	Evaluate(transaction model.Transaction) (pass bool, err error)
-	Create(transaction model.Transaction) (unit21Id string, err error)
-	Update(transaction model.Transaction) (unit21Id string, err error)
+	Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error)
+	Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
+	Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
 }
 
 type TransactionRepos struct {
@@ -31,17 +34,17 @@ func NewTransaction(r TransactionRepos) Transaction {
 	return &transaction{repos: r}
 }
 
-func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
-		return false, common.StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
-		return false, common.StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
 	url := os.Getenv("UNIT21_RTR_URL")
@@ -52,7 +55,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction evaluate failed")
-		return false, common.StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
 	// var u21Response *createEventResponse
@@ -60,7 +63,7 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return false, common.StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
 	for _, rule := range *response.RuleExecutions {
@@ -72,48 +75,48 @@ func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err err
 	return true, nil
 }
 
-func (t transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction create failed")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
-	digitalData, err := t.getEventDigitalData(transaction)
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	orgName := os.Getenv("UNIT21_ORG_NAME")
@@ -122,66 +125,66 @@ func (t transaction) Update(transaction model.Transaction) (unit21Id string, err
 
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction create failed:")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *updateEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return "", common.StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
-	senderData, err := t.repos.TxLeg.GetById(transaction.OriginTxLegId)
+func (t transaction) getTransactionData(ctx context.Context, transaction model.Transaction) (txData transactionData, err error) {
+	senderData, err := t.repos.TxLeg.GetById(ctx, transaction.OriginTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
-	receiverData, err := t.repos.TxLeg.GetById(transaction.DestinationTxLegId)
+	receiverData, err := t.repos.TxLeg.GetById(ctx, transaction.DestinationTxLegId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get origin transaction leg")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
-	senderAsset, err := t.repos.Asset.GetById(senderData.AssetId)
+	senderAsset, err := t.repos.Asset.GetById(ctx, senderData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction sender asset")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
-	receiverAsset, err := t.repos.Asset.GetById(receiverData.AssetId)
+	receiverAsset, err := t.repos.Asset.GetById(ctx, receiverData.AssetId)
 	if err != nil {
 		log.Err(err).Msg("Failed go get transaction receiver asset")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	amount, err := common.BigNumberToFloat(senderData.Value, 6)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert amount")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	senderAmount, err := common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert senderAmount")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 
 	receiverAmount, err := common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
 	if err != nil {
 		log.Err(err).Msg("Failed to convert receiverAmount")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 	var stringFee float64
@@ -189,7 +192,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
 		if err != nil {
 			log.Err(err).Msg("Failed to convert stringFee")
-			err = common.StringError(err)
+			err = libcommon.StringError(err)
 			return
 		}
 	}
@@ -199,7 +202,7 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
 		if err != nil {
 			log.Err(err).Msg("Failed to convert processingFee")
-			err = common.StringError(err)
+			err = libcommon.StringError(err)
 			return
 		}
 	}
@@ -231,15 +234,15 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func (t transaction) getEventDigitalData(transaction model.Transaction) (digitalData eventDigitalData, err error) {
+func (t transaction) getEventDigitalData(ctx context.Context, transaction model.Transaction) (digitalData eventDigitalData, err error) {
 	if transaction.DeviceId == "" {
 		return
 	}
 
-	device, err := t.repos.Device.GetById(transaction.DeviceId)
+	device, err := t.repos.Device.GetById(ctx, transaction.DeviceId)
 	if err != nil {
 		log.Err(err).Msg("Failed to get transaction device")
-		err = common.StringError(err)
+		err = libcommon.StringError(err)
 		return
 	}
 

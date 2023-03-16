@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -24,11 +26,12 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 }
 
 func (t transaction) Transact(c echo.Context) error {
+	ctx := c.Request().Context()
 	var body model.PrecisionSafeExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
-		LogStringError(c, err, "transact: execute bind")
-		return BadRequestError(c)
+		libcommon.LogStringError(c, err, "transact: execute bind")
+		return httperror.BadRequestError(c)
 	}
 
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
@@ -40,14 +43,14 @@ func (t transaction) Transact(c echo.Context) error {
 	deviceId := c.Get("deviceId").(string)
 	ip := c.RealIP()
 
-	res, err := t.Service.Execute(body, userId, deviceId, ip)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, ip)
 	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
-		LogStringError(c, err, "transact: execute")
-		return Unprocessable(c)
+		libcommon.LogStringError(c, err, "transact: execute")
+		return httperror.Unprocessable(c)
 	}
 	if err != nil {
-		LogStringError(c, err, "transact: execute")
-		return InternalError(c)
+		libcommon.LogStringError(c, err, "transact: execute")
+		return httperror.InternalError(c)
 	}
 
 	return c.JSON(http.StatusOK, res)
