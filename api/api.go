@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	libmiddleware "github.com/String-xyz/go-lib/middleware"
 	"github.com/String-xyz/go-lib/validator"
@@ -43,7 +42,6 @@ func Start(config APIConfig) {
 	services := NewServices(config, repos)
 
 	// initialize routes - A route group only needs access to the services layer. It should'n access the repos layer directly
-	AuthAPIKey(services, e, libcommon.IsLocalEnv())
 	transactRoute(services, e)
 	quoteRoute(services, e)
 	userRoute(services, e)
@@ -59,13 +57,7 @@ func StartInternal(config APIConfig) {
 	baseMiddleware(config.Logger, e)
 	e.GET("/heartbeat", heartbeat)
 
-	// initialize route dependencies
-	repos := NewRepos(config)
-	services := NewServices(config, repos)
-
 	// initialize routes - A route group only needs access to the services layer. It doesn't need access to the repos layer
-	platformRoute(services, e)
-	AuthAPIKey(services, e, true)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
@@ -76,16 +68,6 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(libmiddleware.Recover())
 	e.Use(libmiddleware.Logger(logger))
 	e.Use(libmiddleware.LogRequest())
-}
-
-func platformRoute(services service.Services, e *echo.Echo) {
-	handler := handler.NewPlatform(services.Platform)
-	handler.RegisterRoutes(e.Group("/platforms"), middleware.BearerAuth())
-}
-
-func AuthAPIKey(services service.Services, e *echo.Echo, internal bool) {
-	handler := handler.NewAuthAPIKey(services.ApiKey, internal)
-	handler.RegisterRoutes(e.Group("/apikeys"))
 }
 
 func transactRoute(services service.Services, e *echo.Echo) {

@@ -2,8 +2,6 @@ package common
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,11 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog/log"
 )
-
-func ToSha256(v string) string {
-	bs := sha256.Sum256([]byte(v))
-	return hex.EncodeToString(bs[:])
-}
 
 func RecoverAddress(message string, signature string) (ethcommon.Address, error) {
 	sig := hexutil.MustDecode(signature)

@@ -47,10 +47,10 @@ type JWTClaims struct {
 type Auth interface {
 	// PayloadToSign returns a payload to be sign by a wallet
 	// to authenticate an user, the payload expires in 15 minutes
-	PayloadToSign(walletAdress string) (SignablePayload, error)
+	PayloadToSign(walletAddress string) (SignablePayload, error)
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
-	// if signaure is valid it returns a JWT to authenticate the user
+	// if signature is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
 
 	GenerateJWT(string, ...model.Device) (JWT, error)
@@ -163,7 +163,7 @@ func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 	t.Token = signed
 
 	// create and save
-	refreshObj, err := a.repos.Auth.CreateJWTRefresh(common.ToSha256(refreshToken), userId)
+	refreshObj, err := a.repos.Auth.CreateJWTRefresh(libcommon.ToSha256(refreshToken), userId)
 	if err != nil {
 		return *t, err
 	}
@@ -184,8 +184,9 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 }
 
 func (a auth) ValidateAPIKey(key string) bool {
-	hashed := common.ToSha256(key)
-	authKey, err := a.repos.Auth.Get(hashed)
+	ctx := context.Background()
+	hashed := libcommon.ToSha256(key)
+	authKey, err := a.repos.Apikey.GetByData(ctx, hashed)
 	if err != nil {
 		return false
 	}
@@ -193,14 +194,14 @@ func (a auth) ValidateAPIKey(key string) bool {
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {
-	return a.repos.Auth.Delete(common.ToSha256(refreshToken))
+	return a.repos.Auth.Delete(libcommon.ToSha256(refreshToken))
 }
 
 func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 
 	// get user id from refresh token
-	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(common.ToSha256(refreshToken))
+	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(libcommon.ToSha256(refreshToken))
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}

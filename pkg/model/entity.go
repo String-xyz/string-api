@@ -204,6 +204,18 @@ type AuthStrategy struct {
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 }
 
+type Apikey struct {
+	ID            string     `json:"id,omitempty" db:"id"`
+	CreatedAt     time.Time  `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt,omitempty" db:"updated_at"`
+	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Type          string     `json:"type" db:"type"`
+	Data          string     `json:"data" db:"data"`
+	Description   *string    `json:"description" db:"description"`
+	CreatedBy     string     `json:"createdBy" db:"created_by"`
+	PlatformID    string     `json:"platformId" db:"platform_id"`
+}
+
 func (a AuthStrategy) MarshalBinary() ([]byte, error) {
 	return json.Marshal(a)
 }
