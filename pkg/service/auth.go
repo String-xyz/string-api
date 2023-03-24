@@ -185,12 +185,11 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 
 func (a auth) ValidateAPIKey(key string) bool {
 	ctx := context.Background()
-	hashed := libcommon.ToSha256(key)
-	authKey, err := a.repos.Apikey.GetByData(ctx, hashed)
+	authKey, err := a.repos.Apikey.GetByData(ctx, key)
 	if err != nil {
 		return false
 	}
-	return authKey.Data == hashed
+	return authKey.Data == key
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {
