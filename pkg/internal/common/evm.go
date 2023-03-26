@@ -2,7 +2,9 @@ package common
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"regexp"
 	"strconv"
@@ -88,7 +90,7 @@ func IsWallet(addr string) bool {
 	RPC := "https://rpc.ankr.com/eth" // temporarily just use ETH mainnet
 	geth, _ := ethclient.Dial(RPC)
 
-	if !validAddress(addr) {
+	if !ValidAddress(addr) {
 		return false
 	}
 	addr = SanitizeChecksum(addr) // Copy correct checksum, although endpoint handlers are doing this already
@@ -99,7 +101,18 @@ func IsWallet(addr string) bool {
 		return false
 	}
 	isContract := len(bytecode) > 0
+	if isContract {
+		fmt.Printf("\nBYTECODE = %+v", hex.EncodeToString(bytecode))
+	}
 	return !isContract
+}
+
+func IsContract(addr string) bool {
+	return !IsWallet(addr)
+}
+
+func IsAnything(addr string) bool {
+	return IsWallet(addr) || IsContract(addr)
 }
 
 func validChecksum(addr string) bool {
@@ -126,7 +139,7 @@ func SanitizeChecksum(addr string) string {
 	return valid
 }
 
-func validAddress(addr string) bool {
+func ValidAddress(addr string) bool {
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 	return re.MatchString(addr)
 }
