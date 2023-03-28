@@ -20,8 +20,10 @@ type Quote struct {
 type ExecutionRequest struct {
 	TransactionRequest
 	Quote
-	Signature string `json:"signature"`
-	CardToken string `json:"cardToken"`
+	Signature    string `json:"signature"`
+	CardToken    string `json:"cardToken"`
+	CardSourceId string `json:"cardSourceId"`
+	CVV          string `json:"cvv"`
 }
 
 type PrecisionSafeQuote struct {
@@ -39,6 +41,7 @@ type PrecisionSafeExecutionRequest struct {
 	Signature    string `json:"signature"`
 	CardToken    string `json:"cardToken"`
 	CardSourceId string `json:"cardSourceId"`
+	CVV          string `json:"cvv"`
 }
 
 // User will pass this in for a quote and receive Execution Parameters

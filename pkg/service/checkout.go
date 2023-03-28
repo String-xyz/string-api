@@ -93,10 +93,18 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	client := payments.NewClient(*config)
 
 	var paymentTokenId string
-	if libcommon.IsLocalEnv() {
+	var paymentSource interface{}
+	if p.executionRequest.CardSourceId != "" {
+		paymentSource = payments.IDSource{
+			Type: "id",
+			ID:   p.executionRequest.CardSourceId,
+			CVV:  p.executionRequest.CVV,
+		}
+	} else {
 		if p.executionRequest.CardToken != "" {
 			paymentTokenId = p.executionRequest.CardToken
-		} else {
+		} else if libcommon.IsLocalEnv() {
+
 			// Generate a payment token ID in case we don't yet have one in the front end
 			// For testing purposes only
 			card := tokens.Card{
@@ -116,8 +124,10 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			}
 			paymentTokenId = paymentToken.Created.Token
 		}
-	} else {
-		paymentTokenId = p.executionRequest.CardToken
+		paymentSource = payments.TokenSource{
+			Type:  checkoutCommon.Token.String(),
+			Token: paymentTokenId,
+		}
 	}
 
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
@@ -126,10 +136,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	usd := convertAmount(p.executionRequest.TotalUSD)
 	capture := false
 	request := &payments.Request{
-		Source: payments.TokenSource{
-			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenId,
-		},
+		Source:   &paymentSource,
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
@@ -162,7 +169,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.Issuer = response.Processed.Source.Issuer
 			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
-			p, err = CreateSource(p)
+			p, _ = CreateSource(p)
 		}
 	}
 	p.cardAuthorization = &auth
