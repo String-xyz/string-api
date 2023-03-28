@@ -2,9 +2,7 @@ package common
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"math/big"
 	"regexp"
 	"strconv"
@@ -101,18 +99,11 @@ func IsWallet(addr string) bool {
 		return false
 	}
 	isContract := len(bytecode) > 0
-	if isContract {
-		fmt.Printf("\nBYTECODE = %+v", hex.EncodeToString(bytecode))
-	}
 	return !isContract
 }
 
 func IsContract(addr string) bool {
 	return !IsWallet(addr)
-}
-
-func IsAnything(addr string) bool {
-	return IsWallet(addr) || IsContract(addr)
 }
 
 func validChecksum(addr string) bool {
