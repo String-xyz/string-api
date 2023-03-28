@@ -9,7 +9,7 @@ ALTER TABLE network
 -------------------------------------------------------------------------
 -- INSTRUMENT ----------------------------------------------------------
 ALTER TABLE instrument
-    ADD COLUMN name TEXT DEFAULT NULL,
+    ADD COLUMN name TEXT NOT NULL DEFAULT '';
 
 -------------------------------------------------------------------------
 -- +goose Down

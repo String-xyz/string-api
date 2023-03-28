@@ -134,7 +134,7 @@ type Instrument struct {
 	Last4         string         `json:"last4" db:"last_4"`
 	UserId        string         `json:"userId" db:"user_id"`
 	LocationId    sql.NullString `json:"locationId" db:"location_id"`
-	Name          sql.NullString `json:"Name" db:"name"`
+	Name          string         `json:"Name" db:"name"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003
