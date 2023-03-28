@@ -3,6 +3,7 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/payments"
+	"github.com/checkout/checkout-sdk-go/sources"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
 
@@ -160,10 +162,57 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.Issuer = response.Processed.Source.Issuer
 			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
+			p, err = CreateSource(p)
 		}
 	}
 	p.cardAuthorization = &auth
 	// TODO: Create entry for authorization in our DB associated with userWallet
+	return p, nil
+}
+
+func CreateSource(p transactionProcessingData) (transactionProcessingData, error) {
+	config, err := getConfig()
+	if err != nil {
+		return p, libcommon.StringError(err)
+	}
+	client := sources.NewClient(*config)
+
+	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
+	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
+
+	customer := &sources.Customer{
+		Email: p.user.Email,
+		Name:  fullName,
+	}
+
+	sourceRequest := sources.Request{
+		SEPA: &sources.SEPA{
+			Type:      "token",
+			Reference: "your_reference",
+			Customer:  customer,
+			// BillingAddress: &common.Address{
+			// 	// Fill in the billing address details
+			// 	AddressLine1: "123 Test Street",
+			// 	City:         "Test City",
+			// 	State:        "TS",
+			// 	PostalCode:   "12345",
+			// 	Country:      "US",
+			// },
+			SourceData: &sources.SEPASourceData{
+				FirstName:   p.user.FirstName,
+				LastName:    p.user.LastName,
+				AccountIBAN: p.executionRequest.CardToken,
+			},
+		},
+	}
+
+	sourceResponse, err := client.AddPaymentSource(&sourceRequest)
+	if err != nil {
+		return p, libcommon.StringError(err)
+	}
+
+	p.cardSourceId = &sourceResponse.Source.ID
+	fmt.Println("Source created, ID:", sourceResponse.Source.ID)
 	return p, nil
 }
 

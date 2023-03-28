@@ -25,6 +25,7 @@ type Instrument interface {
 	GetWalletByUserId(userId string) (model.Instrument, error)
 	GetBankByUserId(userId string) (model.Instrument, error)
 	WalletAlreadyExists(addr string) (bool, error)
+	GetCardsByUserId(userId string) ([]model.Instrument, error)
 }
 
 type instrument[T any] struct {
@@ -38,8 +39,8 @@ func NewInstrument(db *sqlx.DB) Instrument {
 func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error) {
 	m := model.Instrument{}
 	rows, err := i.Store.NamedQuery(`
-		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
-		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name) 	RETURNING *`, insert)
+		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name, source_id) 
+		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name, :source_id) 	RETURNING *`, insert)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
@@ -115,4 +116,15 @@ func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (i instrument[T]) GetCardsByUserId(userId string) ([]model.Instrument, error) {
+	var cards []model.Instrument
+	err := i.Store.Select(&cards, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Credit Card' OR type = 'Debit Card'", i.Table), userId)
+	if err != nil && err == sql.ErrNoRows {
+		return cards, serror.NOT_FOUND
+	} else if err != nil {
+		return cards, libcommon.StringError(err)
+	}
+	return cards, nil
 }

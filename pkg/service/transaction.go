@@ -73,6 +73,7 @@ type transactionProcessingData struct {
 	executionRequest              *model.ExecutionRequest
 	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
 	cardAuthorization             *AuthorizedCharge
+	cardSourceId                  *string
 	cardCapture                   *payments.CapturesResponse
 	recipientWalletId             *string
 	txId                          *string
@@ -597,6 +598,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		UserId:    *p.userId,
 		PublicKey: p.cardAuthorization.CheckoutFingerprint,
 		Name:      p.cardAuthorization.CardholderName,
+		SourceId:  *p.cardSourceId,
 	}
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {

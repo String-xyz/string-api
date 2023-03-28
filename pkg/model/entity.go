@@ -135,6 +135,7 @@ type Instrument struct {
 	UserId        string         `json:"userId" db:"user_id"`
 	LocationId    sql.NullString `json:"locationId" db:"location_id"`
 	Name          string         `json:"name" db:"name"`
+	SourceId      string         `json:"sourceId" db:"source_id"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003

@@ -51,6 +51,8 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	transaction := service.NewTransaction(repos, config.Redis, unit21)
 	user := service.NewUser(repos, auth, fingerprint, device, unit21)
 
+	card := service.NewCard(repos)
+
 	return service.Services{
 		Auth:         auth,
 		Cost:         cost,
@@ -60,5 +62,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		User:         user,
 		Verification: verification,
 		Device:       device,
+		Card:         card,
 	}
 }
