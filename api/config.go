@@ -11,6 +11,7 @@ func NewRepos(config APIConfig) repository.Repositories {
 	// TODO: Make sure all of the repos are initialized here
 	return repository.Repositories{
 		Auth:           repository.NewAuth(config.Redis, config.DB),
+		Apikey:         repository.NewApikey(config.DB),
 		User:           repository.NewUser(config.DB),
 		Contact:        repository.NewContact(config.DB),
 		Instrument:     repository.NewInstrument(config.DB),
@@ -18,10 +19,10 @@ func NewRepos(config APIConfig) repository.Repositories {
 		UserToPlatform: repository.NewUserToPlatform(config.DB),
 		Asset:          repository.NewAsset(config.DB),
 		Network:        repository.NewNetwork(config.DB),
-		Platform:       repository.NewPlatform(config.DB),
 		Transaction:    repository.NewTransaction(config.DB),
 		TxLeg:          repository.NewTxLeg(config.DB),
 		Location:       repository.NewLocation(config.DB),
+		Platform:       repository.NewPlatform(config.DB),
 	}
 }
 
@@ -44,25 +45,18 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	device := service.NewDevice(deviceRepos, fingerprint)
 
 	auth := service.NewAuth(repos, verification, device)
-	apiKey := service.NewAPIKeyStrategy(repos.Auth)
 	cost := service.NewCost(config.Redis)
 	executor := service.NewExecutor()
 	geofencing := service.NewGeofencing(config.Redis)
-
-	// we don't need to pass in the entire repos struct, just the ones we need
-	platformRepos := repository.Repositories{Auth: repos.Auth, Platform: repos.Platform}
-	platform := service.NewPlatform(platformRepos)
 
 	transaction := service.NewTransaction(repos, config.Redis, unit21)
 	user := service.NewUser(repos, auth, fingerprint, device, unit21)
 
 	return service.Services{
 		Auth:         auth,
-		ApiKey:       apiKey,
 		Cost:         cost,
 		Executor:     executor,
 		Geofencing:   geofencing,
-		Platform:     platform,
 		Transaction:  transaction,
 		User:         user,
 		Verification: verification,

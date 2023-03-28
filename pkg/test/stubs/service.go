@@ -24,7 +24,7 @@ func (v Verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	return v.Error
 }
 
-func (v Verification) SendDeviceVerification(userId string, email string, deviceId string, deviceDescription string) error {
+func (v Verification) SendDeviceVerification(string, userID string, deviceID string, deviceDescription string) error {
 	return v.Error
 }
 

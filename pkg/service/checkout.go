@@ -58,6 +58,7 @@ type AuthorizedCharge struct {
 	Status              string
 	Summary             string
 	CardType            string
+	CardholderName      string
 }
 
 func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {
@@ -137,6 +138,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
 			auth.Issuer = response.Processed.Source.Issuer
 			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
+			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
 		}
 	}
 	p.cardAuthorization = &auth

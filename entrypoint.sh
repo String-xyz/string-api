@@ -17,4 +17,10 @@ go run script.go data_seeding local
 echo "----- ...Data seeded"
 
 # run app
-air
+if [ "$DEBUG_MODE" = "true" ]; then
+  echo "----- DEBUG_MODE is true"
+  air -c .air-debug.toml
+else
+  echo "----- DEBUG_MODE is false"
+  air
+fi

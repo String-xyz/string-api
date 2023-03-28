@@ -2,6 +2,7 @@ package repository
 
 type Repositories struct {
 	Auth           AuthStrategy
+	Apikey         Apikey
 	User           User
 	Contact        Contact
 	Instrument     Instrument
