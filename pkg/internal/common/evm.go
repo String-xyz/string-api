@@ -88,7 +88,7 @@ func IsWallet(addr string) bool {
 	RPC := "https://rpc.ankr.com/eth" // temporarily just use ETH mainnet
 	geth, _ := ethclient.Dial(RPC)
 
-	if !validAddress(addr) {
+	if !ValidAddress(addr) {
 		return false
 	}
 	addr = SanitizeChecksum(addr) // Copy correct checksum, although endpoint handlers are doing this already
@@ -100,6 +100,10 @@ func IsWallet(addr string) bool {
 	}
 	isContract := len(bytecode) > 0
 	return !isContract
+}
+
+func IsContract(addr string) bool {
+	return !IsWallet(addr)
 }
 
 func validChecksum(addr string) bool {
@@ -126,7 +130,7 @@ func SanitizeChecksum(addr string) string {
 	return valid
 }
 
-func validAddress(addr string) bool {
+func ValidAddress(addr string) bool {
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 	return re.MatchString(addr)
 }

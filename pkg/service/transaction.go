@@ -88,7 +88,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 		return res, libcommon.StringError(err)
 	}
 	executor := NewExecutor()
-	err = executor.Initialize(chain.RPC)
+	err = executor.Initialize(chain)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
@@ -188,7 +188,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	// Dial the RPC and update model status
 	executor := NewExecutor()
 	p.executor = &executor
-	err = executor.Initialize(chain.RPC)
+	err = executor.Initialize(chain)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -332,7 +332,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	// Reinitialize Executor
 	executor := NewExecutor()
 	p.executor = &executor
-	err := executor.Initialize(p.chain.RPC)
+	err := executor.Initialize(*p.chain)
 	if err != nil {
 		log.Err(err).Msg("Failed to initialized executor in postProcess")
 		// TODO: Handle error instead of returning it
@@ -488,6 +488,13 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	if err != nil {
 		return res, 0, libcommon.StringError(err)
 	}
+
+	// Trace the request
+	addresses, err := executor.TraceCall(call)
+	if err != nil {
+		return res, 0, libcommon.StringError(err)
+	}
+	fmt.Printf("\n\nADDRESSES USED IN QUOTE: %v", addresses)
 
 	// Calculate total eth estimate as float64
 	gas := new(big.Int)
