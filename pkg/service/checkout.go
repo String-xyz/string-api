@@ -3,6 +3,7 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -123,6 +124,11 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	response, err := client.Request(request, &params)
 	if err != nil {
 		return p, libcommon.StringError(err)
+	}
+
+	// DEBUGGING
+	if response.Processed != nil && response.Processed.Source != nil && response.Processed.Source.CardSourceResponse != nil {
+		fmt.Printf("\n\n CardSourceResponse: %+v \n\n", *(response.Processed.Source.CardSourceResponse))
 	}
 
 	// Collect authorization ID and Instrument ID
