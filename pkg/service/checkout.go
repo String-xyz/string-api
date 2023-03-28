@@ -3,7 +3,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -59,6 +58,7 @@ type AuthorizedCharge struct {
 	Status              string
 	Summary             string
 	CardType            string
+	CardholderName      string
 }
 
 func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {
@@ -126,11 +126,6 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		return p, libcommon.StringError(err)
 	}
 
-	// DEBUGGING
-	if response.Processed != nil && response.Processed.Source != nil && response.Processed.Source.CardSourceResponse != nil {
-		fmt.Printf("\n\n CardSourceResponse: %+v \n\n", *(response.Processed.Source.CardSourceResponse))
-	}
-
 	// Collect authorization ID and Instrument ID
 	if response.Processed != nil {
 		auth.AuthId = response.Processed.ID
@@ -143,6 +138,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
 			auth.Issuer = response.Processed.Source.Issuer
 			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
+			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
 		}
 	}
 	p.cardAuthorization = &auth

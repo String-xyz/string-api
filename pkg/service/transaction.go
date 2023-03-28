@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -570,6 +571,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		Last4:     p.cardAuthorization.Last4,
 		UserId:    *p.userId,
 		PublicKey: p.cardAuthorization.CheckoutFingerprint,
+		Name:      sql.NullString{String: p.cardAuthorization.CardholderName},
 	}
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
