@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"math"
 	"math/big"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/lmittmann/w3/module/debug"
 	"github.com/lmittmann/w3/module/eth"
 	"github.com/lmittmann/w3/w3types"
+	"github.com/pkg/errors"
 )
 
 type ContractCall struct {
@@ -103,6 +103,7 @@ func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
 	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
 	if err != nil {
 		// Execution Will Revert!
+		// err = errors.New(err.Error()) // fix w3.error type mismatch
 		return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: false}, libcommon.StringError(err)
 	}
 	return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: true}, nil
