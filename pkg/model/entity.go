@@ -49,7 +49,6 @@ type Network struct {
 	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
 	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
 	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
-	PrivateRPC    string     `json:"privateRpc" db:"private_rpc"`
 }
 
 // See ASSET in Migrations 0001
