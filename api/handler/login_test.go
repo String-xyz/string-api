@@ -31,7 +31,7 @@ func TestStatus200LoginNoncePayload(t *testing.T) {
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
-	handler.RegisterRoutes(e.Group("/login"))
+	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
 	if assert.NoError(t, handler.NoncePayload(c)) {
@@ -54,7 +54,7 @@ func TestStatus200LoginVerifySignature(t *testing.T) {
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
-	handler.RegisterRoutes(e.Group("/login"))
+	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
 	if assert.NoError(t, handler.VerifySignature(c)) {
@@ -69,7 +69,7 @@ func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
-	handler.RegisterRoutes(e.Group("/login"))
+	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
 	if assert.NoError(t, handler.NoncePayload(c)) {

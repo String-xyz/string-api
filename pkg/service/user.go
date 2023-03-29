@@ -29,7 +29,7 @@ type User interface {
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
-	Create(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
+	Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error)
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
@@ -63,7 +63,7 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 	return res, libcommon.StringError(errors.New("not found"))
 }
 
-func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
+func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
@@ -101,6 +101,12 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 		return resp, err
 	}
 
+	// Associate user to platform
+	err = u.repos.Platform.AssociateUser(ctx, user.Id, platformId)
+	if err != nil {
+		return resp, libcommon.StringError(err)
+	}
+
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && errors.Cause(err).Error() != "not found" {
@@ -116,7 +122,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 		}
 	}
 
-	jwt, err := u.auth.GenerateJWT(user.Id, device)
+	jwt, err := u.auth.GenerateJWT(user.Id, platformId, device)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -143,6 +149,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 		u.repos.User.Rollback()
 		return user, libcommon.StringError(err)
 	}
+
 	// Create a new wallet instrument and associate it with the new user
 	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
 	instrument, err = u.repos.Instrument.Create(instrument)

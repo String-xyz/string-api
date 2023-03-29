@@ -56,7 +56,7 @@ func (u User) GetStatus(ctx context.Context, id string) (model.UserOnboardingSta
 	return u.UserOnboardingStatus, u.Error
 }
 
-func (u User) Create(ctx context.Context, request model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
+func (u User) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (service.UserCreateResponse, error) {
 	return u.UserCreateResponse, u.Error
 }
 
@@ -92,19 +92,19 @@ func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error
 	return a.SignablePayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned) (service.UserCreateResponse, error) {
+func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string) (service.UserCreateResponse, error) {
 	return a.UserCreateResponse, a.Error
 }
 
-func (a Auth) GenerateJWT(string, ...model.Device) (service.JWT, error) {
+func (a Auth) GenerateJWT(string, string, ...model.Device) (service.JWT, error) {
 	return a.JWT, a.Error
 }
 
-func (a Auth) ValidateAPIKey(key string) bool {
-	return true
+func (a Auth) ValidateAPIKey(key string) (string, error) {
+	return "platform-id", a.Error
 }
 
-func (a Auth) RefreshToken(ctx context.Context, token string, walletAddress string) (service.UserCreateResponse, error) {
+func (a Auth) RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (service.UserCreateResponse, error) {
 	return service.UserCreateResponse{}, a.Error
 }
 
