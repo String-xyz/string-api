@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lmittmann/w3"
-	"github.com/lmittmann/w3/module/debug"
 	"github.com/lmittmann/w3/module/eth"
 	"github.com/lmittmann/w3/w3types"
 	"github.com/pkg/errors"
@@ -39,7 +38,6 @@ type Executor interface {
 	Initialize(network Chain) error
 	Initiate(call ContractCall) (string, *big.Int, error)
 	Estimate(call ContractCall) (CallEstimate, error)
-	TraceCall(call ContractCall) ([]string, error)
 	TxWait(txId string) (uint64, error)
 	Close() error
 	GetByChainId() (uint64, error)
@@ -292,38 +290,4 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	tx = *types.MustSignNewTx(&sk, signer, &dynamicFeeTx)
 
 	return tx, nil
-}
-
-func (e executor) TraceCall(call ContractCall) ([]string, error) {
-	addresses := []string{}
-	if !e.tracingAvailable() {
-		return addresses, nil
-	}
-
-	msg, err := e.generateTransactionMessage(call)
-	if err != nil {
-		return addresses, libcommon.StringError(err)
-	}
-
-	// get the current block number
-	var blockNumber big.Int
-	err = e.client.Call(eth.BlockNumber().Returns(&blockNumber))
-	if err != nil {
-		return addresses, libcommon.StringError(err)
-	}
-
-	trace := debug.Trace{}
-	config := debug.TraceConfig{
-		EnableStack:   false,
-		EnableMemory:  true,
-		EnableStorage: false,
-		Limit:         0,
-	}
-	err = e.traceClient.Call(debug.TraceCall(&msg, &blockNumber, &config).Returns(&trace))
-	if err != nil {
-		return addresses, libcommon.StringError(err)
-	}
-
-	addresses = getAddressesFromTrace(trace)
-	return addresses, nil
 }
