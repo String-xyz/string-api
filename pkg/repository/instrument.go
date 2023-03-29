@@ -37,8 +37,8 @@ func NewInstrument(db *sqlx.DB) Instrument {
 func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error) {
 	m := model.Instrument{}
 	rows, err := i.Store.NamedQuery(`
-		INSERT INTO instrument (type, status, network, public_key, user_id, last_4) 
-		VALUES(:type, :status, :network, :public_key, :user_id, :last_4) 	RETURNING *`, insert)
+		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
+		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name) 	RETURNING *`, insert)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

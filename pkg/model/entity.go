@@ -49,6 +49,7 @@ type Network struct {
 	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
 	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
 	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
+	PrivateRPC    string     `json:"privateRpc" db:"private_rpc"`
 }
 
 // See ASSET in Migrations 0001
@@ -133,6 +134,7 @@ type Instrument struct {
 	Last4         string         `json:"last4" db:"last_4"`
 	UserId        string         `json:"userId" db:"user_id"`
 	LocationId    sql.NullString `json:"locationId" db:"location_id"`
+	Name          string         `json:"Name" db:"name"`
 }
 
 // See CONTACT_PLATFORM in Migrations 0003

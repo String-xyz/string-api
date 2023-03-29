@@ -22,6 +22,7 @@ func NewRepos(config APIConfig) repository.Repositories {
 		Transaction:    repository.NewTransaction(config.DB),
 		TxLeg:          repository.NewTxLeg(config.DB),
 		Location:       repository.NewLocation(config.DB),
+		Platform:       repository.NewPlatform(config.DB),
 	}
 }
 
