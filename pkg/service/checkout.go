@@ -195,7 +195,7 @@ func CreateSource(p transactionProcessingData) (transactionProcessingData, error
 	sourceRequest := sources.Request{
 		SEPA: &sources.SEPA{
 			Type:      "token",
-			Reference: "your_reference",
+			Reference: p.transactionModel.Id,
 			Customer:  customer,
 			// BillingAddress: &common.Address{
 			// 	// Fill in the billing address details

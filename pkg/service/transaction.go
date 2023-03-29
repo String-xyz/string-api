@@ -598,7 +598,9 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		UserId:    *p.userId,
 		PublicKey: p.cardAuthorization.CheckoutFingerprint,
 		Name:      p.cardAuthorization.CardholderName,
-		SourceId:  *p.cardSourceId,
+	}
+	if p.cardSourceId != nil {
+		instrument.SourceId = *p.cardSourceId
 	}
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
