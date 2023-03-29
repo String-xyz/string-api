@@ -45,28 +45,16 @@ type Executor interface {
 }
 
 type executor struct {
-	client      *w3.Client
-	traceClient *w3.Client
-	geth        *ethclient.Client
+	client *w3.Client
+	geth   *ethclient.Client
 }
 
 func NewExecutor() Executor {
 	return &executor{}
 }
 
-func (e executor) tracingAvailable() bool {
-	return e.traceClient != nil
-}
-
 func (e *executor) Initialize(network Chain) error {
 	RPC := network.RPC
-	if network.PrivateRPC != "" {
-		var err error
-		e.traceClient, err = w3.Dial(network.PrivateRPC)
-		if err != nil {
-			return libcommon.StringError(err)
-		}
-	}
 	var err error
 	e.client, err = w3.Dial(RPC)
 	if err != nil {
