@@ -1,7 +1,7 @@
 locals {
   cluster_name       = "core-sandbox"
   env                = "sandbox"
-  service_name       = "api"
+  service_name       = "core-sandbox-api"
   root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
   origin_id          = "sandbox-api"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v.1.0.0-alpha"
+  default = "v.1.0.0"
 }
 
 locals {

@@ -98,6 +98,3 @@ DROP TABLE IF EXISTS member_to_platform;
 -------------------------------------------------------------------------
 -- PLATFORM_MEMBER ------------------------------------------------------
 DROP TABLE IF EXISTS platform_member;
-
-
-
