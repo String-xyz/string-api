@@ -14,7 +14,7 @@ SANDBOX_API=core-sandbox-api
 ECS_SANDBOX_API_REPO=${ECR}/${SANDBOX_API}
 
 all: build push deploy
-all-sandbox: build-sanbox push-sanbox deploy-sandbox
+all-sandbox: build-sandbox push-sandbox deploy-sandbox
 
 test-envvars:
 	@[ "${env}" ] || ( echo "env var is not set"; exit 1 )
@@ -32,12 +32,12 @@ push: test-envvars
 deploy: test-envvars
 	aws ecs --region $(AWS_REGION) update-service --cluster $(ECS_CLUSTER) --service ${API} --force-new-deployment
 
-build-sanbox: test-envvars
+build-sandbox: test-envvars
 	GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
 	docker build --platform linux/amd64 -t $(ECS_SANDBOX_API_REPO):${SERVICE_TAG} cmd/app/
 	rm cmd/app/main
 
-push-sanbox: test-envvars
+push-sandbox: test-envvars
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR)
 	docker push $(ECS_SANDBOX_API_REPO):${SERVICE_TAG}
 
