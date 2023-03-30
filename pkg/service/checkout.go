@@ -3,13 +3,16 @@
 package service
 
 import (
+	"fmt"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
+	"github.com/checkout/checkout-sdk-go/customers"
 	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
@@ -142,6 +145,25 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	p.cardAuthorization = &auth
 	// TODO: Create entry for authorization in our DB associated with userWallet
 	return p, nil
+}
+
+func GetCustomer(customerId string, request *customers.Request) (*customers.Response, error) {
+	config, err := getConfig()
+	if err != nil {
+		return nil, libcommon.StringError(err)
+	}
+	client := customers.NewClient(*config)
+	resp, err := client.API.Get(fmt.Sprintf("/%v/%v", "customers", customerId))
+	response := &customers.Response{
+		StatusResponse: resp,
+	}
+	if err != nil {
+		return response, libcommon.StringError(err)
+	}
+	if resp.StatusCode == http.StatusNoContent {
+		return response, libcommon.StringError(err)
+	}
+	return response, libcommon.StringError(err)
 }
 
 func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
