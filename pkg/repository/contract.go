@@ -1,0 +1,60 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/go-lib/repository"
+	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/pkg/model"
+)
+
+type Contract interface {
+	database.Transactable
+	Create(model.Contract) (model.Contract, error)
+	GetById(ctx context.Context, id string) (model.Contract, error)
+	GetByUserId(ctx context.Context, userId string) (model.Contract, error)
+	ListByUserId(ctx context.Context, userId string, imit int, offset int) ([]model.Contract, error)
+	List(ctx context.Context, limit int, offset int) ([]model.Contract, error)
+	Update(ctx context.Context, id string, updates any) error
+	GetByAddressAndNetworkAndPlatform(address string, networkId string, platformId string) (model.Contract, error)
+}
+
+type contract[T any] struct {
+	repository.Base[T]
+}
+
+func NewContract(db database.Queryable) Contract {
+	return &contract[model.Contract]{repository.Base[model.Contract]{Store: db, Table: "contract"}}
+}
+
+func (u contract[T]) Create(insert model.Contract) (model.Contract, error) {
+	m := model.Contract{}
+	rows, err := u.Store.NamedQuery(`
+		INSERT INTO contact (user_id, data, type, status) 
+		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+	for rows.Next() {
+		err = rows.StructScan(&m)
+		if err != nil {
+			return m, libcommon.StringError(err)
+		}
+	}
+
+	defer rows.Close()
+	return m, nil
+}
+
+func (u contract[T]) GetByAddressAndNetworkAndPlatform(address string, networkId string, platformId string) (model.Contract, error) {
+	m := model.Contract{}
+	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE address = $1 AND network_id = $2 AND platform_id = $3 LIMIT 1", u.Table), address, networkId, platformId)
+	if err != nil && err == sql.ErrNoRows {
+		return m, serror.NOT_FOUND
+	}
+	return m, libcommon.StringError(err)
+}

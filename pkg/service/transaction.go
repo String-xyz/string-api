@@ -12,6 +12,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	serror "github.com/String-xyz/go-lib/stringerror"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
@@ -38,6 +39,7 @@ type TransactionRepos struct {
 	Device      repository.Device
 	Location    repository.Location
 	Contact     repository.Contact
+	Contract    repository.Contract
 }
 
 type InternalIds struct {
@@ -86,6 +88,9 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
+
+	// t.isContractAllowed(ctx, d)
+
 	executor := NewExecutor()
 	err = executor.Initialize(chain)
 	if err != nil {
@@ -839,4 +844,24 @@ func (t transaction) updateTransactionStatus(ctx context.Context, status string,
 
 func (t *transaction) getStringInstrumentsAndUserId() {
 	t.ids = GetStringIdsFromEnv()
+}
+
+func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
+	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(request.CxAddr, networkId, platformId)
+	if err != nil && err == serror.NOT_FOUND {
+		return false, libcommon.StringError(errors.New("contract not allowed by platform on network"))
+	} else if err != nil {
+		return false, libcommon.StringError(err)
+	}
+
+	if len(contract.Functions) == 0 {
+		return true, nil
+	}
+
+	for _, function := range contract.Functions {
+		if function == request.CxFunc {
+			return true, nil
+		}
+	}
+	return false, libcommon.StringError(errors.New("function is not allowed on this contract"))
 }

@@ -5,6 +5,7 @@ type Repositories struct {
 	Apikey         Apikey
 	User           User
 	Contact        Contact
+	Contract       Contract
 	Instrument     Instrument
 	Device         Device
 	UserToPlatform UserToPlatform
