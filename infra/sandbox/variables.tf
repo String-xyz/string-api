@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v.1.0.0"
+  default = "v1.0.0"
 }
 
 locals {
@@ -239,6 +239,12 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
+      environment = [ 
+        {
+          name  = "DD_ENV"
+          value = local.env
+        }
+      ]
       portMappings = [{
         hostPort      = 8126,
         protocol      = "tcp",
