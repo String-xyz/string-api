@@ -149,6 +149,65 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	return p, nil
 }
 
+CustomerResponse struct {
+	Id string `json:"id"`
+	*customer.Customer
+	Phone *common.Phone `json:"phone,omitempty"`
+	Metadata: map[string]string `json:"metadata,omitempty"`
+	*instruments.Customer
+
+}
+
+{
+	"id": "cus_y3oqhf46pyzuxjbcn2giaqnb44",
+	"email": "john.smith@example.com",
+	"default": "src_imu3wifxfvlebpqqq5usjrze6y",
+	"name": "John Smith",
+	"phone": {
+	  "country_code": "+1",
+	  "number": "5551234567"
+	},
+	"metadata": {
+	  "coupon_code": "NY2018",
+	  "partner_id": 123989
+	},
+	"instruments": [
+	  {
+		"id": "src_lmyvsjadlxxu7kqlgevt6ebkra",
+		"type": "card",
+		"fingerprint": "vnsdrvikkvre3dtrjjvlm5du4q",
+		"expiry_month": 6,
+		"expiry_year": 2025,
+		"name": "John Smith",
+		"scheme": "VISA",
+		"last4": "9996",
+		"bin": "454347",
+		"card_type": "Credit",
+		"card_category": "Consumer",
+		"issuer": "Test Bank",
+		"issuer_country": "US",
+		"product_id": "F",
+		"product_type": "CLASSIC",
+		"account_holder": {
+		  "billing_address": {
+			"address_line1": "123 Anywhere St.",
+			"address_line2": "Apt. 456",
+			"city": "Anytown",
+			"state": "AL",
+			"zip": "123456",
+			"country": "US"
+		  },
+		  "phone": {
+			"country_code": "+1",
+			"number": "5551234567"
+		  }
+		}
+	  }
+	]
+  }
+
+
+
 func GetCustomer(customerId string, request *customers.Request) (*customers.Response, error) {
 	config, err := getConfig()
 	if err != nil {
