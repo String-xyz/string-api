@@ -488,13 +488,6 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		return res, 0, libcommon.StringError(err)
 	}
 
-	// Trace the request
-	addresses, err := executor.TraceCall(call)
-	if err != nil {
-		return res, 0, libcommon.StringError(err)
-	}
-	fmt.Printf("\n\nADDRESSES USED IN QUOTE: %v", addresses)
-
 	// Calculate total eth estimate as float64
 	gas := new(big.Int)
 	gas.SetUint64(estimateEVM.Gas)

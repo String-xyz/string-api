@@ -57,7 +57,7 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io", PrivateRPC: "https://patient-fabled-theorem.avalanche-testnet.quiknode.pro/9df804c90c99c9749808e2bb4e6a25d08fb58054/ext/bc/C/rpc"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -247,7 +247,7 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io", PrivateRPC: "https://patient-fabled-theorem.avalanche-testnet.quiknode.pro/9df804c90c99c9749808e2bb4e6a25d08fb58054/ext/bc/C/rpc"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
