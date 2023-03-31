@@ -159,6 +159,10 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
+          name = "COINCAP_API_URL"
+          value = "https://api.coincap.io/v2/"
+        },
+        {
           name  = "FINGERPRINT_API_URL"
           value = "https://api.fpjs.io/"
         },
