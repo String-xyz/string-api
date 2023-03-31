@@ -81,6 +81,11 @@ type transactionProcessingData struct {
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (model.PrecisionSafeExecutionRequest, error) {
 	// TODO: use prefab service to parse d and fill out known params
 	res := model.PrecisionSafeExecutionRequest{TransactionRequest: d}
+
+	instruments, err := GetCustomerInstruments(d.UserAddress)
+	if err != nil {
+		return res, libcommon.StringError(err)
+	}
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(ctx, uint64(d.ChainId), t.repos.Network, t.repos.Asset)
 	if err != nil {
