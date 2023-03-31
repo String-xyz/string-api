@@ -9,7 +9,7 @@ ALTER TABLE instrument
 -------------------------------------------------------------------------
 -- ASSET ----------------------------------------------------------
 ALTER TABLE asset
-    ADD COLUMN value_oracle_2 TEXT NOT NULL DEFAULT '';
+    ADD COLUMN value_oracle_2 TEXT DEFAULT '';
 
 -------------------------------------------------------------------------
 -- +goose Down

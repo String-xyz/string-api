@@ -154,8 +154,9 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
-		err := common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", nil)
-		if err != nil {
+		var empty interface{}
+		err := common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		if err == nil {
 			cacheObject.Value, err = c.coingeckoUSD(coin)
 			if err != nil {
 				return 0, libcommon.StringError(err)
