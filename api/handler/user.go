@@ -17,7 +17,7 @@ type User interface {
 	Status(c echo.Context) error
 	Update(c echo.Context) error
 	VerifyEmail(c echo.Context) error
-	RegisterRoutes(g *echo.Group, apikeyMid echo.MiddlewareFunc, ms ...echo.MiddlewareFunc)
+	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
 type ResultMessage struct {
@@ -136,14 +136,17 @@ func (u user) VerifyEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Verified"})
 }
 
-func (u user) RegisterRoutes(g *echo.Group, apikeyMid echo.MiddlewareFunc, ms ...echo.MiddlewareFunc) {
+func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
 	}
 	u.Group = g
 	// create does not require JWT auth middleware
 	// hence adding only the first middleware only which is APIKey
-	g.POST("", u.Create, apikeyMid)
+	g.POST("", u.Create, ms[0])
+
+	// the rest of the endpoints do not require api key
+	ms = ms[1:]
 
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)

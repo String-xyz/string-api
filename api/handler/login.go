@@ -21,7 +21,7 @@ type Login interface {
 
 	//VerifySignature receives the signed noncePaylod and verifies the signature to authenticate the user.
 	VerifySignature(c echo.Context) error
-	RegisterRoutes(g *echo.Group, apikeyMid echo.MiddlewareFunc)
+	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 	RefreshToken(c echo.Context) error
 }
 
@@ -174,13 +174,13 @@ func (l login) Logout(c echo.Context) error {
 	return c.JSON(http.StatusNoContent, nil)
 }
 
-func (l login) RegisterRoutes(g *echo.Group, apikeyMid echo.MiddlewareFunc) {
+func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
 	}
 	l.Group = g
 	g.GET("", l.NoncePayload)
-	g.POST("/sign", l.VerifySignature, apikeyMid)
-	g.POST("/refresh", l.RefreshToken, apikeyMid)
+	g.POST("/sign", l.VerifySignature, ms...)
+	g.POST("/refresh", l.RefreshToken, ms...)
 	g.POST("/logout", l.Logout)
 }

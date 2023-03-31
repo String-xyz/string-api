@@ -30,7 +30,7 @@ func TestStatus200CreateUser(t *testing.T) {
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	handler := NewUser(nil, stubs.User{}, stubs.Verification{})
-	handler.RegisterRoutes(e.Group("/users"), nil)
+	handler.RegisterRoutes(e.Group("/users"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
 	if assert.NoError(t, handler.Create(c)) {
@@ -50,7 +50,7 @@ func TestStatus200GetUserStatus(t *testing.T) {
 	c.Set("userId", "userId")
 
 	handler := NewUser(nil, stubs.User{}, stubs.Verification{})
-	handler.RegisterRoutes(e.Group("/users"), nil)
+	handler.RegisterRoutes(e.Group("/users"))
 
 	if assert.NoError(t, handler.Status(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -78,7 +78,7 @@ func TestStatus200UserUpdate(t *testing.T) {
 	c.Set("userId", "userId")
 
 	handler := NewUser(nil, stubs.User{}, stubs.Verification{})
-	handler.RegisterRoutes(e.Group("/users"), nil)
+	handler.RegisterRoutes(e.Group("/users"))
 
 	if assert.NoError(t, handler.Update(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -100,7 +100,7 @@ func TestStatus200VerifyEmail(t *testing.T) {
 	c.Set("userId", "userId")
 
 	handler := NewUser(nil, stubs.User{}, stubs.Verification{})
-	handler.RegisterRoutes(e.Group("/users"), nil)
+	handler.RegisterRoutes(e.Group("/users"))
 
 	if assert.NoError(t, handler.VerifyEmail(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)

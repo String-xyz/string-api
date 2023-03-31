@@ -12,7 +12,7 @@ import (
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
 
-func BearerAuth() echo.MiddlewareFunc {
+func JWTAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {

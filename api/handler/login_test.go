@@ -69,7 +69,7 @@ func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
-	handler.RegisterRoutes(e.Group("/login"), nil)
+	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
 	if assert.NoError(t, handler.NoncePayload(c)) {
