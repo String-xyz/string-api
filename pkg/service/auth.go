@@ -39,8 +39,9 @@ type JWT struct {
 }
 
 type JWTClaims struct {
-	UserId   string
-	DeviceId string
+	UserId     string `json:"userId"`
+	PlatformId string `json:"platformId"`
+	DeviceId   string `json:"deviceId"`
 	jwt.StandardClaims
 }
 
@@ -51,11 +52,11 @@ type Auth interface {
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signature is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
+	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error)
 
-	GenerateJWT(string, ...model.Device) (JWT, error)
-	ValidateAPIKey(key string) bool
-	RefreshToken(ctx context.Context, token string, walletAddress string) (UserCreateResponse, error)
+	GenerateJWT(string, string, ...model.Device) (JWT, error)
+	ValidateAPIKey(key string) (string, error)
+	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
 
@@ -87,7 +88,7 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
 }
 
-func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
+func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
@@ -123,7 +124,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	}
 
 	// Create the JWT
-	jwt, err := a.GenerateJWT(user.Id, device)
+	jwt, err := a.GenerateJWT(user.Id, platformId, device)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -138,7 +139,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
-func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
+func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (JWT, error) {
 	claims := JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
 	t := &JWT{
@@ -152,6 +153,7 @@ func (a auth) GenerateJWT(userId string, m ...model.Device) (JWT, error) {
 	}
 
 	claims.UserId = userId
+	claims.PlatformId = platformId
 	claims.ExpiresAt = t.ExpAt.Unix()
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
@@ -183,20 +185,29 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKey(key string) bool {
+func (a auth) ValidateAPIKey(key string) (string, error) {
 	ctx := context.Background()
 	authKey, err := a.repos.Apikey.GetByData(ctx, key)
 	if err != nil {
-		return false
+		return "", libcommon.StringError(err)
 	}
-	return authKey.Data == key
+
+	if authKey.Id == "" {
+		return "", libcommon.StringError(errors.New("invalid api key"))
+	}
+
+	if authKey.Data != key {
+		return "", libcommon.StringError(errors.New("invalid api key"))
+	}
+
+	return authKey.PlatformId, nil
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(libcommon.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string) (UserCreateResponse, error) {
+func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string, platformId string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 
 	// get user id from refresh token
@@ -226,7 +237,7 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	}
 
 	// create new jwt
-	jwt, err := a.GenerateJWT(userId, device)
+	jwt, err := a.GenerateJWT(userId, platformId, device)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}

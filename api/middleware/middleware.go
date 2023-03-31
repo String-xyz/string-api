@@ -12,7 +12,7 @@ import (
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
 
-func BearerAuth() echo.MiddlewareFunc {
+func JWTAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
@@ -23,6 +23,7 @@ func BearerAuth() echo.MiddlewareFunc {
 
 			c.Set("userId", claims.UserId)
 			c.Set("deviceId", claims.DeviceId)
+			c.Set("platformId", claims.PlatformId)
 			return t, err
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
@@ -38,8 +39,14 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			valid := service.ValidateAPIKey(auth)
-			return valid, nil
+			platformId, err := service.ValidateAPIKey(auth)
+			if err != nil {
+				return false, err
+			}
+
+			c.Set("platformId", platformId)
+
+			return true, nil
 		},
 	}
 	return echoMiddleware.KeyAuthWithConfig(config)

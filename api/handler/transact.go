@@ -41,9 +41,10 @@ func (t transaction) Transact(c echo.Context) error {
 	}
 	userId := c.Get("userId").(string)
 	deviceId := c.Get("deviceId").(string)
+	platformId := c.Get("platformId").(string)
 	ip := c.RealIP()
 
-	res, err := t.Service.Execute(ctx, body, userId, deviceId, ip)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)
 	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
 		libcommon.LogStringError(c, err, "transact: execute")
 		return httperror.Unprocessable(c)

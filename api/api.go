@@ -72,12 +72,12 @@ func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 
 func transactRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewTransaction(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/transactions"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/transactions"), middleware.JWTAuth())
 }
 
 func userRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewUser(e, services.User, services.Verification)
-	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyAuth(services.Auth), middleware.JWTAuth())
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {
@@ -92,5 +92,5 @@ func verificationRoute(services service.Services, e *echo.Echo) {
 
 func quoteRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewQuote(e, services.Transaction)
-	handler.RegisterRoutes(e.Group("/quotes"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/quotes"), middleware.JWTAuth())
 }
