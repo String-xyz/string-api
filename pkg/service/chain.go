@@ -14,6 +14,7 @@ type Chain struct {
 	RPC           string
 	PrivateRPC    string
 	Explorer      string
+	CoincapName   string
 	CoingeckoName string
 	OwlracleName  string
 	StringFee     float64
@@ -39,5 +40,5 @@ func ChainInfo(ctx context.Context, chainId uint64, networkRepo repository.Netwo
 	if err != nil {
 		return Chain{}, libcommon.StringError(err)
 	}
-	return Chain{ChainId: chainId, RPC: network.RPCUrl, PrivateRPC: network.PrivateRPC, Explorer: network.ExplorerUrl, CoingeckoName: asset.ValueOracle.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.Id, GasTokenId: network.GasTokenId}, nil
+	return Chain{ChainId: chainId, RPC: network.RPCUrl, PrivateRPC: network.PrivateRPC, Explorer: network.ExplorerUrl, CoingeckoName: asset.ValueOracle.String, CoincapName: asset.ValueOracle2.String, OwlracleName: network.GasOracle, StringFee: fee, UUID: network.Id, GasTokenId: network.GasTokenId}, nil
 }

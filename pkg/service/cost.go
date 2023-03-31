@@ -153,9 +153,18 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
 		cacheObject.Timestamp = time.Now().Unix()
-		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
+		// If coingecko is down, use coincap to get the price
+		err := common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", nil)
 		if err != nil {
-			return 0, libcommon.StringError(err)
+			cacheObject.Value, err = c.coingeckoUSD(coin)
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
+		} else {
+			cacheObject.Value, err = c.coincapUSD(coin)
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
@@ -187,7 +196,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 	return cacheObject.Value, nil
 }
 
-func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
+func (c cost) coingeckoUSD(coin string) (float64, error) {
 	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
@@ -205,6 +214,24 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 	// return 0, libcommon.StringError(errors.New("Price not found for " + coin))
 	// fmt.Printf("\n\nPRICE LOOKUP %+v", coin)
 	// TODO: this is getting hit somewhere, figure out why
+	return 0, nil
+}
+
+func (c cost) coincapUSD(coin string) (float64, error) {
+	requestURL := os.Getenv("COINCAP_API_URL") + "assets?search=" + coin
+	body := make(map[string]interface{})
+	err := common.GetJsonGeneric(requestURL, &body)
+	if err != nil {
+		return 0, libcommon.StringError(err)
+	}
+	res, found := body["data"].([]interface{})
+	if found && len(res) > 0 {
+		price, found := res[0].(map[string]interface{})["priceUsd"]
+		if found {
+			return price.(float64), nil
+		}
+	}
+
 	return 0, nil
 }
 

@@ -64,6 +64,7 @@ type Asset struct {
 	IsCrypto      bool           `json:"isCrypto" db:"is_crypto"`
 	NetworkId     sql.NullString `json:"networkId" db:"network_id"`
 	ValueOracle   sql.NullString `json:"valueOracle" db:"value_oracle"`
+	ValueOracle2  sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
 }
 
 // See USER_PLATFORM in Migrations 0002
