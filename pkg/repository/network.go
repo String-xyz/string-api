@@ -31,8 +31,8 @@ func NewNetwork(db database.Queryable) Network {
 func (n network[T]) Create(insert model.Network) (model.Network, error) {
 	m := model.Network{}
 	rows, err := n.Store.NamedQuery(`
-		INSERT INTO network (name, network_id, chain_id, gas_oracle, rpc_url, explorer_url, private_rpc) 
-		VALUES(:name, :network_id, :chain_id, :gas_oracle, :rpc_url, :explorer_url, :private_rpc) 	RETURNING *`, insert)
+		INSERT INTO network (name, network_id, chain_id, gas_oracle, rpc_url, explorer_url) 
+		VALUES(:name, :network_id, :chain_id, :gas_oracle, :rpc_url, :explorer_url) 	RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)

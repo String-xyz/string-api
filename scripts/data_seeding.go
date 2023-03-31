@@ -57,7 +57,7 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io", PrivateRPC: "https://patient-fabled-theorem.avalanche-testnet.quiknode.pro/9df804c90c99c9749808e2bb4e6a25d08fb58054/ext/bc/C/rpc"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -74,19 +74,19 @@ func DataSeeding() {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2")})
+	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network")})
+	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
@@ -247,7 +247,7 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io", PrivateRPC: "https://patient-fabled-theorem.avalanche-testnet.quiknode.pro/9df804c90c99c9749808e2bb4e6a25d08fb58054/ext/bc/C/rpc"})
+	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
@@ -264,19 +264,19 @@ func MockSeeding() {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2")})
+	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network")})
+	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}

@@ -49,7 +49,6 @@ type Network struct {
 	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
 	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
 	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
-	PrivateRPC    string     `json:"privateRpc" db:"private_rpc"`
 }
 
 // See ASSET in Migrations 0001
@@ -64,6 +63,7 @@ type Asset struct {
 	IsCrypto      bool           `json:"isCrypto" db:"is_crypto"`
 	NetworkId     sql.NullString `json:"networkId" db:"network_id"`
 	ValueOracle   sql.NullString `json:"valueOracle" db:"value_oracle"`
+	ValueOracle2  sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
 }
 
 // See USER_PLATFORM in Migrations 0002
