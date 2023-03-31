@@ -166,7 +166,7 @@ locals {
         },
         {
           name  = "BASE_URL"
-          value = "https://string-api.dev.string-api.xyz/"
+          value = "https://api.sandbox.string-api.xyz/"
         },
         {
           name  = "UNIT21_ENV"
