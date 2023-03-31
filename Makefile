@@ -10,7 +10,7 @@ ECS_API_REPO=${ECR}/${API}
 SERVICE_TAG=${tag}
 
 ECS_SANDBOX_CLUSTER=core-sandbox
-SANDBOX_API=core-sandbox-api
+SANDBOX_API=sandbox-string-api
 ECS_SANDBOX_API_REPO=${ECR}/${SANDBOX_API}
 
 all: build push deploy

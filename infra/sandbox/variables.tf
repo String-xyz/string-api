@@ -1,7 +1,7 @@
 locals {
   cluster_name       = "core-sandbox"
   env                = "sandbox"
-  service_name       = "core-sandbox-api"
+  service_name       = "sandbox-string-api"
   root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
   origin_id          = "sandbox-api"

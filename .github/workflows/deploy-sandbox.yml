@@ -41,7 +41,7 @@ jobs:
         id: image-builder
         env:
           ECR_REPO: ${{ secrets.AWS_ACCT }}.dkr.ecr.us-west-2.amazonaws.com
-          SERVICE: core-sandbox-api
+          SERVICE: sandbox-string-api
           IMAGE_TAG: ${{ github.sha }}
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
@@ -51,14 +51,14 @@ jobs:
 
       - name: get latest task definition
         run: |
-          aws ecs describe-task-definition --task-definition core-sandbox-api --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition sandbox-string-api --query taskDefinition > task-definition.json
       
       - name: update task definition
         id: task
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: core-sandbox-api
+          container-name: sandbox-string-api
           image: ${{ steps.image-builder.outputs.image }}
         
       - name: deploy
@@ -66,5 +66,5 @@ jobs:
         with:
           task-definition: ${{ steps.task.outputs.task-definition }}
           cluster: core-sandbox
-          service: core-sandbox-api
+          service: sandbox-string-api
           wait-for-service-stability: true
