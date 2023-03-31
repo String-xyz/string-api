@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"strconv"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
@@ -229,7 +230,8 @@ func (c cost) coincapUSD(coin string) (float64, error) {
 	if found && len(res) > 0 {
 		price, found := res[0].(map[string]interface{})["priceUsd"]
 		if found {
-			return price.(float64), nil
+			usd, _ := strconv.ParseFloat(price.(string), 64)
+			return usd, nil
 		}
 	}
 
