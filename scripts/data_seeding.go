@@ -13,9 +13,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Set this!
-const stringPublicAddress = "0x44A4b9E2A69d86BA382a511f845CbF2E31286771"
-
 func DataSeeding() {
 	// Initialize repos
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
@@ -23,6 +20,8 @@ func DataSeeding() {
 	if port == "" {
 		panic("no port!")
 	}
+
+	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
 
 	lg := zerolog.New(os.Stdout)
 
@@ -185,25 +184,6 @@ func DataSeeding() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Platforms, placeholder
-	/*platformDeveloper*/
-	placeholderPlatform, err := repos.Platform.Create(model.Platform{Name: "Nintendo", Description: "Fun"})
-
-	if err != nil {
-		panic(err)
-	}
-
-	platformId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
-	if bankId == "" {
-		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
-	}
-
-	updateId = UpdateId{Id: platformId}
-	err = repos.Platform.Update(ctx, placeholderPlatform.Id, updateId)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func MockSeeding() {
@@ -214,6 +194,8 @@ func MockSeeding() {
 		panic("no port!")
 	}
 	lg := zerolog.New(os.Stdout)
+
+	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
@@ -376,24 +358,6 @@ func MockSeeding() {
 
 	updateId = UpdateId{Id: walletId}
 	err = repos.Instrument.Update(ctx, walletString.Id, updateId)
-	if err != nil {
-		panic(err)
-	}
-
-	// Platforms, placeholder
-	/*platformDeveloper*/
-	placeholderPlatform, err := repos.Platform.Create(model.Platform{Name: "Nintendo", Description: "Fun"})
-	if err != nil {
-		panic(err)
-	}
-
-	platformId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
-	if bankId == "" {
-		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
-	}
-
-	updateId = UpdateId{Id: platformId}
-	err = repos.Platform.Update(ctx, placeholderPlatform.Id, updateId)
 	if err != nil {
 		panic(err)
 	}
