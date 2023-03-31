@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     environment: 
-      name: development
+      name: sandbox
       url: https://string-api.sandbox.string-api.xyz
 
     name: build push and deploy
