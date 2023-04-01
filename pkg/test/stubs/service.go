@@ -92,7 +92,7 @@ func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error
 	return a.SignablePayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string) (service.UserCreateResponse, error) {
+func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (service.UserCreateResponse, error) {
 	return a.UserCreateResponse, a.Error
 }
 
