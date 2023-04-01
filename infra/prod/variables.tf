@@ -53,10 +53,6 @@ locals {
           valueFrom = data.aws_ssm_parameter.string_bank_id.arn
         },
         {
-          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
-          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
-        },
-        {
           name      = "UNIT21_API_KEY"
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
         },
