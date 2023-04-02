@@ -397,6 +397,12 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Contracts, placeholder
+	_, err = repos.Contract.Create(model.Contract{Name: "String Test NFT", Address: "0x861aF9Ed4fEe884e5c49E9CE444359fe3631418B", Functions: []string{"mintTo(address)"}, NetworkID: networkFuji.Id, PlatformID: platformId})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func nullString(str string) sql.NullString {

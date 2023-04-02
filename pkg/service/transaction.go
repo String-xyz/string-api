@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -89,7 +90,19 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 		return res, libcommon.StringError(err)
 	}
 
-	// t.isContractAllowed(ctx, d)
+	// DEBUG
+	// TODO: Get callerId from context
+	callerId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
+	if callerId == "" {
+		return res, libcommon.StringError(errors.New("STRING_PLACEHOLDER_PLATFORM_ID is required to test Contract Allowlist"))
+	}
+	allowed, err := t.isContractAllowed(ctx, callerId, chain.UUID, d)
+	if err != nil {
+		return res, libcommon.StringError(err)
+	}
+	if !allowed {
+		return res, libcommon.StringError(errors.New("contract not allowed"))
+	}
 
 	executor := NewExecutor()
 	err = executor.Initialize(chain)
