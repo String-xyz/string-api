@@ -8,11 +8,11 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -51,17 +51,17 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 
 func (v verification) SendEmailVerification(ctx context.Context, userId, email string) error {
 	if !validEmail(email) {
-		return libcommon.StringError(errors.New("missing or invalid email"))
+		return libcommon.StringError(serror.INVALID_DATA)
 	}
 
 	user, err := v.repos.User.GetById(ctx, userId)
 	if err != nil || user.Id != userId {
-		return libcommon.StringError(errors.New("invalid user")) // JWT expiration will not be hit here
+		return libcommon.StringError(serror.INVALID_DATA) // JWT expiration will not be hit here
 	}
 
 	contact, _ := v.repos.Contact.GetByData(email)
 	if contact.Status == "validated" {
-		return libcommon.StringError(errors.New("email already verified"))
+		return libcommon.StringError(serror.ALREADY_IN_USE)
 	}
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
@@ -95,21 +95,23 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 		}
 		lastPolled = now
 		contact, err := v.repos.Contact.GetByData(email)
-		if err != nil && errors.Cause(err).Error() != "not found" {
+		if err != nil && serror.IsError(err, serror.NOT_FOUND) {
 			return libcommon.StringError(err)
 		} else if err == nil && contact.Data == email {
 			// success
 			// update user status
 			user, err := v.repos.User.UpdateStatus(userId, "email_verified")
 			if err != nil {
-				return libcommon.StringError(errors.New("User email verify error - userId: " + user.Id))
+				// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
+				return libcommon.StringError(err)
 			}
 
 			return nil
 		}
 	}
+
 	// timed out
-	return libcommon.StringError(errors.New("link expired"))
+	return libcommon.StringError(serror.EXPIRED)
 }
 
 func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
@@ -152,7 +154,7 @@ func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	// Wait for up to 15 minutes, final timeout TBD
 	now := time.Now()
 	if now.Unix()-received.Timestamp > (60 * 15) {
-		return libcommon.StringError(errors.New("link expired"))
+		return libcommon.StringError(serror.EXPIRED)
 	}
 	contact := model.Contact{UserId: received.UserId, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
 	contact, err = v.repos.Contact.Create(contact)
@@ -163,7 +165,8 @@ func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	// update user status
 	user, err := v.repos.User.UpdateStatus(received.UserId, "email_verified")
 	if err != nil {
-		return libcommon.StringError(errors.New("User email verify error - userId: " + user.Id))
+		// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
+		return libcommon.StringError(err)
 	}
 
 	// Create a new context since this will run in background
