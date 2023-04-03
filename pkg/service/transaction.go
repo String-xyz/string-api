@@ -26,7 +26,7 @@ import (
 
 type Transaction interface {
 	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error)
-	Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (model.TransactionReceipt, error)
+	Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (model.TransactionReceipt, error)
 }
 
 type TransactionRepos struct {
@@ -125,12 +125,13 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (model.TransactionReceipt, error) {
+	res := model.TransactionReceipt{}
 	t.getStringInstrumentsAndUserId()
 	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
 	// Pre-flight transaction setup
-	p, err = t.transactionSetup(ctx, p)
+	p, err := t.transactionSetup(ctx, p)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
