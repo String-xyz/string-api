@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/checkout/checkout-sdk-go"
-	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
+	ckocommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/customers"
 	"github.com/checkout/checkout-sdk-go/httpclient"
 	"github.com/checkout/checkout-sdk-go/instruments"
@@ -31,9 +31,9 @@ type CustomerResponse struct {
 type CustomerData struct {
 	Id string `json:"id"`
 	*customers.Customer
-	Phone       *checkoutCommon.Phone `json:"phone,omitempty"`
-	Metadata    map[string]string     `json:"metadata,omitempty"`
-	Instruments []CustomerInstrument  `json:"instruments,omitempty"`
+	Phone       *ckocommon.Phone     `json:"phone,omitempty"`
+	Metadata    map[string]string    `json:"metadata,omitempty"`
+	Instruments []CustomerInstrument `json:"instruments,omitempty"`
 }
 
 type CustomerInstrument struct {
