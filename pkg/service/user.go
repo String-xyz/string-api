@@ -104,7 +104,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
-	if err != nil && serror.IsError(err, serror.NOT_FOUND) {
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return resp, libcommon.StringError(err)
 	}
 

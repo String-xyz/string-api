@@ -124,27 +124,27 @@ func DefaultErrorHandler(c echo.Context, err error) error {
 		return nil
 	}
 
-	if serror.IsError(err, serror.NOT_FOUND) {
+	if serror.Is(err, serror.NOT_FOUND) {
 		return httperror.NotFoundError(c)
 	}
 
-	if serror.IsError(err, serror.FORBIDDEN) {
+	if serror.Is(err, serror.FORBIDDEN) {
 		return httperror.ForbiddenError(c, "Invoking member lacks authority")
 	}
 
-	if serror.IsError(err, serror.INVALID_RESET_TOKEN) {
+	if serror.Is(err, serror.INVALID_RESET_TOKEN) {
 		return httperror.BadRequestError(c, "Invalid password reset token")
 	}
 
-	if serror.IsError(err, serror.INVALID_PASSWORD) {
+	if serror.Is(err, serror.INVALID_PASSWORD) {
 		return httperror.BadRequestError(c, "Invalid password")
 	}
 
-	if serror.IsError(err, serror.ALREADY_IN_USE) {
+	if serror.Is(err, serror.ALREADY_IN_USE) {
 		return httperror.ConflictError(c, "Already in use")
 	}
 
-	if serror.IsError(err, serror.INVALID_DATA) {
+	if serror.Is(err, serror.INVALID_DATA) {
 		return httperror.BadRequestError(c, "Invalid data")
 	}
 

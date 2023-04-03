@@ -14,7 +14,7 @@ import (
 func GetObjectFromCache[T any](redis database.RedisStore, key string) (T, error) {
 	var result *T = new(T)
 	bytes, err := redis.Get(key)
-	if err != nil && serror.IsError(err, serror.NOT_FOUND) && len(bytes) == 0 {
+	if err != nil && serror.Is(err, serror.NOT_FOUND) && len(bytes) == 0 {
 		return *result, nil // object doesn't exist yet, create it down the stack
 	} else if err != nil {
 		// Work around the way that redis go api scopes error

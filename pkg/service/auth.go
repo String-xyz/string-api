@@ -9,6 +9,7 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -121,7 +122,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	// and if verification is not bypassed
 	if bypassDevice != "true" && user.Email != "" && !isDeviceValidated(device) {
 		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
-		return resp, libcommon.StringError(errors.New("unknown device"))
+		return resp, libcommon.StringError(serror.UNKNOWN_DEVICE)
 	}
 
 	// Create the JWT
@@ -221,14 +222,11 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	// Verify user is registered to this wallet address
 	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			return resp, libcommon.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
-		}
 		return resp, libcommon.StringError(err)
 	}
 
 	if instrument.UserId != userId {
-		return resp, libcommon.StringError(errors.New("wallet address not associated with this user: " + walletAddress))
+		return resp, libcommon.StringError(serror.NOT_FOUND)
 	}
 
 	// get device

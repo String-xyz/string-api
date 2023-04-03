@@ -95,12 +95,12 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 		}
 		lastPolled = now
 		contact, err := v.repos.Contact.GetByData(email)
-		if err != nil && serror.IsError(err, serror.NOT_FOUND) {
+		if err != nil && serror.Is(err, serror.NOT_FOUND) {
 			return libcommon.StringError(err)
 		} else if err == nil && contact.Data == email {
 			// success
 			// update user status
-			user, err := v.repos.User.UpdateStatus(userId, "email_verified")
+			_, err := v.repos.User.UpdateStatus(userId, "email_verified")
 			if err != nil {
 				// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
 				return libcommon.StringError(err)

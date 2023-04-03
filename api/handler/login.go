@@ -4,10 +4,10 @@ import (
 	b64 "encoding/base64"
 	"net/http"
 	"os"
-	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
@@ -19,7 +19,7 @@ type Login interface {
 	// User must provide a valid wallet address
 	NoncePayload(c echo.Context) error
 
-	//VerifySignature receives the signed noncePaylod and verifies the signature to authenticate the user.
+	//VerifySignature receives the signed noncePayload and verifies the signature to authenticate the user.
 	VerifySignature(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 	RefreshToken(c echo.Context) error
@@ -78,10 +78,11 @@ func (l login) VerifySignature(c echo.Context) error {
 
 	resp, err := l.Service.VerifySignedPayload(ctx, body, platformId, bypassDevice)
 	if err != nil {
-		if strings.Contains(err.Error(), "unknown device") {
+		if serror.Is(err, serror.UNKNOWN_DEVICE) {
 			return httperror.Unprocessable(c)
 		}
-		if strings.Contains(err.Error(), "invalid email") {
+
+		if serror.Is(err, serror.INVALID_DATA) {
 			return httperror.BadRequestError(c, "Invalid Email")
 		}
 
@@ -132,11 +133,12 @@ func (l login) RefreshToken(c echo.Context) error {
 
 	resp, err := l.Service.RefreshToken(ctx, cookie.Value, body.WalletAddress, platformId)
 	if err != nil {
-		if strings.Contains(err.Error(), "wallet address not associated with this user") {
+		libcommon.LogStringError(c, err, "login: refresh token")
+
+		if serror.Is(err, serror.NOT_FOUND) {
 			return httperror.BadRequestError(c, "wallet address not associated with this user")
 		}
 
-		libcommon.LogStringError(c, err, "login: refresh token")
 		return httperror.BadRequestError(c, "Invalid or expired token")
 	}
 

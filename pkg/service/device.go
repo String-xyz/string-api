@@ -87,7 +87,7 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 		}
 
 		/* create device only if the error is not found */
-		if serror.IsError(err, serror.NOT_FOUND) {
+		if serror.Is(err, serror.NOT_FOUND) {
 			visitor, fpErr := d.fingerprint.GetVisitor(visitorId, requestId)
 			if fpErr != nil {
 				return model.Device{}, libcommon.StringError(fpErr)
@@ -139,7 +139,7 @@ func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device
 	var device model.Device
 
 	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "unknown")
-	if err != nil && !serror.IsError(err, serror.NOT_FOUND) {
+	if err != nil && !serror.Is(err, serror.NOT_FOUND) {
 		return device, libcommon.StringError(err)
 	}
 
