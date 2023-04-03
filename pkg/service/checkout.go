@@ -62,6 +62,7 @@ func GetCustomerInstruments(Id string) ([]customer.CustomerInstrument, error) {
 	if err != nil {
 		return nil, libcommon.StringError(err)
 	}
+
 	if response.StatusResponse.StatusCode == 200 {
 		return response.Customer.Instruments, nil
 	}

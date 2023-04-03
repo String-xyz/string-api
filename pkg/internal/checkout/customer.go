@@ -43,18 +43,19 @@ type CustomerInstrument struct {
 
 func (c Customer) GetCustomer(customerId string) (*CustomerResponse, error) {
 	url := fmt.Sprintf("/%v/%v", "customers", customerId)
-	fmt.Printf("\n\n>>>>>>>>>>>> url: %+v", url)
 	response, err := c.API.Get(url)
 	resp := &CustomerResponse{
 		StatusResponse: response,
 	}
 	if err != nil && response.StatusCode != http.StatusNotFound {
-		fmt.Printf("\n\n>>>>>>>>>>>> err in GetCustomer: %+v", err)
 		return resp, err
 	}
 	if response.StatusCode == http.StatusOK {
 		var customer CustomerData
 		err = json.Unmarshal(response.ResponseBody, &customer)
+		if err != nil {
+			return resp, err
+		}
 		resp.Customer = &customer
 	}
 	return resp, nil
