@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.0"
+  default = "v1.0.1"
 }
 
 locals {
@@ -53,10 +53,6 @@ locals {
         {
           name      = "STRING_BANK_ID"
           valueFrom = data.aws_ssm_parameter.string_bank_id.arn
-        },
-        {
-          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
-          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
         },
         {
           name      = "UNIT21_API_KEY"
@@ -161,12 +157,16 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
+          name = "COINCAP_API_URL"
+          value = "https://api.coincap.io/v2/"
+        },
+        {
           name  = "FINGERPRINT_API_URL"
           value = "https://api.fpjs.io/"
         },
         {
           name  = "BASE_URL"
-          value = "https://string-api.dev.string-api.xyz/"
+          value = "https://api.sandbox.string-api.xyz/"
         },
         {
           name  = "UNIT21_ENV"
