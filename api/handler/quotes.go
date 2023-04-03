@@ -39,7 +39,7 @@ func (q quote) Quote(c echo.Context) error {
 		SanitizeChecksums(&body.CxParams[i])
 	}
 
-	platformId := c.Get("userId").(string)
+	platformId := c.Get("platformId").(string)
 	res, err := q.Service.Quote(ctx, body, platformId) // TODO: pass in userId and use it
 	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
 		return httperror.BadRequestError(c, "The requested blockchain operation will revert")
