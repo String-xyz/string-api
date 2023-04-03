@@ -7,6 +7,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -59,7 +60,7 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(ctx, body, platformId)
 	if err != nil {
-		if strings.Contains(err.Error(), "wallet already associated with user") {
+		if serror.Is(err, serror.ALREADY_IN_USE) {
 			return httperror.ConflictError(c)
 		}
 
@@ -121,7 +122,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 
 	err := u.verificationService.SendEmailVerification(ctx, userId, email)
 	if err != nil {
-		if strings.Contains(err.Error(), "email already verified") {
+		if serror.Is(err, serror.ALREADY_IN_USE) {
 			return httperror.ConflictError(c)
 		}
 

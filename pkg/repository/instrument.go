@@ -11,7 +11,6 @@ import (
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 )
 
 type Instrument interface {
@@ -93,12 +92,13 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	wallet, err := i.GetWalletByAddr(addr)
 
-	if err != nil && errors.Cause(err).Error() != "not found" { // because we are wrapping error and care about its value
+	// TODO: Ask chatgpt to refactor this
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return true, libcommon.StringError(err)
 	} else if err == nil && wallet.UserId != "" {
-		return true, libcommon.StringError(errors.New("wallet already associated with user"))
+		return true, libcommon.StringError(serror.ALREADY_IN_USE)
 	} else if err == nil && wallet.PublicKey == addr {
-		return true, libcommon.StringError(errors.New("wallet already exists"))
+		return true, libcommon.StringError(serror.ALREADY_IN_USE)
 	}
 
 	return false, nil
