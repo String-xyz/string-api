@@ -65,6 +65,7 @@ type transactionProcessingData struct {
 	user                          *model.User
 	deviceId                      *string
 	ip                            *string
+	platformId                    *string
 	executor                      *Executor
 	processingFeeAsset            *model.Asset
 	transactionModel              *model.Transaction
@@ -124,9 +125,9 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip}
+	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(ctx, p)
@@ -177,7 +178,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.chain = &chain
 
 	// Create new Tx in repository, populate it with known info
-	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: t.ids.StringPlatformId})
+	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -797,12 +798,17 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
+	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+
 	receiptBody := [][2]string{
 		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
 		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + p.executionRequest.UserAddress + "'>" + p.executionRequest.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
-		{"Platform", "String Demo"},            // TODO: retrieve dynamically
+		{"Platform", platform.Name},
 		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
 		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},

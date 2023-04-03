@@ -79,15 +79,15 @@ data "aws_ssm_parameter" "owlracle_api_secret" {
 }
 
 data "aws_ssm_parameter" "db_password" {
-  name = "string-rds-pg-db-password"
+  name = "${local.env}-rds-pg-db-password"
 }
 
 data "aws_ssm_parameter" "db_username" {
-  name = "string-rds-pg-db-username"
+  name = "${local.env}-rds-pg-db-username"
 }
 
 data "aws_ssm_parameter" "db_name" {
-  name = "string-rds-pg-db-name"
+  name = "${local.env}-rds-pg-db-name"
 }
 
 data "aws_ssm_parameter" "db_host" {

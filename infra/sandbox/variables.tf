@@ -1,7 +1,7 @@
 locals {
   cluster_name       = "core-sandbox"
   env                = "sandbox"
-  service_name       = "api"
+  service_name       = "sandbox-string-api"
   root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
   origin_id          = "sandbox-api"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v.1.0.0-alpha"
+  default = "v1.0.1"
 }
 
 locals {
@@ -53,10 +53,6 @@ locals {
         {
           name      = "STRING_BANK_ID"
           valueFrom = data.aws_ssm_parameter.string_bank_id.arn
-        },
-        {
-          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
-          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
         },
         {
           name      = "UNIT21_API_KEY"
@@ -161,12 +157,16 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
+          name = "COINCAP_API_URL"
+          value = "https://api.coincap.io/v2/"
+        },
+        {
           name  = "FINGERPRINT_API_URL"
           value = "https://api.fpjs.io/"
         },
         {
           name  = "BASE_URL"
-          value = "https://string-api.dev.string-api.xyz/"
+          value = "https://api.sandbox.string-api.xyz/"
         },
         {
           name  = "UNIT21_ENV"
@@ -239,6 +239,12 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
+      environment = [ 
+        {
+          name  = "DD_ENV"
+          value = local.env
+        }
+      ]
       portMappings = [{
         hostPort      = 8126,
         protocol      = "tcp",

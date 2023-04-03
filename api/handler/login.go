@@ -52,6 +52,8 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
+	platformId := c.Get("platformId").(string)
+
 	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
@@ -72,7 +74,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := l.Service.VerifySignedPayload(ctx, body)
+	resp, err := l.Service.VerifySignedPayload(ctx, body, platformId)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown device") {
 			return httperror.Unprocessable(c)
@@ -104,6 +106,8 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
+	platformId := c.Get("platformId").(string)
+
 	ctx := c.Request().Context()
 	var body model.RefreshTokenPayload
 	err := c.Bind(&body)
@@ -124,7 +128,7 @@ func (l login) RefreshToken(c echo.Context) error {
 		return httperror.Unauthorized(c)
 	}
 
-	resp, err := l.Service.RefreshToken(ctx, cookie.Value, body.WalletAddress)
+	resp, err := l.Service.RefreshToken(ctx, cookie.Value, body.WalletAddress, platformId)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet address not associated with this user") {
 			return httperror.BadRequestError(c, "wallet address not associated with this user")
@@ -175,9 +179,8 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 		panic("No group attached to the User Handler")
 	}
 	l.Group = g
-	g.Use(ms...)
 	g.GET("", l.NoncePayload)
-	g.POST("/sign", l.VerifySignature)
-	g.POST("/refresh", l.RefreshToken)
+	g.POST("/sign", l.VerifySignature, ms...)
+	g.POST("/refresh", l.RefreshToken, ms...)
 	g.POST("/logout", l.Logout)
 }

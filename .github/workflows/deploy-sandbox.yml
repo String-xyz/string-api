@@ -1,0 +1,70 @@
+name: deploy to sandbox
+permissions:
+  id-token: write
+  contents: read
+on: 
+  push: 
+    branches: [sandbox]
+jobs:
+  deploy:
+    environment: 
+      name: sandbox
+      url: https://string-api.sandbox.string-api.xyz
+
+    name: build push and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+      - name: install deps
+        run: |
+          go mod download
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.ASSUME_ROLE }}
+
+      - name: login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+  
+      - name: build,tag and push to Amazon ECR
+        id: image-builder
+        env:
+          ECR_REPO: ${{ secrets.AWS_ACCT }}.dkr.ecr.us-west-2.amazonaws.com
+          SERVICE: sandbox-string-api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
+          docker build --platform linux/amd64 -t $ECR_REPO/$SERVICE:$IMAGE_TAG ./cmd/app/
+          docker push $ECR_REPO/$SERVICE:$IMAGE_TAG
+          echo "image=$ECR_REPO/$SERVICE:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: get latest task definition
+        run: |
+          aws ecs describe-task-definition --task-definition sandbox-string-api --query taskDefinition > task-definition.json
+      
+      - name: update task definition
+        id: task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: sandbox-string-api
+          image: ${{ steps.image-builder.outputs.image }}
+        
+      - name: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1 
+        with:
+          task-definition: ${{ steps.task.outputs.task-definition }}
+          cluster: core-sandbox
+          service: sandbox-string-api
+          wait-for-service-stability: true

@@ -35,6 +35,8 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 }
 
 func (u user) Create(c echo.Context) error {
+	platformId := c.Get("platformId").(string)
+
 	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
 	err := c.Bind(&body)
@@ -55,7 +57,7 @@ func (u user) Create(c echo.Context) error {
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := u.userService.Create(ctx, body)
+	resp, err := u.userService.Create(ctx, body, platformId)
 	if err != nil {
 		if strings.Contains(err.Error(), "wallet already associated with user") {
 			return httperror.ConflictError(c)
@@ -141,10 +143,11 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	u.Group = g
 	// create does not require JWT auth middleware
 	// hence adding only the first middleware only which is APIKey
-	// Please pass the middle in order of API -> JWT otherwise this wont work.
-	if len(ms) > 0 {
-		g.POST("", u.Create, ms[0])
-	}
+	g.POST("", u.Create, ms[0])
+
+	// the rest of the endpoints do not require api key
+	ms = ms[1:]
+
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
 	g.PUT("/:id", u.Update, ms...)

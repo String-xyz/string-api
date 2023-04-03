@@ -31,8 +31,8 @@ func NewAsset(db database.Queryable) Asset {
 func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
 	m := model.Asset{}
 	rows, err := a.Store.NamedQuery(`
-		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle) 
-		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle) 	RETURNING *`, insert)
+		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2) 
+		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) 	RETURNING *`, insert)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
