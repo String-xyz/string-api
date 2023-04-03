@@ -13,7 +13,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 )
 
 type Device interface {
@@ -42,7 +41,7 @@ func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 
 	now := time.Now()
 	if now.Unix()-received.Timestamp > (60 * 15) {
-		return libcommon.StringError(errors.New("link expired"))
+		return libcommon.StringError(serror.EXPIRED)
 	}
 	err = d.repos.Device.Update(ctx, received.DeviceId, model.DeviceUpdates{ValidatedAt: &now})
 	return err

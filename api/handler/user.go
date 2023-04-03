@@ -3,7 +3,6 @@ package handler
 import (
 	b64 "encoding/base64"
 	"net/http"
-	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
@@ -126,7 +125,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 			return httperror.ConflictError(c)
 		}
 
-		if strings.Contains(err.Error(), "link expired") {
+		if serror.Is(err, serror.EXPIRED) {
 			return httperror.ForbiddenError(c, "Link expired, please request a new one")
 		}
 
