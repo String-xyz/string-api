@@ -34,8 +34,8 @@ func NewContract(db database.Queryable) Contract {
 func (u contract[T]) Create(insert model.Contract) (model.Contract, error) {
 	m := model.Contract{}
 	rows, err := u.Store.NamedQuery(`
-		INSERT INTO contact (user_id, data, type, status) 
-		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
+		INSERT INTO contract (name, address, functions, network_id, platform_id) 
+		VALUES(:name, :address, :functions, :network_id, :platform_id) RETURNING *`, insert)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

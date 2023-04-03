@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +25,7 @@ import (
 )
 
 type Transaction interface {
-	Quote(ctx context.Context, d model.TransactionRequest) (model.PrecisionSafeExecutionRequest, error)
+	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error)
 	Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, ip string) (model.TransactionReceipt, error)
 }
 
@@ -81,7 +80,7 @@ type transactionProcessingData struct {
 	trueGas                       *uint64
 }
 
-func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (model.PrecisionSafeExecutionRequest, error) {
+func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error) {
 	// TODO: use prefab service to parse d and fill out known params
 	res := model.PrecisionSafeExecutionRequest{TransactionRequest: d}
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
@@ -90,13 +89,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest) (mod
 		return res, libcommon.StringError(err)
 	}
 
-	// DEBUG
-	// TODO: Get callerId from context
-	callerId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
-	if callerId == "" {
-		return res, libcommon.StringError(errors.New("STRING_PLACEHOLDER_PLATFORM_ID is required to test Contract Allowlist"))
-	}
-	allowed, err := t.isContractAllowed(ctx, callerId, chain.UUID, d)
+	allowed, err := t.isContractAllowed(ctx, platformId, chain.UUID, d)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
