@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	customer "github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/payments"
@@ -47,6 +48,26 @@ func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
 		return token, libcommon.StringError(err)
 	}
 	return token, nil
+}
+
+func GetCustomerInstruments(Id string) ([]customer.CustomerInstrument, error) {
+	config, err := getConfig()
+	if err != nil {
+		return nil, libcommon.StringError(err)
+	}
+
+	customer := customer.NewCustomer(*config)
+
+	response, err := customer.GetCustomer(Id)
+	if err != nil {
+		return nil, libcommon.StringError(err)
+	}
+
+	if response.StatusResponse.StatusCode == 200 {
+		return response.Customer.Instruments, nil
+	}
+
+	return nil, nil
 }
 
 type AuthorizedCharge struct {
