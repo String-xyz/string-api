@@ -67,7 +67,6 @@ func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
 		strings.Contains(errors.Cause(err).Error(), "no rows in result set"):
 		return m, serror.NOT_FOUND
 	default:
-		fmt.Println("<<<< `GetWalletByAddr` error >>>>", err)
 		return m, libcommon.StringError(err)
 	}
 }
