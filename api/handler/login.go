@@ -54,10 +54,12 @@ func (l login) NoncePayload(c echo.Context) error {
 func (l login) VerifySignature(c echo.Context) error {
 	platformId := c.Get("platformId").(string)
 
+	bypassDevice := c.QueryParam("bypassDevice")
+
 	ctx := c.Request().Context()
+
 	var body model.WalletSignaturePayloadSigned
-	err := c.Bind(&body)
-	if err != nil {
+	if err := c.Bind(&body); err != nil {
 		libcommon.LogStringError(c, err, "login: binding body")
 		return httperror.BadRequestError(c)
 	}
@@ -67,14 +69,14 @@ func (l login) VerifySignature(c echo.Context) error {
 	}
 
 	// base64 decode nonce
-	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
+	decodedNonce, err := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
 		libcommon.LogStringError(c, err, "login: verify signature decode nonce")
 		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
 
-	resp, err := l.Service.VerifySignedPayload(ctx, body, platformId)
+	resp, err := l.Service.VerifySignedPayload(ctx, body, platformId, bypassDevice)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown device") {
 			return httperror.Unprocessable(c)
