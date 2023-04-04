@@ -278,7 +278,7 @@ func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) erro
 
 	// Verify timestamp is not expired past 15 minutes
 	if time.Now().Unix() > preSignedPayload.Timestamp+(15*60) {
-		return libcommon.StringError(errors.New("login payload expired"))
+		return libcommon.StringError(serror.EXPIRED)
 	}
 
 	return nil

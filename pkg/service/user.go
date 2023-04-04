@@ -82,6 +82,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
+
 	if exists {
 		return resp, libcommon.StringError(serror.ALREADY_IN_USE)
 	}

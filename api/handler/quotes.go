@@ -43,13 +43,18 @@ func (q quote) Quote(c echo.Context) error {
 	if !ok {
 		return httperror.InternalError(c, "Platform ID not found")
 	}
+
 	res, err := q.Service.Quote(ctx, body, platformId)
-	if err != nil && errors.Cause(err).Error() == "w3: response handling failed: execution reverted" {
-		return httperror.BadRequestError(c, "The requested blockchain operation will revert")
-	} else if err != nil {
+	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote")
+
+		if errors.Cause(err).Error() == "w3: response handling failed: execution reverted" { // TODO: use a custom error
+			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
+		}
+
 		return httperror.InternalError(c, "Quote Service Failed")
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 

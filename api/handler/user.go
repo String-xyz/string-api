@@ -59,11 +59,20 @@ func (u user) Create(c echo.Context) error {
 
 	resp, err := u.userService.Create(ctx, body, platformId)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: creating user")
+
 		if serror.Is(err, serror.ALREADY_IN_USE) {
 			return httperror.ConflictError(c)
 		}
 
-		libcommon.LogStringError(c, err, "user: creating user")
+		if serror.Is(err, serror.NOT_FOUND) {
+			return httperror.NotFoundError(c)
+		}
+
+		if serror.Is(err, serror.EXPIRED) {
+			return httperror.ForbiddenError(c, "Link expired, please request a new one")
+		}
+
 		return httperror.InternalError(c)
 	}
 	// set auth cookies
@@ -121,6 +130,8 @@ func (u user) VerifyEmail(c echo.Context) error {
 
 	err := u.verificationService.SendEmailVerification(ctx, userId, email)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: email verification")
+
 		if serror.Is(err, serror.ALREADY_IN_USE) {
 			return httperror.ConflictError(c)
 		}
@@ -129,7 +140,6 @@ func (u user) VerifyEmail(c echo.Context) error {
 			return httperror.ForbiddenError(c, "Link expired, please request a new one")
 		}
 
-		libcommon.LogStringError(c, err, "user: email verification")
 		return httperror.InternalError(c, "Unable to send email verification")
 	}
 

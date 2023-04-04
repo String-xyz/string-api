@@ -43,8 +43,7 @@ func (l login) NoncePayload(c echo.Context) error {
 	SanitizeChecksums(&walletAddress)
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
-		libcommon.LogStringError(c, err, "login: request wallet login")
-		return httperror.InternalError(c)
+		return DefaultErrorHandler(c, err, "login: NoncePayload")
 	}
 
 	encodedNonce := b64.StdEncoding.EncodeToString([]byte(payload.Nonce))
@@ -78,6 +77,8 @@ func (l login) VerifySignature(c echo.Context) error {
 
 	resp, err := l.Service.VerifySignedPayload(ctx, body, platformId, bypassDevice)
 	if err != nil {
+		libcommon.LogStringError(c, err, "login: verify signature")
+
 		if serror.Is(err, serror.UNKNOWN_DEVICE) {
 			return httperror.Unprocessable(c)
 		}
@@ -86,7 +87,10 @@ func (l login) VerifySignature(c echo.Context) error {
 			return httperror.BadRequestError(c, "Invalid Email")
 		}
 
-		libcommon.LogStringError(c, err, "login: verify signature")
+		if serror.Is(err, serror.EXPIRED) {
+			return httperror.BadRequestError(c, "Expired, request a new payload")
+		}
+
 		return httperror.BadRequestError(c, "Invalid Payload")
 	}
 
@@ -165,8 +169,8 @@ func (l login) Logout(c echo.Context) error {
 	err = l.Service.InvalidateRefreshToken(cookie.Value)
 	if err != nil {
 		libcommon.LogStringError(c, err, "Token not found")
+		// if error continue anyway, at least delete the cookies
 	}
-	// There is no need to invalidate the access token since it is a short lived token
 
 	// delete auth cookies
 	err = DeleteAuthCookies(c)
