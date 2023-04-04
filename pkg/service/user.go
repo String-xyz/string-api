@@ -6,11 +6,11 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -60,7 +60,7 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 		res.Status = user.Status
 		return res, nil
 	}
-	return res, libcommon.StringError(errors.New("not found"))
+	return res, libcommon.StringError(serror.NOT_FOUND)
 }
 
 func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
@@ -71,9 +71,10 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 		return resp, libcommon.StringError(err)
 	}
 
+	// Make sure address is a wallet and not a smart contract
 	addr := payload.Address
-	if addr == "" {
-		return resp, libcommon.StringError(errors.New("no wallet address provided"))
+	if addr == "" || !common.IsWallet(addr) {
+		return resp, libcommon.StringError(serror.INVALID_DATA)
 	}
 
 	// Make sure wallet does not already exist
@@ -83,12 +84,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	if exists {
-		return resp, libcommon.StringError(errors.New("wallet already exists"))
-	}
-
-	// Make sure address is a wallet and not a smart contract
-	if !common.IsWallet(addr) {
-		return resp, libcommon.StringError(errors.New("address provided is not a valid wallet"))
+		return resp, libcommon.StringError(serror.ALREADY_IN_USE)
 	}
 
 	// Verify payload integrity
@@ -109,7 +105,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 
 	// create device only if there is a visitor
 	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
-	if err != nil && errors.Cause(err).Error() != "not found" {
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return resp, libcommon.StringError(err)
 	}
 
@@ -158,7 +154,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 		return user, libcommon.StringError(err)
 	}
 	if err := u.repos.User.Commit(); err != nil {
-		return user, libcommon.StringError(errors.New("error commiting transaction"))
+		return user, libcommon.StringError(err)
 	}
 
 	// Create a new context since this will run in background

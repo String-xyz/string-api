@@ -45,12 +45,13 @@ func (t transaction) Transact(c echo.Context) error {
 	ip := c.RealIP()
 
 	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)
-	if err != nil && (strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:")) {
-		libcommon.LogStringError(c, err, "transact: execute")
-		return httperror.Unprocessable(c)
-	}
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute")
+
+		if strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:") {
+			return httperror.Unprocessable(c)
+		}
+
 		return httperror.InternalError(c)
 	}
 

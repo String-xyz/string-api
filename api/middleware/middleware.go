@@ -28,6 +28,7 @@ func JWTAuth() echo.MiddlewareFunc {
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
+			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 
 			return httperror.Unauthorized(c)
 		},
@@ -41,6 +42,7 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 		Validator: func(auth string, c echo.Context) (bool, error) {
 			platformId, err := service.ValidateAPIKey(auth)
 			if err != nil {
+				libcommon.LogStringError(c, err, "Error in APIKeyAuth middleware")
 				return false, err
 			}
 

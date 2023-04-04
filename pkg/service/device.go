@@ -13,7 +13,6 @@ import (
 	"github.com/String-xyz/string-api/pkg/repository"
 
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 )
 
 type Device interface {
@@ -42,7 +41,7 @@ func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 
 	now := time.Now()
 	if now.Unix()-received.Timestamp > (60 * 15) {
-		return libcommon.StringError(errors.New("link expired"))
+		return libcommon.StringError(serror.EXPIRED)
 	}
 	err = d.repos.Device.Update(ctx, received.DeviceId, model.DeviceUpdates{ValidatedAt: &now})
 	return err
@@ -87,7 +86,7 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 		}
 
 		/* create device only if the error is not found */
-		if serror.IsError(err, serror.NOT_FOUND) {
+		if serror.Is(err, serror.NOT_FOUND) {
 			visitor, fpErr := d.fingerprint.GetVisitor(visitorId, requestId)
 			if fpErr != nil {
 				return model.Device{}, libcommon.StringError(fpErr)
@@ -139,7 +138,7 @@ func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device
 	var device model.Device
 
 	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "unknown")
-	if err != nil && !serror.IsError(err, serror.NOT_FOUND) {
+	if err != nil && !serror.Is(err, serror.NOT_FOUND) {
 		return device, libcommon.StringError(err)
 	}
 

@@ -149,7 +149,7 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntri
 func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 	cacheName := "usd_value_" + coin
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
-	if err != nil && serror.IsError(err, serror.NOT_FOUND) {
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return 0.0, libcommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {

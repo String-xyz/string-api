@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: We could use the go=lib here
 func StringError(err error, optionalMsg ...string) error {
 	if err == nil {
 		return nil

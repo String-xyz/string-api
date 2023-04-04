@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
@@ -55,13 +56,19 @@ func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error)
 
 func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE public_key = $1", i.Table), addr)
-	if err != nil && err == sql.ErrNoRows {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE public_key = $1", i.Table)
+	err := i.Store.Get(&m, query, addr)
+
+	switch {
+	case err == nil:
+		return m, nil
+	case errors.Is(err, sql.ErrNoRows),
+		strings.Contains(errors.Cause(err).Error(), "not found"),
+		strings.Contains(errors.Cause(err).Error(), "no rows in result set"):
 		return m, serror.NOT_FOUND
-	} else if err != nil {
+	default:
 		return m, libcommon.StringError(err)
 	}
-	return m, nil
 }
 
 func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrument, err error) {
@@ -93,12 +100,18 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	wallet, err := i.GetWalletByAddr(addr)
 
-	if err != nil && errors.Cause(err).Error() != "not found" { // because we are wrapping error and care about its value
-		return true, libcommon.StringError(err)
-	} else if err == nil && wallet.UserId != "" {
-		return true, libcommon.StringError(errors.New("wallet already associated with user"))
-	} else if err == nil && wallet.PublicKey == addr {
-		return true, libcommon.StringError(errors.New("wallet already exists"))
+	// not found error means wallet does not exist
+	if serror.Is(err, serror.NOT_FOUND) {
+		return false, nil
+	}
+
+	// throw unknown errors
+	if err != nil {
+		return false, libcommon.StringError(err)
+	}
+
+	if wallet.UserId != "" || wallet.PublicKey == addr {
+		return true, nil
 	}
 
 	return false, nil
