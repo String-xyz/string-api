@@ -361,30 +361,6 @@ func MockSeeding() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Platforms, placeholder
-	/*platformDeveloper*/
-	placeholderPlatform, err := repos.Platform.Create(model.Platform{Name: "Nintendo", Description: "Fun"})
-	if err != nil {
-		panic(err)
-	}
-
-	platformId := os.Getenv("STRING_PLACEHOLDER_PLATFORM_ID")
-	if bankId == "" {
-		panic("STRING_PLACEHOLDER_PLATFORM_ID is not set in ENV!")
-	}
-
-	updateId = UpdateId{Id: platformId}
-	err = repos.Platform.Update(ctx, placeholderPlatform.Id, updateId)
-	if err != nil {
-		panic(err)
-	}
-
-	// Contracts, placeholder
-	_, err = repos.Contract.Create(model.Contract{Name: "String Test NFT", Address: "0x861aF9Ed4fEe884e5c49E9CE444359fe3631418B", Functions: []string{"mintTo(address)"}, NetworkID: networkFuji.Id, PlatformID: platformId})
-	if err != nil {
-		panic(err)
-	}
 }
 
 func nullString(str string) sql.NullString {

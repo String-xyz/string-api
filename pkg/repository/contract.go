@@ -14,13 +14,11 @@ import (
 
 type Contract interface {
 	database.Transactable
-	Create(model.Contract) (model.Contract, error)
+	Create(ctx context.Context, insert model.Contract) (model.Contract, error)
 	GetById(ctx context.Context, id string) (model.Contract, error)
-	GetByUserId(ctx context.Context, userId string) (model.Contract, error)
-	ListByUserId(ctx context.Context, userId string, imit int, offset int) ([]model.Contract, error)
 	List(ctx context.Context, limit int, offset int) ([]model.Contract, error)
 	Update(ctx context.Context, id string, updates any) error
-	GetByAddressAndNetworkAndPlatform(address string, networkId string, platformId string) (model.Contract, error)
+	GetByAddressAndNetworkAndPlatform(ctx context.Context, address string, networkId string, platformId string) (model.Contract, error)
 }
 
 type contract[T any] struct {
@@ -31,7 +29,7 @@ func NewContract(db database.Queryable) Contract {
 	return &contract[model.Contract]{repository.Base[model.Contract]{Store: db, Table: "contract"}}
 }
 
-func (u contract[T]) Create(insert model.Contract) (model.Contract, error) {
+func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.Contract, error) {
 	m := model.Contract{}
 	rows, err := u.Store.NamedQuery(`
 		INSERT INTO contract (name, address, functions, network_id, platform_id) 
@@ -50,7 +48,7 @@ func (u contract[T]) Create(insert model.Contract) (model.Contract, error) {
 	return m, nil
 }
 
-func (u contract[T]) GetByAddressAndNetworkAndPlatform(address string, networkId string, platformId string) (model.Contract, error) {
+func (u contract[T]) GetByAddressAndNetworkAndPlatform(ctx context.Context, address string, networkId string, platformId string) (model.Contract, error) {
 	m := model.Contract{}
 	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE address = $1 AND network_id = $2 AND platform_id = $3 LIMIT 1", u.Table), address, networkId, platformId)
 	if err != nil && err == sql.ErrNoRows {

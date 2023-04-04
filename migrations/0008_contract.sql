@@ -25,6 +25,6 @@ EXECUTE PROCEDURE update_updated_at_column();
 -- +goose Down
 
 -------------------------------------------------------------------------
--- DEVICE ---------------------------------------------------------------
+-- CONTRACT ---------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_contract_updated_at ON contract;
 DROP TABLE IF EXISTS contract;

@@ -860,7 +860,7 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 }
 
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
-	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(request.CxAddr, networkId, platformId)
+	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
 		return false, libcommon.StringError(errors.New("contract not allowed by platform on network"))
 	} else if err != nil {
