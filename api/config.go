@@ -14,6 +14,7 @@ func NewRepos(config APIConfig) repository.Repositories {
 		Apikey:         repository.NewApikey(config.DB),
 		User:           repository.NewUser(config.DB),
 		Contact:        repository.NewContact(config.DB),
+		Contract:       repository.NewContract(config.DB),
 		Instrument:     repository.NewInstrument(config.DB),
 		Device:         repository.NewDevice(config.DB),
 		UserToPlatform: repository.NewUserToPlatform(config.DB),
