@@ -37,6 +37,7 @@ func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.C
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.StructScan(&m)
 		if err != nil {
@@ -44,7 +45,6 @@ func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.C
 		}
 	}
 
-	defer rows.Close()
 	return m, nil
 }
 
