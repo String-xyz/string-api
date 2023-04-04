@@ -125,13 +125,12 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (model.TransactionReceipt, error) {
-	res := model.TransactionReceipt{}
+func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
 	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
 	// Pre-flight transaction setup
-	p, err := t.transactionSetup(ctx, p)
+	p, err = t.transactionSetup(ctx, p)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
