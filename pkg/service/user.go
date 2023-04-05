@@ -147,7 +147,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 	}
 
 	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
+	instrument := model.Instrument{Type: "crypto wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
 	instrument, err = u.repos.Instrument.Create(instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()

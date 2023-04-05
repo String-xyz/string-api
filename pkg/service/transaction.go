@@ -73,7 +73,6 @@ type transactionProcessingData struct {
 	executionRequest              *model.ExecutionRequest
 	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
 	cardAuthorization             *AuthorizedCharge
-	cardSourceId                  *string
 	cardCapture                   *payments.CapturesResponse
 	recipientWalletId             *string
 	txId                          *string
@@ -599,9 +598,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		PublicKey: p.cardAuthorization.CheckoutFingerprint,
 		Name:      p.cardAuthorization.CardholderName,
 	}
-	if p.cardSourceId != nil {
-		instrument.SourceId = *p.cardSourceId
-	}
+
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)
@@ -625,7 +622,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "Crypto Wallet", Status: "external", Network: "ethereum", PublicKey: address, UserId: id} // No locationId or userId because this wallet was not registered with the user and is some other recipient
+	instrument = model.Instrument{Type: "crypto wallet", Status: "external", Network: "ethereum", PublicKey: address, UserId: id} // No locationId or userId because this wallet was not registered with the user and is some other recipient
 	instrument, err = t.repos.Instrument.Create(instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)

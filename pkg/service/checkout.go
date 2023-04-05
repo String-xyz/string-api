@@ -3,7 +3,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/checkout/checkout-sdk-go/payments"
-	"github.com/checkout/checkout-sdk-go/sources"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
 
@@ -94,41 +92,41 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 
 	var paymentTokenId string
 	var paymentSource interface{}
-	if p.executionRequest.CardSourceId != "" {
-		paymentSource = payments.IDSource{
-			Type: "id",
-			ID:   p.executionRequest.CardSourceId,
-			CVV:  p.executionRequest.CVV,
-		}
-	} else {
-		if p.executionRequest.CardToken != "" {
-			paymentTokenId = p.executionRequest.CardToken
-		} else if libcommon.IsLocalEnv() {
+	// if p.executionRequest.CardSourceId != "" {
+	// 	paymentSource = payments.IDSource{
+	// 		Type: "id",
+	// 		ID:   p.executionRequest.CardSourceId,
+	// 		CVV:  p.executionRequest.CVV,
+	// 	}
+	// } else {
+	if p.executionRequest.CardToken != "" {
+		paymentTokenId = p.executionRequest.CardToken
+	} else if libcommon.IsLocalEnv() {
 
-			// Generate a payment token ID in case we don't yet have one in the front end
-			// For testing purposes only
-			card := tokens.Card{
-				Type:   checkoutCommon.Card,
-				Number: "4242424242424242", // Success
-				// Number: "4273149019799094", // succeed authorize, fail capture
-				// Number: "4544249167673670", // Declined - Insufficient funds
-				// Number:      "5148447461737269", // Invalid transaction (debit card)
-				ExpiryMonth: 2,
-				ExpiryYear:  2024,
-				Name:        "Customer Name",
-				CVV:         "100",
-			}
-			paymentToken, err := CreateToken(&card)
-			if err != nil {
-				return p, libcommon.StringError(err)
-			}
-			paymentTokenId = paymentToken.Created.Token
+		// Generate a payment token ID in case we don't yet have one in the front end
+		// For testing purposes only
+		card := tokens.Card{
+			Type:   checkoutCommon.Card,
+			Number: "4242424242424242", // Success
+			// Number: "4273149019799094", // succeed authorize, fail capture
+			// Number: "4544249167673670", // Declined - Insufficient funds
+			// Number:      "5148447461737269", // Invalid transaction (debit card)
+			ExpiryMonth: 2,
+			ExpiryYear:  2024,
+			Name:        "Customer Name",
+			CVV:         "100",
 		}
-		paymentSource = payments.TokenSource{
-			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenId,
+		paymentToken, err := CreateToken(&card)
+		if err != nil {
+			return p, libcommon.StringError(err)
 		}
+		paymentTokenId = paymentToken.Created.Token
 	}
+	paymentSource = payments.TokenSource{
+		Type:  checkoutCommon.Token.String(),
+		Token: paymentTokenId,
+	}
+	// }
 
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
 	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
@@ -169,57 +167,10 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.Issuer = response.Processed.Source.Issuer
 			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
 			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
-			p, _ = CreateSource(p)
 		}
 	}
 	p.cardAuthorization = &auth
 	// TODO: Create entry for authorization in our DB associated with userWallet
-	return p, nil
-}
-
-func CreateSource(p transactionProcessingData) (transactionProcessingData, error) {
-	config, err := getConfig()
-	if err != nil {
-		return p, libcommon.StringError(err)
-	}
-	client := sources.NewClient(*config)
-
-	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
-	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
-
-	customer := &sources.Customer{
-		Email: p.user.Email,
-		Name:  fullName,
-	}
-
-	sourceRequest := sources.Request{
-		SEPA: &sources.SEPA{
-			Type:      "token",
-			Reference: p.transactionModel.Id,
-			Customer:  customer,
-			// BillingAddress: &common.Address{
-			// 	// Fill in the billing address details
-			// 	AddressLine1: "123 Test Street",
-			// 	City:         "Test City",
-			// 	State:        "TS",
-			// 	PostalCode:   "12345",
-			// 	Country:      "US",
-			// },
-			SourceData: &sources.SEPASourceData{
-				FirstName:   p.user.FirstName,
-				LastName:    p.user.LastName,
-				AccountIBAN: p.executionRequest.CardToken,
-			},
-		},
-	}
-
-	sourceResponse, err := client.AddPaymentSource(&sourceRequest)
-	if err != nil {
-		return p, libcommon.StringError(err)
-	}
-
-	p.cardSourceId = &sourceResponse.Source.ID
-	fmt.Println("Source created, ID:", sourceResponse.Source.ID)
 	return p, nil
 }
 

@@ -39,8 +39,8 @@ func NewInstrument(db *sqlx.DB) Instrument {
 func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error) {
 	m := model.Instrument{}
 	rows, err := i.Store.NamedQuery(`
-		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name, source_id) 
-		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name, :source_id) 	RETURNING *`, insert)
+		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
+		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name) 	RETURNING *`, insert)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
@@ -78,7 +78,7 @@ func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrum
 
 func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Crypto Wallet'", i.Table), userId)
+	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'crypto wallet'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
@@ -89,7 +89,7 @@ func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error
 
 func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Bank Account'", i.Table), userId)
+	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'bank account'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {

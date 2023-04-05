@@ -26,7 +26,8 @@ func NewCard(route *echo.Echo, service service.Card) Card {
 func (card card) GetAll(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Get("userId").(string)
-	res, err := card.Service.FetchSavedCards(ctx, userId)
+	platformId := c.Get("platformId").(string)
+	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: cards")
 		return httperror.InternalError(c, "Cards Service Failed")

@@ -130,7 +130,7 @@ func DataSeeding() {
 	}
 
 	// String User
-	userString, err := repos.User.Create(model.User{Type: "Internal", Status: "Internal"})
+	userString, err := repos.User.Create(model.User{Type: "internal", Status: "internal"})
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +152,7 @@ func DataSeeding() {
 	}
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -169,7 +169,7 @@ func DataSeeding() {
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -303,7 +303,7 @@ func MockSeeding() {
 	}
 
 	// String User
-	userString, err := repos.User.Create(model.User{Type: "Internal", Status: "Internal"})
+	userString, err := repos.User.Create(model.User{Type: "internal", Status: "internal"})
 	if err != nil {
 		panic(err)
 	}
@@ -329,7 +329,7 @@ func MockSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "Bank Account", Status: "Live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
+	bankString, err := repos.Instrument.Create(model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -346,7 +346,7 @@ func MockSeeding() {
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "Crypto Wallet", Status: "Internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
+	walletString, err := repos.Instrument.Create(model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}

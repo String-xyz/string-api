@@ -21,7 +21,7 @@ type Contact interface {
 	List(ctx context.Context, limit int, offset int) ([]model.Contact, error)
 	Update(ctx context.Context, id string, updates any) error
 	GetByData(data string) (model.Contact, error)
-	GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
+	GetEmailByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
 	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
 	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
 }
@@ -63,16 +63,17 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 }
 
 // TODO: replace references to GetByUserIdAndStatus with the following:
-func (u contact[T]) GetByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
+func (u contact[T]) GetEmailByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
 	m := model.Contact{}
 	err := u.Store.Get(&m, fmt.Sprintf(`
 	SELECT contact.*
 		FROM %s
-	LEFT JOIN contact_platform
+	LEFT JOIN contact_to_platform
 		ON contact.id = contact_to_platform.contact_id
 	LEFT JOIN platform
 		ON contact_to_platform.platform_id = platform.id
-	WHERE contact.user_id = $1
+	WHERE contact.type = 'email'
+		AND contact.user_id = $1
 		AND platform.id = $2
 	`, u.Table), userId, platformId)
 	if err != nil && err == sql.ErrNoRows {

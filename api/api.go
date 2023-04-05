@@ -98,5 +98,5 @@ func quoteRoute(services service.Services, e *echo.Echo) {
 
 func cardRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewCard(e, services.Card)
-	handler.RegisterRoutes(e.Group("/cards"), middleware.APIKeyAuth(services.Auth), middleware.BearerAuth())
+	handler.RegisterRoutes(e.Group("/cards"), middleware.JWTAuth())
 }
