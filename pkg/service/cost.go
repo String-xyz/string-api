@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 	"os"
@@ -158,32 +157,28 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return 0.0, libcommon.StringError(err)
 	}
-	// if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
-	cacheObject.Timestamp = time.Now().Unix()
-	// If coingecko is down, use coincap to get the price
-	var empty interface{}
-	fmt.Printf("\n\nPINGING COINGECKO")
-	err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
-	if err == nil {
-		cacheObject.Value, err = c.coingeckoUSD(coins[0])
-		fmt.Printf("\ncoingeckoUSD: %+v\n", cacheObject.Value)
-		if err != nil {
-			return 0, libcommon.StringError(err)
-		}
-	} else if len(coins) > 1 {
-		fmt.Printf("\n\nUSING COINCAP")
-		cacheObject.Value, err = c.coincapUSD(coins[1])
-		fmt.Printf("\ncoincapUSD: %+v %+v\n", coins[1], cacheObject.Value)
+	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
+		cacheObject.Timestamp = time.Now().Unix()
+		// If coingecko is down, use coincap to get the price
+		var empty interface{}
+		err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		if err == nil {
+			cacheObject.Value, err = c.coingeckoUSD(coins[0])
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
+		} else if len(coins) > 1 {
+			cacheObject.Value, err = c.coincapUSD(coins[1])
 
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
+		}
+		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
 			return 0, libcommon.StringError(err)
 		}
 	}
-	err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
-	if err != nil {
-		return 0, libcommon.StringError(err)
-	}
-	// }
 
 	return cacheObject.Value * quantity, nil
 }
