@@ -32,7 +32,7 @@ type DeviceVerification struct {
 
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
-	SendEmailVerification(ctx context.Context, userId, email, platformId string) error
+	SendEmailVerification(ctx context.Context, userId string, email string, platformId string) error
 
 	// VerifyEmail verifies the provided email and creates a contact
 	VerifyEmail(ctx context.Context, encrypted string) error
