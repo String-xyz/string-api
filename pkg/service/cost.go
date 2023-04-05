@@ -47,7 +47,7 @@ type CostCache struct {
 
 type Cost interface {
 	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
-	LookupUSD(coin string, quantity float64) (float64, error)
+	LookupUSD(quantity float64, coins ...string) (float64, error)
 }
 
 type cost struct {
@@ -65,7 +65,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	timestamp := time.Now().Unix()
 
 	// Query cost of native token in USD
-	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
+	nativeCost, err := c.LookupUSD(1, chain.CoingeckoName, chain.CoincapName)
 	if err != nil {
 		return model.Quote{}, libcommon.StringError(err)
 	}
@@ -94,7 +94,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	costToken := common.WeiToEther(&p.CostToken)
 	// tokenCost in contract call ERC-20 token costs
 	// Also for buying tokens directly
-	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
+	tokenCost, err := c.LookupUSD(costToken, p.TokenName)
 	if err != nil {
 		return model.Quote{}, libcommon.StringError(err)
 	}
@@ -146,8 +146,13 @@ func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntri
 	return int64(float64(60*rateLimitPerMinute) / rateLimitPerMinute)
 }
 
-func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
-	cacheName := "usd_value_" + coin
+// TODO: Take in an object which contains a list of backup oracle API names
+func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
+	if len(coins) == 0 {
+		return 0.0, libcommon.StringError(errors.New("no coins provided"))
+	}
+
+	cacheName := "usd_value_" + coins[0]
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return 0.0, libcommon.StringError(err)
@@ -156,14 +161,15 @@ func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
 		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
 		var empty interface{}
-		err := common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
 		if err == nil {
-			cacheObject.Value, err = c.coingeckoUSD(coin)
+			cacheObject.Value, err = c.coingeckoUSD(coins[0])
 			if err != nil {
 				return 0, libcommon.StringError(err)
 			}
-		} else {
-			cacheObject.Value, err = c.coincapUSD(coin)
+		} else if len(coins) > 1 {
+			cacheObject.Value, err = c.coincapUSD(coins[1])
+
 			if err != nil {
 				return 0, libcommon.StringError(err)
 			}
