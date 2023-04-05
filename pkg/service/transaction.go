@@ -710,7 +710,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
-	trueUSD, err := cost.LookupUSD(p.chain.CoingeckoName, trueEth)
+	trueUSD, err := cost.LookupUSD(trueEth, p.chain.CoingeckoName, p.chain.CoincapName)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
