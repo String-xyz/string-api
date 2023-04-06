@@ -213,7 +213,7 @@ type Apikey struct {
 	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type          string     `json:"type" db:"type"`
 	Data          string     `json:"data" db:"data"`
-	Hint          *string    `json:"hint,omitempty" db:"hint"`
+	Hint          string     `json:"hint,omitempty" db:"hint"`
 	Description   *string    `json:"description,omitempty" db:"description"`
 	CreatedBy     string     `json:"createdBy" db:"created_by"`
 	PlatformId    string     `json:"platformId" db:"platform_id"`
