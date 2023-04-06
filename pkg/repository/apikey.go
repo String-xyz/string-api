@@ -14,7 +14,7 @@ import (
 
 type Apikey interface {
 	database.Transactable
-	GetByData(ctx context.Context, data string) (model.Apikey, error)
+	GetByData(ctx context.Context, data string, keyType string) (model.Apikey, error)
 }
 
 type apikey[T any] struct {
@@ -25,9 +25,9 @@ func NewApikey(db database.Queryable) Apikey {
 	return &apikey[model.Apikey]{strrepo.Base[model.Apikey]{Store: db, Table: "apikey"}}
 }
 
-func (p apikey[T]) GetByData(ctx context.Context, data string) (model.Apikey, error) {
+func (p apikey[T]) GetByData(ctx context.Context, data string, keyType string) (model.Apikey, error) {
 	m := model.Apikey{}
-	err := p.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", p.Table), data)
+	err := p.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1 AND type = $2", p.Table), data, keyType)
 	if err == sql.ErrNoRows {
 		return m, common.StringError(serror.NOT_FOUND)
 	} else if err != nil {

@@ -190,7 +190,7 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 
 func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 	ctx := context.Background()
-	authKey, err := a.repos.Apikey.GetByData(ctx, key)
+	authKey, err := a.repos.Apikey.GetByData(ctx, key, "public")
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -208,7 +208,9 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 
 func (a auth) ValidateAPIKeySecret(key string) (string, error) {
 	ctx := context.Background()
-	authKey, err := a.repos.Apikey.GetByData(ctx, key)
+
+	data := libcommon.ToSha256(key)
+	authKey, err := a.repos.Apikey.GetByData(ctx, data, "secret")
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -217,7 +219,7 @@ func (a auth) ValidateAPIKeySecret(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
-	if authKey.Data != key {
+	if authKey.Data != data {
 		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
