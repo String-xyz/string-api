@@ -105,7 +105,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 
-	estimateUSD, _, err := t.testTransaction(executor, d, chain, true)
+	estimateUSD, _, err := t.testTransaction(executor, d, chain, true, true)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
@@ -215,7 +215,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false)
+	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -484,7 +484,7 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	return asset, nil
 }
 
-func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, float64, error) {
+func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -495,10 +495,33 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		TxValue:    request.TxValue,
 		TxGasLimit: request.TxGasLimit,
 	}
-	// Estimate value and gas of Tx request
-	estimateEVM, err := executor.Estimate(call)
-	if err != nil {
-		return res, 0, libcommon.StringError(err)
+
+	estimateEVM := CallEstimate{}
+	recalculate := true
+	var err error
+	if useBuffer {
+		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*10) // TODO: discuss refresh interval
+		if err != nil {
+			fmt.Printf("\n\n ERROR CHECKING CACHE")
+			return res, 0, libcommon.StringError(err)
+		}
+	}
+
+	if recalculate {
+		// Estimate value and gas of Tx request
+		estimateEVM, err := executor.Estimate(call)
+		if err != nil {
+			fmt.Printf("\n\n ERROR ESTIMATEING CALL")
+			return res, 0, libcommon.StringError(err)
+		}
+		if useCache {
+			fmt.Printf("\n\n ERROR UPDATING CACHE")
+
+			err = putCachedTransactionRequest(t.redis, request, estimateEVM)
+			if err != nil {
+				return res, 0, libcommon.StringError(err)
+			}
+		}
 	}
 
 	// Calculate total eth estimate as float64

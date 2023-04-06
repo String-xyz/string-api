@@ -1,0 +1,68 @@
+package service
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"math/big"
+	"time"
+
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/store"
+	"github.com/pkg/errors"
+)
+
+type callEstimateCache struct {
+	Timestamp int64  `json:"timestamp"`
+	Value     string `json:"value" db:"value"` // We use string here to store in db
+	Gas       uint64 `json:"gas" db:"gas"`
+	Success   bool   `json:"success" db:"success"`
+}
+
+func checkUpdateCachedTransactionRequest(redis database.RedisStore, request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error) {
+	cacheObject, err := store.GetObjectFromCache[callEstimateCache](redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)))
+	if cacheObject.Timestamp == 0 || (err == nil && time.Now().Unix()-cacheObject.Timestamp > desiredInterval) {
+		return true, CallEstimate{}, nil
+	} else if err != nil {
+		return false, CallEstimate{}, libcommon.StringError(err)
+	} else {
+		// Construct CallEstimate from cacheObject
+		value := new(big.Int)
+		value, ok := value.SetString(cacheObject.Value, 10)
+		if !ok {
+			return false, CallEstimate{}, libcommon.StringError(errors.New("Failed to parse value from cache"))
+		}
+		return false, CallEstimate{Value: *value, Gas: cacheObject.Gas, Success: cacheObject.Success}, nil
+	}
+}
+
+func putCachedTransactionRequest(redis database.RedisStore, request model.TransactionRequest, data CallEstimate) error {
+	cacheObject := callEstimateCache{
+		Timestamp: time.Now().Unix(),
+		Value:     data.Value.String(),
+		Gas:       data.Gas,
+		Success:   data.Success,
+	}
+	err := store.PutObjectInCache(redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)), cacheObject)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+	return nil
+}
+
+func sanitizeTransactionRequest(request model.TransactionRequest) model.TransactionRequest {
+	request.UserAddress = ""
+	return request
+}
+
+func tokenizeTransactionRequest(request model.TransactionRequest) string {
+	bytes, err := json.Marshal(request)
+	if err != nil {
+		return ""
+	}
+	hash := sha1.New()
+	hash.Write(bytes)
+	return hex.EncodeToString(hash.Sum(nil))
+}
