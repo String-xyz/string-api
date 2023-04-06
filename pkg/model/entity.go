@@ -212,7 +212,8 @@ type Apikey struct {
 	UpdatedAt     time.Time  `json:"updatedAt,omitempty" db:"updated_at"`
 	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
 	Type          string     `json:"type" db:"type"`
-	Data          string     `json:"data" db:"data"`
+	Public        string     `json:"public" db:"public"` // an unhased public key
+	Secret        *string    `json:"secret" db:"secret"` // a hashed secret key
 	Description   *string    `json:"description" db:"description"`
 	CreatedBy     string     `json:"createdBy" db:"created_by"`
 	PlatformId    string     `json:"platformId" db:"platform_id"`

@@ -40,7 +40,7 @@ func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKey(auth)
+			platformId, err := service.ValidateAPIKeyPublic(auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeyAuth middleware")
 				return false, err

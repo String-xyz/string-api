@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
@@ -12,15 +11,6 @@ import (
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 )
-
-type ApikeyUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Data          *string    `json:"data" db:"data"`
-	Description   *string    `json:"description" db:"description"`
-	CreatedBy     *string    `json:"createdBy" db:"created_by"`
-	PlatformID    *string    `json:"platformId" db:"platform_id"`
-}
 
 type Apikey interface {
 	database.Transactable

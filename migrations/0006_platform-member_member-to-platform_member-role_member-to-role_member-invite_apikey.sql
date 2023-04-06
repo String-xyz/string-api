@@ -65,7 +65,8 @@ CREATE TABLE apikey (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   type TEXT NOT NULL, -- [public,private] for now all public?
-  data TEXT NOT NULL, -- the key itself
+  public TEXT NOT NULL,
+  secret TEXT,
   description TEXT DEFAULT '',
   created_by UUID REFERENCES platform_member (id),
   platform_id UUID REFERENCES platform (id)

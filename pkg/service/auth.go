@@ -56,7 +56,7 @@ type Auth interface {
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
-	ValidateAPIKey(key string) (string, error)
+	ValidateAPIKeyPublic(key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -187,7 +187,7 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKey(key string) (string, error) {
+func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 	ctx := context.Background()
 	authKey, err := a.repos.Apikey.GetByData(ctx, key)
 	if err != nil {
@@ -198,7 +198,7 @@ func (a auth) ValidateAPIKey(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
-	if authKey.Data != key {
+	if authKey.Public != key {
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 

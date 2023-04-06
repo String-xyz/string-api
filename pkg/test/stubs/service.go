@@ -40,7 +40,7 @@ type User struct {
 	Error                error
 }
 
-func (u *User) SetOnboardinStatus(m model.UserOnboardingStatus) {
+func (u *User) SetOnboardingStatus(m model.UserOnboardingStatus) {
 	u.UserOnboardingStatus = m
 }
 
@@ -100,7 +100,7 @@ func (a Auth) GenerateJWT(string, string, ...model.Device) (service.JWT, error) 
 	return a.JWT, a.Error
 }
 
-func (a Auth) ValidateAPIKey(key string) (string, error) {
+func (a Auth) ValidateAPIKeyPublic(key string) (string, error) {
 	return "platform-id", a.Error
 }
 
