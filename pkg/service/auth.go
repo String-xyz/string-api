@@ -57,6 +57,7 @@ type Auth interface {
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
 	ValidateAPIKeyPublic(key string) (string, error)
+	ValidateAPIKeySecret(key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -198,8 +199,26 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
-	if authKey.Public != key {
+	if authKey.Data != key {
 		return "", libcommon.StringError(errors.New("invalid api key"))
+	}
+
+	return authKey.PlatformId, nil
+}
+
+func (a auth) ValidateAPIKeySecret(key string) (string, error) {
+	ctx := context.Background()
+	authKey, err := a.repos.Apikey.GetByData(ctx, key)
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+
+	if authKey.Id == "" {
+		return "", libcommon.StringError(errors.New("invalid secret key"))
+	}
+
+	if authKey.Data != key {
+		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
 	return authKey.PlatformId, nil
