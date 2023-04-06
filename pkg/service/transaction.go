@@ -504,7 +504,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	recalculate := true
 	var err error
 	if useBuffer {
-		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*10) // TODO: discuss refresh interval
+		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*5) // TODO: robust buffer time
 		if err != nil {
 			fmt.Printf("\n\n ERROR CHECKING CACHE")
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
