@@ -105,7 +105,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 
-	estimateUSD, _, err := t.testTransaction(executor, d, chain, true, true)
+	estimateUSD, _, _, err := t.testTransaction(executor, d, chain, true, true)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
@@ -215,7 +215,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
+	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -227,6 +227,10 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	// Verify the Quote and update model status
 	_, err = verifyQuote(*p.precisionSafeExecutionRequest, estimateUSD)
 	if err != nil {
+		// Update cache if price is too volatile
+		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
+			putCachedTransactionRequest(t.redis, p.executionRequest.TransactionRequest, estimateEVM)
+		}
 		return p, libcommon.StringError(err)
 	}
 	err = t.updateTransactionStatus(ctx, "Quote Verified", p.transactionModel.Id)
@@ -484,7 +488,7 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	return asset, nil
 }
 
-func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, error) {
+func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, CallEstimate, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -503,7 +507,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*10) // TODO: discuss refresh interval
 		if err != nil {
 			fmt.Printf("\n\n ERROR CHECKING CACHE")
-			return res, 0, libcommon.StringError(err)
+			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 	}
 
@@ -512,14 +516,14 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		estimateEVM, err := executor.Estimate(call)
 		if err != nil {
 			fmt.Printf("\n\n ERROR ESTIMATEING CALL")
-			return res, 0, libcommon.StringError(err)
+			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 		if useCache {
 			fmt.Printf("\n\n ERROR UPDATING CACHE")
 
 			err = putCachedTransactionRequest(t.redis, request, estimateEVM)
 			if err != nil {
-				return res, 0, libcommon.StringError(err)
+				return res, 0, CallEstimate{}, libcommon.StringError(err)
 			}
 		}
 	}
@@ -532,7 +536,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 
 	chainId, err := executor.GetByChainId()
 	if err != nil {
-		return res, eth, libcommon.StringError(err)
+		return res, eth, CallEstimate{}, libcommon.StringError(err)
 	}
 	cost := NewCost(t.redis)
 	estimationParams := EstimationParams{
@@ -547,10 +551,10 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	// Estimate Cost in USD to execute Tx request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)
 	if err != nil {
-		return res, eth, libcommon.StringError(err)
+		return res, eth, CallEstimate{}, libcommon.StringError(err)
 	}
 	res = estimateUSD
-	return res, eth, nil
+	return res, eth, estimateEVM, nil
 }
 
 func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote) (bool, error) {
