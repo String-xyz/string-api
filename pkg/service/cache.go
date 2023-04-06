@@ -53,8 +53,25 @@ func putCachedTransactionRequest(redis database.RedisStore, request model.Transa
 }
 
 func sanitizeTransactionRequest(request model.TransactionRequest) model.TransactionRequest {
-	request.UserAddress = ""
-	return request
+	// Structs are pointers
+	sanitized := model.TransactionRequest{
+		UserAddress: request.UserAddress,
+		ChainId:     request.ChainId,
+		CxAddr:      request.CxAddr,
+		CxFunc:      request.CxFunc,
+		CxReturn:    request.CxReturn,
+		CxParams:    append([]string{}, request.CxParams...), // So are arrays
+		TxValue:     request.TxValue,
+		TxGasLimit:  request.TxGasLimit,
+	}
+	// Treat the users address as a wildcard
+	for i, param := range sanitized.CxParams {
+		if param == sanitized.UserAddress {
+			sanitized.CxParams[i] = "*"
+		}
+	}
+	sanitized.UserAddress = "*"
+	return sanitized
 }
 
 func tokenizeTransactionRequest(request model.TransactionRequest) string {

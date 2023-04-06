@@ -506,7 +506,6 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	if useBuffer {
 		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*5) // TODO: robust buffer time
 		if err != nil {
-			fmt.Printf("\n\n ERROR CHECKING CACHE")
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 	}
@@ -515,12 +514,9 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		// Estimate value and gas of Tx request
 		estimateEVM, err := executor.Estimate(call)
 		if err != nil {
-			fmt.Printf("\n\n ERROR ESTIMATEING CALL")
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 		if useCache {
-			fmt.Printf("\n\n ERROR UPDATING CACHE")
-
 			err = putCachedTransactionRequest(t.redis, request, estimateEVM)
 			if err != nil {
 				return res, 0, CallEstimate{}, libcommon.StringError(err)
