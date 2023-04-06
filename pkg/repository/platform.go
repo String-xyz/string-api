@@ -25,6 +25,7 @@ type Platform interface {
 	List(ctx context.Context, limit int, offset int) ([]model.Platform, error)
 	Update(ctx context.Context, id string, updates any) error
 	AssociateUser(ctx context.Context, userId string, platformId string) error
+	AssociateContact(ctx context.Context, contactId string, platformId string) error
 }
 
 type platform[T any] struct {
@@ -59,6 +60,18 @@ func (p platform[T]) AssociateUser(ctx context.Context, userId string, platformI
 	_, err := p.Store.ExecContext(ctx, `
 		INSERT INTO user_to_platform (user_id, platform_id) 
 		VALUES($1, $2)`, userId, platformId)
+
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+
+	return nil
+}
+
+func (p platform[T]) AssociateContact(ctx context.Context, contactId string, platformId string) error {
+	_, err := p.Store.ExecContext(ctx, `
+		INSERT INTO contact_to_platform (contact_id, platform_id) 
+		VALUES($1, $2)`, contactId, platformId)
 
 	if err != nil {
 		return libcommon.StringError(err)

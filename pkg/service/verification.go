@@ -32,7 +32,7 @@ type DeviceVerification struct {
 
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
-	SendEmailVerification(ctx context.Context, userId string, email string) error
+	SendEmailVerification(ctx context.Context, userId string, email string, platformId string) error
 
 	// VerifyEmail verifies the provided email and creates a contact
 	VerifyEmail(ctx context.Context, encrypted string) error
@@ -49,7 +49,7 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 	return &verification{repos, unit21}
 }
 
-func (v verification) SendEmailVerification(ctx context.Context, userId, email string) error {
+func (v verification) SendEmailVerification(ctx context.Context, userId, email, platformId string) error {
 	if !validEmail(email) {
 		return libcommon.StringError(serror.INVALID_DATA)
 	}
@@ -101,6 +101,12 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email s
 			// success
 			// update user status
 			_, err := v.repos.User.UpdateStatus(userId, "email_verified")
+
+			// Associate contact with platform
+			if platformId != "" {
+				err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
+			}
+
 			if err != nil {
 				// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
 				return libcommon.StringError(err)

@@ -122,13 +122,14 @@ func (u user) Update(c echo.Context) error {
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
+	platformId := c.Get("platformId").(string)
 	_, userId := validUserId(IdParam(c), c)
 	email := c.QueryParam("email")
 	if email == "" {
 		return httperror.BadRequestError(c, "Missing or invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(ctx, userId, email)
+	err := u.verificationService.SendEmailVerification(ctx, userId, email, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 

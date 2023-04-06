@@ -37,9 +37,7 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	httpClient := service.NewHTTPClient(service.HTTPConfig{Timeout: time.Duration(30) * time.Second})
 	client := service.NewFingerprintClient(httpClient)
 	fingerprint := service.NewFingerprint(client)
-	// we don't need to pass in the entire repos struct, just the ones we need
-	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User, Device: repos.Device}
-	verification := service.NewVerification(verificationRepos, unit21)
+	verification := service.NewVerification(repos, unit21)
 
 	// device service
 	deviceRepos := repository.Repositories{Device: repos.Device}

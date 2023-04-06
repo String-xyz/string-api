@@ -48,7 +48,6 @@ func (v verification) VerifyDevice(c echo.Context) error {
 	err := v.deviceService.VerifyDevice(ctx, token)
 	if err != nil {
 		libcommon.LogStringError(c, err, "verification: device verification")
-
 		return httperror.BadRequestError(c)
 	}
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Device successfully verified"})
