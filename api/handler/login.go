@@ -187,7 +187,7 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 		panic("No group attached to the User Handler")
 	}
 	l.Group = g
-	g.GET("", l.NoncePayload)
+	g.GET("", l.NoncePayload, ms...)
 	g.POST("/sign", l.VerifySignature, ms...)
 	g.POST("/refresh", l.RefreshToken, ms...)
 	g.POST("/logout", l.Logout)
