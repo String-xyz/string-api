@@ -56,7 +56,8 @@ type Auth interface {
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
-	ValidateAPIKey(key string) (string, error)
+	ValidateAPIKeyPublic(key string) (string, error)
+	ValidateAPIKeySecret(key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -187,9 +188,9 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKey(key string) (string, error) {
+func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 	ctx := context.Background()
-	authKey, err := a.repos.Apikey.GetByData(ctx, key)
+	authKey, err := a.repos.Apikey.GetByData(ctx, key, "public")
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -200,6 +201,26 @@ func (a auth) ValidateAPIKey(key string) (string, error) {
 
 	if authKey.Data != key {
 		return "", libcommon.StringError(errors.New("invalid api key"))
+	}
+
+	return authKey.PlatformId, nil
+}
+
+func (a auth) ValidateAPIKeySecret(key string) (string, error) {
+	ctx := context.Background()
+
+	data := libcommon.ToSha256(key)
+	authKey, err := a.repos.Apikey.GetByData(ctx, data, "secret")
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+
+	if authKey.Id == "" {
+		return "", libcommon.StringError(errors.New("invalid secret key"))
+	}
+
+	if authKey.Data != data {
+		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
 	return authKey.PlatformId, nil
