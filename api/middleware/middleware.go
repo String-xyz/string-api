@@ -36,13 +36,31 @@ func JWTAuth() echo.MiddlewareFunc {
 	return echoMiddleware.JWTWithConfig(config)
 }
 
-func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
+func APIKeyPublicAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKey(auth)
+			platformId, err := service.ValidateAPIKeyPublic(auth)
 			if err != nil {
-				libcommon.LogStringError(c, err, "Error in APIKeyAuth middleware")
+				libcommon.LogStringError(c, err, "Error in APIKeyPublicAuth middleware")
+				return false, err
+			}
+
+			c.Set("platformId", platformId)
+
+			return true, nil
+		},
+	}
+	return echoMiddleware.KeyAuthWithConfig(config)
+}
+
+func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
+	config := echoMiddleware.KeyAuthConfig{
+		KeyLookup: "header:X-Api-Key",
+		Validator: func(auth string, c echo.Context) (bool, error) {
+			platformId, err := service.ValidateAPIKeySecret(auth)
+			if err != nil {
+				libcommon.LogStringError(c, err, "Error in APIKeySecretAuth middleware")
 				return false, err
 			}
 

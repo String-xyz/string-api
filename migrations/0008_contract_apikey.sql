@@ -2,7 +2,7 @@
 -- +goose Up
 
 -------------------------------------------------------------------------
--- CONTRACT ---------------------------------------------------------------
+-- CONTRACT -------------------------------------------------------------
 CREATE TABLE contract (
   id UUID PRIMARY KEY NOT NULL DEFAULT UUID_GENERATE_V4(),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -22,9 +22,20 @@ CREATE OR REPLACE TRIGGER update_contract_updated_at
 EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
+-- APIKEY ---------------------------------------------------------------
+ALTER TABLE apikey 
+  ADD COLUMN hint TEXT NOT NULL;
+
+
+-------------------------------------------------------------------------
 -- +goose Down
 
 -------------------------------------------------------------------------
--- CONTRACT ---------------------------------------------------------------
+-- CONTRACT -------------------------------------------------------------
 DROP TRIGGER IF EXISTS update_contract_updated_at ON contract;
 DROP TABLE IF EXISTS contract;
+
+-------------------------------------------------------------------------
+-- APIKEY ---------------------------------------------------------------
+ALTER TABLE apikey 
+  DROP COLUMN IF EXISTS hint;
