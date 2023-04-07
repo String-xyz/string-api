@@ -23,7 +23,8 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -------------------------------------------------------------------------
 -- APIKEY --------------------------------------------------------------
-ALTER TABLE apikey ADD COLUMN hint TEXT NOT NULL;
+ALTER TABLE apikey 
+  ADD COLUMN hint TEXT NOT NULL;
 
 -------------------------------------------------------------------------
 -- +goose Down
@@ -35,4 +36,5 @@ DROP TABLE IF EXISTS contract;
 
 -------------------------------------------------------------------------
 -- APIKEY --------------------------------------------------------------
-ALTER TABLE apikey DROP COLUMN IF EXISTS hint;
+ALTER TABLE apikey 
+  DROP COLUMN IF EXISTS hint;
