@@ -21,7 +21,8 @@ CREATE OR REPLACE TRIGGER update_contract_updated_at
   FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
--- Add secret to apikey
+-------------------------------------------------------------------------
+-- APIKEY --------------------------------------------------------------
 ALTER TABLE apikey ADD COLUMN hint TEXT NOT NULL;
 
 -------------------------------------------------------------------------
@@ -32,5 +33,6 @@ ALTER TABLE apikey ADD COLUMN hint TEXT NOT NULL;
 DROP TRIGGER IF EXISTS update_contract_updated_at ON contract;
 DROP TABLE IF EXISTS contract;
 
--- Remove secret from apikey
-ALTER TABLE apikey DROP COLUMN hint;
+-------------------------------------------------------------------------
+-- APIKEY --------------------------------------------------------------
+ALTER TABLE apikey DROP COLUMN IF EXISTS hint;
