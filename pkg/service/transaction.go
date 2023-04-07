@@ -229,7 +229,11 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	if err != nil {
 		// Update cache if price is too volatile
 		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
-			putCachedTransactionRequest(t.redis, p.executionRequest.TransactionRequest, estimateEVM)
+			quoteCache := NewQuoteCache(t.redis)
+			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.TransactionRequest, estimateEVM)
+			if err != nil {
+				return p, libcommon.StringError(err)
+			}
 		}
 		return p, libcommon.StringError(err)
 	}
@@ -500,11 +504,12 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		TxGasLimit: request.TxGasLimit,
 	}
 
+	quoteCache := NewQuoteCache(t.redis)
 	estimateEVM := CallEstimate{}
 	recalculate := true
 	var err error
 	if useBuffer {
-		recalculate, estimateEVM, err = checkUpdateCachedTransactionRequest(t.redis, request, 60*5) // TODO: robust buffer time
+		recalculate, estimateEVM, err = quoteCache.CheckUpdateCachedTransactionRequest(request, 60*5) // TODO: robust buffer time
 		if err != nil {
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
@@ -517,7 +522,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 		if useCache {
-			err = putCachedTransactionRequest(t.redis, request, estimateEVM)
+			err = quoteCache.PutCachedTransactionRequest(request, estimateEVM)
 			if err != nil {
 				return res, 0, CallEstimate{}, libcommon.StringError(err)
 			}

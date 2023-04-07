@@ -14,6 +14,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+type QuoteCache interface {
+	CheckUpdateCachedTransactionRequest(request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error)
+	PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error
+}
+
+type quoteCache struct {
+	redis database.RedisStore
+}
+
+func NewQuoteCache(redis database.RedisStore) QuoteCache {
+	return &quoteCache{redis}
+}
+
 type callEstimateCache struct {
 	Timestamp int64  `json:"timestamp"`
 	Value     string `json:"value" db:"value"` // We use string here to store in db
@@ -21,8 +34,8 @@ type callEstimateCache struct {
 	Success   bool   `json:"success" db:"success"`
 }
 
-func checkUpdateCachedTransactionRequest(redis database.RedisStore, request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error) {
-	cacheObject, err := store.GetObjectFromCache[callEstimateCache](redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)))
+func (q quoteCache) CheckUpdateCachedTransactionRequest(request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error) {
+	cacheObject, err := store.GetObjectFromCache[callEstimateCache](q.redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)))
 	if cacheObject.Timestamp == 0 || (err == nil && time.Now().Unix()-cacheObject.Timestamp > desiredInterval) {
 		return true, CallEstimate{}, nil
 	} else if err != nil {
@@ -38,14 +51,14 @@ func checkUpdateCachedTransactionRequest(redis database.RedisStore, request mode
 	}
 }
 
-func putCachedTransactionRequest(redis database.RedisStore, request model.TransactionRequest, data CallEstimate) error {
+func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error {
 	cacheObject := callEstimateCache{
 		Timestamp: time.Now().Unix(),
 		Value:     data.Value.String(),
 		Gas:       data.Gas,
 		Success:   data.Success,
 	}
-	err := store.PutObjectInCache(redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)), cacheObject)
+	err := store.PutObjectInCache(q.redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)), cacheObject)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
@@ -61,7 +74,7 @@ func sanitizeTransactionRequest(request model.TransactionRequest) model.Transact
 		CxFunc:      request.CxFunc,
 		CxReturn:    request.CxReturn,
 		CxParams:    append([]string{}, request.CxParams...), // So are arrays
-		TxValue:     request.TxValue,
+		TxValue:     request.TxValue,                         // TODO: Maybe omit this and take it in from the endpoint before converting to USD
 		TxGasLimit:  request.TxGasLimit,
 	}
 	// Treat the users address as a wildcard
