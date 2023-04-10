@@ -1,0 +1,89 @@
+package service
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"time"
+
+	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/store"
+	"github.com/lmittmann/w3"
+)
+
+type QuoteCache interface {
+	CheckUpdateCachedTransactionRequest(request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error)
+	PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error
+}
+
+type quoteCache struct {
+	redis database.RedisStore
+}
+
+func NewQuoteCache(redis database.RedisStore) QuoteCache {
+	return &quoteCache{redis}
+}
+
+type callEstimateCache struct {
+	Timestamp int64  `json:"timestamp"`
+	Gas       uint64 `json:"gas" db:"gas"`
+	Success   bool   `json:"success" db:"success"`
+}
+
+func (q quoteCache) CheckUpdateCachedTransactionRequest(request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error) {
+	cacheObject, err := store.GetObjectFromCache[callEstimateCache](q.redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)))
+	if cacheObject.Timestamp == 0 || (err == nil && time.Now().Unix()-cacheObject.Timestamp > desiredInterval) {
+		return true, CallEstimate{}, nil
+	} else if err != nil {
+		return false, CallEstimate{}, libcommon.StringError(err)
+	} else {
+		return false, CallEstimate{Value: *w3.I(request.TxValue), Gas: cacheObject.Gas, Success: cacheObject.Success}, nil
+	}
+}
+
+func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error {
+	cacheObject := callEstimateCache{
+		Timestamp: time.Now().Unix(),
+		Gas:       data.Gas,
+		Success:   data.Success,
+	}
+	err := store.PutObjectInCache(q.redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)), cacheObject)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+	return nil
+}
+
+func sanitizeTransactionRequest(request model.TransactionRequest) model.TransactionRequest {
+	// Structs are pointers
+	sanitized := model.TransactionRequest{
+		UserAddress: request.UserAddress,
+		ChainId:     request.ChainId,
+		CxAddr:      request.CxAddr,
+		CxFunc:      request.CxFunc,
+		CxReturn:    request.CxReturn,
+		CxParams:    append([]string{}, request.CxParams...), // So are arrays
+		TxValue:     "*",                                     // Get this from model.TransactionRequest because it requires no estimation
+		TxGasLimit:  request.TxGasLimit,
+	}
+	// Treat the users address as a wildcard
+	for i, param := range sanitized.CxParams {
+		if param == sanitized.UserAddress {
+			sanitized.CxParams[i] = "*"
+		}
+	}
+	sanitized.UserAddress = "*"
+	return sanitized
+}
+
+func tokenizeTransactionRequest(request model.TransactionRequest) string {
+	bytes, err := json.Marshal(request)
+	if err != nil {
+		return ""
+	}
+	hash := sha1.New()
+	hash.Write(bytes)
+	return hex.EncodeToString(hash.Sum(nil))
+}

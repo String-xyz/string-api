@@ -105,7 +105,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 
-	estimateUSD, _, err := t.testTransaction(executor, d, chain, true)
+	estimateUSD, _, _, err := t.testTransaction(executor, d, chain, true, true)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
@@ -215,7 +215,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false)
+	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -227,6 +227,14 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	// Verify the Quote and update model status
 	_, err = verifyQuote(*p.precisionSafeExecutionRequest, estimateUSD)
 	if err != nil {
+		// Update cache if price is too volatile
+		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
+			quoteCache := NewQuoteCache(t.redis)
+			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.TransactionRequest, estimateEVM)
+			if err != nil {
+				return p, libcommon.StringError(err)
+			}
+		}
 		return p, libcommon.StringError(err)
 	}
 	err = t.updateTransactionStatus(ctx, "Quote Verified", p.transactionModel.Id)
@@ -484,7 +492,7 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	return asset, nil
 }
 
-func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool) (model.Quote, float64, error) {
+func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, CallEstimate, error) {
 	res := model.Quote{}
 
 	call := ContractCall{
@@ -495,10 +503,30 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		TxValue:    request.TxValue,
 		TxGasLimit: request.TxGasLimit,
 	}
-	// Estimate value and gas of Tx request
-	estimateEVM, err := executor.Estimate(call)
-	if err != nil {
-		return res, 0, libcommon.StringError(err)
+
+	quoteCache := NewQuoteCache(t.redis)
+	estimateEVM := CallEstimate{}
+	recalculate := true
+	var err error
+	if useBuffer {
+		recalculate, estimateEVM, err = quoteCache.CheckUpdateCachedTransactionRequest(request, 60*5) // TODO: robust buffer time
+		if err != nil {
+			return res, 0, CallEstimate{}, libcommon.StringError(err)
+		}
+	}
+
+	if recalculate {
+		// Estimate value and gas of Tx request
+		estimateEVM, err := executor.Estimate(call)
+		if err != nil {
+			return res, 0, CallEstimate{}, libcommon.StringError(err)
+		}
+		if useCache {
+			err = quoteCache.PutCachedTransactionRequest(request, estimateEVM)
+			if err != nil {
+				return res, 0, CallEstimate{}, libcommon.StringError(err)
+			}
+		}
 	}
 
 	// Calculate total eth estimate as float64
@@ -509,7 +537,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 
 	chainId, err := executor.GetByChainId()
 	if err != nil {
-		return res, eth, libcommon.StringError(err)
+		return res, eth, CallEstimate{}, libcommon.StringError(err)
 	}
 	cost := NewCost(t.redis)
 	estimationParams := EstimationParams{
@@ -524,10 +552,10 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	// Estimate Cost in USD to execute Tx request
 	estimateUSD, err := cost.EstimateTransaction(estimationParams, chain)
 	if err != nil {
-		return res, eth, libcommon.StringError(err)
+		return res, eth, CallEstimate{}, libcommon.StringError(err)
 	}
 	res = estimateUSD
-	return res, eth, nil
+	return res, eth, estimateEVM, nil
 }
 
 func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote) (bool, error) {
