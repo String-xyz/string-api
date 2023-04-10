@@ -24,7 +24,7 @@ EXECUTE PROCEDURE update_updated_at_column();
 -------------------------------------------------------------------------
 -- APIKEY ---------------------------------------------------------------
 ALTER TABLE apikey 
-  ADD COLUMN hint TEXT NOT NULL;
+  ADD COLUMN hint TEXT DEFAULT '';
 
 
 -------------------------------------------------------------------------
