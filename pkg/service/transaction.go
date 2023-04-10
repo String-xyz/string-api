@@ -517,7 +517,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 
 	if recalculate {
 		// Estimate value and gas of Tx request
-		estimateEVM, err := executor.Estimate(call)
+		estimateEVM, err = executor.Estimate(call)
 		if err != nil {
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
