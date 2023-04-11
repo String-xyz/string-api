@@ -250,7 +250,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 
 	// Notify staff if balance is below threshold
 	threshold := 1.0
-	if balance-estimateETH < threshold && balance > estimateETH {
+	if balance-estimateETH < threshold {
 		msg := fmt.Sprintf("STRING-API: %s balance is at or below threshold of %.2f before executing %.2f transaction at %.2f", p.chain.OwlracleName, threshold, estimateETH, balance)
 		go MessageTeam(msg)
 	}
