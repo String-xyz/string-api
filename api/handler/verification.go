@@ -32,8 +32,9 @@ func NewVerification(route *echo.Echo, service service.Verification, deviceServi
 
 func (v verification) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	token := c.QueryParam("token")
-	err := v.service.VerifyEmail(ctx, token)
+	err := v.service.VerifyEmailWithEncryptedToken(ctx, token)
 	if err != nil {
 		libcommon.LogStringError(c, err, "verification: email verification")
 

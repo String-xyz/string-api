@@ -135,3 +135,7 @@ type DeviceUpdates struct {
 type RefreshTokenPayload struct {
 	WalletAddress string `json:"walletAddress" validate:"required"`
 }
+
+type PreValidateEmail struct {
+	Email string `json:"email" validate:"required,email"`
+}
