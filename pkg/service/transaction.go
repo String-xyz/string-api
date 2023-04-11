@@ -74,7 +74,6 @@ type transactionProcessingData struct {
 	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
 	cardAuthorization             *AuthorizedCharge
 	cardCapture                   *payments.CapturesResponse
-	preBalance                    *float64
 	recipientWalletId             *string
 	txId                          *string
 	cumulativeValue               *big.Int
@@ -244,14 +243,20 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	*p.executionRequest = common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
 
 	// Get current balance of primary token
-	preBalance, err := (*p.executor).GetBalance()
-	p.preBalance = &preBalance
+	balance, err := (*p.executor).GetBalance()
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	if preBalance < estimateETH {
-		msg := fmt.Sprintf("STRING-API: %s balance is too low to execute %.2f transaction at %.2f", p.chain.OwlracleName, estimateETH, preBalance)
-		MessageStaff(msg)
+
+	// Notify staff if balance is below threshold
+	threshold := 1.0
+	if balance-estimateETH < threshold {
+		msg := fmt.Sprintf("STRING-API: %s balance is at or below threshold of %.2f before executing %.2f transaction at %.2f", p.chain.OwlracleName, threshold, estimateETH, balance)
+		go MessageTeam(msg)
+	}
+
+	// Exit if transaction will fail due to insufficient balance
+	if balance <= estimateETH {
 		return p, libcommon.StringError(errors.New("hot wallet ETH balance too low"))
 	}
 
@@ -376,6 +381,9 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
+	// We can close the executor because we aren't using it after this
+	executor.Close()
+
 	// Update DB status and NetworkFee
 	status = "Tx Confirmed"
 	updateDB.Status = &status
@@ -385,29 +393,6 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	if err != nil {
 		log.Err(err).Msg("Failed to update transaction repo with status 'Tx Confirmed'")
 		// TODO: Handle error instead of returning it
-	}
-
-	// Get new string wallet balance after executing the transaction
-	postBalance, err := executor.GetBalance()
-	if err != nil {
-		log.Err(err).Msg("Failed to get executor balance")
-		// TODO: handle error instead of returning it
-	}
-
-	// We can close the executor because we aren't using it after this
-	executor.Close()
-
-	// If threshold was crossed, notify devs
-	// TODO: store threshold on a per-network basis in the repo
-	threshold := 10.0
-	if *p.preBalance >= threshold && postBalance < threshold {
-		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
-		err = MessageStaff(msg)
-		if err != nil {
-			log.Err(err).Msg("Failed to send staff with low balance threshold message")
-			// Not seeing any e
-			// TODO: handle error instead of returning it
-		}
 	}
 
 	// compute profit

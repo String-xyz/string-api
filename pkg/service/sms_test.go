@@ -12,6 +12,6 @@ import (
 func TestSendSMS(t *testing.T) {
 	err := godotenv.Load("../../.env")
 	assert.NoError(t, err)
-	err = MessageStaff("This is a test of the String Messaging Service!")
+	err = MessageTeam("This is a test of the String Messaging Service!")
 	assert.NoError(t, err)
 }
