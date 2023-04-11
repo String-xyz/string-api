@@ -157,6 +157,9 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "PlatformId not found in context")
+	}
 
 	// get email from body
 	var body model.PreValidateEmail
@@ -164,10 +167,6 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: pre validate email bind")
 		return httperror.BadRequestError(c)
-	}
-
-	if ok == false {
-		return httperror.InternalError(c, "PlatformId not found in context")
 	}
 
 	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)
