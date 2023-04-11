@@ -22,10 +22,6 @@ data "aws_ssm_parameter" "string_bank_id" {
   name = "string-bank-id"     
 }
 
-data "aws_ssm_parameter" "string_platform_id" {
-  name = "string-placeholder-platform-id"  
-}
-
 data "aws_ssm_parameter" "user_jwt_secret" {
   name = "user-jwt-secret"
 }
