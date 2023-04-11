@@ -251,7 +251,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	}
 	if preBalance < estimateETH {
 		msg := fmt.Sprintf("STRING-API: %s balance is too low to execute %.2f transaction at %.2f", p.chain.OwlracleName, estimateETH, preBalance)
-		MessageStaff(msg)
+		MessageTeam(msg)
 		return p, libcommon.StringError(errors.New("hot wallet ETH balance too low"))
 	}
 
@@ -402,7 +402,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	threshold := 10.0
 	if *p.preBalance >= threshold && postBalance < threshold {
 		msg := fmt.Sprintf("STRING-API: %s balance is < %.2f at %.2f", p.chain.OwlracleName, threshold, postBalance)
-		err = MessageStaff(msg)
+		err = MessageTeam(msg)
 		if err != nil {
 			log.Err(err).Msg("Failed to send staff with low balance threshold message")
 			// Not seeing any e

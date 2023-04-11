@@ -121,6 +121,10 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name = "TEAM_PHONE_NUMBERS"
+          valuefrom = data.aws_ssm_parameter.team_phone_numbers.arn
         }
       ]
       environment = [
