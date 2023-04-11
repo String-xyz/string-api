@@ -40,7 +40,6 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.string_internal_id.arn,
       data.aws_ssm_parameter.string_wallet_id.arn,
       data.aws_ssm_parameter.string_bank_id.arn,
-      data.aws_ssm_parameter.string_platform_id.arn,
       data.aws_ssm_parameter.ipstack_api_key.arn,
       data.aws_ssm_parameter.unit21_api_key.arn,
       data.aws_ssm_parameter.checkout_public_key.arn,
@@ -57,8 +56,8 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.sendgrid_api_key.arn,
       data.aws_ssm_parameter.twilio_sms_sid.arn,
       data.aws_ssm_parameter.twilio_account_sid.arn,
-      data.aws_ssm_parameter.team_phone_numbers.arn,
-      data.aws_ssm_parameter.twilio_auth_token.arn
+      data.aws_ssm_parameter.twilio_auth_token.arn,
+      data.aws_ssm_parameter.team_phone_numbers.arn
     ]
   }
 
