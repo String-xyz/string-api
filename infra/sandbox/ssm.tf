@@ -102,6 +102,10 @@ data "aws_ssm_parameter" "redis_host_url" {
   name  = "redis-host-url"
 }
 
+data "aws_ssm_parameter" "team_phone_numbers" {
+  name = "team-phone-numbers"
+}
+
 data "aws_kms_key" "kms_key" {
   key_id = "alias/main-kms-key"
 }

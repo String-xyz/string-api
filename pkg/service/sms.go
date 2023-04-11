@@ -35,9 +35,9 @@ func SendSMS(message string, recipients []string) error {
 	return nil
 }
 
-func MessageStaff(message string) error {
-	var devNumbers = os.Getenv("DEV_PHONE_NUMBERS")
-	recipients := strings.Split(devNumbers, ",")
+func MessageTeam(message string) error {
+	var teamNumbers = os.Getenv("TEAM_PHONE_NUMBERS")
+	recipients := strings.Split(teamNumbers, ",")
 	err := SendSMS(message, recipients)
 	if err != nil {
 		return libcommon.StringError(err)
