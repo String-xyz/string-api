@@ -63,6 +63,7 @@ func GetCustomerInstruments(Id string) ([]customer.CustomerInstrument, error) {
 		return nil, libcommon.StringError(err)
 	}
 
+	// Success
 	if response.StatusResponse.StatusCode == 200 {
 		return response.Customer.Instruments, nil
 	}
@@ -90,48 +91,68 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	client := payments.NewClient(*config)
 
+	paymentInfo := p.executionRequest.PaymentInfo
+
 	var paymentTokenId string
 	var paymentSource interface{}
-	// if p.executionRequest.CardSourceId != "" {
-	// 	paymentSource = payments.IDSource{
-	// 		Type: "id",
-	// 		ID:   p.executionRequest.CardSourceId,
-	// 		CVV:  p.executionRequest.CVV,
-	// 	}
-	// } else {
-	if p.executionRequest.CardToken != "" {
-		paymentTokenId = p.executionRequest.CardToken
-	} else if libcommon.IsLocalEnv() {
+	if *paymentInfo.CardId != "" {
+		paymentSource = payments.IDSource{
+			Type: "card",
+			ID:   *paymentInfo.CardId,
+			CVV:  *paymentInfo.CVV,
+		}
+		// "source": {
+		// 	"id": "src_y4pwpefkykre7ijbeyxjsxdkf4",
+		// 	"type": "card",
+		// 	"billing_address": {
+		// 	  "address_line1": "123 High St.",
+		// 	  "address_line2": "Flat 456",
+		// 	  "city": "London",
+		// 	  "zip": "SW1A 1AA",
+		// 	  "country": "GB"
+		// 	},
+		// 	"phone": {
+		// 	  "country_code": "+1",
+		// 	  "number": "415 555 2671"
+		// 	},
+		// 	"last4": "4242",
+		// 	"fingerprint": "F31828E2BDABAE63EB694903825CDD36041CC6ED461440B81415895855502832",
+		// 	"bin": "424242"
+		//   },
+	} else {
+		if *paymentInfo.CardToken != "" {
+			paymentTokenId = *paymentInfo.CardToken
+		} else if libcommon.IsLocalEnv() {
 
-		// Generate a payment token ID in case we don't yet have one in the front end
-		// For testing purposes only
-		card := tokens.Card{
-			Type:   checkoutCommon.Card,
-			Number: "4242424242424242", // Success
-			// Number: "4273149019799094", // succeed authorize, fail capture
-			// Number: "4544249167673670", // Declined - Insufficient funds
-			// Number:      "5148447461737269", // Invalid transaction (debit card)
-			ExpiryMonth: 2,
-			ExpiryYear:  2024,
-			Name:        "Customer Name",
-			CVV:         "100",
+			// Generate a payment token ID in case we don't yet have one in the front end
+			// For testing purposes only
+			card := tokens.Card{
+				Type:   checkoutCommon.Card,
+				Number: "4242424242424242", // Success
+				// Number: "4273149019799094", // succeed authorize, fail capture
+				// Number: "4544249167673670", // Declined - Insufficient funds
+				// Number:      "5148447461737269", // Invalid transaction (debit card)
+				ExpiryMonth: 2,
+				ExpiryYear:  2024,
+				Name:        "Customer Name",
+				CVV:         "100",
+			}
+			paymentToken, err := CreateToken(&card)
+			if err != nil {
+				return p, libcommon.StringError(err)
+			}
+			paymentTokenId = paymentToken.Created.Token
 		}
-		paymentToken, err := CreateToken(&card)
-		if err != nil {
-			return p, libcommon.StringError(err)
+		paymentSource = payments.TokenSource{
+			Type:  checkoutCommon.Token.String(),
+			Token: paymentTokenId,
 		}
-		paymentTokenId = paymentToken.Created.Token
 	}
-	paymentSource = payments.TokenSource{
-		Type:  checkoutCommon.Token.String(),
-		Token: paymentTokenId,
-	}
-	// }
 
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
 	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
 
-	usd := convertAmount(p.executionRequest.TotalUSD)
+	usd := convertAmount(p.executionRequest.Quote.Estimate.TotalUSD)
 	capture := false
 	request := &payments.Request{
 		Source:   &paymentSource,
@@ -181,7 +202,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	}
 	client := payments.NewClient(*config)
 
-	usd := convertAmount(p.executionRequest.Quote.TotalUSD)
+	usd := convertAmount(p.executionRequest.Quote.Estimate.TotalUSD)
 
 	idempotencyKey := checkout.NewIdempotencyKey()
 	params := checkout.Params{

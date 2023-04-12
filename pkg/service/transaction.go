@@ -25,8 +25,8 @@ import (
 )
 
 type Transaction interface {
-	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error)
-	Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (model.TransactionReceipt, error)
+	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error)
+	Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error)
 }
 
 type TransactionRepos struct {
@@ -61,28 +61,26 @@ func NewTransaction(repos repository.Repositories, redis database.RedisStore, un
 }
 
 type transactionProcessingData struct {
-	userId                        *string
-	user                          *model.User
-	deviceId                      *string
-	ip                            *string
-	platformId                    *string
-	executor                      *Executor
-	processingFeeAsset            *model.Asset
-	transactionModel              *model.Transaction
-	chain                         *Chain
-	executionRequest              *model.ExecutionRequest
-	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
-	cardAuthorization             *AuthorizedCharge
-	cardCapture                   *payments.CapturesResponse
-	recipientWalletId             *string
-	txId                          *string
-	cumulativeValue               *big.Int
-	trueGas                       *uint64
+	userId             *string
+	user               *model.User
+	deviceId           *string
+	ip                 *string
+	platformId         *string
+	executor           *Executor
+	processingFeeAsset *model.Asset
+	transactionModel   *model.Transaction
+	chain              *Chain
+	executionRequest   *model.ExecutionRequest
+	cardAuthorization  *AuthorizedCharge
+	cardCapture        *payments.CapturesResponse
+	recipientWalletId  *string
+	txId               *string
+	cumulativeValue    *big.Int
+	trueGas            *uint64
 }
 
-func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error) {
+func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
 	// TODO: use prefab service to parse d and fill out known params
-	res := model.PrecisionSafeExecutionRequest{TransactionRequest: d}
 
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(ctx, uint64(d.ChainId), t.repos.Network, t.repos.Asset)
@@ -108,7 +106,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
-	res.PrecisionSafeQuote = common.QuoteToPrecise(estimateUSD)
+	res.Estimate = common.EstimateToPrecise(estimateUSD)
 	executor.Close()
 
 	// Sign entire payload
@@ -125,9 +123,9 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
+	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(ctx, p)
@@ -171,7 +169,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.user = &user
 
 	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(ctx, p.precisionSafeExecutionRequest.ChainId, t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(ctx, p.executionRequest.Quote.TransactionRequest.ChainId, t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -185,7 +183,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(*p.precisionSafeExecutionRequest, updateDB)
+	processingFeeAsset, err := t.populateInitialTxModelData(*p.executionRequest, updateDB)
 	p.processingFeeAsset = &processingFeeAsset
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -214,7 +212,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
+	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.executionRequest.Quote.TransactionRequest, *p.chain, false, false)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -224,12 +222,12 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	}
 
 	// Verify the Quote and update model status
-	_, err = verifyQuote(*p.precisionSafeExecutionRequest, estimateUSD)
+	_, err = verifyQuote(*p.executionRequest, estimateUSD)
 	if err != nil {
 		// Update cache if price is too volatile
 		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
 			quoteCache := NewQuoteCache(t.redis)
-			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.TransactionRequest, estimateEVM)
+			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.Quote.TransactionRequest, estimateEVM)
 			if err != nil {
 				return p, libcommon.StringError(err)
 			}
@@ -240,7 +238,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	*p.executionRequest = common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
+	*p.executionRequest = common.QuoteToImprecise(p.executionRequest.Quote)
 
 	// Get current balance of primary token
 	balance, err := (*p.executor).GetBalance()
@@ -305,12 +303,12 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 
 func (t transaction) initiateTransaction(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	call := ContractCall{
-		CxAddr:     p.executionRequest.CxAddr,
-		CxFunc:     p.executionRequest.CxFunc,
-		CxReturn:   p.executionRequest.CxReturn,
-		CxParams:   p.executionRequest.CxParams,
-		TxValue:    p.executionRequest.TxValue,
-		TxGasLimit: p.executionRequest.TxGasLimit,
+		CxAddr:     p.executionRequest.Quote.TransactionRequest.CxAddr,
+		CxFunc:     p.executionRequest.Quote.TransactionRequest.CxFunc,
+		CxReturn:   p.executionRequest.Quote.TransactionRequest.CxReturn,
+		CxParams:   p.executionRequest.Quote.TransactionRequest.CxParams,
+		TxValue:    p.executionRequest.Quote.TransactionRequest.TxValue,
+		TxGasLimit: p.executionRequest.Quote.TransactionRequest.TxGasLimit,
 	}
 
 	txId, value, err := (*p.executor).Initiate(call)
@@ -323,7 +321,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
 	wei := floatToFixedString(eth, 18)
-	usd := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usd := floatToFixedString(p.executionRequest.Quote.Estimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	responseLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       wei,
@@ -455,7 +453,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 }
 
-func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
 	// TODO populate transactionModel.Tags with key-val pairs for Unit21
@@ -464,9 +462,9 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	// TODO populate transactionModel.PlatformId with UUID of customer
 	// bytes, err := json.Marshal()
 
-	contractParams := pq.StringArray(e.CxParams)
+	contractParams := pq.StringArray(e.Quote.TransactionRequest.CxParams)
 	m.ContractParams = &contractParams
-	contractFunc := e.CxFunc + e.CxReturn
+	contractFunc := e.Quote.TransactionRequest.CxFunc + e.Quote.TransactionRequest.CxReturn
 	m.ContractFunc = &contractFunc
 
 	asset, err := t.repos.Asset.GetByName("USD")
@@ -477,8 +475,8 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	return asset, nil
 }
 
-func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, CallEstimate, error) {
-	res := model.Quote{}
+func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Estimate[float64], float64, CallEstimate, error) {
+	res := model.Estimate[float64]{}
 
 	call := ContractCall{
 		CxAddr:     request.CxAddr,
@@ -543,26 +541,25 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	return res, eth, estimateEVM, nil
 }
 
-func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote) (bool, error) {
+func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) (bool, error) {
 	// Null out values which have changed since payload was signed
 	dataToValidate := e
-	dataToValidate.Signature = ""
-	dataToValidate.CardToken = ""
-	bytesToValidate, err := json.Marshal(dataToValidate)
+	dataToValidate.Quote.Signature = ""
+	bytesToValidate, err := json.Marshal(dataToValidate.Quote)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
-	valid, err := common.ValidateEVMSignature(e.Signature, bytesToValidate, true)
+	valid, err := common.ValidateEVMSignature(e.Quote.Signature, bytesToValidate, true)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
 	if !valid {
 		return false, libcommon.StringError(errors.New("verifyQuote: invalid signature"))
 	}
-	if newEstimate.Timestamp-e.Timestamp > 20 {
+	if newEstimate.Timestamp-e.Quote.Estimate.Timestamp > 20 {
 		return false, libcommon.StringError(errors.New("verifyQuote: quote expired"))
 	}
-	quotedTotal, err := strconv.ParseFloat(e.TotalUSD, 64)
+	quotedTotal, err := strconv.ParseFloat(e.Quote.Estimate.TotalUSD, 64)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
@@ -647,7 +644,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	}
 
 	// Create Origin Tx leg
-	usdWei := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usdWei := floatToFixedString(p.executionRequest.Quote.Estimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	origin := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       usdWei,
@@ -671,7 +668,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		return p, libcommon.StringError(err)
 	}
 
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(ctx, p.executionRequest.UserAddress, *p.userId)
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(ctx, p.executionRequest.Quote.TransactionRequest.UserAddress, *p.userId)
 	p.recipientWalletId = &recipientWalletId
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -728,7 +725,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
-	profit := p.executionRequest.Quote.TotalUSD - trueUSD
+	profit := p.executionRequest.Quote.Estimate.TotalUSD - trueUSD
 
 	// Create Receive Tx leg
 	asset, err := t.repos.Asset.GetById(ctx, p.chain.GasTokenId)
@@ -736,7 +733,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 		return profit, libcommon.StringError(err)
 	}
 	wei := floatToFixedString(trueEth, int(asset.Decimals))
-	usd := floatToFixedString(p.executionRequest.Quote.TotalUSD, 6)
+	usd := floatToFixedString(p.executionRequest.Quote.Estimate.TotalUSD, 6)
 
 	txModel, err := t.repos.Transaction.GetById(ctx, p.transactionModel.Id)
 	if err != nil {
@@ -769,7 +766,7 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 	}
 
 	// Create Receipt Tx leg
-	usdWei := floatToFixedString(p.executionRequest.Quote.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usdWei := floatToFixedString(p.executionRequest.Quote.Estimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	receiptLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       usdWei,
@@ -818,18 +815,21 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		return libcommon.StringError(err)
 	}
 
+	transactionRequest := p.executionRequest.Quote.TransactionRequest
+	estimate := p.executionRequest.Quote.Estimate
+
 	receiptBody := [][2]string{
 		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
-		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + p.executionRequest.UserAddress + "'>" + p.executionRequest.UserAddress + "</a>"},
+		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + transactionRequest.UserAddress + "'>" + transactionRequest.UserAddress + "</a>"},
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", platform.Name},
 		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
 		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
-		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
-		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
-		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
-		{"Total Charge", common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
+		{"Subtotal", common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD)},
+		{"Network Fee:", common.FloatToUSDString(estimate.GasUSD)},
+		{"Processing Fee", common.FloatToUSDString(estimate.ServiceUSD)},
+		{"Total Charge", common.FloatToUSDString(estimate.TotalUSD)},
 	}
 	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
 	if err != nil {

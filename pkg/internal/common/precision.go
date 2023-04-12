@@ -6,8 +6,8 @@ import (
 	"github.com/String-xyz/string-api/pkg/model"
 )
 
-func QuoteToPrecise(imprecise model.Quote) model.PrecisionSafeQuote {
-	res := model.PrecisionSafeQuote{
+func EstimateToPrecise(imprecise model.Estimate[float64]) model.Estimate[string] {
+	res := model.Estimate[string]{
 		Timestamp:  imprecise.Timestamp,
 		BaseUSD:    strconv.FormatFloat(imprecise.BaseUSD, 'f', 2, 64),
 		GasUSD:     strconv.FormatFloat(imprecise.GasUSD, 'f', 2, 64),
@@ -18,8 +18,8 @@ func QuoteToPrecise(imprecise model.Quote) model.PrecisionSafeQuote {
 	return res
 }
 
-func QuoteToImprecise(precise model.PrecisionSafeQuote) model.Quote {
-	res := model.Quote{
+func EstimateToImprecise(precise model.Estimate[string]) model.Estimate[float64] {
+	res := model.Estimate[float64]{
 		Timestamp: precise.Timestamp,
 	}
 	res.BaseUSD, _ = strconv.ParseFloat(precise.BaseUSD, 64)
@@ -30,22 +30,26 @@ func QuoteToImprecise(precise model.PrecisionSafeQuote) model.Quote {
 	return res
 }
 
-func ExecutionRequestToPrecise(imprecise model.ExecutionRequest) model.PrecisionSafeExecutionRequest {
-	res := model.PrecisionSafeExecutionRequest{
+// type Quote struct {
+// 	TransactionRequest TransactionRequest `json:"request"`
+// 	Estimate           Estimate[string]   `json:"estimate"`
+// 	Signature          string             `json:"signature"`
+// }
+
+func QuoteToPrecise(imprecise model.Quote) model.Quote {
+	res := model.Quote{
 		TransactionRequest: imprecise.TransactionRequest,
-		PrecisionSafeQuote: QuoteToPrecise(imprecise.Quote),
+		Estimate:           EstimateToPrecise(imprecise.Estimate),
 		Signature:          imprecise.Signature,
-		CardToken:          imprecise.CardToken,
 	}
 	return res
 }
 
-func ExecutionRequestToImprecise(precise model.PrecisionSafeExecutionRequest) model.ExecutionRequest {
-	res := model.ExecutionRequest{
+func QuoteToImprecise(precise model.Quote) model.Quote {
+	res := model.Quote{
 		TransactionRequest: precise.TransactionRequest,
-		Quote:              QuoteToImprecise(precise.PrecisionSafeQuote),
+		Estimate:           EstimateToImprecise(precise.Estimate),
 		Signature:          precise.Signature,
-		CardToken:          precise.CardToken,
 	}
 	return res
 }
