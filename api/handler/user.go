@@ -191,7 +191,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
-	g.PUT("/:id", u.Update, ms...)
+	g.PATCH("/:id", u.Update, ms...)
 }
 
 func (u user) RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
