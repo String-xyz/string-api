@@ -29,7 +29,7 @@ func (card card) GetAll(c echo.Context) error {
 	platformId := c.Get("platformId").(string)
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
-		libcommon.LogStringError(c, err, "cards: cards")
+		libcommon.LogStringError(c, err, "cards: get All")
 		return httperror.InternalError(c, "Cards Service Failed")
 	}
 	return c.JSON(http.StatusOK, res)
