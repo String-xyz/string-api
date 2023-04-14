@@ -73,8 +73,10 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
+	fromAddress := os.Getenv("EMAIL_FROM_ADDRESS_AUTH")
+
 	baseURL := common.GetBaseURL()
-	from := mail.NewEmail("String Authentication", "auth@string.xyz")
+	from := mail.NewEmail("String Authentication", fromAddress)
 	subject := "String Email Verification"
 	to := mail.NewEmail("New String User", email)
 	textContent := "Click the link below to complete your e-email verification!"
@@ -124,7 +126,8 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	code = url.QueryEscape(code)
 
 	baseURL := common.GetBaseURL()
-	from := mail.NewEmail("String XYZ", "auth@string.xyz")
+	fromAddress := os.Getenv("EMAIL_FROM_ADDRESS_AUTH")
+	from := mail.NewEmail("String XYZ", fromAddress)
 	subject := "New Device Login Verification"
 	to := mail.NewEmail("New Device Login", email)
 	link := baseURL + "verification?type=device&token=" + code
