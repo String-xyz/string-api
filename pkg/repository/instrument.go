@@ -25,7 +25,7 @@ type Instrument interface {
 	GetWalletByUserId(userId string) (model.Instrument, error)
 	GetBankByUserId(userId string) (model.Instrument, error)
 	WalletAlreadyExists(addr string) (bool, error)
-	GetCardsByUserId(userId string) ([]model.Instrument, error)
+	GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error)
 }
 
 type instrument[T any] struct {
