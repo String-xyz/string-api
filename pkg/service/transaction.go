@@ -586,9 +586,9 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 	}
 
 	// We should gather type from the payment processor
-	instrument_type := "Debit Card"
+	instrument_type := "debit card"
 	if p.cardAuthorization.CardType == "CREDIT" {
-		instrument_type = "Credit Card"
+		instrument_type = "credit card"
 	}
 	// Create a new instrument
 	instrument = model.Instrument{ // No locationId until fingerprint
