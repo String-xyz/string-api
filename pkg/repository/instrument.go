@@ -118,7 +118,7 @@ func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	return false, nil
 }
 
-func (i instrument[T]) GetCardsByUserId(userId string) ([]model.Instrument, error) {
+func (i instrument[T]) GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error) {
 	var cards []model.Instrument
 	err := i.Store.SelectContext(ctx, &cards, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'credit card' OR type = 'debit card'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
