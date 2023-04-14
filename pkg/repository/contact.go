@@ -21,7 +21,7 @@ type Contact interface {
 	List(ctx context.Context, limit int, offset int) ([]model.Contact, error)
 	Update(ctx context.Context, id string, updates any) error
 	GetByData(data string) (model.Contact, error)
-	GetEmailByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error)
+	GetEmailByUserIdAndPlatformId(ctx context.Context, userId string, platformId string) (model.Contact, error)
 	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
 	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
 }
