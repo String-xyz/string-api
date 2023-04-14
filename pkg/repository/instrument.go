@@ -78,7 +78,7 @@ func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrum
 
 func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'crypto wallet'", i.Table), userId)
+	err := i.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'crypto wallet'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
