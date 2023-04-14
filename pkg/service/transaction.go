@@ -217,6 +217,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
+
 	err = t.updateTransactionStatus(ctx, "Tested and Estimated", p.transactionModel.Id)
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -235,10 +236,12 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 		}
 		return p, libcommon.StringError(err)
 	}
+
 	err = t.updateTransactionStatus(ctx, "Quote Verified", p.transactionModel.Id)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
+
 	floatEstimate := common.EstimateToImprecise(p.executionRequest.Quote.Estimate)
 	p.floatEstimate = &floatEstimate
 
@@ -274,7 +277,6 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	}
 
 	evaluation, err := t.unit21.Transaction.Evaluate(ctx, txModel)
-
 	if err != nil {
 		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
 		log.Err(err).Msg("Error evaluating transaction in Unit21")
@@ -659,6 +661,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
+
 	txLegUpdates := model.TransactionUpdates{OriginTxLegId: &origin.Id}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, txLegUpdates)
 	if err != nil {

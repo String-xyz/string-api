@@ -92,12 +92,11 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	client := payments.NewClient(*config)
 
 	paymentInfo := p.executionRequest.PaymentInfo
-
 	var paymentTokenId string
 	var paymentSource interface{}
 	if paymentInfo.CardId != nil {
 		paymentSource = payments.IDSource{
-			Type: "card",
+			Type: "id",
 			ID:   *paymentInfo.CardId,
 			CVV:  *paymentInfo.CVV,
 		}
@@ -120,7 +119,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		// 	"bin": "424242"
 		//   },
 	} else {
-		if *paymentInfo.CardToken != "" {
+		if paymentInfo.CardToken != nil {
 			paymentTokenId = *paymentInfo.CardToken
 		} else if libcommon.IsLocalEnv() {
 
