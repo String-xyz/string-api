@@ -100,24 +100,6 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			ID:   *paymentInfo.CardId,
 			CVV:  *paymentInfo.CVV,
 		}
-		// "source": {
-		// 	"id": "src_y4pwpefkykre7ijbeyxjsxdkf4",
-		// 	"type": "card",
-		// 	"billing_address": {
-		// 	  "address_line1": "123 High St.",
-		// 	  "address_line2": "Flat 456",
-		// 	  "city": "London",
-		// 	  "zip": "SW1A 1AA",
-		// 	  "country": "GB"
-		// 	},
-		// 	"phone": {
-		// 	  "country_code": "+1",
-		// 	  "number": "415 555 2671"
-		// 	},
-		// 	"last4": "4242",
-		// 	"fingerprint": "F31828E2BDABAE63EB694903825CDD36041CC6ED461440B81415895855502832",
-		// 	"bin": "424242"
-		//   },
 	} else {
 		if paymentInfo.CardToken != nil {
 			paymentTokenId = *paymentInfo.CardToken
