@@ -811,6 +811,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		StringPaymentId:   p.transactionModel.Id,
 		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
 		TransactionDate:   time.Now().Format(time.RFC1123),
+		RecipientAddress:  contact.Data,
 	}
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
 	if err != nil {
@@ -830,11 +831,16 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
 		{"Total Charge", common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
 	}
-	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+	// err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+	// if err != nil {
+	// 	log.Err(err).Msg("Error sending email receipt to user")
+	// 	return libcommon.StringError(err)
+	// }
+	receipt, err := common.GenerateReceipt(receiptParams, receiptBody)
 	if err != nil {
-		log.Err(err).Msg("Error sending email receipt to user")
 		return libcommon.StringError(err)
 	}
+	common.SendEmail(receipt)
 	return nil
 }
 
