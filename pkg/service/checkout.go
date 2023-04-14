@@ -95,7 +95,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 
 	var paymentTokenId string
 	var paymentSource interface{}
-	if *paymentInfo.CardId != "" {
+	if paymentInfo.CardId != nil {
 		paymentSource = payments.IDSource{
 			Type: "card",
 			ID:   *paymentInfo.CardId,
@@ -152,7 +152,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
 	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
 
-	usd := convertAmount(p.executionRequest.Quote.Estimate.TotalUSD)
+	usd := convertAmount(p.floatEstimate.TotalUSD)
 	capture := false
 	request := &payments.Request{
 		Source:   &paymentSource,
@@ -202,7 +202,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	}
 	client := payments.NewClient(*config)
 
-	usd := convertAmount(p.executionRequest.Quote.Estimate.TotalUSD)
+	usd := convertAmount(p.floatEstimate.TotalUSD)
 
 	idempotencyKey := checkout.NewIdempotencyKey()
 	params := checkout.Params{

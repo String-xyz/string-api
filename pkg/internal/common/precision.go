@@ -29,27 +29,3 @@ func EstimateToImprecise(precise model.Estimate[string]) model.Estimate[float64]
 	res.TotalUSD, _ = strconv.ParseFloat(precise.TotalUSD, 64)
 	return res
 }
-
-// type Quote struct {
-// 	TransactionRequest TransactionRequest `json:"request"`
-// 	Estimate           Estimate[string]   `json:"estimate"`
-// 	Signature          string             `json:"signature"`
-// }
-
-func QuoteToPrecise(imprecise model.Quote) model.Quote {
-	res := model.Quote{
-		TransactionRequest: imprecise.TransactionRequest,
-		Estimate:           EstimateToPrecise(imprecise.Estimate),
-		Signature:          imprecise.Signature,
-	}
-	return res
-}
-
-func QuoteToImprecise(precise model.Quote) model.Quote {
-	res := model.Quote{
-		TransactionRequest: precise.TransactionRequest,
-		Estimate:           EstimateToImprecise(precise.Estimate),
-		Signature:          precise.Signature,
-	}
-	return res
-}
