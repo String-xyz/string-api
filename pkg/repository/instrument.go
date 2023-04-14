@@ -22,7 +22,7 @@ type Instrument interface {
 	GetById(ctx context.Context, id string) (model.Instrument, error)
 	GetWalletByAddr(addr string) (model.Instrument, error)
 	GetCardByFingerprint(fingerprint string) (m model.Instrument, err error)
-	GetWalletByUserId(userId string) (model.Instrument, error)
+	GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error)
 	GetBankByUserId(userId string) (model.Instrument, error)
 	WalletAlreadyExists(addr string) (bool, error)
 	GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error)
@@ -76,7 +76,7 @@ func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrum
 	return i.GetWalletByAddr(fingerprint)
 }
 
-func (i instrument[T]) GetWalletByUserId(ctx context.Context userId string) (model.Instrument, error) {
+func (i instrument[T]) GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error) {
 	m := model.Instrument{}
 	err := i.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'crypto wallet'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {

@@ -63,7 +63,7 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 }
 
 // TODO: replace references to GetByUserIdAndStatus with the following:
-func (u contact[T]) GetEmailByUserIdAndPlatformId(userId string, platformId string) (model.Contact, error) {
+func (u contact[T]) GetEmailByUserIdAndPlatformId(ctx context.Context, userId string, platformId string) (model.Contact, error) {
 	m := model.Contact{}
 	err := u.Store.Get(&m, fmt.Sprintf(`
 	SELECT contact.*
