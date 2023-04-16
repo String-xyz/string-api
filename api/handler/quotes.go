@@ -41,7 +41,7 @@ func (q quote) Quote(c echo.Context) error {
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		return httperror.InternalError(c, "Platform ID not found")
+		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
 	res, err := q.Service.Quote(ctx, body, platformId)

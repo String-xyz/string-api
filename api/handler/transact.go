@@ -39,9 +39,21 @@ func (t transaction) Transact(c echo.Context) error {
 	for i := range body.CxParams {
 		SanitizeChecksums(&body.CxParams[i])
 	}
-	userId := c.Get("userId").(string)
-	deviceId := c.Get("deviceId").(string)
-	platformId := c.Get("platformId").(string)
+	userId, ok := c.Get("userId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid userId")
+	}
+
+	deviceId, ok := c.Get("deviceId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid deviceId")
+	}
+
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
+
 	ip := c.RealIP()
 
 	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)

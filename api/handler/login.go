@@ -51,7 +51,10 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
 
 	bypassDevice := c.QueryParam("bypassDevice")
 
@@ -113,7 +116,10 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
 
 	ctx := c.Request().Context()
 	var body model.RefreshTokenPayload
