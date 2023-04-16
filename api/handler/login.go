@@ -51,7 +51,10 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
 
 	bypassDevice := c.QueryParam("bypassDevice")
 
@@ -113,7 +116,10 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
 
 	ctx := c.Request().Context()
 	var body model.RefreshTokenPayload
@@ -129,9 +135,9 @@ func (l login) RefreshToken(c echo.Context) error {
 
 	SanitizeChecksums(&body.WalletAddress)
 
-	cookie, err := c.Cookie("refresh_token")
+	cookie, err := c.Cookie("StringRefreshToken")
 	if err != nil {
-		libcommon.LogStringError(c, err, "RefreshToken: unable to get refresh_token cookie")
+		libcommon.LogStringError(c, err, "RefreshToken: unable to get StringRefreshToken cookie")
 		return httperror.Unauthorized(c)
 	}
 
@@ -159,9 +165,9 @@ func (l login) RefreshToken(c echo.Context) error {
 // logout
 func (l login) Logout(c echo.Context) error {
 	// get refresh token from cookie
-	cookie, err := c.Cookie("refresh_token")
+	cookie, err := c.Cookie("StringRefreshToken")
 	if err != nil {
-		libcommon.LogStringError(c, err, "Logout: unable to get refresh_token cookie")
+		libcommon.LogStringError(c, err, "Logout: unable to get StringRefreshToken cookie")
 		return httperror.Unauthorized(c)
 	}
 

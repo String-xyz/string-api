@@ -32,7 +32,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 
 func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse) error {
 	cookie := new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = "StringRefreshToken"
 	cookie.Value = refresh.Token
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
@@ -71,7 +71,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = "StringRefreshToken"
 	cookie.Value = ""
 	cookie.HttpOnly = true
 	cookie.Expires = time.Now()
