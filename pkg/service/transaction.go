@@ -78,6 +78,7 @@ type transactionProcessingData struct {
 	txId                          *string
 	cumulativeValue               *big.Int
 	trueGas                       *uint64
+	assetName                     *string
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error) {
@@ -127,7 +128,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 
 func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
+	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId, assetName: &e.Name}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(ctx, p)
@@ -548,6 +549,7 @@ func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote)
 	dataToValidate := e
 	dataToValidate.Signature = ""
 	dataToValidate.CardToken = ""
+	dataToValidate.Name = "" // The quote request does not include the name as per the spec
 	bytesToValidate, err := json.Marshal(dataToValidate)
 	if err != nil {
 		return false, libcommon.StringError(err)
@@ -809,7 +811,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
+		PaymentDescriptor: *p.assetName,
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
@@ -823,8 +825,8 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", platform.Name},
-		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
-		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Item Ordered", *p.assetName},
+		{"Token ID", "1234"}, // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
 		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
 		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
