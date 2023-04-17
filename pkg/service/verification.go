@@ -126,7 +126,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	code = url.QueryEscape(code)
 
 	baseURL := common.GetBaseURL()
-	fromAddress := os.Getenv("EMAIL_FROM_ADDRESS_AUTH")
+	fromAddress := os.Getenv("AUTH_EMAIL_ADDRESS")
 	from := mail.NewEmail("String XYZ", fromAddress)
 	subject := "New Device Login Verification"
 	to := mail.NewEmail("New Device Login", email)
