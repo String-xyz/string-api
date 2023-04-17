@@ -5,11 +5,16 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
+
+// TODO: add these to stringerror in go-lib
+var FUNC_NOT_ALLOWED = errors.New("function is not allowed on this contract")
+var CONTRACT_NOT_ALLOWED = errors.New("contract not allowed by platform on network")
 
 type Quotes interface {
 	Quote(c echo.Context) error
@@ -52,7 +57,7 @@ func (q quote) Quote(c echo.Context) error {
 			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 		}
 
-		if errors.Cause(err).Error() == "function is not allowed on this contract" || errors.Cause(err).Error() == "contract not allowed by platform on network" {
+		if serror.Is(err, FUNC_NOT_ALLOWED, CONTRACT_NOT_ALLOWED) {
 			return httperror.ForbiddenError(c, "The requested blockchain operation is not allowed")
 		}
 
