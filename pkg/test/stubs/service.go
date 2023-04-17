@@ -16,7 +16,7 @@ func (v *Verification) SetError(e error) {
 	v.Error = e
 }
 
-func (v Verification) SendEmailVerification(ctx context.Context, userId string, email string) error {
+func (v Verification) SendEmailVerification(ctx context.Context, userId string, email string, platformId string) error {
 	return v.Error
 }
 
@@ -101,6 +101,10 @@ func (a Auth) GenerateJWT(string, string, ...model.Device) (service.JWT, error) 
 }
 
 func (a Auth) ValidateAPIKeyPublic(key string) (string, error) {
+	return "platform-id", a.Error
+}
+
+func (a Auth) ValidateAPIKeySecret(key string) (string, error) {
 	return "platform-id", a.Error
 }
 

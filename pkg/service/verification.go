@@ -32,12 +32,13 @@ type DeviceVerification struct {
 
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
-	SendEmailVerification(ctx context.Context, userId string, email string, platformId string) error
+	SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error
 
 	// VerifyEmail verifies the provided email and creates a contact
-	VerifyEmail(ctx context.Context, encrypted string) error
-
+	VerifyEmail(ctx context.Context, platformId string, userId string, email string) error
 	SendDeviceVerification(userId, email string, deviceId string, deviceDescription string) error
+	VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error
+	PreValidateEmail(ctx context.Context, platformId, userId, email string) error
 }
 
 type verification struct {
@@ -49,7 +50,7 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 	return &verification{repos, unit21}
 }
 
-func (v verification) SendEmailVerification(ctx context.Context, userId, email, platformId string) error {
+func (v verification) SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error {
 	if !validEmail(email) {
 		return libcommon.StringError(serror.INVALID_DATA)
 	}
@@ -100,15 +101,8 @@ func (v verification) SendEmailVerification(ctx context.Context, userId, email, 
 		} else if err == nil && contact.Data == email {
 			// success
 			// update user status
-			_, err := v.repos.User.UpdateStatus(userId, "email_verified")
-
-			// Associate contact with platform
-			if platformId != "" {
-				err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
-			}
-
+			err = v.VerifyEmail(ctx, userId, email, platformId)
 			if err != nil {
-				// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
 				return libcommon.StringError(err)
 			}
 
@@ -151,7 +145,39 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	return nil
 }
 
-func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
+func (v verification) VerifyEmail(ctx context.Context, userId string, email string, platformId string) error {
+	now := time.Now()
+
+	// 1. Create contact with email
+	contact := model.Contact{UserId: userId, Type: "email", Status: "validated", Data: email, ValidatedAt: &now}
+	contact, err := v.repos.Contact.Create(contact)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+
+	// 2. Update user status
+	user, err := v.repos.User.UpdateStatus(userId, "email_verified")
+	if err != nil {
+		// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
+		return libcommon.StringError(err)
+	}
+
+	// 3. Associate contact with platform
+	if platformId != "" {
+		err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
+		if err != nil {
+			return libcommon.StringError(err)
+		}
+	}
+
+	// 4. update user in unit21
+	ctx2 := context.Background() // Create a new context since this will run in background
+	go v.unit21.Entity.Update(ctx2, user)
+
+	return nil
+}
+
+func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := libcommon.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
@@ -162,22 +188,15 @@ func (v verification) VerifyEmail(ctx context.Context, encrypted string) error {
 	if now.Unix()-received.Timestamp > (60 * 15) {
 		return libcommon.StringError(serror.EXPIRED)
 	}
-	contact := model.Contact{UserId: received.UserId, Type: "email", Status: "validated", Data: received.Email, ValidatedAt: &now}
-	contact, err = v.repos.Contact.Create(contact)
+
+	err = v.VerifyEmail(ctx, received.UserId, received.Email, "")
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-
-	// update user status
-	user, err := v.repos.User.UpdateStatus(received.UserId, "email_verified")
-	if err != nil {
-		// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
-		return libcommon.StringError(err)
-	}
-
-	// Create a new context since this will run in background
-	ctx2 := context.Background()
-	go v.unit21.Entity.Update(ctx2, user)
 
 	return nil
+}
+
+func (v verification) PreValidateEmail(ctx context.Context, platformId, userId, email string) error {
+	return v.VerifyEmail(ctx, userId, email, platformId)
 }

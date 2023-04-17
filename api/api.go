@@ -79,6 +79,7 @@ func transactRoute(services service.Services, e *echo.Echo) {
 func userRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewUser(e, services.User, services.Verification)
 	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyPublicAuth(services.Auth), middleware.JWTAuth())
+	handler.RegisterPrivateRoutes(e.Group("/users"), middleware.APIKeySecretAuth(services.Auth))
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {

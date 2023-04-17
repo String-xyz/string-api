@@ -64,6 +64,7 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 				return false, err
 			}
 
+			// TODO: Validate platformId
 			c.Set("platformId", platformId)
 
 			return true, nil

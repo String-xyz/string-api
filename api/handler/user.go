@@ -17,7 +17,9 @@ type User interface {
 	Status(c echo.Context) error
 	Update(c echo.Context) error
 	VerifyEmail(c echo.Context) error
+	PreValidateEmail(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
+	RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
 type ResultMessage struct {
@@ -123,13 +125,17 @@ func (u user) Update(c echo.Context) error {
 func (u user) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	platformId := c.Get("platformId").(string)
-	_, userId := validUserId(IdParam(c), c)
+	valid, userId := validUserId(IdParam(c), c)
+	if !valid {
+		return httperror.BadRequestError(c, "Missing or invalid user id")
+	}
+
 	email := c.QueryParam("email")
 	if email == "" {
 		return httperror.BadRequestError(c, "Missing or invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(ctx, userId, email, platformId)
+	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 
@@ -147,6 +153,30 @@ func (u user) VerifyEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Verified"})
 }
 
+func (u user) PreValidateEmail(c echo.Context) error {
+	ctx := c.Request().Context()
+	userId := c.Param("id")
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "PlatformId not found in context")
+	}
+
+	// get email from body
+	var body model.PreValidateEmail
+	err := c.Bind(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: pre validate email bind")
+		return httperror.BadRequestError(c)
+	}
+
+	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)
+	if err != nil {
+		return DefaultErrorHandler(c, err, "platformInternal: PreValidateEmail")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"validated": "true"})
+}
+
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
@@ -162,6 +192,15 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
 	g.PUT("/:id", u.Update, ms...)
+}
+
+func (u user) RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
+	if g == nil {
+		panic("No private group attached to the User Handler")
+	}
+	u.Group = g
+
+	g.POST("/:id/email/pre-validate", u.PreValidateEmail, ms...)
 }
 
 // get userId from context and also compare if both are valid
