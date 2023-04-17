@@ -812,7 +812,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: (*p.executionRequest).AssetName,
+		PaymentDescriptor: p.executionRequest.Quote.TransactionRequest.AssetName,
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
