@@ -809,7 +809,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
+		PaymentDescriptor: (*p.executionRequest).AssetName,
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
@@ -823,8 +823,8 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", platform.Name},
-		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
-		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Item Ordered", (*p.executionRequest).AssetName},
+		{"Token ID", "1234"}, // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
 		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
 		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
