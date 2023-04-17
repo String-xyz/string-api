@@ -12,10 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO: add these to stringerror in go-lib
-var FUNC_NOT_ALLOWED = errors.New("function is not allowed on this contract")
-var CONTRACT_NOT_ALLOWED = errors.New("contract not allowed by platform on network")
-
 type Quotes interface {
 	Quote(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
@@ -57,7 +53,7 @@ func (q quote) Quote(c echo.Context) error {
 			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 		}
 
-		if serror.Is(err, FUNC_NOT_ALLOWED, CONTRACT_NOT_ALLOWED) {
+		if serror.Is(err, serror.FUNC_NOT_ALLOWED, serror.CONTRACT_NOT_ALLOWED) {
 			return httperror.ForbiddenError(c, "The requested blockchain operation is not allowed")
 		}
 

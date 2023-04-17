@@ -95,7 +95,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 	if !allowed {
-		return res, libcommon.StringError(errors.New("contract not allowed"))
+		return res, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	}
 
 	executor := NewExecutor()
@@ -875,7 +875,7 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
-		return false, libcommon.StringError(errors.New("contract not allowed by platform on network"))
+		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	} else if err != nil {
 		return false, libcommon.StringError(err)
 	}
@@ -889,5 +889,5 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 			return true, nil
 		}
 	}
-	return false, libcommon.StringError(errors.New("function is not allowed on this contract"))
+	return false, libcommon.StringError(serror.FUNC_NOT_ALLOWED)
 }
