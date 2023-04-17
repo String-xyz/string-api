@@ -94,7 +94,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 	if !allowed {
-		return res, libcommon.StringError(errors.New("contract not allowed"))
+		return res, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	}
 
 	executor := NewExecutor()
@@ -812,7 +812,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
 		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
+		PaymentDescriptor: (*p.executionRequest).AssetName,
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
@@ -829,8 +829,8 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		{"Payment Descriptor", receiptParams.PaymentDescriptor},
 		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
 		{"Platform", platform.Name},
-		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
-		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
+		{"Item Ordered", p.executionRequest.Quote.TransactionRequest.AssetName},
+		{"Token ID", "1234"}, // TODO: retrieve dynamically, maybe after building token transfer detection
 		{"Subtotal", common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD)},
 		{"Network Fee:", common.FloatToUSDString(estimate.GasUSD)},
 		{"Processing Fee", common.FloatToUSDString(estimate.ServiceUSD)},
@@ -881,7 +881,7 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
-		return false, libcommon.StringError(errors.New("contract not allowed by platform on network"))
+		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	} else if err != nil {
 		return false, libcommon.StringError(err)
 	}
@@ -895,5 +895,5 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 			return true, nil
 		}
 	}
-	return false, libcommon.StringError(errors.New("function is not allowed on this contract"))
+	return false, libcommon.StringError(serror.FUNC_NOT_ALLOWED)
 }

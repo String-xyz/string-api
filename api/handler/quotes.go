@@ -5,6 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -41,7 +42,7 @@ func (q quote) Quote(c echo.Context) error {
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		return httperror.InternalError(c, "Platform ID not found")
+		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
 	res, err := q.Service.Quote(ctx, body, platformId)
@@ -50,6 +51,10 @@ func (q quote) Quote(c echo.Context) error {
 
 		if errors.Cause(err).Error() == "w3: response handling failed: execution reverted" { // TODO: use a custom error
 			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
+		}
+
+		if serror.Is(err, serror.FUNC_NOT_ALLOWED, serror.CONTRACT_NOT_ALLOWED) {
+			return httperror.ForbiddenError(c, "The requested blockchain operation is not allowed")
 		}
 
 		return httperror.InternalError(c, "Quote Service Failed")

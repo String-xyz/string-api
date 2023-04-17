@@ -37,7 +37,10 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 }
 
 func (u user) Create(c echo.Context) error {
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
 
 	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
@@ -124,7 +127,11 @@ func (u user) Update(c echo.Context) error {
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
-	platformId := c.Get("platformId").(string)
+	platformId, ok := c.Get("platformId").(string)
+	if !ok {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
+
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
 		return httperror.BadRequestError(c, "Missing or invalid user id")
@@ -158,7 +165,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		return httperror.InternalError(c, "PlatformId not found in context")
+		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
 	// get email from body
@@ -191,7 +198,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
-	g.PUT("/:id", u.Update, ms...)
+	g.PATCH("/:id", u.Update, ms...)
 }
 
 func (u user) RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
