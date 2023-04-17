@@ -73,7 +73,7 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
-	fromAddress := os.Getenv("EMAIL_FROM_ADDRESS_AUTH")
+	fromAddress := os.Getenv("AUTH_EMAIL_ADDRESS")
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", fromAddress)
