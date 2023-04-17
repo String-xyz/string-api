@@ -156,7 +156,7 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	}
 
 	// 2. Update user status
-	user, err := v.repos.User.UpdateStatus(userId, "email_verified")
+	user, err := v.repos.User.UpdateStatus(ctx, userId, "email_verified")
 	if err != nil {
 		// TODO: Log error errors.New("User email verify error - userId: " + user.Id)
 		return libcommon.StringError(err)

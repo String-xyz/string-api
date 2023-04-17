@@ -20,7 +20,7 @@ type PlatformUpdates struct {
 
 type Platform interface {
 	database.Transactable
-	Create(model.Platform) (model.Platform, error)
+	Create(ctx context.Context, m model.Platform) (model.Platform, error)
 	GetById(ctx context.Context, id string) (model.Platform, error)
 	List(ctx context.Context, limit int, offset int) ([]model.Platform, error)
 	Update(ctx context.Context, id string, updates any) error
@@ -36,12 +36,10 @@ func NewPlatform(db database.Queryable) Platform {
 	return &platform[model.Platform]{baserepo.Base[model.Platform]{Store: db, Table: "platform"}}
 }
 
-func (p platform[T]) Create(m model.Platform) (model.Platform, error) {
+func (p platform[T]) Create(ctx context.Context, m model.Platform) (model.Platform, error) {
 	plat := model.Platform{}
-	rows, err := p.Store.NamedQuery(`
-		INSERT INTO platform (name, description) 
-		VALUES(:name, :description) RETURNING *`, m)
-
+	query := "INSERT INTO platform (name, description) VALUES ($1, $2) RETURNING *"
+	rows, err := p.Store.QueryxContext(ctx, query, m.Name, m.Description)
 	if err != nil {
 		return plat, libcommon.StringError(err)
 	}
