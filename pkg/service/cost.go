@@ -46,7 +46,7 @@ type CostCache struct {
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
+	EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error)
 	LookupUSD(quantity float64, coins ...string) (float64, error)
 }
 
@@ -60,14 +60,14 @@ func NewCost(redis database.RedisStore) Cost {
 	}
 }
 
-func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error) {
+func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
 
 	// Query cost of native token in USD
 	nativeCost, err := c.LookupUSD(1, chain.CoingeckoName, chain.CoincapName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
@@ -81,7 +81,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query owlracle for gas
 	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
@@ -96,7 +96,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(costToken, p.TokenName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
@@ -128,7 +128,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	totalUSD = centCeiling(totalUSD)
 
 	// Fill out CostEstimate and return
-	return model.Quote{
+	return model.Estimate[float64]{
 		Timestamp:  timestamp,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,

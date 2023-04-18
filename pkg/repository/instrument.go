@@ -22,9 +22,10 @@ type Instrument interface {
 	GetById(ctx context.Context, id string) (model.Instrument, error)
 	GetWalletByAddr(addr string) (model.Instrument, error)
 	GetCardByFingerprint(fingerprint string) (m model.Instrument, err error)
-	GetWalletByUserId(userId string) (model.Instrument, error)
+	GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error)
 	GetBankByUserId(userId string) (model.Instrument, error)
 	WalletAlreadyExists(addr string) (bool, error)
+	GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error)
 }
 
 type instrument[T any] struct {
@@ -75,9 +76,9 @@ func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrum
 	return i.GetWalletByAddr(fingerprint)
 }
 
-func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error) {
+func (i instrument[T]) GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Crypto Wallet'", i.Table), userId)
+	err := i.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'crypto wallet'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
@@ -88,7 +89,7 @@ func (i instrument[T]) GetWalletByUserId(userId string) (model.Instrument, error
 
 func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'Bank Account'", i.Table), userId)
+	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'bank account'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
@@ -115,4 +116,15 @@ func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (i instrument[T]) GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error) {
+	var cards []model.Instrument
+	err := i.Store.SelectContext(ctx, &cards, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'credit card' OR type = 'debit card'", i.Table), userId)
+	if err != nil && err == sql.ErrNoRows {
+		return cards, serror.NOT_FOUND
+	} else if err != nil {
+		return cards, libcommon.StringError(err)
+	}
+	return cards, nil
 }

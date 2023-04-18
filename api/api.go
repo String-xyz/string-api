@@ -47,6 +47,7 @@ func Start(config APIConfig) {
 	userRoute(services, e)
 	loginRoute(services, e)
 	verificationRoute(services, e)
+	cardRoute(services, e)
 
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -94,4 +95,9 @@ func verificationRoute(services service.Services, e *echo.Echo) {
 func quoteRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewQuote(e, services.Transaction)
 	handler.RegisterRoutes(e.Group("/quotes"), middleware.JWTAuth())
+}
+
+func cardRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewCard(e, services.Card)
+	handler.RegisterRoutes(e.Group("/cards"), middleware.JWTAuth())
 }

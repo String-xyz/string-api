@@ -63,6 +63,7 @@ func GetCustomerInstruments(Id string) ([]customer.CustomerInstrument, error) {
 		return nil, libcommon.StringError(err)
 	}
 
+	// Success
 	if response.StatusResponse.StatusCode == 200 {
 		return response.Customer.Instruments, nil
 	}
@@ -90,11 +91,20 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 	}
 	client := payments.NewClient(*config)
 
+	paymentInfo := p.executionRequest.PaymentInfo
 	var paymentTokenId string
-	if libcommon.IsLocalEnv() {
-		if p.executionRequest.CardToken != "" {
-			paymentTokenId = p.executionRequest.CardToken
-		} else {
+	var paymentSource interface{}
+	if paymentInfo.CardId != nil && *paymentInfo.CardId != "" {
+		paymentSource = payments.IDSource{
+			Type: "id",
+			ID:   *paymentInfo.CardId,
+			CVV:  *paymentInfo.CVV,
+		}
+	} else {
+		if paymentInfo.CardToken != nil && *paymentInfo.CardToken != "" {
+			paymentTokenId = *paymentInfo.CardToken
+		} else if libcommon.IsLocalEnv() {
+
 			// Generate a payment token ID in case we don't yet have one in the front end
 			// For testing purposes only
 			card := tokens.Card{
@@ -114,20 +124,19 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			}
 			paymentTokenId = paymentToken.Created.Token
 		}
-	} else {
-		paymentTokenId = p.executionRequest.CardToken
+		paymentSource = payments.TokenSource{
+			Type:  checkoutCommon.Token.String(),
+			Token: paymentTokenId,
+		}
 	}
 
 	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
 	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
 
-	usd := convertAmount(p.executionRequest.TotalUSD)
+	usd := convertAmount(p.floatEstimate.TotalUSD)
 	capture := false
 	request := &payments.Request{
-		Source: payments.TokenSource{
-			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenId,
-		},
+		Source:   &paymentSource,
 		Amount:   usd,
 		Currency: "USD",
 		Customer: &payments.Customer{
@@ -174,7 +183,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	}
 	client := payments.NewClient(*config)
 
-	usd := convertAmount(p.executionRequest.Quote.TotalUSD)
+	usd := convertAmount(p.floatEstimate.TotalUSD)
 
 	idempotencyKey := checkout.NewIdempotencyKey()
 	params := checkout.Params{

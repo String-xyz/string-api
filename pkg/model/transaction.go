@@ -8,36 +8,30 @@ const (
 	MintERC721 TransactionType = "MintERC721"
 )
 
+type Estimate[T string | float64] struct {
+	Timestamp  int64 `json:"timestamp"`
+	BaseUSD    T     `json:"baseUSD"`
+	GasUSD     T     `json:"gasUSD"`
+	TokenUSD   T     `json:"tokenUSD"`
+	ServiceUSD T     `json:"serviceUSD"`
+	TotalUSD   T     `json:"totalUSD"`
+}
+
 type Quote struct {
-	Timestamp  int64   `json:"timestamp"`
-	BaseUSD    float64 `json:"baseUSD"`
-	GasUSD     float64 `json:"gasUSD"`
-	TokenUSD   float64 `json:"tokenUSD"`
-	ServiceUSD float64 `json:"serviceUSD"`
-	TotalUSD   float64 `json:"totalUSD"`
+	TransactionRequest TransactionRequest `json:"request"`
+	Estimate           Estimate[string]   `json:"estimate"`
+	Signature          string             `json:"signature"`
 }
 
 type ExecutionRequest struct {
-	TransactionRequest
-	Quote
-	Signature string `json:"signature"`
-	CardToken string `json:"cardToken"`
+	Quote       Quote       `json:"quote"`
+	PaymentInfo PaymentInfo `json:"paymentInfo"`
 }
 
-type PrecisionSafeQuote struct {
-	Timestamp  int64  `json:"timestamp"`
-	BaseUSD    string `json:"baseUSD"`
-	GasUSD     string `json:"gasUSD"`
-	TokenUSD   string `json:"tokenUSD"`
-	ServiceUSD string `json:"serviceUSD"`
-	TotalUSD   string `json:"totalUSD"`
-}
-
-type PrecisionSafeExecutionRequest struct {
-	TransactionRequest
-	PrecisionSafeQuote
-	Signature string `json:"signature"`
-	CardToken string `json:"cardToken"`
+type PaymentInfo struct {
+	CardToken *string `json:"cardToken"`
+	CardId    *string `json:"cardId"`
+	CVV       *string `json:"cvv"`
 }
 
 // User will pass this in for a quote and receive Execution Parameters

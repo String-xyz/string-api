@@ -27,17 +27,19 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 
 func (t transaction) Transact(c echo.Context) error {
 	ctx := c.Request().Context()
-	var body model.PrecisionSafeExecutionRequest
+	var body model.ExecutionRequest
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute bind")
 		return httperror.BadRequestError(c)
 	}
 
-	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
+	transactionRequest := body.Quote.TransactionRequest
+
+	SanitizeChecksums(&transactionRequest.CxAddr, &transactionRequest.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
-	for i := range body.CxParams {
-		SanitizeChecksums(&body.CxParams[i])
+	for i := range transactionRequest.CxParams {
+		SanitizeChecksums(&transactionRequest.CxParams[i])
 	}
 	userId, ok := c.Get("userId").(string)
 	if !ok {
