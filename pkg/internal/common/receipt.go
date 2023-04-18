@@ -57,7 +57,9 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 }
 
 func EmailReceipt(email string, params ReceiptGenerationParams, body [][2]string) error {
-	from := mail.NewEmail("String Receipt", "auth@string.xyz") // TODO: create a new sender for receipts
+	fromAddress := os.Getenv("RECEIPTS_EMAIL_ADDRESS")
+
+	from := mail.NewEmail("String Receipt", fromAddress)
 	subject := "Your " + params.ReceiptType + " Receipt from String"
 	to := mail.NewEmail(params.CustomerName, email)
 	textContent := ""
