@@ -177,7 +177,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.chain = &chain
 
 	// Create new Tx in repository, populate it with known info
-	transactionModel, err := t.repos.Transaction.Create(ctx, model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
+	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
