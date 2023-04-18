@@ -5,6 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	"github.com/String-xyz/go-lib/validator"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -25,19 +26,23 @@ func NewCard(route *echo.Echo, service service.Card) Card {
 
 func (card card) GetAll(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	userId, ok := c.Get("userId").(string)
-	if !ok {
+	if !ok || !validator.IsUUID(userId) {
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
+
 	platformId, ok := c.Get("platformId").(string)
-	if !ok {
+	if !ok || !validator.IsUUID(platformId) {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
+
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: get All")
 		return httperror.InternalError(c, "Cards Service Failed")
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 

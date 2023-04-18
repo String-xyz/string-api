@@ -20,7 +20,7 @@ func (v Verification) SendEmailVerification(ctx context.Context, userId string, 
 	return v.Error
 }
 
-func (v Verification) VerifyEmail(ctx context.Context, encrypted string) error {
+func (v Verification) VerifyEmail(ctx context.Context, platformId, userId string, deviceId string) error {
 	return v.Error
 }
 
@@ -29,6 +29,14 @@ func (v Verification) SendDeviceVerification(string, userID string, deviceID str
 }
 
 func (v Verification) VerifyDevice(encrypted string) error {
+	return v.Error
+}
+
+func (v Verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
+	return v.Error
+}
+
+func (v Verification) PreValidateEmail(ctx context.Context, platformId, userId, email string) error {
 	return v.Error
 }
 
@@ -92,7 +100,7 @@ func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error
 	return a.SignablePayload, a.Error
 }
 
-func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (service.UserCreateResponse, error) {
+func (a Auth) VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (service.UserCreateResponse, error) {
 	return a.UserCreateResponse, a.Error
 }
 

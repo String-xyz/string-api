@@ -8,8 +8,10 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
@@ -37,10 +39,14 @@ func NewLogin(route *echo.Echo, service service.Auth, device service.Device) Log
 
 func (l login) NoncePayload(c echo.Context) error {
 	walletAddress := c.QueryParam("walletAddress")
-	if walletAddress == "" {
-		return httperror.BadRequestError(c, "WalletAddress must be provided")
+
+	if !ethcommon.IsHexAddress(walletAddress) {
+		return httperror.BadRequestError(c, "Invalid wallet address")
 	}
+
 	SanitizeChecksums(&walletAddress)
+
+	// get nonce payload
 	payload, err := l.Service.PayloadToSign(walletAddress)
 	if err != nil {
 		return DefaultErrorHandler(c, err, "login: NoncePayload")
@@ -51,14 +57,14 @@ func (l login) NoncePayload(c echo.Context) error {
 }
 
 func (l login) VerifySignature(c echo.Context) error {
+	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
-	if !ok {
+	if !ok || !validator.IsUUID(platformId) {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
-	bypassDevice := c.QueryParam("bypassDevice")
-
-	ctx := c.Request().Context()
+	strBypassDevice := c.QueryParam("bypassDevice")
+	bypassDevice := strBypassDevice == "true" // convert to bool. default is false
 
 	var body model.WalletSignaturePayloadSigned
 	if err := c.Bind(&body); err != nil {
@@ -116,12 +122,12 @@ func (l login) VerifySignature(c echo.Context) error {
 }
 
 func (l login) RefreshToken(c echo.Context) error {
+	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
-	if !ok {
+	if !ok || !validator.IsUUID(platformId) {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
-	ctx := c.Request().Context()
 	var body model.RefreshTokenPayload
 	err := c.Bind(&body)
 	if err != nil {

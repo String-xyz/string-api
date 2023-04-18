@@ -7,6 +7,7 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -30,6 +31,11 @@ type user struct {
 	userService         service.User
 	verificationService service.Verification
 	Group               *echo.Group
+}
+type ValidateEmailParams struct {
+	PlatformId string `validate:"required,uuid"`
+	UserId     string `validate:"required,uuid"`
+	Email      string `validate:"required,email"`
 }
 
 func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Verification) User {
@@ -108,12 +114,20 @@ func (u user) Status(c echo.Context) error {
 func (u user) Update(c echo.Context) error {
 	ctx := c.Request().Context()
 	var body model.UpdateUserName
+
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update bind")
 		return httperror.BadRequestError(c)
 	}
+
+	err = c.Validate(body)
+	if err != nil {
+		return httperror.InvalidPayloadError(c, err)
+	}
+
 	_, userId := validUserId(IdParam(c), c)
+
 	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update")
@@ -127,8 +141,10 @@ func (u user) Update(c echo.Context) error {
 // the link sent is handled by (verification.VerifyEmail) handler
 func (u user) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
+	email := c.QueryParam("email")
 	platformId, ok := c.Get("platformId").(string)
-	if !ok {
+
+	if !ok || !validator.IsUUID(platformId) {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -137,12 +153,18 @@ func (u user) VerifyEmail(c echo.Context) error {
 		return httperror.BadRequestError(c, "Missing or invalid user id")
 	}
 
-	email := c.QueryParam("email")
-	if email == "" {
-		return httperror.BadRequestError(c, "Missing or invalid email")
+	params := ValidateEmailParams{
+		PlatformId: platformId,
+		UserId:     userId,
+		Email:      email,
 	}
 
-	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
+	err := c.Validate(params)
+	if err != nil {
+		return httperror.InvalidPayloadError(c, err)
+	}
+
+	err = u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 
@@ -164,16 +186,27 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
-	if !ok {
+	if !ok || !validator.IsUUID(platformId) {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
-	// get email from body
+	// Get email from body
 	var body model.PreValidateEmail
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: pre validate email bind")
 		return httperror.BadRequestError(c)
+	}
+
+	params := ValidateEmailParams{
+		PlatformId: platformId,
+		UserId:     userId,
+		Email:      body.Email,
+	}
+
+	err = c.Validate(params)
+	if err != nil {
+		return httperror.InvalidPayloadError(c, err)
 	}
 
 	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)

@@ -130,7 +130,7 @@ func DataSeeding() {
 	}
 
 	// String User
-	userString, err := repos.User.Create(model.User{Type: "internal", Status: "internal"})
+	userString, err := repos.User.Create(ctx, model.User{Type: "internal", Status: "internal"})
 	if err != nil {
 		panic(err)
 	}
@@ -303,7 +303,7 @@ func MockSeeding() {
 	}
 
 	// String User
-	userString, err := repos.User.Create(model.User{Type: "internal", Status: "internal"})
+	userString, err := repos.User.Create(ctx, model.User{Type: "internal", Status: "internal"})
 	if err != nil {
 		panic(err)
 	}

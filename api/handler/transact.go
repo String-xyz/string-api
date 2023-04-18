@@ -6,6 +6,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -27,11 +28,33 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 
 func (t transaction) Transact(c echo.Context) error {
 	ctx := c.Request().Context()
+	userId, ok := c.Get("userId").(string)
+	if !ok || !validator.IsUUID(userId) {
+		return httperror.InternalError(c, "missing or invalid userId")
+	}
+
+	deviceId, ok := c.Get("deviceId").(string)
+	if !ok || !validator.IsUUID(deviceId) {
+		return httperror.InternalError(c, "missing or invalid deviceId")
+	}
+
+	platformId, ok := c.Get("platformId").(string)
+	if !ok || !validator.IsUUID(platformId) {
+		return httperror.InternalError(c, "missing or invalid platformId")
+	}
+
 	var body model.ExecutionRequest
+
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute bind")
 		return httperror.BadRequestError(c)
+	}
+
+	err = c.Validate(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "transact: execute validate")
+		return httperror.InvalidPayloadError(c, err)
 	}
 
 	transactionRequest := body.Quote.TransactionRequest
@@ -40,20 +63,6 @@ func (t transaction) Transact(c echo.Context) error {
 	// Sanitize Checksum for body.CxParams?  It might look like this:
 	for i := range transactionRequest.CxParams {
 		SanitizeChecksums(&transactionRequest.CxParams[i])
-	}
-	userId, ok := c.Get("userId").(string)
-	if !ok {
-		return httperror.InternalError(c, "missing or invalid userId")
-	}
-
-	deviceId, ok := c.Get("deviceId").(string)
-	if !ok {
-		return httperror.InternalError(c, "missing or invalid deviceId")
-	}
-
-	platformId, ok := c.Get("platformId").(string)
-	if !ok {
-		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
 	ip := c.RealIP()

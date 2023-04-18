@@ -15,7 +15,7 @@ type FingerprintPayload struct {
 }
 
 type WalletSignaturePayloadSigned struct {
-	Nonce       string             `json:"nonce" validate:"required"`
-	Signature   string             `json:"signature" validate:"required"`
+	Nonce       string             `json:"nonce" validate:"required,base64"`
+	Signature   string             `json:"signature" validate:"required,base64"`
 	Fingerprint FingerprintPayload `json:"fingerprint"`
 }
