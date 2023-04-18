@@ -140,7 +140,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 	// Initialize a new user
 	// Validated status pertains to specific instrument
 	user := model.User{Type: "string-user", Status: "unverified"}
-	user, err := u.repos.User.Create(user)
+	user, err := u.repos.User.Create(ctx, user)
 	if err != nil {
 		u.repos.User.Rollback()
 		return user, libcommon.StringError(err)

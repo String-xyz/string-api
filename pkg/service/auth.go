@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	netmail "net/mail"
 	"os"
 	"regexp"
 	"strings"
@@ -53,7 +52,7 @@ type Auth interface {
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signature is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (UserCreateResponse, error)
+	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
 	ValidateAPIKeyPublic(key string) (string, error)
@@ -90,7 +89,7 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
 }
 
-func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice string) (UserCreateResponse, error) {
+func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
@@ -121,7 +120,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 
 	// Send verification email if device is unknown and user has a validated email
 	// and if verification is not bypassed
-	if bypassDevice != "true" && user.Email != "" && !isDeviceValidated(device) {
+	if !bypassDevice && user.Email != "" && !isDeviceValidated(device) {
 		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
 		return resp, libcommon.StringError(serror.UNKNOWN_DEVICE)
 	}
@@ -303,12 +302,6 @@ func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) erro
 	}
 
 	return nil
-}
-
-// Use native mail package to check if email a valid email
-func validEmail(email string) bool {
-	_, err := netmail.ParseAddress(email)
-	return err == nil
 }
 
 func uuidWithoutHyphens() string {

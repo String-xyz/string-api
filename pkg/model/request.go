@@ -95,9 +95,9 @@ type UserRequest struct {
 }
 
 type UpdateUserName struct {
-	FirstName  string `json:"firstName" db:"first_name" validate:"required"`
-	MiddleName string `json:"middleName" db:"middle_name" validate:"required"`
-	LastName   string `json:"lastName" db:"last_name" validate:"required"`
+	FirstName  string `json:"firstName" db:"first_name" validate:"max=255"`
+	MiddleName string `json:"middleName" db:"middle_name" validate:"max=255"`
+	LastName   string `json:"lastName" db:"last_name" validate:"max=255"`
 }
 
 type ContactUpdates struct {
@@ -133,7 +133,7 @@ type DeviceUpdates struct {
 }
 
 type RefreshTokenPayload struct {
-	WalletAddress string `json:"walletAddress" validate:"required"`
+	WalletAddress string `json:"walletAddress" validate:"required,eth_addr"`
 }
 
 type PreValidateEmail struct {

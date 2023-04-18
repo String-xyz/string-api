@@ -29,11 +29,19 @@ func NewQuote(route *echo.Echo, service service.Transaction) Quotes {
 func (q quote) Quote(c echo.Context) error {
 	ctx := c.Request().Context()
 	var body model.TransactionRequest
+
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote bind")
 		return httperror.BadRequestError(c)
 	}
+
+	err = c.Validate(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "quote: quote validate")
+		return httperror.InvalidPayloadError(c, err)
+	}
+
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
 	// Sanitize Checksum for body.CxParams?  It might look like this:
 	for i := range body.CxParams {

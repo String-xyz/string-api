@@ -27,20 +27,6 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 
 func (t transaction) Transact(c echo.Context) error {
 	ctx := c.Request().Context()
-	var body model.ExecutionRequest
-	err := c.Bind(&body)
-	if err != nil {
-		libcommon.LogStringError(c, err, "transact: execute bind")
-		return httperror.BadRequestError(c)
-	}
-
-	transactionRequest := body.Quote.TransactionRequest
-
-	SanitizeChecksums(&transactionRequest.CxAddr, &transactionRequest.UserAddress)
-	// Sanitize Checksum for body.CxParams?  It might look like this:
-	for i := range transactionRequest.CxParams {
-		SanitizeChecksums(&transactionRequest.CxParams[i])
-	}
 	userId, ok := c.Get("userId").(string)
 	if !ok {
 		return httperror.InternalError(c, "missing or invalid userId")
@@ -54,6 +40,28 @@ func (t transaction) Transact(c echo.Context) error {
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
+	}
+
+	var body model.ExecutionRequest
+
+	err := c.Bind(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "transact: execute bind")
+		return httperror.BadRequestError(c)
+	}
+
+	err = c.Validate(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "transact: execute validate")
+		return httperror.InvalidPayloadError(c, err)
+	}
+
+	transactionRequest := body.Quote.TransactionRequest
+
+	SanitizeChecksums(&transactionRequest.CxAddr, &transactionRequest.UserAddress)
+	// Sanitize Checksum for body.CxParams?  It might look like this:
+	for i := range transactionRequest.CxParams {
+		SanitizeChecksums(&transactionRequest.CxParams[i])
 	}
 
 	ip := c.RealIP()

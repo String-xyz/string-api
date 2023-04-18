@@ -25,19 +25,23 @@ func NewCard(route *echo.Echo, service service.Card) Card {
 
 func (card card) GetAll(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	userId, ok := c.Get("userId").(string)
 	if !ok {
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
+
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
+
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: get All")
 		return httperror.InternalError(c, "Cards Service Failed")
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 
