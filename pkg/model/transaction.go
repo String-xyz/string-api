@@ -44,7 +44,7 @@ type TransactionRequest struct {
 	CxReturn    string   `json:"contractReturn"`                               // Function return type ie "uint256"
 	CxParams    []string `json:"contractParameters"`                           // Function parameters ie ["0x000000000000000000BEEF", "32"]
 	TxValue     string   `json:"txValue"`                                      // Amount of native token to send ie "0.08 ether"
-	TxGasLimit  string   `json:"gasLimit"`                                     // Gwei gas limit ie "210000 gwei"
+	TxGasLimit  string   `json:"gasLimit" validate:"required,number"`          // Gwei gas limit ie "210000 gwei"
 }
 
 type TransactionReceipt struct {
