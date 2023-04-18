@@ -32,11 +32,6 @@ type user struct {
 	verificationService service.Verification
 	Group               *echo.Group
 }
-type ValidateEmailParams struct {
-	PlatformId string `validate:"required,uuid"`
-	UserId     string `validate:"required,uuid"`
-	Email      string `validate:"required,email"`
-}
 
 func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Verification) User {
 	return &user{userSrv, verificationSrv, nil}
@@ -144,7 +139,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 	email := c.QueryParam("email")
 	platformId, ok := c.Get("platformId").(string)
 
-	if !ok || !validator.IsUUID(platformId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -153,18 +148,11 @@ func (u user) VerifyEmail(c echo.Context) error {
 		return httperror.BadRequestError(c, "Missing or invalid user id")
 	}
 
-	params := ValidateEmailParams{
-		PlatformId: platformId,
-		UserId:     userId,
-		Email:      email,
+	if !validator.ValidEmail(email) {
+		return httperror.BadRequestError(c, "Invalid email")
 	}
 
-	err := c.Validate(params)
-	if err != nil {
-		return httperror.InvalidPayloadError(c, err)
-	}
-
-	err = u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
+	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 
@@ -186,7 +174,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
-	if !ok || !validator.IsUUID(platformId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -198,15 +186,8 @@ func (u user) PreValidateEmail(c echo.Context) error {
 		return httperror.BadRequestError(c)
 	}
 
-	params := ValidateEmailParams{
-		PlatformId: platformId,
-		UserId:     userId,
-		Email:      body.Email,
-	}
-
-	err = c.Validate(params)
-	if err != nil {
-		return httperror.InvalidPayloadError(c, err)
+	if !validator.ValidEmail(body.Email) {
+		return httperror.BadRequestError(c, "Invalid email")
 	}
 
 	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)

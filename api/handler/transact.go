@@ -39,7 +39,7 @@ func (t transaction) Transact(c echo.Context) error {
 	}
 
 	platformId, ok := c.Get("platformId").(string)
-	if !ok || !validator.IsUUID(platformId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 

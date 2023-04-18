@@ -95,9 +95,9 @@ type UserRequest struct {
 }
 
 type UpdateUserName struct {
-	FirstName  string `json:"firstName" db:"first_name" validate:"required,omitempty,max=255"`
-	MiddleName string `json:"middleName" db:"middle_name" validate:"required,omitempty,max=255"`
-	LastName   string `json:"lastName" db:"last_name" validate:"required,omitempty,max=255"`
+	FirstName  string `json:"firstName" db:"first_name" validate:"max=255"`
+	MiddleName string `json:"middleName" db:"middle_name" validate:"max=255"`
+	LastName   string `json:"lastName" db:"last_name" validate:"max=255"`
 }
 
 type ContactUpdates struct {

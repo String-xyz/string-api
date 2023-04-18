@@ -8,7 +8,6 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -59,7 +58,7 @@ func (l login) NoncePayload(c echo.Context) error {
 func (l login) VerifySignature(c echo.Context) error {
 	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
-	if !ok || !validator.IsUUID(platformId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -124,7 +123,7 @@ func (l login) VerifySignature(c echo.Context) error {
 func (l login) RefreshToken(c echo.Context) error {
 	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
-	if !ok || !validator.IsUUID(platformId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 

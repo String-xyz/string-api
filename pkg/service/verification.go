@@ -9,6 +9,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/go-lib/validator"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -51,7 +52,7 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 }
 
 func (v verification) SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error {
-	if !validEmail(email) {
+	if !validator.ValidEmail(email) {
 		return libcommon.StringError(serror.INVALID_DATA)
 	}
 

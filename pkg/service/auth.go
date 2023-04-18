@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	netmail "net/mail"
 	"os"
 	"regexp"
 	"strings"
@@ -303,12 +302,6 @@ func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) erro
 	}
 
 	return nil
-}
-
-// Use native mail package to check if email a valid email
-func validEmail(email string) bool {
-	_, err := netmail.ParseAddress(email)
-	return err == nil
 }
 
 func uuidWithoutHyphens() string {

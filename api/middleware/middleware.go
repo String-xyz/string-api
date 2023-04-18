@@ -24,6 +24,7 @@ func JWTAuth() echo.MiddlewareFunc {
 			c.Set("userId", claims.UserId)
 			c.Set("deviceId", claims.DeviceId)
 			c.Set("platformId", claims.PlatformId)
+
 			return t, err
 		},
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
