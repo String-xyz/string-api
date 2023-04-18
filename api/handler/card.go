@@ -5,7 +5,6 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
-	"github.com/String-xyz/go-lib/validator"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -28,7 +27,7 @@ func (card card) GetAll(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	userId, ok := c.Get("userId").(string)
-	if !ok || !validator.IsUUID(userId) {
+	if !ok {
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
 
