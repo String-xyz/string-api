@@ -48,7 +48,7 @@ CREATE TABLE member_to_organization (
 -- +goose StatementBegin
 ALTER TABLE member_invite
   DROP COLUMN IF EXISTS platform_id,
-  ADD COLUMN organization_id UUID REFERENCES organization (id);
+  ADD COLUMN organization_id UUID NOT NULL REFERENCES organization (id);
 -- +goose StatementEnd
 
 
@@ -84,8 +84,8 @@ ALTER TABLE organization_member
 ALTER TABLE member_invite
   DROP COLUMN IF EXISTS organization_id,
   DROP COLUMN IF EXISTS organization_member,
-  ADD COLUMN platform_member UUID REFERENCES platform_member (id),
-  ADD COLUMN platform_id UUID REFERENCES platform (id);
+  ADD COLUMN platform_member UUID NOT NULL REFERENCES platform_member (id),
+  ADD COLUMN platform_id UUID NOT NULL REFERENCES platform (id);
 -- +goose StatementEnd
 
 -------------------------------------------------------------------------
