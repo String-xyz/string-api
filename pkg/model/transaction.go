@@ -30,9 +30,8 @@ type ExecutionRequest struct {
 
 type PaymentInfo struct {
 	CardToken *string `json:"cardToken"`
-	// TODO: SaveCard *bool   `json:"saveCard"`
-	CardId *string `json:"cardId"`
-	CVV    *string `json:"cvv"`
+	CardId    *string `json:"cardId"`
+	CVV       *string `json:"cvv"`
 }
 
 // User will pass this in for a quote and receive Execution Parameters
