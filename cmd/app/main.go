@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
@@ -11,6 +12,7 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
 
 func main() {
@@ -18,7 +20,8 @@ func main() {
 	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
 	lg := zerolog.New(os.Stdout)
 	if !libcommon.IsLocalEnv() {
-		tracer.Start()
+		setupTracer()
+		defer profiler.Stop()
 		defer tracer.Stop()
 	}
 
@@ -40,4 +43,25 @@ func main() {
 		Port:   port,
 		Logger: &lg,
 	})
+}
+
+func setupTracer() {
+	rules := []tracer.SamplingRule{tracer.RateRule(1)}
+	tracer.Start(
+		tracer.WithSamplingRules(rules),
+		tracer.WithService("string-api"),
+		tracer.WithEnv(os.Getenv("ENV")),
+	)
+
+	err := profiler.Start(
+		profiler.WithService("string-api"),
+		profiler.WithEnv(os.Getenv("ENV")),
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+		))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
