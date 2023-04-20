@@ -3,7 +3,7 @@
 # export env variables from .env file
 export $(grep -v '^#' .env | xargs)
 
-if [ "$DB_RESET" = "true" ]; then
+if [ "$IGNORE_DB" = "false" ]; then
   # run db migrations
   echo "----- Running migrations..."
   cd migrations
