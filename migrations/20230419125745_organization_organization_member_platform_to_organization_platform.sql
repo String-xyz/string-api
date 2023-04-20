@@ -42,15 +42,6 @@ CREATE TABLE member_to_organization (
 );
 -- +goose StatementEnd
 
--------------------------------------------------------------------------
--- MEMBER_TO_ROLE -------------------------------------------------------
--- +goose StatementBegin
-ALTER TABLE member_to_role
-  DROP COLUMN IF EXISTS platform_id,
-  DROP COLUMN IF EXISTS platform_member,
-  ADD COLUMN organization_member UUID REFERENCES organization_member (id),
-  ADD COLUMN organization_id UUID REFERENCES organization (id);
--- +goose StatementEnd
 
 -------------------------------------------------------------------------
 -- MEMBER_INVITE --------------------------------------------------------
@@ -66,10 +57,8 @@ ALTER TABLE member_invite
 -- +goose StatementBegin
 ALTER TABLE platform
   DROP COLUMN IF EXISTS activated_at,
-  ADD COLUMN organization_id UUID REFERENCES organization (id);
+  ADD COLUMN organization_id UUID NOT NULL REFERENCES organization (id);
 -- +goose StatementEnd
-
-
 
 -------------------------------------------------------------------------
 -- +goose Down
@@ -78,7 +67,7 @@ ALTER TABLE platform
 -- PLATFORM -------------------------------------------------------------
 -- +goose StatementBegin
 ALTER TABLE platform    
-  DROP COLUMN IF EXISTS organization_id;
+  DROP COLUMN IF EXISTS organization_id,
   ADD COLUMN activated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
 -- +goose StatementEnd
 
@@ -96,14 +85,6 @@ ALTER TABLE member_invite
   DROP COLUMN IF EXISTS organization_id,
   DROP COLUMN IF EXISTS organization_member,
   ADD COLUMN platform_member UUID REFERENCES platform_member (id),
-  ADD COLUMN platform_id UUID REFERENCES platform (id);
--- +goose StatementEnd
-
--------------------------------------------------------------------------
--- MEMBER_TO_ROLE -------------------------------------------------------
--- +goose StatementBegin
-ALTER TABLE member_to_role
-  DROP COLUMN IF EXISTS organization_id,
   ADD COLUMN platform_id UUID REFERENCES platform (id);
 -- +goose StatementEnd
 
