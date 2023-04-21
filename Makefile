@@ -22,6 +22,7 @@ test-envvars:
 
 build: test-envvars
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./cmd/app/main ./cmd/app/main.go
+
 push: test-envvars
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR)
 	docker push $(ECS_API_REPO):${SERVICE_TAG}
