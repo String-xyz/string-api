@@ -85,36 +85,14 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+
 	_, err = client.Send(message)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	// Wait for up to 15 minutes, final timeout TBD
-	now, lastPolled := time.Now().Unix(), time.Now().Unix()
-	until := now + (60 * 15)
-	for now < until {
-		now = time.Now().Unix()
-		if now-lastPolled < 3 {
-			continue // throttle following logic in 3 second interval
-		}
-		lastPolled = now
-		contact, err := v.repos.Contact.GetByData(email)
-		if err != nil && !serror.Is(err, serror.NOT_FOUND) {
-			return libcommon.StringError(err)
-		} else if err == nil && contact.Data == email {
-			// success
-			// update user status
-			err = v.VerifyEmail(ctx, userId, email, platformId)
-			if err != nil {
-				return libcommon.StringError(err)
-			}
 
-			return nil
-		}
-	}
+	return nil
 
-	// timed out
-	return libcommon.StringError(serror.EXPIRED)
 }
 
 func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
