@@ -31,18 +31,13 @@ func NewContract(db database.Queryable) Contract {
 
 func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.Contract, error) {
 	m := model.Contract{}
-	rows, err := u.Store.NamedQuery(`
+	row := u.Store.QueryRowxContext(ctx, `
 		INSERT INTO contract (name, address, functions, network_id, platform_id) 
-		VALUES(:name, :address, :functions, :network_id, :platform_id) RETURNING *`, insert)
+		VALUES($1, $2, $3, $4, $5) RETURNING *`, insert.Name, insert.Address, insert.Functions, insert.NetworkID, insert.PlatformID)
+
+	err := row.StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
 	}
 
 	return m, nil
@@ -50,7 +45,7 @@ func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.C
 
 func (u contract[T]) GetByAddressAndNetworkAndPlatform(ctx context.Context, address string, networkId string, platformId string) (model.Contract, error) {
 	m := model.Contract{}
-	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE address = $1 AND network_id = $2 AND platform_id = $3 AND deactivated_at IS NULL LIMIT 1", u.Table), address, networkId, platformId)
+	err := u.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE address = $1 AND network_id = $2 AND platform_id = $3 AND deactivated_at IS NULL LIMIT 1", u.Table), address, networkId, platformId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}

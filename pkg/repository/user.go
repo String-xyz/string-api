@@ -12,6 +12,7 @@ import (
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/jmoiron/sqlx"
 )
 
 type User interface {
@@ -68,23 +69,32 @@ func (u user[T]) Update(ctx context.Context, id string, updates any) (model.User
 		return user, libcommon.StringError(errors.New("no fields to update"))
 	}
 
-	// TODO: use prepared statement to avoid sql injection
-	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s' RETURNING *", u.Table, strings.Join(names, ", "), id)
-	rows, err := u.Store.NamedQuery(query, keyToUpdate)
+	// Add the "id" key to the keyToUpdate map
+	keyToUpdate["id"] = id
 
+	// Prepare the named query
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = :id RETURNING *", u.Table, strings.Join(names, ", "))
+	namedQuery, args, err := sqlx.Named(query, keyToUpdate)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		err = rows.StructScan(&user)
-	}
-
+	// Replace the named parameters with placeholders
+	placeholdersQuery, args, err := sqlx.In(namedQuery, args...)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-	return user, err
+
+	// Rebind the query to adapt placeholders to the specific SQL database
+	finalQuery := u.Store.Rebind(placeholdersQuery)
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, finalQuery, args...).StructScan(&user)
+	if err != nil {
+		return user, libcommon.StringError(err)
+	}
+
+	return user, nil
 }
 
 // update user status

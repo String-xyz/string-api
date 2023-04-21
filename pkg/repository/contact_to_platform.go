@@ -11,7 +11,7 @@ import (
 
 type ContactToPlatform interface {
 	database.Transactable
-	Create(model.ContactToPlatform) (model.ContactToPlatform, error)
+	Create(ctx context.Context, m model.ContactToPlatform) (model.ContactToPlatform, error)
 	GetById(ctx context.Context, id string) (model.ContactToPlatform, error)
 	List(ctx context.Context, limit int, offset int) ([]model.ContactToPlatform, error)
 	Update(ctx context.Context, id string, updates any) error
@@ -25,20 +25,16 @@ func NewContactPlatform(db database.Queryable) ContactToPlatform {
 	return &contactToPlatform[model.ContactToPlatform]{repository.Base[model.ContactToPlatform]{Store: db, Table: "contact_to_platform"}}
 }
 
-func (u contactToPlatform[T]) Create(insert model.ContactToPlatform) (model.ContactToPlatform, error) {
+func (u contactToPlatform[T]) Create(ctx context.Context, insert model.ContactToPlatform) (model.ContactToPlatform, error) {
 	m := model.ContactToPlatform{}
-	rows, err := u.Store.NamedQuery(`
+	row := u.Store.QueryRowxContext(ctx, `
 		INSERT INTO contact_to_platform (contact_id, platform_id) 
-		VALUES(:contact_id, :platform_id) RETURNING *`, insert)
+		VALUES($1, $2) RETURNING *`, insert.ContactId, insert.PlatformId)
+
+	err := row.StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
-	}
-	defer rows.Close()
+
 	return m, nil
 }

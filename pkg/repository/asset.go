@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -14,9 +13,9 @@ import (
 
 type Asset interface {
 	database.Transactable
-	Create(model.Asset) (model.Asset, error)
+	Create(ctx context.Context, m model.Asset) (model.Asset, error)
 	GetById(ctx context.Context, id string) (model.Asset, error)
-	GetByName(name string) (model.Asset, error)
+	GetByName(ctx context.Context, name string) (model.Asset, error)
 	Update(ctx context.Context, Id string, updates any) error
 }
 
@@ -28,25 +27,21 @@ func NewAsset(db database.Queryable) Asset {
 	return &asset[model.Asset]{baserepo.Base[model.Asset]{Store: db, Table: "asset"}}
 }
 
-func (a asset[T]) Create(insert model.Asset) (model.Asset, error) {
+func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, error) {
 	m := model.Asset{}
-	rows, err := a.Store.NamedQuery(`
+	row := a.Store.QueryRowxContext(ctx, `
 		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2) 
-		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) 	RETURNING *`, insert)
-	if err != nil {
-		return m, libcommon.StringError(err)
-	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-	}
+		VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		insert.Name, insert.Description, insert.Decimals, insert.IsCrypto, insert.NetworkId, insert.ValueOracle, insert.ValueOracle2)
 
-	defer rows.Close()
+	err := row.StructScan(&m)
+
 	return m, err
 }
 
-func (a asset[T]) GetByName(name string) (model.Asset, error) {
+func (a asset[T]) GetByName(ctx context.Context, name string) (model.Asset, error) {
 	m := model.Asset{}
-	err := a.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE name = $1", a.Table), name)
+	err := a.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE name = $1", a.Table), name)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}

@@ -61,7 +61,7 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 		return libcommon.StringError(serror.INVALID_DATA) // JWT expiration will not be hit here
 	}
 
-	contact, _ := v.repos.Contact.GetByData(email)
+	contact, _ := v.repos.Contact.GetByData(ctx, email)
 	if contact.Status == "validated" {
 		return libcommon.StringError(serror.ALREADY_IN_USE)
 	}
@@ -98,7 +98,7 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 			continue // throttle following logic in 3 second interval
 		}
 		lastPolled = now
-		contact, err := v.repos.Contact.GetByData(email)
+		contact, err := v.repos.Contact.GetByData(ctx, email)
 		if err != nil && !serror.Is(err, serror.NOT_FOUND) {
 			return libcommon.StringError(err)
 		} else if err == nil && contact.Data == email {
@@ -154,7 +154,7 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 
 	// 1. Create contact with email
 	contact := model.Contact{UserId: userId, Type: "email", Status: "validated", Data: email, ValidatedAt: &now}
-	contact, err := v.repos.Contact.Create(contact)
+	contact, err := v.repos.Contact.Create(ctx, contact)
 	if err != nil {
 		return libcommon.StringError(err)
 	}

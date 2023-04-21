@@ -17,14 +17,14 @@ import (
 
 type Instrument interface {
 	database.Transactable
-	Create(model.Instrument) (model.Instrument, error)
+	Create(ctx context.Context, m model.Instrument) (model.Instrument, error)
 	Update(ctx context.Context, id string, updates any) error
 	GetById(ctx context.Context, id string) (model.Instrument, error)
-	GetWalletByAddr(addr string) (model.Instrument, error)
-	GetCardByFingerprint(fingerprint string) (m model.Instrument, err error)
+	GetWalletByAddr(ctx context.Context, addr string) (model.Instrument, error)
+	GetCardByFingerprint(ctx context.Context, fingerprint string) (m model.Instrument, err error)
 	GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error)
-	GetBankByUserId(userId string) (model.Instrument, error)
-	WalletAlreadyExists(addr string) (bool, error)
+	GetBankByUserId(ctx context.Context, userId string) (model.Instrument, error)
+	WalletAlreadyExists(ctx context.Context, addr string) (bool, error)
 	GetCardsByUserId(ctx context.Context, userId string) ([]model.Instrument, error)
 }
 
@@ -36,29 +36,24 @@ func NewInstrument(db *sqlx.DB) Instrument {
 	return &instrument[model.Instrument]{baserepo.Base[model.Instrument]{Store: db, Table: "instrument"}}
 }
 
-func (i instrument[T]) Create(insert model.Instrument) (model.Instrument, error) {
+func (i instrument[T]) Create(ctx context.Context, insert model.Instrument) (model.Instrument, error) {
 	m := model.Instrument{}
-	rows, err := i.Store.NamedQuery(`
+	row := i.Store.QueryRowxContext(ctx, `
 		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
-		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name) 	RETURNING *`, insert)
+		VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`, insert.Type, insert.Status, insert.Network, insert.PublicKey, insert.UserId, insert.Last4, insert.Name)
+
+	err := row.StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
-	}
 
-	defer rows.Close()
 	return m, nil
 }
 
-func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
+func (i instrument[T]) GetWalletByAddr(ctx context.Context, addr string) (model.Instrument, error) {
 	m := model.Instrument{}
 	query := fmt.Sprintf("SELECT * FROM %s WHERE public_key = $1", i.Table)
-	err := i.Store.Get(&m, query, addr)
+	err := i.Store.GetContext(ctx, &m, query, addr)
 
 	switch {
 	case err == nil:
@@ -72,8 +67,8 @@ func (i instrument[T]) GetWalletByAddr(addr string) (model.Instrument, error) {
 	}
 }
 
-func (i instrument[T]) GetCardByFingerprint(fingerprint string) (m model.Instrument, err error) {
-	return i.GetWalletByAddr(fingerprint)
+func (i instrument[T]) GetCardByFingerprint(ctx context.Context, fingerprint string) (m model.Instrument, err error) {
+	return i.GetWalletByAddr(ctx, fingerprint)
 }
 
 func (i instrument[T]) GetWalletByUserId(ctx context.Context, userId string) (model.Instrument, error) {
@@ -87,9 +82,9 @@ func (i instrument[T]) GetWalletByUserId(ctx context.Context, userId string) (mo
 	return m, nil
 }
 
-func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) {
+func (i instrument[T]) GetBankByUserId(ctx context.Context, userId string) (model.Instrument, error) {
 	m := model.Instrument{}
-	err := i.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'bank account'", i.Table), userId)
+	err := i.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = 'bank account'", i.Table), userId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	} else if err != nil {
@@ -98,8 +93,8 @@ func (i instrument[T]) GetBankByUserId(userId string) (model.Instrument, error) 
 	return m, nil
 }
 
-func (i instrument[T]) WalletAlreadyExists(addr string) (bool, error) {
-	wallet, err := i.GetWalletByAddr(addr)
+func (i instrument[T]) WalletAlreadyExists(ctx context.Context, addr string) (bool, error) {
+	wallet, err := i.GetWalletByAddr(ctx, addr)
 
 	// not found error means wallet does not exist
 	if serror.Is(err, serror.NOT_FOUND) {

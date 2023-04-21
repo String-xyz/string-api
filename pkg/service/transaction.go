@@ -162,7 +162,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	email, err := t.repos.Contact.GetByUserIdAndType(user.Id, "email")
+	email, err := t.repos.Contact.GetByUserIdAndType(ctx, user.Id, "email")
 	if err != nil && errors.Cause(err).Error() != "not found" {
 		return p, libcommon.StringError(err)
 	}
@@ -177,14 +177,14 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.chain = &chain
 
 	// Create new Tx in repository, populate it with known info
-	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
+	transactionModel, err := t.repos.Transaction.Create(ctx, model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
 	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(*p.executionRequest, updateDB)
+	processingFeeAsset, err := t.populateInitialTxModelData(ctx, *p.executionRequest, updateDB)
 	p.processingFeeAsset = &processingFeeAsset
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -335,7 +335,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 		UserId:       *p.userId,
 		InstrumentId: t.ids.StringWalletId,
 	}
-	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
+	responseLeg, err = t.repos.TxLeg.Create(ctx, responseLeg)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -458,7 +458,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 }
 
-func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+func (t transaction) populateInitialTxModelData(ctx context.Context, e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
 	// TODO populate transactionModel.Tags with key-val pairs for Unit21
@@ -472,7 +472,7 @@ func (t transaction) populateInitialTxModelData(e model.ExecutionRequest, m *mod
 	contractFunc := e.Quote.TransactionRequest.CxFunc + e.Quote.TransactionRequest.CxReturn
 	m.ContractFunc = &contractFunc
 
-	asset, err := t.repos.Asset.GetByName("USD")
+	asset, err := t.repos.Asset.GetByName(ctx, "USD")
 	if err != nil {
 		return model.Asset{}, libcommon.StringError(err)
 	}
@@ -577,7 +577,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 	// Create a new context since there are sub routines that run in background
 	ctx2 := context.Background()
 
-	instrument, err := t.repos.Instrument.GetCardByFingerprint(p.cardAuthorization.CheckoutFingerprint)
+	instrument, err := t.repos.Instrument.GetCardByFingerprint(ctx, p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.UserId != "" {
@@ -600,7 +600,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		Name:      p.cardAuthorization.CardholderName,
 	}
 
-	instrument, err = t.repos.Instrument.Create(instrument)
+	instrument, err = t.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -614,7 +614,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
 
-	instrument, err := t.repos.Instrument.GetWalletByAddr(address)
+	instrument, err := t.repos.Instrument.GetWalletByAddr(ctx, address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.PublicKey == address {
@@ -624,7 +624,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 
 	// Create a new instrument
 	instrument = model.Instrument{Type: "crypto wallet", Status: "external", Network: "ethereum", PublicKey: address, UserId: id} // No locationId or userId because this wallet was not registered with the user and is some other recipient
-	instrument, err = t.repos.Instrument.Create(instrument)
+	instrument, err = t.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -657,7 +657,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		UserId:       *p.userId,
 		InstrumentId: instrumentId,
 	}
-	origin, err = t.repos.TxLeg.Create(origin)
+	origin, err = t.repos.TxLeg.Create(ctx, origin)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -689,7 +689,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		InstrumentId: recipientWalletId,  // Required by the db. the instrument which received the asset (wallet usually)
 	}
 
-	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+	destinationLeg, err = t.repos.TxLeg.Create(ctx, destinationLeg)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -780,7 +780,7 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 		UserId:       t.ids.StringUserId,
 		InstrumentId: t.ids.StringBankId,
 	}
-	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
+	receiptLeg, err = t.repos.TxLeg.Create(ctx, receiptLeg)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
