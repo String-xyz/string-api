@@ -10,7 +10,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
-
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
@@ -31,7 +30,6 @@ func main() {
 	}
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
 
 	redis := store.NewRedis()

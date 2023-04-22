@@ -125,4 +125,4 @@ require (
 	inet.af/netaddr v0.0.0-20220617031823-097006376321 // indirect
 )
 
-// replace github.com/String-xyz/go-lib => ../go-lib
+replace github.com/String-xyz/go-lib => ../go-lib

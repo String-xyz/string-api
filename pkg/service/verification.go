@@ -52,6 +52,9 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 }
 
 func (v verification) SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error {
+	_, finish := Span(ctx, "service.verification.SendEmailVerification", "platformId", platformId)
+	defer finish()
+
 	if !validator.ValidEmail(email) {
 		return libcommon.StringError(serror.INVALID_DATA)
 	}
@@ -150,8 +153,10 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 }
 
 func (v verification) VerifyEmail(ctx context.Context, userId string, email string, platformId string) error {
-	now := time.Now()
+	_, finish := Span(ctx, "services.verification.VerifyEmail", "platformId", platformId)
+	defer finish()
 
+	now := time.Now()
 	// 1. Create contact with email
 	contact := model.Contact{UserId: userId, Type: "email", Status: "validated", Data: email, ValidatedAt: &now}
 	contact, err := v.repos.Contact.Create(ctx, contact)
@@ -175,13 +180,16 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	}
 
 	// 4. update user in unit21
-	ctx2 := context.Background() // Create a new context since this will run in background
+	ctx2 := context.FromContext(ctx) // Create a new context since this will run in background
 	go v.unit21.Entity.Update(ctx2, user)
 
 	return nil
 }
 
 func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
+	_, finish := Span(ctx, "services.verification.VerifyEmailWithEncryptedToken", "service", "email")
+	defer finish()
+
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	received, err := libcommon.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {

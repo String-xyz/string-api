@@ -81,6 +81,9 @@ type transactionProcessingData struct {
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
+	_, finish := Span(ctx, "service.transaction.Quote", "platformId", platformId)
+	defer finish()
+
 	// TODO: use prefab service to parse d and fill out known params
 	res.TransactionRequest = d
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
@@ -125,6 +128,9 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 }
 
 func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
+	_, finish := Span(ctx, "service.transaction.Execute", "platformId", platformId)
+	defer finish()
+
 	t.getStringInstrumentsAndUserId()
 	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
@@ -150,14 +156,16 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 	(*p.executor).Close()
 
 	// Send required information to new thread and return txId to the endpoint. Create a new context since this will run in background
-	ctx2 := context.Background()
+	ctx2 := context.FromContext(ctx)
 	go t.postProcess(ctx2, p)
 
 	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	// get user object
+	_, finish := Span(ctx, "service.transaction.transactionSetup", "platformId", *p.platformId)
+	defer finish()
+
 	user, err := t.repos.User.GetById(ctx, *p.userId)
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -212,6 +220,9 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 }
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.safetyCheck", "platformId", *p.platformId)
+	defer finish()
+
 	// Test the Tx and update model status
 	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.executionRequest.Quote.TransactionRequest, *p.chain, false, false)
 	if err != nil {
@@ -306,6 +317,9 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 }
 
 func (t transaction) initiateTransaction(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.initiateTransaction", "platformId", *p.platformId)
+	defer finish()
+
 	request := p.executionRequest.Quote.TransactionRequest
 	call := ContractCall{
 		CxAddr:     request.CxAddr,
@@ -357,7 +371,9 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 }
 
 func (t transaction) postProcess(ctx context.Context, p transactionProcessingData) {
+	_, finish := Span(ctx, "service.transaction.postProcess", "platformId", p.platformId)
 	// Reinitialize Executor
+
 	executor := NewExecutor()
 	p.executor = &executor
 	err := executor.Initialize(*p.chain)
@@ -575,7 +591,9 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) 
 
 func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
 	// Create a new context since there are sub routines that run in background
-	ctx2 := context.Background()
+	ctx2 := contex.FomrContext(ctx)
+	_, finish := Span(ctx2, "service.transaction.addCardInstrumentIdIfNew", "platformId", *p.platformId)
+	defer finish()
 
 	instrument, err := t.repos.Instrument.GetCardByFingerprint(ctx, p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
@@ -612,7 +630,9 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
 	// Create a new context since this will run in background
-	ctx2 := context.Background()
+	ctx2 := contex.FomrContext(ctx)
+	_, finish := Span(ctx2, "service.transaction.addWalletInstrumentIdIfNew", "address", address)
+	defer finish()
 
 	instrument, err := t.repos.Instrument.GetWalletByAddr(ctx, address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
@@ -635,6 +655,8 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 }
 
 func (t transaction) authCard(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.authCard", "platformId", *p.platformId)
+	defer finish()
 	// auth their card
 	p, err := AuthorizeCharge(p)
 	if err != nil {
@@ -723,6 +745,9 @@ func confirmTx(executor Executor, txId string) (uint64, error) {
 
 // TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
 func (t transaction) tenderTransaction(ctx context.Context, p transactionProcessingData) (float64, error) {
+	_, finish := Span(ctx, "service.transaction.tenderTransaction", "platformId", *p.platformId)
+	defer finish()
+
 	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -765,6 +790,9 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 }
 
 func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData) error {
+	_, finish := Span(ctx, "service.transaction.chargeCard", "platformId", *p.platformId)
+	defer finish()
+
 	p, err := CaptureCharge(p)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -794,20 +822,26 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 }
 
 func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessingData) error {
+	_, finish := Span(ctx, "service.transaction.sendEmailReceipt", "platformId", *p.platformId)
+	defer finish()
+
 	user, err := t.repos.User.GetById(ctx, *p.userId)
 	if err != nil {
 		log.Err(err).Msg("Error getting user from repo")
 		return libcommon.StringError(err)
 	}
+
 	contact, err := t.repos.Contact.GetByUserId(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Error getting user contact from repo")
 		return libcommon.StringError(err)
 	}
+
 	name := user.FirstName // + " " + user.MiddleName + " " + user.LastName
 	if name == "" {
 		name = "User"
 	}
+
 	receiptParams := common.ReceiptGenerationParams{
 		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:      name,
@@ -815,6 +849,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		PaymentDescriptor: p.executionRequest.Quote.TransactionRequest.AssetName,
 		TransactionDate:   time.Now().Format(time.RFC1123),
 	}
+
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -849,6 +884,9 @@ func floatToFixedString(value float64, decimals int) string {
 }
 
 func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId string) (err error) {
+	_, finish := Span(ctx, "service.transaction.unit21CreateTransaction", "transactionId", transactionId)
+	defer finish()
+
 	txModel, err := t.repos.Transaction.GetById(ctx, transactionId)
 	if err != nil {
 		log.Err(err).Msg("Error getting tx model in Unit21 in Tx Postprocess")
@@ -865,6 +903,9 @@ func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId 
 }
 
 func (t transaction) updateTransactionStatus(ctx context.Context, status string, transactionId string) (err error) {
+	_, finish := Span(ctx, "service.transaction.updateTransactionStatus", "transactionId", transactionId)
+	defer finish()
+
 	updateDB := &model.TransactionUpdates{Status: &status}
 	err = t.repos.Transaction.Update(ctx, transactionId, updateDB)
 	if err != nil {
@@ -879,6 +920,8 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 }
 
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
+	_, finish := Span(ctx, "service.transaction.isContractAllowed", "platformId", platformId)
+	defer finish()
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
 		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
