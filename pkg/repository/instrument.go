@@ -38,11 +38,17 @@ func NewInstrument(db *sqlx.DB) Instrument {
 
 func (i instrument[T]) Create(ctx context.Context, insert model.Instrument) (model.Instrument, error) {
 	m := model.Instrument{}
-	row := i.Store.QueryRowxContext(ctx, `
-		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
-		VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`, insert.Type, insert.Status, insert.Network, insert.PublicKey, insert.UserId, insert.Last4, insert.Name)
 
-	err := row.StructScan(&m)
+	query, args, err := i.Named(`
+		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
+		VALUES (:type, :status, :network, :public_key, :user_id, :last_4, :name) RETURNING *`, insert)
+
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = i.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

@@ -34,12 +34,18 @@ func NewDevice(db database.Queryable) Device {
 
 func (d device[T]) Create(ctx context.Context, insert model.Device) (model.Device, error) {
 	m := model.Device{}
-	row := d.Store.QueryRowxContext(ctx, `
-		INSERT INTO device (last_used_at, validated_at, type, description, user_id, fingerprint, ip_addresses) 
-		VALUES($1, $2, $3, $4, $5, $6, $7) 
-		RETURNING *`, insert.LastUsedAt, insert.ValidatedAt, insert.Type, insert.Description, insert.UserId, insert.Fingerprint, insert.IpAddresses)
 
-	err := row.StructScan(&m)
+	query, args, err := d.Named(`
+		INSERT INTO device (last_used_at, validated_at, type, description, user_id, fingerprint, ip_addresses) 
+		VALUES (:last_used_at, :validated_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
+		RETURNING *`, insert)
+
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = d.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

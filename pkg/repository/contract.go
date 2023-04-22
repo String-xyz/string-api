@@ -31,11 +31,17 @@ func NewContract(db database.Queryable) Contract {
 
 func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.Contract, error) {
 	m := model.Contract{}
-	row := u.Store.QueryRowxContext(ctx, `
-		INSERT INTO contract (name, address, functions, network_id, platform_id) 
-		VALUES($1, $2, $3, $4, $5) RETURNING *`, insert.Name, insert.Address, insert.Functions, insert.NetworkID, insert.PlatformID)
 
-	err := row.StructScan(&m)
+	query, args, err := u.Named(`
+		INSERT INTO contract (name, address, functions, network_id, platform_id) 
+		VALUES (:name, :address, :functions, :network_id, :platform_id) RETURNING *`, insert)
+
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

@@ -31,13 +31,16 @@ func NewNetwork(db database.Queryable) Network {
 func (n network[T]) Create(ctx context.Context, insert model.Network) (model.Network, error) {
 	m := model.Network{}
 
-	query := `
+	query, args, err := n.Named(`
 		INSERT INTO network (name, network_id, chain_id, gas_oracle, rpc_url, explorer_url)
-		VALUES($1, $2, $3, $4, $5, $6) RETURNING *`
+		VALUES(:name, :network_id, :chain_id, :gas_oracle, :rpc_url, :explorer_url) RETURNING *`, insert)
 
-	row := n.Store.QueryRowxContext(ctx, query, insert.Name, insert.NetworkId, insert.ChainId, insert.GasOracle, insert.RPCUrl, insert.ExplorerUrl)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
 
-	err := row.StructScan(&m)
+	// Use QueryRowxContext to execute the query with the provided context
+	err = n.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

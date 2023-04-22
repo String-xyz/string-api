@@ -26,22 +26,21 @@ func NewLocation(db *sqlx.DB) Location {
 }
 
 func (i location[T]) Create(ctx context.Context, insert model.Location) (model.Location, error) {
-	// TODO: Use ctx query
-
 	m := model.Location{}
-	rows, err := i.Store.NamedQuery(`
+
+	query, args, err := i.Named(`
 		INSERT INTO location (name) 
-		VALUES(:name) 	RETURNING *`, insert)
+		VALUES(:name) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = i.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
 	}
 
-	defer rows.Close()
 	return m, nil
 }

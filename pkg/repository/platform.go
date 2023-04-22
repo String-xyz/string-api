@@ -36,22 +36,24 @@ func NewPlatform(db database.Queryable) Platform {
 	return &platform[model.Platform]{baserepo.Base[model.Platform]{Store: db, Table: "platform"}}
 }
 
-func (p platform[T]) Create(ctx context.Context, m model.Platform) (model.Platform, error) {
-	plat := model.Platform{}
-	query := "INSERT INTO platform (name, description) VALUES ($1, $2) RETURNING *"
-	rows, err := p.Store.QueryxContext(ctx, query, m.Name, m.Description)
+func (p platform[T]) Create(ctx context.Context, insert model.Platform) (model.Platform, error) {
+	m := model.Platform{}
+
+	query, args, err := p.Named(`
+		INSERT INTO platform (name, description) 
+		VALUES(:name, :description) RETURNING *`, insert)
+
 	if err != nil {
-		return plat, libcommon.StringError(err)
+		return m, libcommon.StringError(err)
 	}
 
-	for rows.Next() {
-		err := rows.StructScan(&plat)
-		if err != nil {
-			return plat, libcommon.StringError(err)
-		}
+	// Use QueryRowxContext to execute the query with the provided context
+	err = p.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
 	}
-	defer rows.Close()
-	return plat, nil
+
+	return m, nil
 }
 
 func (p platform[T]) AssociateUser(ctx context.Context, userId string, platformId string) error {

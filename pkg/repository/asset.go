@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
@@ -29,14 +30,22 @@ func NewAsset(db database.Queryable) Asset {
 
 func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, error) {
 	m := model.Asset{}
-	row := a.Store.QueryRowxContext(ctx, `
+
+	query, args, err := a.Named(`
 		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2) 
-		VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		insert.Name, insert.Description, insert.Decimals, insert.IsCrypto, insert.NetworkId, insert.ValueOracle, insert.ValueOracle2)
+		VALUES (:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) RETURNING *`, insert)
 
-	err := row.StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
 
-	return m, err
+	// Use QueryRowxContext to execute the query with the provided context
+	err = a.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	return m, nil
 }
 
 func (a asset[T]) GetByName(ctx context.Context, name string) (model.Asset, error) {

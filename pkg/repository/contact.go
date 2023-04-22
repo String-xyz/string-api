@@ -36,11 +36,17 @@ func NewContact(db database.Queryable) Contact {
 
 func (u contact[T]) Create(ctx context.Context, insert model.Contact) (model.Contact, error) {
 	m := model.Contact{}
-	row := u.Store.QueryRowxContext(ctx, `
-		INSERT INTO contact (user_id, data, type, status) 
-		VALUES($1, $2, $3, $4) RETURNING *`, insert.UserId, insert.Data, insert.Type, insert.Status)
 
-	err := row.StructScan(&m)
+	query, args, err := u.Named(`
+		INSERT INTO contact (user_id, data, type, status) 
+		VALUES (:user_id, :data, :type, :status) RETURNING *`, insert)
+
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

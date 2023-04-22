@@ -27,11 +27,16 @@ func NewTxLeg(db database.Queryable) TxLeg {
 func (t txLeg[T]) Create(ctx context.Context, insert model.TxLeg) (model.TxLeg, error) {
 	m := model.TxLeg{}
 
-	query := `
+	query, args, err := t.Named(`
 		INSERT INTO tx_leg (timestamp, amount, value, asset_id, user_id, instrument_id) 
-		VALUES($1, $2, $3, $4, $5, $6) RETURNING *`
+		VALUES(:timestamp, :amount, :value, :asset_id, :user_id, :instrument_id) RETURNING *`, insert)
 
-	err := t.Store.QueryRowxContext(ctx, query, insert.Timestamp, insert.Amount, insert.Value, insert.AssetId, insert.UserId, insert.InstrumentId).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = t.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

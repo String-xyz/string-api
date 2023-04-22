@@ -12,7 +12,6 @@ import (
 	baserepo "github.com/String-xyz/go-lib/repository"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 )
 
 type User interface {
@@ -36,27 +35,18 @@ func NewUser(db database.Queryable) User {
 func (u user[T]) Create(ctx context.Context, insert model.User) (model.User, error) {
 	m := model.User{}
 
-	// Prepare the named statement with sqlx.NamedStmt
-	stmt, err := u.Store.PrepareNamedContext(ctx, `
+	query, args, err := u.Named(`
 		INSERT INTO string_user (type, status, first_name, middle_name, last_name) 
-		VALUES(:type, :status, :first_name, :middle_name, :last_name) RETURNING *`)
+		VALUES(:type, :status, :first_name, :middle_name, :last_name) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	defer stmt.Close()
 
-	// Execute the prepared named statement with context
-	rows, err := stmt.QueryxContext(ctx, insert)
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
 	}
 
 	return m, nil
@@ -72,24 +62,14 @@ func (u user[T]) Update(ctx context.Context, id string, updates any) (model.User
 	// Add the "id" key to the keyToUpdate map
 	keyToUpdate["id"] = id
 
-	// Prepare the named query
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = :id RETURNING *", u.Table, strings.Join(names, ", "))
-	namedQuery, args, err := sqlx.Named(query, keyToUpdate)
+	namedQuery, args, err := u.Named(query, keyToUpdate)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-
-	// Replace the named parameters with placeholders
-	placeholdersQuery, args, err := sqlx.In(namedQuery, args...)
-	if err != nil {
-		return user, libcommon.StringError(err)
-	}
-
-	// Rebind the query to adapt placeholders to the specific SQL database
-	finalQuery := u.Store.Rebind(placeholdersQuery)
 
 	// Use QueryRowxContext to execute the query with the provided context
-	err = u.Store.QueryRowxContext(ctx, finalQuery, args...).StructScan(&user)
+	err = u.Store.QueryRowxContext(ctx, namedQuery, args...).StructScan(&user)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}

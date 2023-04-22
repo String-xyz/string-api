@@ -27,11 +27,17 @@ func NewContactPlatform(db database.Queryable) ContactToPlatform {
 
 func (u contactToPlatform[T]) Create(ctx context.Context, insert model.ContactToPlatform) (model.ContactToPlatform, error) {
 	m := model.ContactToPlatform{}
-	row := u.Store.QueryRowxContext(ctx, `
-		INSERT INTO contact_to_platform (contact_id, platform_id) 
-		VALUES($1, $2) RETURNING *`, insert.ContactId, insert.PlatformId)
 
-	err := row.StructScan(&m)
+	query, args, err := u.Named(`
+		INSERT INTO contact_to_platform (contact_id, platform_id) 
+		VALUES (:contact_id, :platform_id) RETURNING *`, insert)
+
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
