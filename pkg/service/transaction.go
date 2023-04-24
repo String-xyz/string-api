@@ -156,7 +156,7 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 	(*p.executor).Close()
 
 	// Send required information to new thread and return txId to the endpoint. Create a new context since this will run in background
-	ctx2 := context.FromContext(ctx)
+	ctx2 := context.Background()
 	go t.postProcess(ctx2, p)
 
 	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
@@ -371,9 +371,10 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 }
 
 func (t transaction) postProcess(ctx context.Context, p transactionProcessingData) {
-	_, finish := Span(ctx, "service.transaction.postProcess", "platformId", p.platformId)
-	// Reinitialize Executor
+	_, finish := Span(ctx, "service.transaction.postProcess", "platformId", *p.platformId)
+	defer finish()
 
+	// Reinitialize Executor
 	executor := NewExecutor()
 	p.executor = &executor
 	err := executor.Initialize(*p.chain)
@@ -589,11 +590,11 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) 
 	return true, nil
 }
 
-func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
-	// Create a new context since there are sub routines that run in background
-	ctx2 := contex.FomrContext(ctx)
-	_, finish := Span(ctx2, "service.transaction.addCardInstrumentIdIfNew", "platformId", *p.platformId)
+func (t transaction) addCardInstgumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
+	_, finish := Span(ctx, "service.transaction.addCardInstrumentIdIfNew", "platformId", *p.platformId)
 	defer finish()
+	// Create a new context since there are sub routines that run in background
+	ctx2 := context.Background()
 
 	instrument, err := t.repos.Instrument.GetCardByFingerprint(ctx, p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
@@ -629,10 +630,10 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 }
 
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
-	// Create a new context since this will run in background
-	ctx2 := contex.FomrContext(ctx)
-	_, finish := Span(ctx2, "service.transaction.addWalletInstrumentIdIfNew", "address", address)
+	_, finish := Span(ctx, "service.transaction.addWalletInstrumentIdIfNew", "address", address)
 	defer finish()
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
 
 	instrument, err := t.repos.Instrument.GetWalletByAddr(ctx, address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {

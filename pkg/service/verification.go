@@ -180,7 +180,7 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	}
 
 	// 4. update user in unit21
-	ctx2 := context.FromContext(ctx) // Create a new context since this will run in background
+	ctx2 := context.Background() // Create a new context since this will run in background
 	go v.unit21.Entity.Update(ctx2, user)
 
 	return nil
