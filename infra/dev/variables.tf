@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "tracer"
+  default = "latest"
 }
 
 locals {
