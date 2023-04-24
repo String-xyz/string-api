@@ -29,7 +29,7 @@ func (t transaction[T]) Create(ctx context.Context, insert model.Transaction) (m
 
 	query, args, err := t.Named(`
 		INSERT INTO transaction (status, network_id, device_id, platform_id, ip_address) 
-		VALUES (:status, :network_id, :device_id, :platform_id, :ip_address) RETURNING id`, insert)
+		VALUES(:status, :network_id, :device_id, :platform_id, :ip_address) RETURNING id`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
