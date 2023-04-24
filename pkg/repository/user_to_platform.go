@@ -28,16 +28,17 @@ func NewUserToPlatform(db database.Queryable) UserToPlatform {
 
 func (u userToPlatform[T]) Create(ctx context.Context, insert model.UserToPlatform) (model.UserToPlatform, error) {
 	m := model.UserToPlatform{}
-	query := `INSERT INTO user_to_platform (user_id, platform_id) 
-		VALUES (:user_id, :platform_id) RETURNING *`
 
-	stmt, err := u.Store.PrepareNamedContext(ctx, query)
+	query, args, err := u.Named(`
+		INSERT INTO user_to_platform (user_id, platform_id) 
+		VALUES(:user_id, :platform_id) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	defer stmt.Close()
 
-	err = stmt.GetContext(ctx, &m, insert)
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}

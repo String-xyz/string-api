@@ -12,7 +12,7 @@ import (
 
 type Location interface {
 	database.Transactable
-	Create(model.Location) (model.Location, error)
+	Create(ctx context.Context, m model.Location) (model.Location, error)
 	GetById(ctx context.Context, id string) (model.Location, error)
 	Update(ctx context.Context, id string, updates any) error
 }
@@ -25,21 +25,22 @@ func NewLocation(db *sqlx.DB) Location {
 	return &location[model.Location]{baserepo.Base[model.Location]{Store: db, Table: "location"}}
 }
 
-func (i location[T]) Create(insert model.Location) (model.Location, error) {
+func (i location[T]) Create(ctx context.Context, insert model.Location) (model.Location, error) {
 	m := model.Location{}
-	rows, err := i.Store.NamedQuery(`
+
+	query, args, err := i.Named(`
 		INSERT INTO location (name) 
-		VALUES(:name) 	RETURNING *`, insert)
+		VALUES(:name) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = i.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
 	}
 
-	defer rows.Close()
 	return m, nil
 }

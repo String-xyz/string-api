@@ -30,8 +30,8 @@ github.com/String-xyz/go-lib v1.4.1-0.20230423225120-a83fd6932b48 h1:RONXDVve/NR
 github.com/String-xyz/go-lib v1.4.1-0.20230423225120-a83fd6932b48/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
 github.com/String-xyz/go-lib v1.4.1-0.20230424000125-2b5b91f64c9b h1:k1PfOPsrE5h0Yn82oUhFoUBjV6Ms/hSjs5zz2Uf5uok=
 github.com/String-xyz/go-lib v1.4.1-0.20230424000125-2b5b91f64c9b/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
-github.com/String-xyz/go-lib v1.5.0 h1:Qb5kw2gyfQceIqNzNFopf5BIFqbzkSNN6Aop9i2SmVc=
-github.com/String-xyz/go-lib v1.5.0/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
+github.com/String-xyz/go-lib v1.6.0 h1:Wf6wX0wpKbg620RAfSMnp8mHLFc/GHq7Ru1/JNfm+RE=
+github.com/String-xyz/go-lib v1.6.0/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
 github.com/String-xyz/go-lib v1.7.0 h1:dDJpeqLDK0BBP6Db+upPwySmcxcmvOlnxb+PXFBHzfM=
 github.com/String-xyz/go-lib v1.7.0/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
 github.com/VictoriaMetrics/fastcache v1.6.0 h1:C/3Oi3EiBCqufydp1neRZkqcwmEiuRT9c3fqvvgKm5o=
