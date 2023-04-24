@@ -590,7 +590,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) 
 	return true, nil
 }
 
-func (t transaction) addCardInstgumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
+func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
 	_, finish := Span(ctx, "service.transaction.addCardInstrumentIdIfNew", "platformId", *p.platformId)
 	defer finish()
 	// Create a new context since there are sub routines that run in background
