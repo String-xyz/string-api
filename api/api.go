@@ -63,7 +63,7 @@ func StartInternal(config APIConfig) {
 }
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
-	e.Use(libmiddleware.Tracer())
+	e.Use(libmiddleware.Tracer("string-api"))
 	e.Use(libmiddleware.CORS())
 	e.Use(libmiddleware.RequestId())
 	e.Use(libmiddleware.Recover())
