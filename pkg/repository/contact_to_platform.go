@@ -30,7 +30,7 @@ func (u contactToPlatform[T]) Create(ctx context.Context, insert model.ContactTo
 
 	query, args, err := u.Named(`
 		INSERT INTO contact_to_platform (contact_id, platform_id) 
-		VALUES (:contact_id, :platform_id) RETURNING *`, insert)
+		VALUES(:contact_id, :platform_id) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
