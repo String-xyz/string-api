@@ -41,7 +41,7 @@ func (i instrument[T]) Create(ctx context.Context, insert model.Instrument) (mod
 
 	query, args, err := i.Named(`
 		INSERT INTO instrument (type, status, network, public_key, user_id, last_4, name) 
-		VALUES (:type, :status, :network, :public_key, :user_id, :last_4, :name) RETURNING *`, insert)
+		VALUES(:type, :status, :network, :public_key, :user_id, :last_4, :name) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
