@@ -37,7 +37,7 @@ func (d device[T]) Create(ctx context.Context, insert model.Device) (model.Devic
 
 	query, args, err := d.Named(`
 		INSERT INTO device (last_used_at, validated_at, type, description, user_id, fingerprint, ip_addresses) 
-		VALUES (:last_used_at, :validated_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
+		VALUES(:last_used_at, :validated_at, :type, :description, :user_id, :fingerprint, :ip_addresses) 
 		RETURNING *`, insert)
 
 	if err != nil {
