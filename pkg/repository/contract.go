@@ -34,7 +34,7 @@ func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.C
 
 	query, args, err := u.Named(`
 		INSERT INTO contract (name, address, functions, network_id, platform_id) 
-		VALUES (:name, :address, :functions, :network_id, :platform_id) RETURNING *`, insert)
+		VALUES(:name, :address, :functions, :network_id, :platform_id) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
