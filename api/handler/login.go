@@ -62,6 +62,11 @@ func (l login) VerifySignature(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ PlatformId string }{platformId}, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	strBypassDevice := c.QueryParam("bypassDevice")
 	bypassDevice := strBypassDevice == "true" // convert to bool. default is false
 
@@ -117,6 +122,11 @@ func (l login) VerifySignature(c echo.Context) error {
 		return httperror.InternalError(c)
 	}
 
+	err = libcommon.SanitizeIdOutput(&resp.User)
+	if err != nil {
+		libcommon.LogStringError(c, err, "RefreshToken: unable to sanitize id output")
+		return httperror.InternalError(c)
+	}
 	return c.JSON(http.StatusOK, resp)
 }
 
@@ -127,8 +137,13 @@ func (l login) RefreshToken(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ PlatformId string }{platformId}, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	var body model.RefreshTokenPayload
-	err := c.Bind(&body)
+	err = c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "login: binding body")
 		return httperror.BadRequestError(c)
@@ -164,6 +179,11 @@ func (l login) RefreshToken(c echo.Context) error {
 		return httperror.InternalError(c)
 	}
 
+	err = libcommon.SanitizeIdOutput(&resp.User)
+	if err != nil {
+		libcommon.LogStringError(c, err, "RefreshToken: unable to sanitize id output")
+		return httperror.InternalError(c)
+	}
 	return c.JSON(http.StatusOK, resp)
 }
 

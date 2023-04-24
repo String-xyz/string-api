@@ -43,9 +43,14 @@ func (u user) Create(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ PlatformId string }{platformId}, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	ctx := c.Request().Context()
 	var body model.WalletSignaturePayloadSigned
-	err := c.Bind(&body)
+	err = c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user:create user bind")
 		return httperror.BadRequestError(c)
@@ -88,6 +93,11 @@ func (u user) Create(c echo.Context) error {
 		return httperror.InternalError(c)
 	}
 
+	libcommon.SanitizeIdOutput(&resp.User)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: unable to sanitize id output")
+		return httperror.InternalError(c)
+	}
 	return c.JSON(http.StatusOK, resp)
 }
 
@@ -98,6 +108,10 @@ func (u user) Status(c echo.Context) error {
 		return httperror.Unauthorized(c)
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ UserId string }{userId}, &userId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
 	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: get status")
@@ -123,12 +137,22 @@ func (u user) Update(c echo.Context) error {
 
 	_, userId := validUserId(IdParam(c), c)
 
+	err = libcommon.SanitizeIdInput(&struct{ UserId string }{userId}, &userId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update")
 		return httperror.InternalError(c)
 	}
 
+	err = libcommon.SanitizeIdOutput(&user)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: failed to sanitize id output")
+		return httperror.InternalError(c)
+	}
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -152,7 +176,12 @@ func (u user) VerifyEmail(c echo.Context) error {
 		return httperror.BadRequestError(c, "Invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
+	err := libcommon.SanitizeIdInput(&struct{ UserId, PlatformId string }{userId, platformId}, &userId, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
+	err = u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 
@@ -178,9 +207,14 @@ func (u user) PreValidateEmail(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ UserId, PlatformId string }{userId, platformId}, &userId, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	// Get email from body
 	var body model.PreValidateEmail
-	err := c.Bind(&body)
+	err = c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: pre validate email bind")
 		return httperror.BadRequestError(c)
