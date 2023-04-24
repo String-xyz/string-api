@@ -33,7 +33,7 @@ func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, 
 
 	query, args, err := a.Named(`
 		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2) 
-		VALUES (:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) RETURNING *`, insert)
+		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
