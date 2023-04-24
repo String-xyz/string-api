@@ -93,7 +93,7 @@ func (u user) Create(c echo.Context) error {
 		return httperror.InternalError(c)
 	}
 
-	libcommon.SanitizeIdOutput(&resp.User)
+	err = libcommon.SanitizeIdOutput(&resp.User)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: unable to sanitize id output")
 		return httperror.InternalError(c)
