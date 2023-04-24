@@ -36,6 +36,11 @@ func (card card) GetAll(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ UserId, PlatformId string }{userId, platformId}, &userId, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: get All")

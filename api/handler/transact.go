@@ -42,9 +42,14 @@ func (t transaction) Transact(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
+	err := libcommon.SanitizeIdInput(&struct{ UserId, DeviceId, PlatformId string }{userId, deviceId, platformId}, &userId, &deviceId, &platformId)
+	if err != nil {
+		return httperror.BadRequestError(c, err.Error())
+	}
+
 	var body model.ExecutionRequest
 
-	err := c.Bind(&body)
+	err = c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute bind")
 		return httperror.BadRequestError(c)

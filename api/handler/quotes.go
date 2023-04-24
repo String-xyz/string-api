@@ -52,6 +52,10 @@ func (q quote) Quote(c echo.Context) error {
 	if !ok {
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
+	err = libcommon.SanitizeIdInput(&struct{ PlatformId string }{platformId}, &platformId)
+	if err != nil {
+		return httperror.InternalError(c, "Failed to sanitize platform id")
+	}
 
 	res, err := q.Service.Quote(ctx, body, platformId)
 	if err != nil {
