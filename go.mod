@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/String-xyz/go-lib v1.4.1-0.20230424000125-2b5b91f64c9b
+	github.com/String-xyz/go-lib v1.7.0
 	github.com/aws/aws-sdk-go v1.44.168
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.33.4
