@@ -39,58 +39,58 @@ func DataSeeding() {
 	// Write to repos
 
 	// Networks without GasTokenId
-	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
+	networkPolygon, err := repos.Network.Create(ctx, model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
+	networkMumbai, err := repos.Network.Create(ctx, model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
-	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
+	networkGoerli, err := repos.Network.Create(ctx, model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
+	networkEthereum, err := repos.Network.Create(ctx, model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(ctx, model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(ctx, model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
+	networkNitroGoerli, err := repos.Network.Create(ctx, model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
+	networkArbitrumNova, err := repos.Network.Create(ctx, model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
+	assetAvalanche, err := repos.Asset.Create(ctx, model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(ctx, model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
+	assetMatic, err := repos.Asset.Create(ctx, model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(ctx, model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
 	/*assetUSD*/
-	_, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
+	_, err = repos.Asset.Create(ctx, model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +152,7 @@ func DataSeeding() {
 	}
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
+	bankString, err := repos.Instrument.Create(ctx, model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -169,7 +169,7 @@ func DataSeeding() {
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
+	walletString, err := repos.Instrument.Create(ctx, model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -212,58 +212,58 @@ func MockSeeding() {
 	// Write to repos
 
 	// Networks without GasTokenId
-	networkPolygon, err := repos.Network.Create(model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
+	networkPolygon, err := repos.Network.Create(ctx, model.Network{Name: "Polygon Mainnet", NetworkId: 137, ChainId: 137, GasOracle: "poly", RPCUrl: "https://rpc-mainnet.matic.quiknode.pro", ExplorerUrl: "https://polygonscan.com"})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		return
 	}
-	networkMumbai, err := repos.Network.Create(model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
+	networkMumbai, err := repos.Network.Create(ctx, model.Network{Name: "Mumbai Testnet", NetworkId: 80001, ChainId: 80001, GasOracle: "poly", RPCUrl: "https://matic-mumbai.chainstacklabs.com", ExplorerUrl: "https://mumbai.polygonscan.com"})
 	if err != nil {
 		panic(err)
 	}
-	networkGoerli, err := repos.Network.Create(model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
+	networkGoerli, err := repos.Network.Create(ctx, model.Network{Name: "Goerli Testnet", NetworkId: 5, ChainId: 5, GasOracle: "eth", RPCUrl: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", ExplorerUrl: "https://goerli.etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkEthereum, err := repos.Network.Create(model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
+	networkEthereum, err := repos.Network.Create(ctx, model.Network{Name: "Ethereum Mainnet", NetworkId: 1, ChainId: 1, GasOracle: "eth", RPCUrl: "https://rpc.ankr.com/eth", ExplorerUrl: "https://etherscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkFuji, err := repos.Network.Create(model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
+	networkFuji, err := repos.Network.Create(ctx, model.Network{Name: "Fuji Testnet", NetworkId: 1, ChainId: 43113, GasOracle: "avax", RPCUrl: "https://api.avax-test.network/ext/bc/C/rpc", ExplorerUrl: "https://testnet.snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkAvalanche, err := repos.Network.Create(model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
+	networkAvalanche, err := repos.Network.Create(ctx, model.Network{Name: "Avalanche Mainnet", NetworkId: 1, ChainId: 43114, GasOracle: "avax", RPCUrl: "https://api.avax.network/ext/bc/C/rpc", ExplorerUrl: "https://snowtrace.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkNitroGoerli, err := repos.Network.Create(model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
+	networkNitroGoerli, err := repos.Network.Create(ctx, model.Network{Name: "Nitro Goerli Rollup Testnet", NetworkId: 421613, ChainId: 421613, GasOracle: "arb", RPCUrl: "https://goerli-rollup.arbitrum.io/rpc", ExplorerUrl: "https://goerli.arbiscan.io"})
 	if err != nil {
 		panic(err)
 	}
-	networkArbitrumNova, err := repos.Network.Create(model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
+	networkArbitrumNova, err := repos.Network.Create(ctx, model.Network{Name: "Arbitrum Nova Mainnet", NetworkId: 42170, ChainId: 42170, GasOracle: "arb", RPCUrl: "https://nova.arbitrum.io/rpc", ExplorerUrl: "https://nova-explorer.arbitrum.io"})
 	if err != nil {
 		panic(err)
 	}
 	// Assets
-	assetAvalanche, err := repos.Asset.Create(model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
+	assetAvalanche, err := repos.Asset.Create(ctx, model.Asset{Name: "AVAX", Description: "Avalanche", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkAvalanche.Id), ValueOracle: nullString("avalanche-2"), ValueOracle2: nullString("avalanche")})
 	if err != nil {
 		panic(err)
 	}
-	assetEthereum, err := repos.Asset.Create(model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
+	assetEthereum, err := repos.Asset.Create(ctx, model.Asset{Name: "ETH", Description: "Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkEthereum.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
-	assetMatic, err := repos.Asset.Create(model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
+	assetMatic, err := repos.Asset.Create(ctx, model.Asset{Name: "MATIC", Description: "Matic", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkPolygon.Id), ValueOracle: nullString("matic-network"), ValueOracle2: nullString("matic")})
 	if err != nil {
 		panic(err)
 	}
-	assetGoerliEth, err := repos.Asset.Create(model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
+	assetGoerliEth, err := repos.Asset.Create(ctx, model.Asset{Name: "GOERLIETH", Description: "Goerli Ethereum", Decimals: 18, IsCrypto: true, NetworkId: nullString(networkNitroGoerli.Id), ValueOracle: nullString("ethereum"), ValueOracle2: nullString("ethereum")})
 	if err != nil {
 		panic(err)
 	}
 	/*assetUSD*/
-	_, err = repos.Asset.Create(model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
+	_, err = repos.Asset.Create(ctx, model.Asset{Name: "USD", Description: "United States Dollar", Decimals: 6, IsCrypto: false})
 	if err != nil {
 		panic(err)
 	}
@@ -329,7 +329,7 @@ func MockSeeding() {
 
 	// Instruments, used in TX Legs
 	/*instrumentDeveloperCard*/
-	bankString, err := repos.Instrument.Create(model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
+	bankString, err := repos.Instrument.Create(ctx, model.Instrument{Type: "bank account", Status: "live", Network: "bankprov", PublicKey: "420481286", UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
@@ -346,7 +346,7 @@ func MockSeeding() {
 	}
 
 	/*instrumentDeveloperWallet*/
-	walletString, err := repos.Instrument.Create(model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
+	walletString, err := repos.Instrument.Create(ctx, model.Instrument{Type: "crypto wallet", Status: "internal", Network: "EVM", PublicKey: stringPublicAddress, UserId: userString.Id})
 	if err != nil {
 		panic(err)
 	}
