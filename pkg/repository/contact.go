@@ -39,7 +39,7 @@ func (u contact[T]) Create(ctx context.Context, insert model.Contact) (model.Con
 
 	query, args, err := u.Named(`
 		INSERT INTO contact (user_id, data, type, status) 
-		VALUES (:user_id, :data, :type, :status) RETURNING *`, insert)
+		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
