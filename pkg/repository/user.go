@@ -35,27 +35,18 @@ func NewUser(db database.Queryable) User {
 func (u user[T]) Create(ctx context.Context, insert model.User) (model.User, error) {
 	m := model.User{}
 
-	// Prepare the named statement with sqlx.NamedStmt
-	stmt, err := u.Store.PrepareNamedContext(ctx, `
+	query, args, err := u.Named(`
 		INSERT INTO string_user (type, status, first_name, middle_name, last_name) 
-		VALUES(:type, :status, :first_name, :middle_name, :last_name) RETURNING *`)
+		VALUES(:type, :status, :first_name, :middle_name, :last_name) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	defer stmt.Close()
 
-	// Execute the prepared named statement with context
-	rows, err := stmt.QueryxContext(ctx, insert)
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
 	if err != nil {
 		return m, libcommon.StringError(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
 	}
 
 	return m, nil
@@ -68,23 +59,22 @@ func (u user[T]) Update(ctx context.Context, id string, updates any) (model.User
 		return user, libcommon.StringError(errors.New("no fields to update"))
 	}
 
-	// TODO: use prepared statement to avoid sql injection
-	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = '%s' RETURNING *", u.Table, strings.Join(names, ", "), id)
-	rows, err := u.Store.NamedQuery(query, keyToUpdate)
+	// Add the "id" key to the keyToUpdate map
+	keyToUpdate["id"] = id
 
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = :id RETURNING *", u.Table, strings.Join(names, ", "))
+	namedQuery, args, err := u.Named(query, keyToUpdate)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		err = rows.StructScan(&user)
-	}
-
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, namedQuery, args...).StructScan(&user)
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-	return user, err
+
+	return user, nil
 }
 
 // update user status

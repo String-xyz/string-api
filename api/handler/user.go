@@ -76,7 +76,7 @@ func (u user) Create(c echo.Context) error {
 		}
 
 		if serror.Is(err, serror.EXPIRED) {
-			return httperror.ForbiddenError(c, "Link expired, please request a new one")
+			return httperror.ForbiddenError(c, "Nonce expired. Request a new one")
 		}
 
 		return httperror.InternalError(c)

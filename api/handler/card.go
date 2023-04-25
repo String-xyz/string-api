@@ -5,6 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	"github.com/String-xyz/go-lib/validator"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
@@ -31,9 +32,9 @@ func (card card) GetAll(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
 
-	platformId, ok := c.Get("platformId").(string)
-	if !ok {
-		return httperror.InternalError(c, "missing or invalid platformId")
+	platformId := c.QueryParam("platformId")
+	if validator.IsUUID(platformId) {
+		return httperror.BadRequestError(c, "missing platformId")
 	}
 
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
