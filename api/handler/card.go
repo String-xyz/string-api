@@ -5,6 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	"github.com/String-xyz/go-lib/validator"
 	service "github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
 )
