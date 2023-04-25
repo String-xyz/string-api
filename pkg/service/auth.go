@@ -202,7 +202,7 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
-	return authKey.PlatformId, nil
+	return *authKey.PlatformId, nil
 }
 
 func (a auth) ValidateAPIKeySecret(key string) (string, error) {
@@ -222,7 +222,7 @@ func (a auth) ValidateAPIKeySecret(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
-	return authKey.PlatformId, nil
+	return *authKey.PlatformId, nil
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {

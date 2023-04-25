@@ -61,7 +61,17 @@ ALTER TABLE platform
 -- +goose StatementEnd
 
 -------------------------------------------------------------------------
+-- APIKEY ---------------------------------------------------------------
+ALTER TABLE apikey
+  ADD COLUMN organization_id UUID NOT NULL REFERENCES organization (id);
+
+-------------------------------------------------------------------------
 -- +goose Down
+
+-------------------------------------------------------------------------
+-- APIKEY ---------------------------------------------------------------
+ALTER TABLE apikey
+  DROP COLUMN IF EXISTS organization_id;
 
 -------------------------------------------------------------------------
 -- PLATFORM -------------------------------------------------------------
@@ -84,8 +94,8 @@ ALTER TABLE organization_member
 ALTER TABLE member_invite
   DROP COLUMN IF EXISTS organization_id,
   DROP COLUMN IF EXISTS organization_member,
-  ADD COLUMN platform_member UUID NOT NULL REFERENCES platform_member (id),
-  ADD COLUMN platform_id UUID NOT NULL REFERENCES platform (id);
+  ADD COLUMN platform_member UUID REFERENCES platform_member (id),
+  ADD COLUMN platform_id UUID REFERENCES platform (id);
 -- +goose StatementEnd
 
 -------------------------------------------------------------------------

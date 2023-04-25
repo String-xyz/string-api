@@ -31,9 +31,9 @@ func (card card) GetAll(c echo.Context) error {
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
 
-	platformId, ok := c.Get("platformId").(string)
-	if !ok {
-		return httperror.InternalError(c, "missing or invalid platformId")
+	platformId := c.QueryParam("platformId")
+	if platformId == "" {
+		return httperror.BadRequestError(c, "missing platformId")
 	}
 
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
