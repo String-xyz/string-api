@@ -4,13 +4,14 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"math/big"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/lmittmann/w3"
+	"github.com/pkg/errors"
 )
 
 type QuoteCache interface {
@@ -28,6 +29,7 @@ func NewQuoteCache(redis database.RedisStore) QuoteCache {
 
 type callEstimateCache struct {
 	Timestamp int64  `json:"timestamp"`
+	Value     string `json:"value" db:"value"`
 	Gas       uint64 `json:"gas" db:"gas"`
 	Success   bool   `json:"success" db:"success"`
 }
@@ -39,13 +41,19 @@ func (q quoteCache) CheckUpdateCachedTransactionRequest(request model.Transactio
 	} else if err != nil {
 		return false, CallEstimate{}, libcommon.StringError(err)
 	} else {
-		return false, CallEstimate{Value: *w3.I(request.TxValue), Gas: cacheObject.Gas, Success: cacheObject.Success}, nil
+		value := new(big.Int)
+		value, ok := value.SetString(cacheObject.Value, 10)
+		if !ok {
+			return false, CallEstimate{}, libcommon.StringError(errors.New("Failed to parse value from cache"))
+		}
+		return false, CallEstimate{Value: *value, Gas: cacheObject.Gas, Success: cacheObject.Success}, nil
 	}
 }
 
 func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error {
 	cacheObject := callEstimateCache{
 		Timestamp: time.Now().Unix(),
+		Value:     data.Value.String(),
 		Gas:       data.Gas,
 		Success:   data.Success,
 	}
@@ -65,7 +73,7 @@ func sanitizeTransactionRequest(request model.TransactionRequest) model.Transact
 		CxFunc:      request.CxFunc,
 		CxReturn:    request.CxReturn,
 		CxParams:    append([]string{}, request.CxParams...), // So are arrays
-		TxValue:     "*",                                     // Get this from model.TransactionRequest because it requires no estimation
+		TxValue:     request.TxValue,                         // Get this from model.TransactionRequest because it requires no estimation
 		TxGasLimit:  request.TxGasLimit,
 	}
 	// Treat the users address as a wildcard

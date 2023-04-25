@@ -102,7 +102,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	}
 
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWalletByAddr(payload.Address)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(ctx, payload.Address)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -111,9 +111,9 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 		return resp, libcommon.StringError(err)
 	}
 	// TODO: remove user.Email and replace with association with contact via user and platform
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
+	user.Email = getValidatedEmailOrEmpty(ctx, a.repos.Contact, user.Id)
 
-	device, err := a.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	device, err := a.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, libcommon.StringError(err)
 	}
@@ -240,7 +240,7 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 
 	// verify wallet address
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(ctx, walletAddress)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -274,7 +274,7 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	}
 
 	// get email
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
+	user.Email = getValidatedEmailOrEmpty(ctx, a.repos.Contact, user.Id)
 	resp.User = user
 
 	return resp, nil
@@ -309,8 +309,8 @@ func uuidWithoutHyphens() string {
 	return strings.Replace(s, "-", "", -1)
 }
 
-func getValidatedEmailOrEmpty(contactRepo repository.Contact, userId string) string {
-	contact, err := contactRepo.GetByUserIdAndStatus(userId, "validated")
+func getValidatedEmailOrEmpty(ctx context.Context, contactRepo repository.Contact, userId string) string {
+	contact, err := contactRepo.GetByUserIdAndStatus(ctx, userId, "validated")
 	if err != nil {
 		return ""
 	}

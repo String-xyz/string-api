@@ -78,7 +78,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// Make sure wallet does not already exist
-	exists, err := u.repos.Instrument.WalletAlreadyExists(addr)
+	exists, err := u.repos.Instrument.WalletAlreadyExists(ctx, addr)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -104,7 +104,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// create device only if there is a visitor
-	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return resp, libcommon.StringError(err)
 	}
@@ -148,7 +148,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 
 	// Create a new wallet instrument and associate it with the new user
 	instrument := model.Instrument{Type: "crypto wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
-	instrument, err = u.repos.Instrument.Create(instrument)
+	instrument, err = u.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
 		return user, libcommon.StringError(err)
