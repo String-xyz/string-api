@@ -32,7 +32,7 @@ func (card card) GetAll(c echo.Context) error {
 	}
 
 	platformId := c.QueryParam("platformId")
-	if platformId == "" {
+	if validator.IsUUID(platformId) {
 		return httperror.BadRequestError(c, "missing platformId")
 	}
 
