@@ -3,11 +3,12 @@ package handler
 import (
 	b64 "encoding/base64"
 	"net/http"
-	"os"
 
+	"github.com/String-xyz/go-lib/common"
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -105,7 +106,11 @@ func (l login) VerifySignature(c echo.Context) error {
 	// Upsert IP address in user's device
 	var claims = &service.JWTClaims{}
 	_, _ = jwt.ParseWithClaims(resp.JWT.Token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+		key, err := env.Get("JWT_SECRET_KEY")
+		if err != nil {
+			return nil, common.StringError(err)
+		}
+		return []byte(key), nil
 	})
 	ip := c.RealIP()
 	l.Device.UpsertDeviceIP(ctx, claims.DeviceId, ip)

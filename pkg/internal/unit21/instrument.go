@@ -3,9 +3,9 @@ package unit21
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -56,8 +56,11 @@ func (i instrument) Create(ctx context.Context, instrument model.Instrument) (un
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", libcommon.StringError(err)
 	}
-
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/instruments/create"
+	unit21env, err := env.Get("UNIT21_ENV")
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+	url := "https://" + unit21env + ".unit21.com/v1/instruments/create"
 	body, err := u21Post(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Instrument create failed")
@@ -108,9 +111,16 @@ func (i instrument) Update(ctx context.Context, instrument model.Instrument) (un
 		log.Err(err).Msg("Failed to gather Unit21 instrument location")
 		return "", libcommon.StringError(err)
 	}
+	orgName, err := env.Get("UNIT21_ORG_NAME")
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+	unit21env, err := env.Get("UNIT21_ENV")
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
 
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.Id + "/update"
+	url := "https://" + unit21env + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.Id + "/update"
 	body, err := u21Put(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 
 	if err != nil {

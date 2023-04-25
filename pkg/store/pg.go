@@ -2,9 +2,9 @@ package store
 
 import (
 	"fmt"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
@@ -15,12 +15,18 @@ var pgDB *sqlx.DB
 var DBDriver = "postgres"
 
 func strConnection() string {
+	dbUser, _ := env.Get("DB_USERNAME")
+	dbPassword, _ := env.Get("DB_PASSWORD")
+	dbName, _ := env.Get("DB_NAME")
+	dbHost, _ := env.Get("DB_HOST")
+	dbPort, _ := env.Get("DB_PORT")
+
 	var (
-		DBUser     = os.Getenv("DB_USERNAME")
-		DBPassword = os.Getenv("DB_PASSWORD")
-		DBName     = os.Getenv("DB_NAME")
-		DBHost     = os.Getenv("DB_HOST")
-		DBPort     = os.Getenv("DB_PORT")
+		DBUser     = dbUser
+		DBPassword = dbPassword
+		DBName     = dbName
+		DBHost     = dbHost
+		DBPort     = dbPort
 	)
 
 	var SSLMode string

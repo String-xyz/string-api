@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -81,7 +81,10 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	}
 	payload.Address = walletAddress
 	payload.Timestamp = time.Now().Unix()
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key, err := env.Get("STRING_ENCRYPTION_KEY")
+	if err != nil {
+		return signable, libcommon.StringError(err)
+	}
 	encrypted, err := libcommon.Encrypt(payload, key)
 	if err != nil {
 		return signable, libcommon.StringError(err)
@@ -91,7 +94,10 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 
 func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key, err := env.Get("STRING_ENCRYPTION_KEY")
+	if err != nil {
+		return resp, libcommon.StringError(err)
+	}
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, libcommon.StringError(err)
@@ -160,7 +166,11 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	key, err := env.Get("JWT_SECRET_KEY")
+	if err != nil {
+		return *t, libcommon.StringError(err)
+	}
+	signed, err := token.SignedString([]byte(key))
 	if err != nil {
 		return *t, err
 	}
@@ -181,8 +191,12 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 
 func (a auth) ValidateJWT(token string) (bool, error) {
 	var claims = &JWTClaims{}
+	key, err := env.Get("JWT_SECRET_KEY")
+	if err != nil {
+		return false, libcommon.StringError(err)
+	}
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+		return []byte(key), nil
 	})
 	return t.Valid, err
 }
@@ -281,7 +295,10 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key, err := env.Get("STRING_ENCRYPTION_KEY")
+	if err != nil {
+		return libcommon.StringError(err)
+	}
 	preSignedPayload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return libcommon.StringError(err)

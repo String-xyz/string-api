@@ -3,10 +3,11 @@ package common
 import (
 	"crypto/ecdsa"
 	"errors"
-	"os"
 	"strconv"
 
+	"github.com/String-xyz/go-lib/common"
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -14,7 +15,11 @@ import (
 )
 
 func EVMSign(buffer []byte, eip131 bool) (string, error) {
-	privateKey, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	cipher, err := env.Get("EVM_PRIVATE_KEY")
+	if err != nil {
+		return "", common.StringError(err)
+	}
+	privateKey, err := DecryptBlobFromKMS(cipher)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -42,7 +47,11 @@ func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (strin
 
 func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, error) {
 	// Get private key
-	skStr, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	cipher, err := env.Get("EVM_PRIVATE_KEY")
+	if err != nil {
+		return false, common.StringError(err)
+	}
+	skStr, err := DecryptBlobFromKMS(cipher)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
+	"github.com/String-xyz/string-api/env"
 	"github.com/pkg/errors"
 )
 
@@ -87,7 +87,11 @@ func (g geofencing) getLocation(ip string) (GeoLocation, error) {
 }
 
 func getLocationFromAPI(ip string) (GeoLocation, error) {
-	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("IPSTACK_API_KEY")
+	key, err := env.Get("IPSTACK_API_KEY")
+	if err != nil {
+		return GeoLocation{}, libcommon.StringError(err)
+	}
+	url := "http://api.ipstack.com/" + ip + "?access_key=" + key
 
 	res, err := http.Get(url)
 	if err != nil {

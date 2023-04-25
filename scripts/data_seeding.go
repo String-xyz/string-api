@@ -7,21 +7,24 @@ import (
 	"os"
 
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 )
 
 func DataSeeding() {
 	// Initialize repos
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	port := os.Getenv("PORT")
+	err := env.LoadEnv()
+	if err != nil {
+		panic(err)
+	}
+	port, _ := env.Get("PORT")
 	if port == "" {
 		panic("no port!")
 	}
 
-	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
+	stringPublicAddress, _ := env.Get("STRING_HOTWALLET_ADDRESS")
 
 	lg := zerolog.New(os.Stdout)
 
@@ -136,9 +139,9 @@ func DataSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := os.Getenv("STRING_INTERNAL_ID")
-	if internalId == "" {
-		panic("STRING_INTERNAL_ID is not set in ENV!")
+	internalId, err := env.Get("STRING_INTERNAL_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	type UpdateId struct {
@@ -157,9 +160,9 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	bankId := os.Getenv("STRING_BANK_ID")
-	if bankId == "" {
-		panic("STRING_BANK_ID is not set in ENV!")
+	bankId, err := env.Get("STRING_BANK_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	updateId = UpdateId{Id: bankId}
@@ -174,9 +177,9 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	walletId := os.Getenv("STRING_WALLET_ID")
-	if bankId == "" {
-		panic("STRING_WALLET_ID is not set in ENV!")
+	walletId, err := env.Get("STRING_WALLET_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	updateId = UpdateId{Id: walletId}
@@ -188,14 +191,20 @@ func DataSeeding() {
 
 func MockSeeding() {
 	// Initialize repos
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
+	err := env.LoadEnv()
+	if err != nil {
+		panic(err)
+	}
+	port, err := env.Get("PORT")
+	if err != nil {
+		panic(err)
 	}
 	lg := zerolog.New(os.Stdout)
 
-	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
+	stringPublicAddress, err := env.Get("STRING_HOTWALLET_ADDRESS")
+	if err != nil {
+		panic(err)
+	}
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
@@ -309,9 +318,9 @@ func MockSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := os.Getenv("STRING_INTERNAL_ID")
-	if internalId == "" {
-		panic("STRING_INTERNAL_ID is not set in ENV!")
+	internalId, err := env.Get("STRING_INTERNAL_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	type UpdateId struct {
@@ -334,9 +343,9 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	bankId := os.Getenv("STRING_BANK_ID")
-	if bankId == "" {
-		panic("STRING_BANK_ID is not set in ENV!")
+	bankId, err := env.Get("STRING_BANK_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	updateId = UpdateId{Id: bankId}
@@ -351,9 +360,9 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	walletId := os.Getenv("STRING_WALLET_ID")
-	if bankId == "" {
-		panic("STRING_WALLET_ID is not set in ENV!")
+	walletId, err := env.Get("STRING_WALLET_ID")
+	if err != nil {
+		panic(err)
 	}
 
 	updateId = UpdateId{Id: walletId}

@@ -5,10 +5,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/String-xyz/string-api/env"
 	"github.com/pkg/errors"
 )
 
@@ -103,8 +103,8 @@ type fingerprint struct {
 }
 
 func NewFingerprint(client HTTPClient) FingerprintClient {
-	apiKey := os.Getenv("FINGERPRINT_API_KEY")
-	baseURL := os.Getenv("FINGERPRINT_API_URL")
+	apiKey, _ := env.Get("FINGERPRINT_API_KEY")
+	baseURL, _ := env.Get("FINGERPRINT_API_URL")
 	return &fingerprint{client: client, apiKey: apiKey, baseURL: baseURL}
 }
 

@@ -3,13 +3,13 @@ package service
 import (
 	"math"
 	"math/big"
-	"os"
 	"strconv"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -161,7 +161,11 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
 		var empty interface{}
-		err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		apiUrl, err := env.Get("COINGECKO_API_URL")
+		if err != nil {
+			return 0.0, libcommon.StringError(err)
+		}
+		err = common.GetJson(apiUrl+"ping", &empty)
 		if err == nil {
 			cacheObject.Value, err = c.coingeckoUSD(coins[0])
 			if err != nil {
@@ -205,9 +209,13 @@ func (c cost) lookupGas(network string) (float64, error) {
 }
 
 func (c cost) coingeckoUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
+	apiUrl, err := env.Get("COINGECKO_API_URL")
+	if err != nil {
+		return 0.0, libcommon.StringError(err)
+	}
+	requestURL := apiUrl + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
-	err := common.GetJsonGeneric(requestURL, &res)
+	err = common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
@@ -226,9 +234,13 @@ func (c cost) coingeckoUSD(coin string) (float64, error) {
 }
 
 func (c cost) coincapUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINCAP_API_URL") + "assets?search=" + coin
+	apiUrl, err := env.Get("COINCAP_API_URL")
+	if err != nil {
+		return 0.0, libcommon.StringError(err)
+	}
+	requestURL := apiUrl + "assets?search=" + coin
 	body := make(map[string]interface{})
-	err := common.GetJsonGeneric(requestURL, &body)
+	err = common.GetJsonGeneric(requestURL, &body)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
@@ -245,13 +257,21 @@ func (c cost) coincapUSD(coin string) (float64, error) {
 }
 
 func (c cost) owlracle(network string) (float64, error) {
-	requestURL := os.Getenv("OWLRACLE_API_URL") +
+	apiUrl, err := env.Get("OWLRACLE_API_URL")
+	if err != nil {
+		return 0.0, libcommon.StringError(err)
+	}
+	apiKey, err := env.Get("OWLRACLE_API_KEY")
+	if err != nil {
+		return 0.0, libcommon.StringError(err)
+	}
+	requestURL := apiUrl +
 		network +
 		"/gas?apikey=" +
-		os.Getenv("OWLRACLE_API_KEY") +
+		apiKey +
 		"&accept=100"
 	var res OwlracleJSON
-	err := common.GetJsonGeneric(requestURL, &res)
+	err = common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}

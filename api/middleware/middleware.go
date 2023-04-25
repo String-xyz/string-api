@@ -13,12 +13,16 @@ import (
 )
 
 func JWTAuth() echo.MiddlewareFunc {
+	key, err := env.Get("JWT_SECRET_KEY")
+	if err != nil {
+		return nil, common.StringError(err)
+	}
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
 			var claims = &service.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+				return []byte(key), nil
 			})
 
 			c.Set("userId", claims.UserId)
@@ -27,7 +31,7 @@ func JWTAuth() echo.MiddlewareFunc {
 
 			return t, err
 		},
-		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		SigningKey: []byte(key)),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 

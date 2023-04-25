@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/String-xyz/go-lib/common"
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	"github.com/rs/zerolog/log"
 )
 
 func u21Put(url string, jsonBody any) (body []byte, err error) {
-	apiKey := os.Getenv("UNIT21_API_KEY")
+	apiKey, err := env.Get("UNIT21_API_KEY")
+	if err != nil {
+		return nil, common.StringError(err)
+	}
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
@@ -60,7 +64,10 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 }
 
 func u21Post(url string, jsonBody any) (body []byte, err error) {
-	apiKey := os.Getenv("UNIT21_API_KEY")
+	apiKey, err := env.Get("UNIT21_API_KEY")
+	if err != nil {
+		return nil, libcommon.StringError(err)
+	}
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {

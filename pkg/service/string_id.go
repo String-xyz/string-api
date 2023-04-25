@@ -1,13 +1,14 @@
 package service
 
-import (
-	"os"
-)
+import "github.com/String-xyz/string-api/env"
 
 func GetStringIdsFromEnv() InternalIds {
+	user, _ := env.Get("STRING_INTERNAL_ID")
+	bank, _ := env.Get("STRING_BANK_ID")
+	wallet, _ := env.Get("STRING_WALLET_ID")
 	return InternalIds{
-		StringUserId:   os.Getenv("STRING_INTERNAL_ID"),
-		StringBankId:   os.Getenv("STRING_BANK_ID"),
-		StringWalletId: os.Getenv("STRING_WALLET_ID"),
+		StringUserId:   user,
+		StringBankId:   bank,
+		StringWalletId: wallet,
 	}
 }
