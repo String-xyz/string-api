@@ -16,16 +16,13 @@ import (
 )
 
 func getConfig() (*checkout.Config, error) {
-	var sk = env.Var.CHECKOUT_SECRET_KEY
-	var pk = env.Var.CHECKOUT_PUBLIC_KEY
-	var env = env.Var.CHECKOUT_ENV
 	checkoutEnv := checkout.Sandbox
 
-	if env == "prod" {
+	if env.Var.CHECKOUT_ENV == "prod" {
 		checkoutEnv = checkout.Production
 	}
 
-	var config, err = checkout.SdkConfig(&sk, &pk, checkoutEnv)
+	var config, err = checkout.SdkConfig(&env.Var.CHECKOUT_SECRET_KEY, &env.Var.CHECKOUT_PUBLIC_KEY, checkoutEnv)
 	if err != nil {
 		return nil, libcommon.StringError(err)
 	}
