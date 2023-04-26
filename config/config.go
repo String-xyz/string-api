@@ -54,7 +54,6 @@ type vars struct {
 	STRING_BANK_ID           string
 	SERVICE_NAME             string
 	DEBUG_MODE               string
-	DB_RESET                 string
 	AUTH_EMAIL_ADDRESS       string
 	RECEIPTS_EMAIL_ADDRESS   string
 }
