@@ -41,7 +41,7 @@ func APIKeyPublicAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeyPublic(auth)
+			platformId, err := service.ValidateAPIKeyPublic(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeyPublicAuth middleware")
 				return false, err
@@ -59,7 +59,7 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeySecret(auth)
+			platformId, err := service.ValidateAPIKeySecret(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeySecretAuth middleware")
 				return false, err

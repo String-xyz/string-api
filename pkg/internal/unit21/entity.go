@@ -33,7 +33,6 @@ func NewEntity(r EntityRepos) Entity {
 
 // https://docs.unit21.ai/reference/create_entity
 func (e entity) Create(ctx context.Context, user model.User) (unit21Id string, err error) {
-
 	// ultimately may want a join here.
 
 	communications, err := e.getCommunications(ctx, user.Id)

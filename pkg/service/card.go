@@ -21,6 +21,9 @@ func NewCard(repos repository.Repositories) Card {
 }
 
 func (c card) FetchSavedCards(ctx context.Context, userId string, platformId string) (instruments []checkout.CustomerInstrument, err error) {
+	_, finish := Span(ctx, "service.card.FetchSavedCards", SpanTag{"platformId": platformId})
+	defer finish()
+
 	contact, err := c.repos.Contact.GetEmailByUserIdAndPlatformId(ctx, userId, platformId)
 	if err != nil {
 		return nil, libcommon.StringError(err)

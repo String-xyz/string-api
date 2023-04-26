@@ -46,7 +46,7 @@ func (l login) NoncePayload(c echo.Context) error {
 	SanitizeChecksums(&walletAddress)
 
 	// get nonce payload
-	payload, err := l.Service.PayloadToSign(walletAddress)
+	payload, err := l.Service.PayloadToSign(c.Request().Context(), walletAddress)
 	if err != nil {
 		return DefaultErrorHandler(c, err, "login: NoncePayload")
 	}

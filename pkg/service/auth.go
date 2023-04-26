@@ -48,15 +48,15 @@ type JWTClaims struct {
 type Auth interface {
 	// PayloadToSign returns a payload to be sign by a wallet
 	// to authenticate an user, the payload expires in 15 minutes
-	PayloadToSign(walletAddress string) (SignablePayload, error)
+	PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error)
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signature is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
-	ValidateAPIKeyPublic(key string) (string, error)
-	ValidateAPIKeySecret(key string) (string, error)
+	ValidateAPIKeyPublic(ctx context.Context, key string) (string, error)
+	ValidateAPIKeySecret(ctx context.Context, key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -72,7 +72,10 @@ func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
 	return &auth{r, v, d}
 }
 
-func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
+func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error) {
+	_, finish := Span(ctx, "service.auth.PayloadToSign")
+	defer finish()
+
 	payload := model.WalletSignaturePayload{}
 	signable := SignablePayload{}
 
@@ -90,6 +93,9 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 }
 
 func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
+	_, finish := Span(ctx, "service.auth.VerifySignedPayload", SpanTag{"platformId": platformId})
+	defer finish()
+
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
@@ -187,8 +193,10 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeyPublic(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.apikey.ValidateAPIKeyPublic")
+	defer finish()
+
 	authKey, err := a.repos.Apikey.GetByData(ctx, key, "public")
 	if err != nil {
 		return "", libcommon.StringError(err)
@@ -205,8 +213,9 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 	return *authKey.PlatformId, nil
 }
 
-func (a auth) ValidateAPIKeySecret(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeySecret(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.akikey.ValidateAPIKeySecret")
+	defer finish()
 
 	data := libcommon.ToSha256(key)
 	authKey, err := a.repos.Apikey.GetByData(ctx, data, "secret")
@@ -230,8 +239,10 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 }
 
 func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string, platformId string) (UserCreateResponse, error) {
-	resp := UserCreateResponse{}
+	_, finish := Span(ctx, "service.auth.RefreshToken", SpanTag{"platformId": platformId})
+	defer finish()
 
+	resp := UserCreateResponse{}
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(libcommon.ToSha256(refreshToken))
 	if err != nil {
