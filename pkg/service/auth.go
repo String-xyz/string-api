@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -48,15 +48,15 @@ type JWTClaims struct {
 type Auth interface {
 	// PayloadToSign returns a payload to be sign by a wallet
 	// to authenticate an user, the payload expires in 15 minutes
-	PayloadToSign(walletAddress string) (SignablePayload, error)
+	PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error)
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signature is valid it returns a JWT to authenticate the user
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
-	ValidateAPIKeyPublic(key string) (string, error)
-	ValidateAPIKeySecret(key string) (string, error)
+	ValidateAPIKeyPublic(ctx context.Context, key string) (string, error)
+	ValidateAPIKeySecret(ctx context.Context, key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -72,7 +72,10 @@ func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
 	return &auth{r, v, d}
 }
 
-func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
+func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error) {
+	_, finish := Span(ctx, "service.auth.PayloadToSign")
+	defer finish()
+
 	payload := model.WalletSignaturePayload{}
 	signable := SignablePayload{}
 
@@ -81,7 +84,7 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 	}
 	payload.Address = walletAddress
 	payload.Timestamp = time.Now().Unix()
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
 	encrypted, err := libcommon.Encrypt(payload, key)
 	if err != nil {
 		return signable, libcommon.StringError(err)
@@ -90,8 +93,11 @@ func (a auth) PayloadToSign(walletAddress string) (SignablePayload, error) {
 }
 
 func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
+	_, finish := Span(ctx, "service.auth.VerifySignedPayload", SpanTag{"platformId": platformId})
+	defer finish()
+
 	resp := UserCreateResponse{}
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, libcommon.StringError(err)
@@ -102,7 +108,7 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	}
 
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWalletByAddr(payload.Address)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(ctx, payload.Address)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -111,9 +117,9 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 		return resp, libcommon.StringError(err)
 	}
 	// TODO: remove user.Email and replace with association with contact via user and platform
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
+	user.Email = getValidatedEmailOrEmpty(ctx, a.repos.Contact, user.Id)
 
-	device, err := a.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	device, err := a.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return resp, libcommon.StringError(err)
 	}
@@ -160,7 +166,7 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 	claims.IssuedAt = t.IssuedAt.Unix()
 	// replace this signing method with RSA or something similar
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	signed, err := token.SignedString([]byte(config.Var.JWT_SECRET_KEY))
 	if err != nil {
 		return *t, err
 	}
@@ -182,13 +188,15 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 func (a auth) ValidateJWT(token string) (bool, error) {
 	var claims = &JWTClaims{}
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+		return []byte(config.Var.JWT_SECRET_KEY), nil
 	})
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeyPublic(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.apikey.ValidateAPIKeyPublic")
+	defer finish()
+
 	authKey, err := a.repos.Apikey.GetByData(ctx, key, "public")
 	if err != nil {
 		return "", libcommon.StringError(err)
@@ -202,11 +210,12 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
-	return authKey.PlatformId, nil
+	return *authKey.PlatformId, nil
 }
 
-func (a auth) ValidateAPIKeySecret(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeySecret(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.akikey.ValidateAPIKeySecret")
+	defer finish()
 
 	data := libcommon.ToSha256(key)
 	authKey, err := a.repos.Apikey.GetByData(ctx, data, "secret")
@@ -222,7 +231,7 @@ func (a auth) ValidateAPIKeySecret(key string) (string, error) {
 		return "", libcommon.StringError(errors.New("invalid secret key"))
 	}
 
-	return authKey.PlatformId, nil
+	return *authKey.PlatformId, nil
 }
 
 func (a auth) InvalidateRefreshToken(refreshToken string) error {
@@ -230,8 +239,10 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 }
 
 func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string, platformId string) (UserCreateResponse, error) {
-	resp := UserCreateResponse{}
+	_, finish := Span(ctx, "service.auth.RefreshToken", SpanTag{"platformId": platformId})
+	defer finish()
 
+	resp := UserCreateResponse{}
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(libcommon.ToSha256(refreshToken))
 	if err != nil {
@@ -240,7 +251,7 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 
 	// verify wallet address
 	// Verify user is registered to this wallet address
-	instrument, err := a.repos.Instrument.GetWalletByAddr(walletAddress)
+	instrument, err := a.repos.Instrument.GetWalletByAddr(ctx, walletAddress)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -274,14 +285,14 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	}
 
 	// get email
-	user.Email = getValidatedEmailOrEmpty(a.repos.Contact, user.Id)
+	user.Email = getValidatedEmailOrEmpty(ctx, a.repos.Contact, user.Id)
 	resp.User = user
 
 	return resp, nil
 }
 
 func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
 	preSignedPayload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -309,8 +320,8 @@ func uuidWithoutHyphens() string {
 	return strings.Replace(s, "-", "", -1)
 }
 
-func getValidatedEmailOrEmpty(contactRepo repository.Contact, userId string) string {
-	contact, err := contactRepo.GetByUserIdAndStatus(userId, "validated")
+func getValidatedEmailOrEmpty(ctx context.Context, contactRepo repository.Contact, userId string) string {
+	contact, err := contactRepo.GetByUserIdAndStatus(ctx, userId, "validated")
 	if err != nil {
 		return ""
 	}

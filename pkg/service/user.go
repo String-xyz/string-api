@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"os"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -49,6 +49,9 @@ func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, devic
 }
 
 func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error) {
+	_, finish := Span(ctx, "service.user.GetStatus")
+	defer finish()
+
 	res := model.UserOnboardingStatus{Status: "not found"}
 
 	user, err := u.repos.User.GetById(ctx, userId)
@@ -64,8 +67,11 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 }
 
 func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
+	_, finish := Span(ctx, "service.user.Create", SpanTag{"platformId": platformId})
+	defer finish()
+
 	resp := UserCreateResponse{}
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, libcommon.StringError(err)
@@ -78,7 +84,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// Make sure wallet does not already exist
-	exists, err := u.repos.Instrument.WalletAlreadyExists(addr)
+	exists, err := u.repos.Instrument.WalletAlreadyExists(ctx, addr)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -104,7 +110,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	}
 
 	// create device only if there is a visitor
-	device, err := u.device.CreateDeviceIfNeeded(user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
 	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return resp, libcommon.StringError(err)
 	}
@@ -132,6 +138,9 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 }
 
 func (u user) createUserData(ctx context.Context, addr string) (model.User, error) {
+	_, finish := Span(ctx, "service.user.createUserData")
+	defer finish()
+
 	tx := u.repos.User.MustBegin()
 	u.repos.Instrument.SetTx(tx)
 	u.repos.Device.SetTx(tx)
@@ -148,7 +157,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 
 	// Create a new wallet instrument and associate it with the new user
 	instrument := model.Instrument{Type: "crypto wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
-	instrument, err = u.repos.Instrument.Create(instrument)
+	instrument, err = u.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
 		return user, libcommon.StringError(err)
@@ -165,6 +174,9 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 }
 
 func (u user) Update(ctx context.Context, userId string, request UserUpdates) (model.User, error) {
+	_, finish := Span(ctx, "service.user.Update")
+	defer finish()
+
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}
 	user, err := u.repos.User.Update(ctx, userId, updates)
 	if err != nil {

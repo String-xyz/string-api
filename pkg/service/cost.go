@@ -3,13 +3,13 @@ package service
 import (
 	"math"
 	"math/big"
-	"os"
 	"strconv"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -161,7 +161,7 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
 		var empty interface{}
-		err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		err = common.GetJson(config.Var.COINGECKO_API_URL+"ping", &empty)
 		if err == nil {
 			cacheObject.Value, err = c.coingeckoUSD(coins[0])
 			if err != nil {
@@ -205,7 +205,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 }
 
 func (c cost) coingeckoUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
+	requestURL := config.Var.COINGECKO_API_URL + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
@@ -226,7 +226,7 @@ func (c cost) coingeckoUSD(coin string) (float64, error) {
 }
 
 func (c cost) coincapUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINCAP_API_URL") + "assets?search=" + coin
+	requestURL := config.Var.COINCAP_API_URL + "assets?search=" + coin
 	body := make(map[string]interface{})
 	err := common.GetJsonGeneric(requestURL, &body)
 	if err != nil {
@@ -245,10 +245,10 @@ func (c cost) coincapUSD(coin string) (float64, error) {
 }
 
 func (c cost) owlracle(network string) (float64, error) {
-	requestURL := os.Getenv("OWLRACLE_API_URL") +
+	requestURL := config.Var.OWLRACLE_API_URL +
 		network +
 		"/gas?apikey=" +
-		os.Getenv("OWLRACLE_API_KEY") +
+		config.Var.OWLRACLE_API_KEY +
 		"&accept=100"
 	var res OwlracleJSON
 	err := common.GetJsonGeneric(requestURL, &res)

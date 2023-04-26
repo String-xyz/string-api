@@ -141,10 +141,10 @@ func (d Device) InvalidateUnknownDevice(ctx context.Context, device model.Device
 	return d.Error
 }
 
-func (d Device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model.Device, error) {
+func (d Device) CreateDeviceIfNeeded(ctx context.Context, userId, visitorId, requestId string) (model.Device, error) {
 	return d.Device, d.Error
 }
 
-func (d Device) CreateUnknownDevice(userId string) (model.Device, error) {
+func (d Device) CreateUnknownDevice(ctx context.Context, userId string) (model.Device, error) {
 	return d.Device, d.Error
 }

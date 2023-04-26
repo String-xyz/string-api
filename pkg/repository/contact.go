@@ -14,16 +14,16 @@ import (
 
 type Contact interface {
 	database.Transactable
-	Create(model.Contact) (model.Contact, error)
+	Create(ctx context.Context, m model.Contact) (model.Contact, error)
 	GetById(ctx context.Context, id string) (model.Contact, error)
 	GetByUserId(ctx context.Context, userId string) (model.Contact, error)
 	ListByUserId(ctx context.Context, userId string, imit int, offset int) ([]model.Contact, error)
 	List(ctx context.Context, limit int, offset int) ([]model.Contact, error)
 	Update(ctx context.Context, id string, updates any) error
-	GetByData(data string) (model.Contact, error)
+	GetByData(ctx context.Context, data string) (model.Contact, error)
 	GetEmailByUserIdAndPlatformId(ctx context.Context, userId string, platformId string) (model.Contact, error)
-	GetByUserIdAndType(userId string, _type string) (model.Contact, error)
-	GetByUserIdAndStatus(userId string, status string) (model.Contact, error)
+	GetByUserIdAndType(ctx context.Context, userId string, _type string) (model.Contact, error)
+	GetByUserIdAndStatus(ctx context.Context, userId string, status string) (model.Contact, error)
 }
 
 type contact[T any] struct {
@@ -34,28 +34,29 @@ func NewContact(db database.Queryable) Contact {
 	return &contact[model.Contact]{repository.Base[model.Contact]{Store: db, Table: "contact"}}
 }
 
-func (u contact[T]) Create(insert model.Contact) (model.Contact, error) {
+func (u contact[T]) Create(ctx context.Context, insert model.Contact) (model.Contact, error) {
 	m := model.Contact{}
-	rows, err := u.Store.NamedQuery(`
+
+	query, args, err := u.Named(`
 		INSERT INTO contact (user_id, data, type, status) 
 		VALUES(:user_id, :data, :type, :status) RETURNING *`, insert)
+
 	if err != nil {
 		return m, libcommon.StringError(err)
 	}
-	for rows.Next() {
-		err = rows.StructScan(&m)
-		if err != nil {
-			return m, libcommon.StringError(err)
-		}
+
+	// Use QueryRowxContext to execute the query with the provided context
+	err = u.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	if err != nil {
+		return m, libcommon.StringError(err)
 	}
 
-	defer rows.Close()
 	return m, nil
 }
 
-func (u contact[T]) GetByData(data string) (model.Contact, error) {
+func (u contact[T]) GetByData(ctx context.Context, data string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", u.Table), data)
+	err := u.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE data = $1", u.Table), data)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
@@ -65,7 +66,7 @@ func (u contact[T]) GetByData(data string) (model.Contact, error) {
 // TODO: replace references to GetByUserIdAndStatus with the following:
 func (u contact[T]) GetEmailByUserIdAndPlatformId(ctx context.Context, userId string, platformId string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.Store.Get(&m, fmt.Sprintf(`
+	err := u.Store.GetContext(ctx, &m, fmt.Sprintf(`
 	SELECT contact.*
 		FROM %s
 	LEFT JOIN contact_to_platform
@@ -82,20 +83,22 @@ func (u contact[T]) GetEmailByUserIdAndPlatformId(ctx context.Context, userId st
 	return m, libcommon.StringError(err)
 }
 
-func (u contact[T]) GetByUserIdAndType(userId string, _type string) (model.Contact, error) {
+func (u contact[T]) GetByUserIdAndType(ctx context.Context, userId string, _type string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.Table), userId, _type)
+	err := u.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND type = $2 LIMIT 1", u.Table), userId, _type)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
+
 	return m, libcommon.StringError(err)
 }
 
-func (u contact[T]) GetByUserIdAndStatus(userId, status string) (model.Contact, error) {
+func (u contact[T]) GetByUserIdAndStatus(ctx context.Context, userId, status string) (model.Contact, error) {
 	m := model.Contact{}
-	err := u.Store.Get(&m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.Table), userId, status)
+	err := u.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 AND status = $2 LIMIT 1", u.Table), userId, status)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
+
 	return m, libcommon.StringError(err)
 }
