@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
+	env "github.com/string-xyz/string-api/config"
 )
 
 // TODO: We could use the go=lib here
@@ -81,7 +82,7 @@ func PutSSM(name string, value string, overwrite bool) error {
 		return StringError(err)
 	}
 	ssmClient := ssm.NewFromConfig(cfg)
-	keyId := config.Var.AWS_KMS_KEY_ID
+	keyId := env.Var.AWS_KMS_KEY_ID
 	input := &ssm.PutParameterInput{
 		Name:      &name,
 		Value:     &value,
@@ -177,7 +178,7 @@ func GetAddress() (string, error) {
 }
 
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := config.Var.AWS_REGION
+	region := env.Var.AWS_REGION
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -185,7 +186,7 @@ func EncryptBytesToKMS(data []byte) (string, error) {
 		return "", StringError(err)
 	}
 	kmsService := kms.New(session)
-	keyId := config.Var.AWS_KMS_KEY_ID
+	keyId := env.Var.AWS_KMS_KEY_ID
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
 		Plaintext: data,

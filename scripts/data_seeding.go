@@ -8,7 +8,6 @@ import (
 
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/config"
-	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/rs/zerolog"
@@ -16,7 +15,7 @@ import (
 
 func DataSeeding() {
 	// Initialize repos
-	env.LoadEnv() // removed the err since in cloud this wont be loaded
+	config.LoadEnv() // removed the err since in cloud this wont be loaded
 	port := config.Var.PORT
 
 	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
@@ -24,13 +23,13 @@ func DataSeeding() {
 	lg := zerolog.New(os.Stdout)
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
-	config := api.APIConfig{
+	cfg := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Port:   port,
 		Logger: &lg,
 	}
 
-	repos := api.NewRepos(config)
+	repos := api.NewRepos(cfg)
 	ctx := context.Background()
 	// api.Start(config)
 
@@ -186,7 +185,7 @@ func DataSeeding() {
 
 func MockSeeding() {
 	// Initialize repos
-	env.LoadEnv() // removed the err since in cloud this wont be loaded
+	config.LoadEnv() // removed the err since in cloud this wont be loaded
 	port := config.Var.PORT
 	if port == "" {
 		panic("no port!")
@@ -196,13 +195,13 @@ func MockSeeding() {
 	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
-	config := api.APIConfig{
+	cfg := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Port:   port,
 		Logger: &lg,
 	}
 
-	repos := api.NewRepos(config)
+	repos := api.NewRepos(cfg)
 	ctx := context.Background()
 
 	// api.Start(config)
