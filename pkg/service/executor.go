@@ -7,7 +7,7 @@ import (
 	"math/big"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -153,7 +153,7 @@ func (e executor) getAccount() (ethcommon.Address, error) {
 
 func (e executor) getSk() (ecdsa.PrivateKey, error) {
 	// Get private key
-	skStr, err := common.DecryptBlobFromKMS(env.Var.EVM_PRIVATE_KEY)
+	skStr, err := common.DecryptBlobFromKMS(config.Var.EVM_PRIVATE_KEY)
 	if err != nil {
 		return ecdsa.PrivateKey{}, libcommon.StringError(err)
 	}

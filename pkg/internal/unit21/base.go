@@ -9,12 +9,12 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/rs/zerolog/log"
 )
 
 func u21Put(url string, jsonBody any) (body []byte, err error) {
-	apiKey := env.Var.UNIT21_API_KEY
+	apiKey := config.Var.UNIT21_API_KEY
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {
@@ -60,7 +60,7 @@ func u21Put(url string, jsonBody any) (body []byte, err error) {
 }
 
 func u21Post(url string, jsonBody any) (body []byte, err error) {
-	apiKey := env.Var.UNIT21_API_KEY
+	apiKey := config.Var.UNIT21_API_KEY
 
 	reqBodyBytes, err := json.Marshal(jsonBody)
 	if err != nil {

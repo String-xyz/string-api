@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -39,7 +39,7 @@ func (a action) Create(
 		InstrumentId:  instrument.Id,
 	}
 
-	url := "https://" + env.Var.UNIT21_ENV + ".unit21.com/v1/events/create"
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/events/create"
 	body, err := u21Post(url, mapToUnit21ActionEvent(instrument, actionData, unit21InstrumentId, eventSubtype))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Action create failed")

@@ -5,6 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/rs/zerolog"
@@ -21,7 +22,7 @@ func main() {
 		defer tracer.Stop()
 	}
 
-	port := env.Var.PORT
+	port := config.Var.PORT
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	db := store.MustNewPG()

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -14,7 +14,7 @@ import (
 )
 
 func EVMSign(buffer []byte, eip131 bool) (string, error) {
-	privateKey, err := DecryptBlobFromKMS(env.Var.EVM_PRIVATE_KEY)
+	privateKey, err := DecryptBlobFromKMS(config.Var.EVM_PRIVATE_KEY)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -42,7 +42,7 @@ func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (strin
 
 func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, error) {
 	// Get private key
-	skStr, err := DecryptBlobFromKMS(env.Var.EVM_PRIVATE_KEY)
+	skStr, err := DecryptBlobFromKMS(config.Var.EVM_PRIVATE_KEY)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}

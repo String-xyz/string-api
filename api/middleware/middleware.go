@@ -5,7 +5,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -18,7 +18,7 @@ func JWTAuth() echo.MiddlewareFunc {
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
 			var claims = &service.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(env.Var.JWT_SECRET_KEY), nil
+				return []byte(config.Var.JWT_SECRET_KEY), nil
 			})
 
 			c.Set("userId", claims.UserId)
@@ -27,7 +27,7 @@ func JWTAuth() echo.MiddlewareFunc {
 
 			return t, err
 		},
-		SigningKey: []byte(env.Var.JWT_SECRET_KEY),
+		SigningKey: []byte(config.Var.JWT_SECRET_KEY),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 

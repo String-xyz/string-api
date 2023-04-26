@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/pkg/errors"
 )
 
@@ -103,8 +103,8 @@ type fingerprint struct {
 }
 
 func NewFingerprint(client HTTPClient) FingerprintClient {
-	apiKey := env.Var.FINGERPRINT_API_KEY
-	baseURL := env.Var.FINGERPRINT_API_URL
+	apiKey := config.Var.FINGERPRINT_API_KEY
+	baseURL := config.Var.FINGERPRINT_API_URL
 	return &fingerprint{client: client, apiKey: apiKey, baseURL: baseURL}
 }
 

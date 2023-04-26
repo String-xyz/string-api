@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	customer "github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
@@ -18,11 +18,11 @@ import (
 func getConfig() (*checkout.Config, error) {
 	checkoutEnv := checkout.Sandbox
 
-	if env.Var.CHECKOUT_ENV == "prod" {
+	if config.Var.CHECKOUT_ENV == "prod" {
 		checkoutEnv = checkout.Production
 	}
 
-	var config, err = checkout.SdkConfig(&env.Var.CHECKOUT_SECRET_KEY, &env.Var.CHECKOUT_PUBLIC_KEY, checkoutEnv)
+	var config, err = checkout.SdkConfig(&config.Var.CHECKOUT_SECRET_KEY, &config.Var.CHECKOUT_PUBLIC_KEY, checkoutEnv)
 	if err != nil {
 		return nil, libcommon.StringError(err)
 	}

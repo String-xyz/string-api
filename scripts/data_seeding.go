@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -16,9 +17,9 @@ import (
 func DataSeeding() {
 	// Initialize repos
 	env.LoadEnv() // removed the err since in cloud this wont be loaded
-	port := env.Var.PORT
+	port := config.Var.PORT
 
-	stringPublicAddress := env.Var.STRING_HOTWALLET_ADDRESS
+	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
 
 	lg := zerolog.New(os.Stdout)
 
@@ -133,7 +134,7 @@ func DataSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := env.Var.STRING_INTERNAL_ID
+	internalId := config.Var.STRING_INTERNAL_ID
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
@@ -154,7 +155,7 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	bankId := env.Var.STRING_BANK_ID
+	bankId := config.Var.STRING_BANK_ID
 	if bankId == "" {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
@@ -171,7 +172,7 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	walletId := env.Var.STRING_WALLET_ID
+	walletId := config.Var.STRING_WALLET_ID
 	if bankId == "" {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}
@@ -186,13 +187,13 @@ func DataSeeding() {
 func MockSeeding() {
 	// Initialize repos
 	env.LoadEnv() // removed the err since in cloud this wont be loaded
-	port := env.Var.PORT
+	port := config.Var.PORT
 	if port == "" {
 		panic("no port!")
 	}
 	lg := zerolog.New(os.Stdout)
 
-	stringPublicAddress := env.Var.STRING_HOTWALLET_ADDRESS
+	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
 	config := api.APIConfig{
@@ -306,7 +307,7 @@ func MockSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := env.Var.STRING_INTERNAL_ID
+	internalId := config.Var.STRING_INTERNAL_ID
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
@@ -331,7 +332,7 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	bankId := env.Var.STRING_BANK_ID
+	bankId := config.Var.STRING_BANK_ID
 	if bankId == "" {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
@@ -348,7 +349,7 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	walletId := env.Var.STRING_WALLET_ID
+	walletId := config.Var.STRING_WALLET_ID
 	if bankId == "" {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}

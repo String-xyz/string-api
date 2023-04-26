@@ -3,14 +3,14 @@ package store
 import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/database"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 )
 
 func NewRedis() database.RedisStore {
 	opts := database.RedisConfigOptions{
-		Host:        env.Var.REDIS_HOST,
-		Port:        env.Var.REDIS_PORT,
-		Password:    env.Var.REDIS_PASSWORD,
+		Host:        config.Var.REDIS_HOST,
+		Port:        config.Var.REDIS_PORT,
+		Password:    config.Var.REDIS_PASSWORD,
 		ClusterMode: !libcommon.IsLocalEnv(),
 	}
 	return database.NewRedisStore(opts)

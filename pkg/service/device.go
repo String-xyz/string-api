@@ -6,7 +6,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -33,7 +33,7 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 }
 
 func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
-	key := env.Var.STRING_ENCRYPTION_KEY
+	key := config.Var.STRING_ENCRYPTION_KEY
 	received, err := libcommon.Decrypt[DeviceVerification](encrypted, key)
 	if err != nil {
 		return libcommon.StringError(err)

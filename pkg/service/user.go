@@ -6,7 +6,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -65,7 +65,7 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 
 func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
 	resp := UserCreateResponse{}
-	key := env.Var.STRING_ENCRYPTION_KEY
+	key := config.Var.STRING_ENCRYPTION_KEY
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
 		return resp, libcommon.StringError(err)

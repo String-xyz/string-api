@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/string-api/env"
+	"github.com/String-xyz/string-api/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
@@ -16,11 +16,11 @@ var DBDriver = "postgres"
 
 func strConnection() string {
 	var (
-		DBUser     = env.Var.DB_USERNAME
-		DBPassword = env.Var.DB_PASSWORD
-		DBName     = env.Var.DB_NAME
-		DBHost     = env.Var.DB_HOST
-		DBPort     = env.Var.DB_PORT
+		DBUser     = config.Var.DB_USERNAME
+		DBPassword = config.Var.DB_PASSWORD
+		DBName     = config.Var.DB_NAME
+		DBHost     = config.Var.DB_HOST
+		DBPort     = config.Var.DB_PORT
 	)
 
 	var SSLMode string
