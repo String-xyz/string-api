@@ -6,7 +6,6 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/config"
-	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
@@ -15,8 +14,8 @@ import (
 )
 
 func main() {
-	// load .env file
-	err := env.LoadEnv()
+	// load env vars
+	err := config.LoadEnv()
 	if err != nil {
 		panic(err)
 	}
