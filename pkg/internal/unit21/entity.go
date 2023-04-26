@@ -3,9 +3,9 @@ package unit21
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -53,7 +53,7 @@ func (e entity) Create(ctx context.Context, user model.User) (unit21Id string, e
 		return "", libcommon.StringError(err)
 	}
 
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/entities/create"
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/entities/create"
 	body, err := u21Post(url, mapUserToEntity(user, communications, digitalData, customData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Entity create failed")
@@ -98,8 +98,8 @@ func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, e
 		return
 	}
 
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + user.Id + "/update"
+	orgName := config.Var.UNIT21_ORG_NAME
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/" + orgName + "/entities/" + user.Id + "/update"
 	body, err := u21Put(url, mapUserToEntity(user, communications, digitalData, customData))
 
 	if err != nil {
@@ -122,8 +122,8 @@ func (e entity) Update(ctx context.Context, user model.User) (unit21Id string, e
 
 // https://docs.unit21.ai/reference/add_instruments
 func (e entity) AddInstruments(entityId string, instrumentIds []string) (err error) {
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/entities/" + entityId + "/add-instruments"
+	orgName := config.Var.UNIT21_ORG_NAME
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/" + orgName + "/entities/" + entityId + "/add-instruments"
 
 	instruments := make(map[string][]string)
 	instruments["instrument_ids"] = instrumentIds

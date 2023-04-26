@@ -7,32 +7,29 @@ import (
 	"os"
 
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 )
 
 func DataSeeding() {
 	// Initialize repos
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
-	}
+	config.LoadEnv() // removed the err since in cloud this wont be loaded
+	port := config.Var.PORT
 
-	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
+	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
 
 	lg := zerolog.New(os.Stdout)
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
-	config := api.APIConfig{
+	cfg := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Port:   port,
 		Logger: &lg,
 	}
 
-	repos := api.NewRepos(config)
+	repos := api.NewRepos(cfg)
 	ctx := context.Background()
 	// api.Start(config)
 
@@ -136,7 +133,7 @@ func DataSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := os.Getenv("STRING_INTERNAL_ID")
+	internalId := config.Var.STRING_INTERNAL_ID
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
@@ -157,7 +154,7 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	bankId := os.Getenv("STRING_BANK_ID")
+	bankId := config.Var.STRING_BANK_ID
 	if bankId == "" {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
@@ -174,7 +171,7 @@ func DataSeeding() {
 		panic(err)
 	}
 
-	walletId := os.Getenv("STRING_WALLET_ID")
+	walletId := config.Var.STRING_WALLET_ID
 	if bankId == "" {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}
@@ -188,23 +185,23 @@ func DataSeeding() {
 
 func MockSeeding() {
 	// Initialize repos
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-	port := os.Getenv("PORT")
+	config.LoadEnv() // removed the err since in cloud this wont be loaded
+	port := config.Var.PORT
 	if port == "" {
 		panic("no port!")
 	}
 	lg := zerolog.New(os.Stdout)
 
-	stringPublicAddress := os.Getenv("STRING_HOTWALLET_ADDRESS")
+	stringPublicAddress := config.Var.STRING_HOTWALLET_ADDRESS
 
 	// Note: This will panic if the env is set to use docker and you run this script from the command line
-	config := api.APIConfig{
+	cfg := api.APIConfig{
 		DB:     store.MustNewPG(),
 		Port:   port,
 		Logger: &lg,
 	}
 
-	repos := api.NewRepos(config)
+	repos := api.NewRepos(cfg)
 	ctx := context.Background()
 
 	// api.Start(config)
@@ -309,7 +306,7 @@ func MockSeeding() {
 	}
 
 	// Set String User ID to what's defined in the ENV
-	internalId := os.Getenv("STRING_INTERNAL_ID")
+	internalId := config.Var.STRING_INTERNAL_ID
 	if internalId == "" {
 		panic("STRING_INTERNAL_ID is not set in ENV!")
 	}
@@ -334,7 +331,7 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	bankId := os.Getenv("STRING_BANK_ID")
+	bankId := config.Var.STRING_BANK_ID
 	if bankId == "" {
 		panic("STRING_BANK_ID is not set in ENV!")
 	}
@@ -351,7 +348,7 @@ func MockSeeding() {
 		panic(err)
 	}
 
-	walletId := os.Getenv("STRING_WALLET_ID")
+	walletId := config.Var.STRING_WALLET_ID
 	if bankId == "" {
 		panic("STRING_WALLET_ID is not set in ENV!")
 	}

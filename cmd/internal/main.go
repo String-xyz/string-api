@@ -5,26 +5,23 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
-	// load .env file
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	// load env vars
+	config.LoadEnv()
 
 	if !libcommon.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
-	}
+	port := config.Var.PORT
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	db := store.MustNewPG()
