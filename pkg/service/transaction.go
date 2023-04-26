@@ -632,6 +632,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
 	_, finish := Span(ctx, "service.transaction.addWalletInstrumentIdIfNew")
 	defer finish()
+
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
 
@@ -658,6 +659,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 func (t transaction) authCard(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
 	_, finish := Span(ctx, "service.transaction.authCard", SpanTag{"platformId": p.platformId})
 	defer finish()
+
 	// auth their card
 	p, err := AuthorizeCharge(p)
 	if err != nil {
@@ -923,6 +925,7 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
 	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
+
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
 		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)

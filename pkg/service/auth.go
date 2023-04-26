@@ -73,7 +73,6 @@ func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
 }
 
 func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error) {
-
 	_, finish := Span(ctx, "service.auth.PayloadToSign")
 	defer finish()
 
@@ -96,6 +95,7 @@ func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (Signable
 func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
 	_, finish := Span(ctx, "service.auth.VerifySignedPayload", SpanTag{"platformId": platformId})
 	defer finish()
+
 	resp := UserCreateResponse{}
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
 	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
