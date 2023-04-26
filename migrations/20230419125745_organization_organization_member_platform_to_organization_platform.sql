@@ -14,7 +14,6 @@ CREATE TABLE organization (
   description TEXT DEFAULT ''
 );
 -- +goose StatementEnd
-
 -- +goose StatementBegin
 CREATE OR REPLACE TRIGGER update_organization_updated_at
   BEFORE UPDATE
