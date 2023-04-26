@@ -33,7 +33,7 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 }
 
 func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
-	_, finish := Span(ctx, "service.device.VerifyDevice", "service", "device")
+	_, finish := Span(ctx, "service.device.VerifyDevice")
 	defer finish()
 
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
@@ -51,7 +51,7 @@ func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 }
 
 func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) (err error) {
-	_, finish := Span(ctx, "service.device.UpsertDeviceIP", "service", "device")
+	_, finish := Span(ctx, "service.device.UpsertDeviceIP")
 	defer finish()
 
 	device, err := d.repos.Device.GetById(ctx, deviceId)
@@ -116,7 +116,7 @@ func (d device) CreateUnknownDevice(ctx context.Context, userId string) (model.D
 }
 
 func (d device) InvalidateUnknownDevice(ctx context.Context, device model.Device) error {
-	_, finish := Span(ctx, "service.device.InvalidateUnknownDevice", "service", "device")
+	_, finish := Span(ctx, "service.device.InvalidateUnknownDevice")
 	defer finish()
 
 	if device.Fingerprint != "unknown" {

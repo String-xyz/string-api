@@ -49,7 +49,7 @@ func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, devic
 }
 
 func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error) {
-	_, finish := Span(ctx, "service.user.GetStatus", "userId", userId)
+	_, finish := Span(ctx, "service.user.GetStatus")
 	defer finish()
 
 	res := model.UserOnboardingStatus{Status: "not found"}
@@ -67,7 +67,7 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 }
 
 func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
-	_, finish := Span(ctx, "service.user.Create", "platformId", platformId)
+	_, finish := Span(ctx, "service.user.Create", SpanTag{"platformId": platformId})
 	defer finish()
 
 	resp := UserCreateResponse{}
@@ -138,7 +138,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 }
 
 func (u user) createUserData(ctx context.Context, addr string) (model.User, error) {
-	_, finish := Span(ctx, "service.user.createUserData", "addr", addr)
+	_, finish := Span(ctx, "service.user.createUserData")
 	defer finish()
 
 	tx := u.repos.User.MustBegin()
@@ -174,7 +174,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 }
 
 func (u user) Update(ctx context.Context, userId string, request UserUpdates) (model.User, error) {
-	_, finish := Span(ctx, "service.user.Update", "userId", userId)
+	_, finish := Span(ctx, "service.user.Update")
 	defer finish()
 
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}

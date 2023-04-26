@@ -52,7 +52,7 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 }
 
 func (v verification) SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error {
-	_, finish := Span(ctx, "service.verification.SendEmailVerification", "platformId", platformId)
+	_, finish := Span(ctx, "service.verification.SendEmailVerification", SpanTag{"platformId": platformId})
 	defer finish()
 
 	if !validator.ValidEmail(email) {
@@ -153,7 +153,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 }
 
 func (v verification) VerifyEmail(ctx context.Context, userId string, email string, platformId string) error {
-	_, finish := Span(ctx, "services.verification.VerifyEmail", "platformId", platformId)
+	_, finish := Span(ctx, "services.verification.VerifyEmail", SpanTag{"platformId": platformId})
 	defer finish()
 
 	now := time.Now()
@@ -187,7 +187,7 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 }
 
 func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
-	_, finish := Span(ctx, "services.verification.VerifyEmailWithEncryptedToken", "service", "email")
+	_, finish := Span(ctx, "services.verification.VerifyEmailWithEncryptedToken")
 	defer finish()
 
 	key := os.Getenv("STRING_ENCRYPTION_KEY")
@@ -210,5 +210,8 @@ func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypt
 }
 
 func (v verification) PreValidateEmail(ctx context.Context, platformId, userId, email string) error {
+	_, finish := Span(ctx, "services.verification.PreValidateEmail", SpanTag{"platformId": platformId})
+	defer finish()
+
 	return v.VerifyEmail(ctx, userId, email, platformId)
 }

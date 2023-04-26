@@ -81,7 +81,7 @@ type transactionProcessingData struct {
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
-	_, finish := Span(ctx, "service.transaction.Quote", "platformId", platformId)
+	_, finish := Span(ctx, "service.transaction.Quote", SpanTag{"platformId": platformId})
 	defer finish()
 
 	// TODO: use prefab service to parse d and fill out known params
@@ -128,7 +128,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 }
 
 func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
-	_, finish := Span(ctx, "service.transaction.Execute", "platformId", platformId)
+	_, finish := Span(ctx, "service.transaction.Execute", SpanTag{"platformId": platformId})
 	defer finish()
 
 	t.getStringInstrumentsAndUserId()
@@ -163,7 +163,7 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	_, finish := Span(ctx, "service.transaction.transactionSetup", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.transactionSetup", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	user, err := t.repos.User.GetById(ctx, *p.userId)
@@ -220,7 +220,7 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 }
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	_, finish := Span(ctx, "service.transaction.safetyCheck", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.safetyCheck", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	// Test the Tx and update model status
@@ -317,7 +317,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 }
 
 func (t transaction) initiateTransaction(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	_, finish := Span(ctx, "service.transaction.initiateTransaction", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.initiateTransaction", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	request := p.executionRequest.Quote.TransactionRequest
@@ -371,7 +371,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 }
 
 func (t transaction) postProcess(ctx context.Context, p transactionProcessingData) {
-	_, finish := Span(ctx, "service.transaction.postProcess", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.postProcess", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	// Reinitialize Executor
@@ -591,7 +591,7 @@ func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) 
 }
 
 func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
-	_, finish := Span(ctx, "service.transaction.addCardInstrumentIdIfNew", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.addCardInstrumentIdIfNew", SpanTag{"platformId": p.platformId})
 	defer finish()
 	// Create a new context since there are sub routines that run in background
 	ctx2 := context.Background()
@@ -630,7 +630,7 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 }
 
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
-	_, finish := Span(ctx, "service.transaction.addWalletInstrumentIdIfNew", "address", address)
+	_, finish := Span(ctx, "service.transaction.addWalletInstrumentIdIfNew")
 	defer finish()
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
@@ -656,7 +656,7 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 }
 
 func (t transaction) authCard(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	_, finish := Span(ctx, "service.transaction.authCard", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.authCard", SpanTag{"platformId": p.platformId})
 	defer finish()
 	// auth their card
 	p, err := AuthorizeCharge(p)
@@ -746,7 +746,7 @@ func confirmTx(executor Executor, txId string) (uint64, error) {
 
 // TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
 func (t transaction) tenderTransaction(ctx context.Context, p transactionProcessingData) (float64, error) {
-	_, finish := Span(ctx, "service.transaction.tenderTransaction", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.tenderTransaction", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	cost := NewCost(t.redis)
@@ -791,7 +791,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 }
 
 func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData) error {
-	_, finish := Span(ctx, "service.transaction.chargeCard", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.chargeCard", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	p, err := CaptureCharge(p)
@@ -823,7 +823,7 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 }
 
 func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessingData) error {
-	_, finish := Span(ctx, "service.transaction.sendEmailReceipt", "platformId", *p.platformId)
+	_, finish := Span(ctx, "service.transaction.sendEmailReceipt", SpanTag{"platformId": p.platformId})
 	defer finish()
 
 	user, err := t.repos.User.GetById(ctx, *p.userId)
@@ -885,7 +885,7 @@ func floatToFixedString(value float64, decimals int) string {
 }
 
 func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId string) (err error) {
-	_, finish := Span(ctx, "service.transaction.unit21CreateTransaction", "transactionId", transactionId)
+	_, finish := Span(ctx, "service.transaction.unit21CreateTransaction", SpanTag{"transactionId": transactionId})
 	defer finish()
 
 	txModel, err := t.repos.Transaction.GetById(ctx, transactionId)
@@ -904,7 +904,7 @@ func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId 
 }
 
 func (t transaction) updateTransactionStatus(ctx context.Context, status string, transactionId string) (err error) {
-	_, finish := Span(ctx, "service.transaction.updateTransactionStatus", "transactionId", transactionId)
+	_, finish := Span(ctx, "service.transaction.updateTransactionStatus", SpanTag{"transactionId": transactionId})
 	defer finish()
 
 	updateDB := &model.TransactionUpdates{Status: &status}
@@ -921,7 +921,7 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 }
 
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
-	_, finish := Span(ctx, "service.transaction.isContractAllowed", "platformId", platformId)
+	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
