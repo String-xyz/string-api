@@ -5,8 +5,8 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 
@@ -15,17 +15,17 @@ import (
 
 func main() {
 	// load .env file
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	err := env.LoadEnv()
+	if err != nil {
+		panic(err)
+	}
 	lg := zerolog.New(os.Stdout)
 	if !libcommon.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
-	}
+	port := env.Var.PORT
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode

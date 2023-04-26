@@ -4,10 +4,10 @@ package service
 
 import (
 	"math"
-	"os"
 	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	customer "github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/checkout/checkout-sdk-go"
 	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
@@ -16,9 +16,9 @@ import (
 )
 
 func getConfig() (*checkout.Config, error) {
-	var sk = os.Getenv("CHECKOUT_SECRET_KEY")
-	var pk = os.Getenv("CHECKOUT_PUBLIC_KEY")
-	var env = os.Getenv("CHECKOUT_ENV")
+	var sk = env.Var.CHECKOUT_SECRET_KEY
+	var pk = env.Var.CHECKOUT_PUBLIC_KEY
+	var env = env.Var.CHECKOUT_ENV
 	checkoutEnv := checkout.Sandbox
 
 	if env == "prod" {

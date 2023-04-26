@@ -3,9 +3,9 @@ package unit21
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/env"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -57,7 +57,7 @@ func (i instrument) Create(ctx context.Context, instrument model.Instrument) (un
 		return "", libcommon.StringError(err)
 	}
 
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/instruments/create"
+	url := "https://" + env.Var.UNIT21_ENV + ".unit21.com/v1/instruments/create"
 	body, err := u21Post(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Instrument create failed")
@@ -109,8 +109,8 @@ func (i instrument) Update(ctx context.Context, instrument model.Instrument) (un
 		return "", libcommon.StringError(err)
 	}
 
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.Id + "/update"
+	orgName := env.Var.UNIT21_ORG_NAME
+	url := "https://" + env.Var.UNIT21_ENV + ".unit21.com/v1/" + orgName + "/instruments/" + instrument.Id + "/update"
 	body, err := u21Put(url, mapToUnit21Instrument(instrument, source, entities, digitalData, locationData))
 
 	if err != nil {

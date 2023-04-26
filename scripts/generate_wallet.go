@@ -5,8 +5,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/base64"
 	"fmt"
-	"os"
 
+	"github.com/String-xyz/string-api/env"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -82,7 +82,7 @@ func PutSSM(name string, value string, overwrite bool) error {
 		return StringError(err)
 	}
 	ssmClient := ssm.NewFromConfig(cfg)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := env.Var.AWS_KMS_KEY_ID
 	input := &ssm.PutParameterInput{
 		Name:      &name,
 		Value:     &value,
@@ -178,7 +178,7 @@ func GetAddress() (string, error) {
 }
 
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := os.Getenv("AWS_REGION")
+	region := env.Var.AWS_REGION
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -186,7 +186,7 @@ func EncryptBytesToKMS(data []byte) (string, error) {
 		return "", StringError(err)
 	}
 	kmsService := kms.New(session)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := env.Var.AWS_KMS_KEY_ID
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
 		Plaintext: data,
