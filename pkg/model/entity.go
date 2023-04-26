@@ -216,7 +216,7 @@ type Apikey struct {
 	Hint           string     `json:"hint,omitempty" db:"hint"`
 	Description    *string    `json:"description,omitempty" db:"description"`
 	CreatedBy      string     `json:"createdBy" db:"created_by"`
-	PlatformId     string     `json:"platformId" db:"platform_id"`
+	PlatformId     *string    `json:"platformId" db:"platform_id"`
 	OrganizationId string     `json:"organizationId" db:"organization_id"`
 }
 
