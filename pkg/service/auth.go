@@ -55,8 +55,8 @@ type Auth interface {
 	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error)
 
 	GenerateJWT(string, string, ...model.Device) (JWT, error)
-	ValidateAPIKeyPublic(key string) (string, error)
-	ValidateAPIKeySecret(key string) (string, error)
+	ValidateAPIKeyPublic(ctx context.Context, key string) (string, error)
+	ValidateAPIKeySecret(ctx context.Context, key string) (string, error)
 	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
 	InvalidateRefreshToken(token string) error
 }
@@ -193,8 +193,10 @@ func (a auth) ValidateJWT(token string) (bool, error) {
 	return t.Valid, err
 }
 
-func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeyPublic(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.apikey.ValidateAPIKeyPublic")
+	defer finish()
+
 	authKey, err := a.repos.Apikey.GetByData(ctx, key, "public")
 	if err != nil {
 		return "", libcommon.StringError(err)
@@ -211,8 +213,9 @@ func (a auth) ValidateAPIKeyPublic(key string) (string, error) {
 	return *authKey.PlatformId, nil
 }
 
-func (a auth) ValidateAPIKeySecret(key string) (string, error) {
-	ctx := context.Background()
+func (a auth) ValidateAPIKeySecret(ctx context.Context, key string) (string, error) {
+	_, finish := Span(ctx, "service.akikey.ValidateAPIKeySecret")
+	defer finish()
 
 	data := libcommon.ToSha256(key)
 	authKey, err := a.repos.Apikey.GetByData(ctx, data, "secret")
