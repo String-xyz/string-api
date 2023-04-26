@@ -48,12 +48,12 @@ func setupTracer() {
 	tracer.Start(
 		tracer.WithSamplingRules(rules),
 		tracer.WithService("string-api"),
-		tracer.WithEnv(os.Getenv("ENV")),
+		tracer.WithEnv(config.Var.ENV),
 	)
 
 	err := profiler.Start(
 		profiler.WithService("string-api"),
-		profiler.WithEnv(os.Getenv("ENV")),
+		profiler.WithEnv(config.Var.ENV),
 		profiler.WithProfileTypes(
 			profiler.CPUProfile,
 			profiler.HeapProfile,
