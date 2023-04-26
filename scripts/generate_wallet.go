@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	env "github.com/String-xyz/string-api/config"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
-	env "github.com/string-xyz/string-api/config"
 )
 
 // TODO: We could use the go=lib here
