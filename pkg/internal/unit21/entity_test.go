@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
@@ -211,7 +211,7 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 }
 
 func initializeTest(t *testing.T) (db *sql.DB, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB, err error) {
-	err = godotenv.Load("../../../.env")
+	err = config.LoadEnv("../../../.env")
 	if err != nil {
 		t.Fatalf("error %s was not expected when loading env", err)
 	}

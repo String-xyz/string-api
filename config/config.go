@@ -60,8 +60,16 @@ type vars struct {
 
 var Var vars
 
-func LoadEnv() error {
-	godotenv.Load(".env")
+func LoadEnv(path ...string) error {
+	var err error
+	if len(path) > 0 {
+		err = godotenv.Load(path[0])
+	} else {
+		err = godotenv.Load(".env")
+	}
+	if err != nil {
+		return err
+	}
 	stype := reflect.ValueOf(&Var).Elem()
 	for i := 0; i < stype.NumField(); i++ {
 		field := stype.Field(i)
