@@ -160,14 +160,10 @@ func (u user) VerifyEmail(c echo.Context) error {
 			return httperror.ConflictError(c)
 		}
 
-		if serror.Is(err, serror.EXPIRED) {
-			return httperror.ForbiddenError(c, "Link expired, please request a new one")
-		}
-
 		return httperror.InternalError(c, "Unable to send email verification")
 	}
 
-	return c.JSON(http.StatusOK, ResultMessage{Status: "Email Successfully Verified"})
+	return c.JSON(http.StatusOK, ResultMessage{Status: "Verification email sent"})
 }
 
 func (u user) PreValidateEmail(c echo.Context) error {

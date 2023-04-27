@@ -1,9 +1,9 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -70,15 +70,19 @@ func LoadEnv(path ...string) error {
 	if err != nil {
 		return err
 	}
+	missing := []string{}
 	stype := reflect.ValueOf(&Var).Elem()
 	for i := 0; i < stype.NumField(); i++ {
 		field := stype.Field(i)
 		key := stype.Type().Field(i).Name
 		value := os.Getenv(key)
 		if value == "" {
-			return errors.New("Missing environment variable: " + key)
+			missing = append(missing, key)
 		}
 		field.SetString(value)
+	}
+	if len(missing) > 0 {
+		panic("Missing environment variable: " + strings.Join(missing, ", "))
 	}
 	return nil
 }

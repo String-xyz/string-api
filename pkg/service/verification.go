@@ -87,42 +87,22 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	htmlContent := `<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='` + baseURL + `verification?type=email&token=` + code + `' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>`
 
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
+
 	client := sendgrid.NewSendClient(config.Var.SENDGRID_API_KEY)
 	_, err = client.Send(message)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	// Wait for up to 15 minutes, final timeout TBD
-	now, lastPolled := time.Now().Unix(), time.Now().Unix()
-	until := now + (60 * 15)
-	for now < until {
-		now = time.Now().Unix()
-		if now-lastPolled < 3 {
-			continue // throttle following logic in 3 second interval
-		}
-		lastPolled = now
-		contact, err := v.repos.Contact.GetByData(ctx, email)
-		if err != nil && !serror.Is(err, serror.NOT_FOUND) {
-			return libcommon.StringError(err)
-		} else if err == nil && contact.Data == email {
-			// success
-			// update user status
-			err = v.VerifyEmail(ctx, userId, email, platformId)
-			if err != nil {
-				return libcommon.StringError(err)
-			}
 
-			return nil
-		}
-	}
+	return nil
 
-	// timed out
-	return libcommon.StringError(serror.EXPIRED)
 }
 
 func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
 	log.Info().Str("email", email)
+
 	key := config.Var.STRING_ENCRYPTION_KEY
+
 	code, err := libcommon.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceId: deviceId, UserId: userId}, key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -142,6 +122,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 		textContent, link)
 
 	message := mail.NewSingleEmail(from, subject, to, "", htmlContent)
+
 	client := sendgrid.NewSendClient(config.Var.SENDGRID_API_KEY)
 	_, err = client.Send(message)
 	if err != nil {
@@ -187,9 +168,10 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 }
 
 func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
-	key := config.Var.STRING_ENCRYPTION_KEY
 	_, finish := Span(ctx, "services.verification.VerifyEmailWithEncryptedToken")
 	defer finish()
+
+	key := config.Var.STRING_ENCRYPTION_KEY
 
 	received, err := libcommon.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
