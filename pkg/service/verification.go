@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/go-lib/validator"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -52,6 +52,9 @@ func NewVerification(repos repository.Repositories, unit21 Unit21) Verification 
 }
 
 func (v verification) SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error {
+	_, finish := Span(ctx, "service.verification.SendEmailVerification", SpanTag{"platformId": platformId})
+	defer finish()
+
 	if !validator.ValidEmail(email) {
 		return libcommon.StringError(serror.INVALID_DATA)
 	}
@@ -67,14 +70,14 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	}
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
 	code, err := libcommon.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId}, key)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
-	fromAddress := os.Getenv("AUTH_EMAIL_ADDRESS")
+	fromAddress := config.Var.AUTH_EMAIL_ADDRESS
 
 	baseURL := common.GetBaseURL()
 	from := mail.NewEmail("String Authentication", fromAddress)
@@ -84,8 +87,8 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	htmlContent := `<div style='font-family: inherit; text-align: inherit; margin-left: 0px'><br><a href='` + baseURL + `verification?type=email&token=` + code + `' style='background-color:#ffbe00; color:#000000; display:inline-block; padding:12px 40px 12px 40px; text-align:center; text-decoration:none;' target='_blank'>Verify Email Now</a></div>`
 
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
-	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 
+	client := sendgrid.NewSendClient(config.Var.SENDGRID_API_KEY)
 	_, err = client.Send(message)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -97,7 +100,9 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 
 func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDescription string) error {
 	log.Info().Str("email", email)
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+
+	key := config.Var.STRING_ENCRYPTION_KEY
+
 	code, err := libcommon.Encrypt(DeviceVerification{Timestamp: time.Now().Unix(), DeviceId: deviceId, UserId: userId}, key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -105,7 +110,7 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 	code = url.QueryEscape(code)
 
 	baseURL := common.GetBaseURL()
-	fromAddress := os.Getenv("AUTH_EMAIL_ADDRESS")
+	fromAddress := config.Var.AUTH_EMAIL_ADDRESS
 	from := mail.NewEmail("String XYZ", fromAddress)
 	subject := "New Device Login Verification"
 	to := mail.NewEmail("New Device Login", email)
@@ -117,7 +122,8 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 		textContent, link)
 
 	message := mail.NewSingleEmail(from, subject, to, "", htmlContent)
-	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+
+	client := sendgrid.NewSendClient(config.Var.SENDGRID_API_KEY)
 	_, err = client.Send(message)
 	if err != nil {
 		log.Err(err).Msg("error sending device validation")
@@ -128,8 +134,10 @@ func (v verification) SendDeviceVerification(userId, email, deviceId, deviceDesc
 }
 
 func (v verification) VerifyEmail(ctx context.Context, userId string, email string, platformId string) error {
-	now := time.Now()
+	_, finish := Span(ctx, "services.verification.VerifyEmail", SpanTag{"platformId": platformId})
+	defer finish()
 
+	now := time.Now()
 	// 1. Create contact with email
 	contact := model.Contact{UserId: userId, Type: "email", Status: "validated", Data: email, ValidatedAt: &now}
 	contact, err := v.repos.Contact.Create(ctx, contact)
@@ -160,7 +168,11 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 }
 
 func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	_, finish := Span(ctx, "services.verification.VerifyEmailWithEncryptedToken")
+	defer finish()
+
+	key := config.Var.STRING_ENCRYPTION_KEY
+
 	received, err := libcommon.Decrypt[EmailVerification](encrypted, key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -180,5 +192,8 @@ func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypt
 }
 
 func (v verification) PreValidateEmail(ctx context.Context, platformId, userId, email string) error {
+	_, finish := Span(ctx, "services.verification.PreValidateEmail", SpanTag{"platformId": platformId})
+	defer finish()
+
 	return v.VerifyEmail(ctx, userId, email, platformId)
 }

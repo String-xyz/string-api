@@ -1,9 +1,8 @@
 package common
 
 import (
-	"os"
-
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -57,7 +56,7 @@ func GenerateReceipt(params ReceiptGenerationParams, body [][2]string) string {
 }
 
 func EmailReceipt(email string, params ReceiptGenerationParams, body [][2]string) error {
-	fromAddress := os.Getenv("RECEIPTS_EMAIL_ADDRESS")
+	fromAddress := config.Var.RECEIPTS_EMAIL_ADDRESS
 
 	from := mail.NewEmail("String Receipt", fromAddress)
 	subject := "Your " + params.ReceiptType + " Receipt from String"
@@ -65,7 +64,7 @@ func EmailReceipt(email string, params ReceiptGenerationParams, body [][2]string
 	textContent := ""
 	htmlContent := GenerateReceipt(params, body)
 	message := mail.NewSingleEmail(from, subject, to, textContent, htmlContent)
-	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+	client := sendgrid.NewSendClient(config.Var.SENDGRID_API_KEY)
 	_, err := client.Send(message)
 	if err != nil {
 		return libcommon.StringError(err)

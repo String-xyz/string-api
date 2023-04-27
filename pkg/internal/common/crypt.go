@@ -2,16 +2,16 @@ package common
 
 import (
 	"encoding/base64"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 )
 
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := os.Getenv("AWS_REGION")
+	region := config.Var.AWS_REGION
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -19,7 +19,7 @@ func EncryptBytesToKMS(data []byte) (string, error) {
 		return "", libcommon.StringError(err)
 	}
 	kmsService := kms.New(session)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := config.Var.AWS_KMS_KEY_ID
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
 		Plaintext: data,

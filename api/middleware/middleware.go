@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -18,7 +18,7 @@ func JWTAuth() echo.MiddlewareFunc {
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
 			var claims = &service.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+				return []byte(config.Var.JWT_SECRET_KEY), nil
 			})
 
 			c.Set("userId", claims.UserId)
@@ -27,7 +27,7 @@ func JWTAuth() echo.MiddlewareFunc {
 
 			return t, err
 		},
-		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		SigningKey: []byte(config.Var.JWT_SECRET_KEY),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 
@@ -41,7 +41,7 @@ func APIKeyPublicAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeyPublic(auth)
+			platformId, err := service.ValidateAPIKeyPublic(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeyPublicAuth middleware")
 				return false, err
@@ -59,7 +59,7 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeySecret(auth)
+			platformId, err := service.ValidateAPIKeySecret(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeySecretAuth middleware")
 				return false, err

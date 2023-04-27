@@ -179,39 +179,8 @@ locals {
         {
           name = "CHECKOUT_ENV"
           value = local.env
-        },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        },
-        {
-          name  = "DD_ENV"
-          value = local.env
-        },
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
-          name  = "ECS_FARGATE"
-          value = "true"
         }
+        
       ],
       logConfiguration = {
         logDriver = "awsfirelens"
@@ -243,6 +212,20 @@ locals {
         hostPort      = 8126,
         protocol      = "tcp",
         containerPort = 8126
+        }
+      ],
+      environment = [
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
+        },
+        {
+          name  = "DD_ENV"
+          value = local.env
         }
       ]
     },

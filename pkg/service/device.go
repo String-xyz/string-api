@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"os"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -33,7 +33,10 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 }
 
 func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
+	_, finish := Span(ctx, "service.device.VerifyDevice")
+	defer finish()
+
 	received, err := libcommon.Decrypt[DeviceVerification](encrypted, key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -48,6 +51,9 @@ func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 }
 
 func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) (err error) {
+	_, finish := Span(ctx, "service.device.UpsertDeviceIP")
+	defer finish()
+
 	device, err := d.repos.Device.GetById(ctx, deviceId)
 	if err != nil {
 		return
@@ -110,6 +116,9 @@ func (d device) CreateUnknownDevice(ctx context.Context, userId string) (model.D
 }
 
 func (d device) InvalidateUnknownDevice(ctx context.Context, device model.Device) error {
+	_, finish := Span(ctx, "service.device.InvalidateUnknownDevice")
+	defer finish()
+
 	if device.Fingerprint != "unknown" {
 		return nil // only unknown devices can be invalidated
 	}
