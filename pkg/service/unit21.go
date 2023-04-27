@@ -14,7 +14,7 @@ type Unit21 struct {
 
 func NewUnit21(repos repository.Repositories) Unit21 {
 	action := unit21.NewAction()
-	entityRepos := unit21.EntityRepos{Device: repos.Device, Contact: repos.Contact, UserToPlatform: repos.UserToPlatform}
+	entityRepos := unit21.EntityRepos{Device: repos.Device, Contact: repos.Contact, User: repos.User}
 	entity := unit21.NewEntity(entityRepos)
 	instrumentRepos := unit21.InstrumentRepos{User: repos.User, Device: repos.Device, Location: repos.Location}
 	instrument := unit21.NewInstrument(instrumentRepos, action)

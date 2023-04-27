@@ -22,6 +22,7 @@ type User interface {
 	Update(ctx context.Context, id string, updates any) (model.User, error)
 	GetByType(ctx context.Context, label string) (model.User, error)
 	UpdateStatus(ctx context.Context, id string, status string) (model.User, error)
+	GetPlatforms(ctx context.Context, id string, limit int, offset int) ([]model.Platform, error)
 }
 
 type user[T any] struct {
@@ -111,3 +112,43 @@ func (u user[T]) GetByType(ctx context.Context, label string) (model.User, error
 	}
 	return m, nil
 }
+
+func (u user[T]) GetPlatforms(ctx context.Context, id string, limit int, offset int) (platforms []model.Platform, err error) {
+	if limit == 0 {
+		limit = 20
+	}
+
+	query := `
+	SELECT platform.* FROM platform
+	LEFT JOIN user_to_platform
+	ON platform.id = user_to_platform.platform_id
+	WHERE user_to_platform.user_id = $1
+	AND platform.deleted_at IS NULL
+	LIMIT $2 OFFSET $3`
+
+	err = u.Store.SelectContext(ctx, &platforms, query, id, limit, offset) // Pass id, limit, and offset as separate parameters
+	if err != nil && err == sql.ErrNoRows {
+		return platforms, serror.NOT_FOUND
+	} else if err != nil {
+		return platforms, libcommon.StringError(err)
+	}
+	return platforms, nil
+}
+
+// func (b Base[T]) ListByUserId(ctx context.Context, userID string, limit int, offset int) ([]T, error) {
+// 	list := []T{}
+// 	if limit == 0 {
+// 		limit = 100
+// 	}
+// 	err := b.Store.SelectContext(ctx, &list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.Table), userID, limit, offset)
+// 	if err == sql.ErrNoRows {
+// 		return list, nil
+// 	}
+// 	if err != nil {
+// 		return list, err
+// 	}
+
+// 	return list, nil
+// }
+
+// GROUP BY platform.id, user_to_platform.user_id, user_to_platform.platform_id

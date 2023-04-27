@@ -96,7 +96,7 @@ func (a *Auth) SetError(e error) {
 	a.Error = e
 }
 
-func (a Auth) PayloadToSign(walletAdress string) (service.SignablePayload, error) {
+func (a Auth) PayloadToSign(ctx context.Context, walletAdress string) (service.SignablePayload, error) {
 	return a.SignablePayload, a.Error
 }
 
@@ -108,11 +108,11 @@ func (a Auth) GenerateJWT(string, string, ...model.Device) (service.JWT, error) 
 	return a.JWT, a.Error
 }
 
-func (a Auth) ValidateAPIKeyPublic(key string) (string, error) {
+func (a Auth) ValidateAPIKeyPublic(ctx context.Context, key string) (string, error) {
 	return "platform-id", a.Error
 }
 
-func (a Auth) ValidateAPIKeySecret(key string) (string, error) {
+func (a Auth) ValidateAPIKeySecret(ctx context.Context, key string) (string, error) {
 	return "platform-id", a.Error
 }
 

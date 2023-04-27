@@ -9,17 +9,17 @@ import (
 )
 
 type User struct {
-	Id            string     `json:"id" db:"id"`
-	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string     `json:"type" db:"type"`
-	Status        string     `json:"status" db:"status"`
-	Tags          StringMap  `json:"tags" db:"tags"`
-	FirstName     string     `json:"firstName" db:"first_name"`
-	MiddleName    string     `json:"middleName" db:"middle_name"`
-	LastName      string     `json:"lastName" db:"last_name"`
-	Email         string     `json:"email"`
+	Id         string     `json:"id" db:"id"`
+	CreatedAt  time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt  time.Time  `json:"updatedAt" db:"updated_at"`
+	DeletedAt  *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	Type       string     `json:"type" db:"type"`
+	Status     string     `json:"status" db:"status"`
+	Tags       StringMap  `json:"tags" db:"tags"`
+	FirstName  string     `json:"firstName" db:"first_name"`
+	MiddleName string     `json:"middleName" db:"middle_name"`
+	LastName   string     `json:"lastName" db:"last_name"`
+	Email      string     `json:"email"`
 }
 
 type Platform struct {
@@ -27,6 +27,7 @@ type Platform struct {
 	CreatedAt      time.Time      `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt      time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
 	DeactivatedAt  *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt      *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
 	ActivatedAt    *time.Time     `json:"activatedAt,omitempty" db:"activated_at"`
 	Name           string         `json:"name" db:"name"`
 	Description    string         `json:"description" db:"description"`
@@ -36,31 +37,31 @@ type Platform struct {
 }
 
 type Network struct {
-	Id            string     `json:"id" db:"id"`
-	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Name          string     `json:"name" db:"name"`
-	NetworkId     uint64     `json:"networkId" db:"network_id"`
-	ChainId       uint64     `json:"chainId" db:"chain_id"`
-	GasTokenId    string     `json:"gasTokenId" db:"gas_token_id"`
-	GasOracle     string     `json:"gasOracle" db:"gas_oracle"`
-	RPCUrl        string     `json:"rpcUrl" db:"rpc_url"`
-	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
+	Id          string     `json:"id" db:"id"`
+	CreatedAt   time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updatedAt" db:"updated_at"`
+	DeletedAt   *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	Name        string     `json:"name" db:"name"`
+	NetworkId   uint64     `json:"networkId" db:"network_id"`
+	ChainId     uint64     `json:"chainId" db:"chain_id"`
+	GasTokenId  string     `json:"gasTokenId" db:"gas_token_id"`
+	GasOracle   string     `json:"gasOracle" db:"gas_oracle"`
+	RPCUrl      string     `json:"rpcUrl" db:"rpc_url"`
+	ExplorerUrl string     `json:"explorerUrl" db:"explorer_url"`
 }
 
 type Asset struct {
-	Id            string         `json:"id" db:"id"`
-	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Name          string         `json:"name" db:"name"`
-	Description   string         `json:"description" db:"description"`
-	Decimals      uint64         `json:"decimals" db:"decimals"`
-	IsCrypto      bool           `json:"isCrypto" db:"is_crypto"`
-	NetworkId     sql.NullString `json:"networkId" db:"network_id"`
-	ValueOracle   sql.NullString `json:"valueOracle" db:"value_oracle"`
-	ValueOracle2  sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
+	Id           string         `json:"id" db:"id"`
+	CreatedAt    time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt    time.Time      `json:"updatedAt" db:"updated_at"`
+	DeletedAt    *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
+	Name         string         `json:"name" db:"name"`
+	Description  string         `json:"description" db:"description"`
+	Decimals     uint64         `json:"decimals" db:"decimals"`
+	IsCrypto     bool           `json:"isCrypto" db:"is_crypto"`
+	NetworkId    sql.NullString `json:"networkId" db:"network_id"`
+	ValueOracle  sql.NullString `json:"valueOracle" db:"value_oracle"`
+	ValueOracle2 sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
 }
 
 type UserToPlatform struct {
@@ -69,17 +70,17 @@ type UserToPlatform struct {
 }
 
 type Device struct {
-	Id            string         `json:"id" db:"id"`
-	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
-	LastUsedAt    time.Time      `json:"lastUsedAt" db:"last_used_at"`
-	ValidatedAt   *time.Time     `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string         `json:"type" db:"type"`
-	Description   string         `json:"description" db:"description"`
-	Fingerprint   string         `json:"fingerprint" db:"fingerprint"`
-	IpAddresses   pq.StringArray `json:"ipAddresses,omitempty" db:"ip_addresses"`
-	UserId        string         `json:"userId" db:"user_id"`
+	Id          string         `json:"id" db:"id"`
+	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updatedAt" db:"updated_at"`
+	LastUsedAt  time.Time      `json:"lastUsedAt" db:"last_used_at"`
+	ValidatedAt *time.Time     `json:"validatedAt" db:"validated_at"`
+	DeletedAt   *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
+	Type        string         `json:"type" db:"type"`
+	Description string         `json:"description" db:"description"`
+	Fingerprint string         `json:"fingerprint" db:"fingerprint"`
+	IpAddresses pq.StringArray `json:"ipAddresses,omitempty" db:"ip_addresses"`
+	UserId      string         `json:"userId" db:"user_id"`
 }
 
 type Contact struct {
@@ -89,7 +90,7 @@ type Contact struct {
 	UpdatedAt           time.Time  `json:"updatedAt" db:"updated_at"`
 	LastAuthenticatedAt *time.Time `json:"lastAuthenticatedAt" db:"last_authenticated_at"`
 	ValidatedAt         *time.Time `json:"validatedAt" db:"validated_at"`
-	DeactivatedAt       *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt           *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 	Type                string     `json:"type" db:"type"`
 	Status              string     `json:"status" db:"status"`
 	Data                string     `json:"data" db:"data"`
@@ -100,7 +101,7 @@ type Location struct {
 	UserId         string     `json:"userId" db:"user_id"`
 	CreatedAt      time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt      time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt      *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 	Type           string     `json:"type" db:"type"`
 	Status         string     `json:"status" db:"status"`
 	Tags           StringMap  `json:"tags" db:"tags"`
@@ -114,19 +115,19 @@ type Location struct {
 }
 
 type Instrument struct {
-	Id            string         `json:"id" db:"id"`
-	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Type          string         `json:"type" db:"type"`
-	Status        string         `json:"status" db:"status"`
-	Tags          StringMap      `json:"tags" db:"tags"`
-	Network       string         `json:"network" db:"network"`
-	PublicKey     string         `json:"publicKey" db:"public_key"`
-	Last4         string         `json:"last4" db:"last_4"`
-	UserId        string         `json:"userId" db:"user_id"`
-	LocationId    sql.NullString `json:"locationId" db:"location_id"`
-	Name          string         `json:"name" db:"name"`
+	Id         string         `json:"id" db:"id"`
+	CreatedAt  time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt  time.Time      `json:"updatedAt" db:"updated_at"`
+	DeletedAt  *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
+	Type       string         `json:"type" db:"type"`
+	Status     string         `json:"status" db:"status"`
+	Tags       StringMap      `json:"tags" db:"tags"`
+	Network    string         `json:"network" db:"network"`
+	PublicKey  string         `json:"publicKey" db:"public_key"`
+	Last4      string         `json:"last4" db:"last_4"`
+	UserId     string         `json:"userId" db:"user_id"`
+	LocationId sql.NullString `json:"locationId" db:"location_id"`
+	Name       string         `json:"name" db:"name"`
 }
 
 type ContactToPlatform struct {
@@ -140,23 +141,23 @@ type DeviceToInstrument struct {
 }
 
 type TxLeg struct {
-	Id            string     `json:"id" db:"id"`
-	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
-	Timestamp     time.Time  `json:"timestamp" db:"timestamp"`
-	Amount        string     `json:"amount" db:"amount"`
-	Value         string     `json:"value" db:"value"`
-	AssetId       string     `json:"assetId" db:"asset_id"`
-	UserId        string     `json:"userId" db:"user_id"`
-	InstrumentId  string     `json:"instrumentId" db:"instrument_id"`
+	Id           string     `json:"id" db:"id"`
+	CreatedAt    time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updatedAt" db:"updated_at"`
+	DeletedAt    *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	Timestamp    time.Time  `json:"timestamp" db:"timestamp"`
+	Amount       string     `json:"amount" db:"amount"`
+	Value        string     `json:"value" db:"value"`
+	AssetId      string     `json:"assetId" db:"asset_id"`
+	UserId       string     `json:"userId" db:"user_id"`
+	InstrumentId string     `json:"instrumentId" db:"instrument_id"`
 }
 
 type Transaction struct {
 	Id                 string         `json:"id" db:"id"`
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt          time.Time      `json:"updatedAt" db:"updated_at"`
-	DeactivatedAt      *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt          *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
 	Type               string         `json:"type,omitempty" db:"type"`
 	Status             string         `json:"status,omitempty" db:"status"`
 	Tags               StringMap      `json:"tags,omitempty" db:"tags"`
@@ -180,25 +181,25 @@ type Transaction struct {
 }
 
 type AuthStrategy struct {
-	Id            string         `json:"id,omitempty" db:"id"`
-	Status        string         `json:"status" db:"status"`
-	EntityId      string         `json:"entityId,omitempty"` // for redis use only
-	Type          string         `json:"authType" db:"type"`
-	EntityType    string         `json:"entityType,omitempty"`  // for redis use only
-	ContactData   string         `json:"contactData,omitempty"` // for redis use only
-	ContactId     NullableString `json:"contactId,omitempty" db:"contact_id"`
-	Data          string         `json:"data" data:"data"`
-	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
-	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
-	ExpiresAt     time.Time      `json:"expireAt,omitempty" db:"expire_at"`
-	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	Id          string         `json:"id,omitempty" db:"id"`
+	Status      string         `json:"status" db:"status"`
+	EntityId    string         `json:"entityId,omitempty"` // for redis use only
+	Type        string         `json:"authType" db:"type"`
+	EntityType  string         `json:"entityType,omitempty"`  // for redis use only
+	ContactData string         `json:"contactData,omitempty"` // for redis use only
+	ContactId   NullableString `json:"contactId,omitempty" db:"contact_id"`
+	Data        string         `json:"data" data:"data"`
+	CreatedAt   time.Time      `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
+	ExpiresAt   time.Time      `json:"expireAt,omitempty" db:"expire_at"`
+	DeletedAt   *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
 }
 
 type Apikey struct {
 	Id             string     `json:"id,omitempty" db:"id"`
 	CreatedAt      time.Time  `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt      time.Time  `json:"updatedAt,omitempty" db:"updated_at"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt      *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 	Type           string     `json:"type" db:"type"`
 	Data           string     `json:"data" db:"data"`
 	Hint           string     `json:"hint,omitempty" db:"hint"`
@@ -209,15 +210,16 @@ type Apikey struct {
 }
 
 type Contract struct {
-	ID            string         `json:"id,omitempty" db:"id"`
+	Id            string         `json:"id,omitempty" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
 	DeactivatedAt *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	DeletedAt     *time.Time     `json:"deletedAt,omitempty" db:"deleted_at"`
 	Name          string         `json:"name" db:"name"`
 	Address       string         `json:"address" db:"address"`
 	Functions     pq.StringArray `json:"functions" db:"functions"`
-	NetworkID     string         `json:"networkId" db:"network_id"`
-	PlatformID    string         `json:"platformId" db:"platform_id"`
+	NetworkId     string         `json:"networkId" db:"network_id"`
+	PlatformId    string         `json:"platformId" db:"platform_id"`
 }
 
 func (a AuthStrategy) MarshalBinary() ([]byte, error) {
