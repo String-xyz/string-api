@@ -34,10 +34,6 @@ data "aws_ssm_parameter" "unit21_api_key" {
   name = "unit21-api-key"
 }
 
-data "aws_ssm_parameter" "ipstack_api_key" {
-  name = "ipstack-api-key"
-}
-
 data "aws_ssm_parameter" "checkout_public_key" {
   name = "checkout-public-key"
 }

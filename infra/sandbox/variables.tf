@@ -59,10 +59,6 @@ locals {
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
         },
         {
-          name      = "IPSTACK_API_KEY"
-          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
-        },
-        {
           name      = "CHECKOUT_PUBLIC_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_public_key.arn
         },

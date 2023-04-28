@@ -30,10 +30,6 @@ data "aws_ssm_parameter" "unit21_api_key" {
   name = "unit21-api-key"
 }
 
-data "aws_ssm_parameter" "ipstack_api_key" {
-  name = "ipstack-api-key"
-}
-
 data "aws_ssm_parameter" "customer_jwt_secret" {
   name = "customer-jwt-secret"
 }

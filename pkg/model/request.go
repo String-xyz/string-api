@@ -68,13 +68,12 @@ type UserEmailLogin struct {
 }
 
 type UserUpdates struct {
-	DeactivatedAt *time.Time      `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string         `json:"type" db:"type"`
-	Status        *string         `json:"status" db:"status"`
-	Tags          *types.JSONText `json:"tags" db:"tags"`
-	FirstNname    *string         `json:"firstName" db:"first_name"`
-	MiddleName    *string         `json:"middleName" db:"middle_name"`
-	LastName      *string         `json:"lastName" db:"last_name"`
+	Type       *string         `json:"type" db:"type"`
+	Status     *string         `json:"status" db:"status"`
+	Tags       *types.JSONText `json:"tags" db:"tags"`
+	FirstName  *string         `json:"firstName" db:"first_name"`
+	MiddleName *string         `json:"middleName" db:"middle_name"`
+	LastName   *string         `json:"lastName" db:"last_name"`
 }
 
 type UserPKLogin struct {
@@ -101,10 +100,9 @@ type UpdateUserName struct {
 }
 
 type ContactUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Status        *string    `json:"status" db:"status"`
-	Data          *string    `json:"data" db:"data"`
+	Type   *string `json:"type" db:"type"`
+	Status *string `json:"status" db:"status"`
+	Data   *string `json:"data" db:"data"`
 }
 
 type CreatePlatform struct {
@@ -113,10 +111,9 @@ type CreatePlatform struct {
 }
 
 type PlaformContactUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Status        *string    `json:"status" db:"status"`
-	Data          *string    `json:"data" db:"data"`
+	Type   *string `json:"type" db:"type"`
+	Status *string `json:"status" db:"status"`
+	Data   *string `json:"data" db:"data"`
 }
 
 type UpdateStatus struct {

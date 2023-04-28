@@ -46,7 +46,6 @@ type vars struct {
 	TEAM_PHONE_NUMBERS       string
 	STRING_ENCRYPTION_KEY    string
 	SENDGRID_API_KEY         string
-	IPSTACK_API_KEY          string
 	FINGERPRINT_API_KEY      string
 	FINGERPRINT_API_URL      string
 	STRING_INTERNAL_ID       string
@@ -60,16 +59,8 @@ type vars struct {
 
 var Var vars
 
-func LoadEnv(path ...string) error {
-	var err error
-	if len(path) > 0 {
-		err = godotenv.Load(path[0])
-	} else {
-		err = godotenv.Load(".env")
-	}
-	if err != nil {
-		return err
-	}
+func LoadEnv() error {
+	godotenv.Load(".env")
 	missing := []string{}
 	stype := reflect.ValueOf(&Var).Elem()
 	for i := 0; i < stype.NumField(); i++ {
