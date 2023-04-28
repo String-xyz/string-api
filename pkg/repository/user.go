@@ -134,21 +134,3 @@ func (u user[T]) GetPlatforms(ctx context.Context, id string, limit int, offset 
 	}
 	return platforms, nil
 }
-
-// func (b Base[T]) ListByUserId(ctx context.Context, userID string, limit int, offset int) ([]T, error) {
-// 	list := []T{}
-// 	if limit == 0 {
-// 		limit = 100
-// 	}
-// 	err := b.Store.SelectContext(ctx, &list, fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 LIMIT $2 OFFSET $3", b.Table), userID, limit, offset)
-// 	if err == sql.ErrNoRows {
-// 		return list, nil
-// 	}
-// 	if err != nil {
-// 		return list, err
-// 	}
-
-// 	return list, nil
-// }
-
-// GROUP BY platform.id, user_to_platform.user_id, user_to_platform.platform_id
