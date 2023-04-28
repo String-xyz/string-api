@@ -153,9 +153,11 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	}
 
 	// 3. Associate contact with platform
-	err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
-	if err != nil {
-		return libcommon.StringError(err)
+	if platformId != "" {
+		err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
+		if err != nil {
+			return libcommon.StringError(err)
+		}
 	}
 
 	// 4. update user in unit21
