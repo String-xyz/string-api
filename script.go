@@ -12,17 +12,7 @@ func main() {
 		script = os.Args[1]
 	}
 
-	if script == "data_seeding" {
-		dataSeedingArgs := "local"
-		if len(os.Args) > 2 {
-			dataSeedingArgs = os.Args[2]
-		}
-		if dataSeedingArgs == "local" {
-			scripts.MockSeeding()
-		} else {
-			scripts.DataSeeding()
-		}
-	} else if script == "generate_wallet" {
+	if script == "generate_wallet" {
 		scripts.GenerateWallet()
 	} // etc...
 }

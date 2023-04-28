@@ -17,9 +17,6 @@ RUN go install github.com/cosmtrek/air@latest
 # install the dlv debugger
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
-# install goose for db migrations
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
-
 # will run from an entrypoint.sh file
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
