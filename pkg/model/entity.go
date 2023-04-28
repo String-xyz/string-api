@@ -8,7 +8,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// See STRING_USER in Migrations 0001
 type User struct {
 	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
@@ -23,12 +22,12 @@ type User struct {
 	Email         string     `json:"email"`
 }
 
-// See PLATFORM in Migrations 0005
 type Platform struct {
 	Id             string         `json:"id,omitempty" db:"id"`
 	CreatedAt      time.Time      `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt      time.Time      `json:"updatedAt,omitempty" db:"updated_at"`
 	DeactivatedAt  *time.Time     `json:"deactivatedAt,omitempty" db:"deactivated_at"`
+	ActivatedAt    *time.Time     `json:"activatedAt,omitempty" db:"activated_at"`
 	Name           string         `json:"name" db:"name"`
 	Description    string         `json:"description" db:"description"`
 	Domains        pq.StringArray `json:"domains" db:"domains"`
@@ -36,7 +35,6 @@ type Platform struct {
 	OrganizationId string         `json:"organizationId" db:"organization_id"`
 }
 
-// See NETWORK in Migrations 0001
 type Network struct {
 	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
@@ -51,7 +49,6 @@ type Network struct {
 	ExplorerUrl   string     `json:"explorerUrl" db:"explorer_url"`
 }
 
-// See ASSET in Migrations 0001
 type Asset struct {
 	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
@@ -66,13 +63,11 @@ type Asset struct {
 	ValueOracle2  sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
 }
 
-// See USER_PLATFORM in Migrations 0002
 type UserToPlatform struct {
 	UserId     string `json:"userId" db:"user_id"`
 	PlatformId string `json:"platformId" db:"platform_id"`
 }
 
-// See DEVICE in Migrations 0002
 type Device struct {
 	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
@@ -87,7 +82,6 @@ type Device struct {
 	UserId        string         `json:"userId" db:"user_id"`
 }
 
-// See CONTACT in Migrations 0002
 type Contact struct {
 	Id                  string     `json:"id" db:"id"`
 	UserId              string     `json:"userId" db:"user_id"`
@@ -101,7 +95,6 @@ type Contact struct {
 	Data                string     `json:"data" db:"data"`
 }
 
-// See LOCATION in Migrations 0002
 type Location struct {
 	Id             string     `json:"id" db:"id"`
 	UserId         string     `json:"userId" db:"user_id"`
@@ -120,7 +113,6 @@ type Location struct {
 	Country        string     `json:"country" db:"country"`
 }
 
-// See INSTRUMENT in Migrations 0002
 type Instrument struct {
 	Id            string         `json:"id" db:"id"`
 	CreatedAt     time.Time      `json:"createdAt" db:"created_at"`
@@ -137,19 +129,16 @@ type Instrument struct {
 	Name          string         `json:"name" db:"name"`
 }
 
-// See CONTACT_PLATFORM in Migrations 0003
 type ContactToPlatform struct {
 	ContactId  string `json:"contactId" db:"contact_id"`
 	PlatformId string `json:"platformId" db:"platform_id"`
 }
 
-// See DEVICE_INSTRUMENT in Migrations 0003
 type DeviceToInstrument struct {
 	DeviceId     string `json:"deviceId" db:"device_id"`
 	InstrumentId string `json:"instrumentId" db:"instrument_id"`
 }
 
-// See Tx_LEG in Migrations 0003
 type TxLeg struct {
 	Id            string     `json:"id" db:"id"`
 	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
@@ -163,7 +152,6 @@ type TxLeg struct {
 	InstrumentId  string     `json:"instrumentId" db:"instrument_id"`
 }
 
-// See TRANSACTION in Migrations 0003
 type Transaction struct {
 	Id                 string         `json:"id" db:"id"`
 	CreatedAt          time.Time      `json:"createdAt" db:"created_at"`
