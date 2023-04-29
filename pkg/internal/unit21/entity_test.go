@@ -208,7 +208,7 @@ func createMockInstrumentForUser(userId string, mock sqlmock.Sqlmock, sqlxDB *sq
 }
 
 func initializeTest(t *testing.T) (db *sql.DB, mock sqlmock.Sqlmock, sqlxDB *sqlx.DB, err error) {
-	err = config.LoadEnv("../../../.env")
+	err = config.LoadEnv()
 	if err != nil {
 		t.Fatalf("error %s was not expected when loading env", err)
 	}
