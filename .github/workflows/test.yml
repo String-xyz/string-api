@@ -7,17 +7,17 @@ env:
   BASE_URL: http://localhost:5555/ 
   ENV: local
   PORT: 5555
-  STRING_HOTWALLET_ADDRESS: ${{ secret.HOT_WALLET }}
+  STRING_HOTWALLET_ADDRESS: ${{ secrets.HOT_WALLET }}
   COINGECKO_API_URL: ${{ env.COINCAP_API_URL }}
   COINCAP_API_URL: ${{ env.COINCAP_API_URL }}
   OWLRACLE_API_URL: ${{ env.OWLRACLE_API_KEY }}
-  OWLRACLE_API_KEY: ${{ secret.OWLRACLE_API_KEY }}
-  OWLRACLE_API_SECRET: ${{ secret.OWLRACLE_API_SECRET }}     
-  AWS_KMS_KEY_ID: ${{  secret.AWS_KMS_KEY_ID }}          
-  CHECKOUT_PUBLIC_KEY: ${{ secret.CHECKOUT_PUBLIC_KEY }}    
-  CHECKOUT_SECRET_KEY: ${{ secret.CHECKOUT_SECRET_KEY }}
+  OWLRACLE_API_KEY: ${{ secrets.OWLRACLE_API_KEY }}
+  OWLRACLE_API_SECRET: ${{ secrets.OWLRACLE_API_SECRET }}     
+  AWS_KMS_KEY_ID: ${{  secrets.AWS_KMS_KEY_ID }}          
+  CHECKOUT_PUBLIC_KEY: ${{ secrets.CHECKOUT_PUBLIC_KEY }}    
+  CHECKOUT_SECRET_KEY: ${{ secrets.CHECKOUT_SECRET_KEY }}
   CHECKOUT_ENV: ${{ env.CHECKOUT_ENV }}            
-  EVM_PRIVATE_KEY: ${{ secret.EVM_PRIVATE_KEY }}         
+  EVM_PRIVATE_KEY: ${{ secrets.EVM_PRIVATE_KEY }}         
   DB_NAME: stringdb                 
   DB_USERNAME: string       
   DB_PASSWORD: string          
@@ -26,22 +26,22 @@ env:
   REDIS_PASSWORD: password    
   REDIS_HOST: localhost          
   REDIS_PORT: 6379            
-  JWT_SECRET_KEY: ${{ secret.JWT_SECRET_KEY }}          
-  UNIT21_API_KEY: ${{ secret.UNIT21_API_KEY }}          
+  JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}          
+  UNIT21_API_KEY: ${{ secrets.UNIT21_API_KEY }}          
   UNIT21_ENV: sandbox              
   UNIT21_ORG_NAME: string         
   UNIT21_RTR_URL: ${{ env.UNIT21_RTR_URL }}          
-  TWILIO_ACCOUNT_SID: ${{ secret.TWILIO_ACCOUNT_SID }}      
-  TWILIO_AUTH_TOKEN: ${{ secret.TWILIO_AUTH_TOKEN }}      
-  TWILIO_SMS_SID: ${{ secret.TWILIO_SMS_SID }}         
-  TEAM_PHONE_NUMBERS: ${{ secret.TEAM_PHONE_NUMBERS }}      
-  STRING_ENCRYPTION_KEY: ${{ secret.STRING_ENCRYPTION_KEY }}   
-  SENDGRID_API_KEY: ${{ secret.SENDGRID_API_KEY }}        
-  FINGERPRINT_API_KEY: ${{ secret.FINGERPRINT_API_KEY }}     
+  TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}      
+  TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}      
+  TWILIO_SMS_SID: ${{ secrets.TWILIO_SMS_SID }}         
+  TEAM_PHONE_NUMBERS: ${{ secrets.TEAM_PHONE_NUMBERS }}      
+  STRING_ENCRYPTION_KEY: ${{ secrets.STRING_ENCRYPTION_KEY }}   
+  SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}        
+  FINGERPRINT_API_KEY: ${{ secrets.FINGERPRINT_API_KEY }}     
   FINGERPRINT_API_URL: ${{ env.FINGERPRINT_API_URL }}     
-  STRING_INTERNAL_ID: ${{ secret.STRING_INTERNAL_ID }}      
-  STRING_WALLET_ID: ${{ secret.STRING_WALLET_ID }}        
-  STRING_BANK_ID: ${{ secret.STRING_BANK_ID }}          
+  STRING_INTERNAL_ID: ${{ secrets.STRING_INTERNAL_ID }}      
+  STRING_WALLET_ID: ${{ secrets.STRING_WALLET_ID }}        
+  STRING_BANK_ID: ${{ secrets.STRING_BANK_ID }}          
   SERVICE_NAME: string-api            
   DEBUG_MODE: false              
   AUTH_EMAIL_ADDRESS: ${{ env.AUTH_EMAIL_ADDRESS }}      
