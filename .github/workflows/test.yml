@@ -3,7 +3,7 @@ on:
     branches:
       - develop
 name: run tests
-vars.
+env:
   BASE_URL: http://localhost:5555/ 
   ENV: local
   PORT: 5555
