@@ -3,20 +3,20 @@ on:
     branches:
       - develop
 name: run tests
-env:
+vars.
   BASE_URL: http://localhost:5555/ 
   ENV: local
   PORT: 5555
   STRING_HOTWALLET_ADDRESS: ${{ secrets.HOT_WALLET }}
-  COINGECKO_API_URL: ${{ env.COINCAP_API_URL }}
-  COINCAP_API_URL: ${{ env.COINCAP_API_URL }}
-  OWLRACLE_API_URL: ${{ env.OWLRACLE_API_KEY }}
+  COINGECKO_API_URL: ${{ vars.COINCAP_API_URL }}
+  COINCAP_API_URL: ${{ vars.COINCAP_API_URL }}
+  OWLRACLE_API_URL: ${{ vars.OWLRACLE_API_KEY }}
   OWLRACLE_API_KEY: ${{ secrets.OWLRACLE_API_KEY }}
   OWLRACLE_API_SECRET: ${{ secrets.OWLRACLE_API_SECRET }}     
   AWS_KMS_KEY_ID: ${{  secrets.AWS_KMS_KEY_ID }}          
   CHECKOUT_PUBLIC_KEY: ${{ secrets.CHECKOUT_PUBLIC_KEY }}    
   CHECKOUT_SECRET_KEY: ${{ secrets.CHECKOUT_SECRET_KEY }}
-  CHECKOUT_ENV: ${{ env.CHECKOUT_ENV }}            
+  CHECKOUT_ENV: ${{ vars.CHECKOUT_ENV }}            
   EVM_PRIVATE_KEY: ${{ secrets.EVM_PRIVATE_KEY }}         
   DB_NAME: stringdb                 
   DB_USERNAME: string       
@@ -30,7 +30,7 @@ env:
   UNIT21_API_KEY: ${{ secrets.UNIT21_API_KEY }}          
   UNIT21_ENV: sandbox              
   UNIT21_ORG_NAME: string         
-  UNIT21_RTR_URL: ${{ env.UNIT21_RTR_URL }}          
+  UNIT21_RTR_URL: ${{ vars.UNIT21_RTR_URL }}          
   TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}      
   TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}      
   TWILIO_SMS_SID: ${{ secrets.TWILIO_SMS_SID }}         
@@ -38,14 +38,14 @@ env:
   STRING_ENCRYPTION_KEY: ${{ secrets.STRING_ENCRYPTION_KEY }}   
   SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}        
   FINGERPRINT_API_KEY: ${{ secrets.FINGERPRINT_API_KEY }}     
-  FINGERPRINT_API_URL: ${{ env.FINGERPRINT_API_URL }}     
+  FINGERPRINT_API_URL: ${{ vars.FINGERPRINT_API_URL }}     
   STRING_INTERNAL_ID: ${{ secrets.STRING_INTERNAL_ID }}      
   STRING_WALLET_ID: ${{ secrets.STRING_WALLET_ID }}        
   STRING_BANK_ID: ${{ secrets.STRING_BANK_ID }}          
   SERVICE_NAME: string-api            
   DEBUG_MODE: false              
-  AUTH_EMAIL_ADDRESS: ${{ env.AUTH_EMAIL_ADDRESS }}      
-  RECEIPTS_EMAIL_ADDRESS: ${{ env.RECEIPTS_EMAIL_ADDRESS }}  
+  AUTH_EMAIL_ADDRESS: ${{ vars.AUTH_EMAIL_ADDRESS }}      
+  RECEIPTS_EMAIL_ADDRESS: ${{ vars.RECEIPTS_EMAIL_ADDRESS }}  
 jobs:
   lint:
     runs-on: ubuntu-latest
