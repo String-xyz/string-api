@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 )
 
@@ -119,8 +118,6 @@ func GetSSM(name string) (string, error) {
 }
 
 func GenerateWallet() error {
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-
 	preExistingWallet, _ := GetAddress()
 	if preExistingWallet != "" {
 		fmt.Printf("\n WARNING: WALLET CREDENTIALS FOR %+v ARE ALREADY BEING STORED IN SSM.  THIS SCRIPT WILL EXIT.", preExistingWallet)
