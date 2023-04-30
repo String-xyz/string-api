@@ -75,7 +75,7 @@ func LoadEnv() error {
 		}
 		if optional && value == "" {
 			// lets not panic, but warn
-			log.Warn().Str("key", key).Msg("Optional environment variable not set")
+			log.Warn().Str("env var", key).Msg("Optional environment variable not set")
 		}
 		field.SetString(value)
 	}
