@@ -16,6 +16,9 @@ ECS_SANDBOX_API_REPO=${ECR}/${SANDBOX_API}
 all: build push deploy
 all-sandbox: build-sandbox push-sandbox deploy-sandbox
 
+test:
+	direnv exec . go test -run $(TEST_FUNCTION) $(TEST_PATH) -v
+
 test-envvars:
 	@[ "${env}" ] || ( echo "env var is not set"; exit 1 )
 	@[ "${tag}" ] || ( echo "env tag is not set"; exit 1 )

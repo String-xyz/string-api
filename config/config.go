@@ -6,55 +6,56 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog/log"
 )
 
 type vars struct {
-	BASE_URL                 string
-	ENV                      string
-	PORT                     string
-	STRING_HOTWALLET_ADDRESS string
-	COINGECKO_API_URL        string
-	COINCAP_API_URL          string
-	OWLRACLE_API_URL         string
-	OWLRACLE_API_KEY         string
-	OWLRACLE_API_SECRET      string
-	AWS_REGION               string
-	AWS_ACCT                 string
-	AWS_ACCESS_KEY_ID        string
-	AWS_SECRET_ACCESS_KEY    string
-	AWS_KMS_KEY_ID           string
-	CHECKOUT_PUBLIC_KEY      string
-	CHECKOUT_SECRET_KEY      string
-	CHECKOUT_ENV             string
-	EVM_PRIVATE_KEY          string
-	DB_NAME                  string
-	DB_USERNAME              string
-	DB_PASSWORD              string
-	DB_HOST                  string
-	DB_PORT                  string
-	REDIS_PASSWORD           string
-	REDIS_HOST               string
-	REDIS_PORT               string
-	JWT_SECRET_KEY           string
-	UNIT21_API_KEY           string
-	UNIT21_ENV               string
-	UNIT21_ORG_NAME          string
-	UNIT21_RTR_URL           string
-	TWILIO_ACCOUNT_SID       string
-	TWILIO_AUTH_TOKEN        string
-	TWILIO_SMS_SID           string
-	TEAM_PHONE_NUMBERS       string
-	STRING_ENCRYPTION_KEY    string
-	SENDGRID_API_KEY         string
-	FINGERPRINT_API_KEY      string
-	FINGERPRINT_API_URL      string
-	STRING_INTERNAL_ID       string
-	STRING_WALLET_ID         string
-	STRING_BANK_ID           string
-	SERVICE_NAME             string
-	DEBUG_MODE               string
-	AUTH_EMAIL_ADDRESS       string
-	RECEIPTS_EMAIL_ADDRESS   string
+	BASE_URL                 string `required:"true"`
+	ENV                      string `required:"true"`
+	PORT                     string `required:"true"`
+	STRING_HOTWALLET_ADDRESS string `required:"true"`
+	COINGECKO_API_URL        string `required:"true"`
+	COINCAP_API_URL          string `required:"true"`
+	OWLRACLE_API_URL         string `required:"true"`
+	OWLRACLE_API_KEY         string `required:"true"`
+	OWLRACLE_API_SECRET      string `required:"true"`
+	AWS_REGION               string `required:"true"`
+	AWS_ACCT                 string `required:"false"`
+	AWS_ACCESS_KEY_ID        string `required:"false"`
+	AWS_SECRET_ACCESS_KEY    string `required:"false"`
+	AWS_KMS_KEY_ID           string `required:"true"`
+	CHECKOUT_PUBLIC_KEY      string `required:"true"`
+	CHECKOUT_SECRET_KEY      string `required:"true"`
+	CHECKOUT_ENV             string `required:"true"`
+	EVM_PRIVATE_KEY          string `required:"true"`
+	DB_NAME                  string `required:"true"`
+	DB_USERNAME              string `required:"true"`
+	DB_PASSWORD              string `required:"true"`
+	DB_HOST                  string `required:"true"`
+	DB_PORT                  string `required:"true"`
+	REDIS_PASSWORD           string `required:"true"`
+	REDIS_HOST               string `required:"true"`
+	REDIS_PORT               string `required:"true"`
+	JWT_SECRET_KEY           string `required:"true"`
+	UNIT21_API_KEY           string `required:"true"`
+	UNIT21_ENV               string `required:"true"`
+	UNIT21_ORG_NAME          string `required:"true"`
+	UNIT21_RTR_URL           string `required:"true"`
+	TWILIO_ACCOUNT_SID       string `required:"true"`
+	TWILIO_AUTH_TOKEN        string `required:"true"`
+	TWILIO_SMS_SID           string `required:"true"`
+	TEAM_PHONE_NUMBERS       string `required:"true"`
+	STRING_ENCRYPTION_KEY    string `required:"true"`
+	SENDGRID_API_KEY         string `required:"true"`
+	FINGERPRINT_API_KEY      string `required:"true"`
+	FINGERPRINT_API_URL      string `required:"true"`
+	STRING_INTERNAL_ID       string `required:"true"`
+	STRING_WALLET_ID         string `required:"true"`
+	STRING_BANK_ID           string `required:"true"`
+	SERVICE_NAME             string `required:"true"`
+	DEBUG_MODE               string `required:"true"`
+	AUTH_EMAIL_ADDRESS       string `required:"true"`
+	RECEIPTS_EMAIL_ADDRESS   string `required:"true"`
 }
 
 var Var vars
@@ -67,8 +68,14 @@ func LoadEnv() error {
 		field := stype.Field(i)
 		key := stype.Type().Field(i).Name
 		value := os.Getenv(key)
-		if value == "" {
+		required := stype.Type().Field(i).Tag.Get("required") == "true"
+		optional := stype.Type().Field(i).Tag.Get("required") == "false"
+		if required && value == "" {
 			missing = append(missing, key)
+		}
+		if optional && value == "" {
+			// lets not panic, but warn
+			log.Warn().Str("env var", key).Msg("Optional environment variable not set")
 		}
 		field.SetString(value)
 	}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,8 +77,6 @@ func TestEncryptDecryptUnencoded(t *testing.T) {
 }
 
 func TestEncryptDecryptKMS(t *testing.T) {
-	err := godotenv.Load("../../../.env")
-	assert.NoError(t, err)
 
 	obj := "herein lie the secrets of the universe"
 	objEncrypted, err := EncryptStringToKMS(obj)
