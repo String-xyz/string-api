@@ -6,6 +6,7 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/config"
+	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -16,7 +17,7 @@ func JWTAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-			var claims = &service.JWTClaims{}
+			var claims = &model.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
 				return []byte(config.Var.JWT_SECRET_KEY), nil
 			})

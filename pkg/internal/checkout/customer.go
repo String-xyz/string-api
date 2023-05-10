@@ -37,8 +37,8 @@ type CustomerData struct {
 }
 
 type CustomerInstrument struct {
-	*payments.DestinationResponse
-	*instruments.AccountHolder
+	*payments.DestinationResponse `json:"destination,omitempty" swaggertype:"object"`
+	*instruments.AccountHolder    `json:"account_holder,omitempty" swaggertype:"object"`
 }
 
 func (c Customer) GetCustomer(customerId string) (*CustomerResponse, error) {

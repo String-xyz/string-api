@@ -25,20 +25,36 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 	return &transaction{service, nil}
 }
 
+// @Summary Transact
+// @Description Transact executes a transaction
+// @Tags Transactions
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body model.ExecutionRequest true "Execution Request"
+// @Success 200 {object} model.TransactionReceipt
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 403 {object} error
+// @Failure 500 {object} error
+// @Router /transaction [post]
 func (t transaction) Transact(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId, ok := c.Get("userId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid userId")
 	}
 
 	deviceId, ok := c.Get("deviceId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid deviceId")
 	}
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -47,12 +63,14 @@ func (t transaction) Transact(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute bind")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	err = c.Validate(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute validate")
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -71,12 +89,15 @@ func (t transaction) Transact(c echo.Context) error {
 		libcommon.LogStringError(c, err, "transact: execute")
 
 		if strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:") {
+			// 403
 			return httperror.Unprocessable(c)
 		}
 
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, res)
 }
 

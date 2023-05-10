@@ -26,6 +26,19 @@ func NewQuote(route *echo.Echo, service service.Transaction) Quotes {
 	return &quote{service, nil}
 }
 
+// @Summary Quote
+// @Description Quote returns the estimated cost of a transaction
+// @Tags Transactions
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body model.TransactionRequest true "Transaction Request"
+// @Success 200 {object} model.Quote
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 403 {object} error
+// @Failure 500 {object} error
+// @Router /quote [post]
 func (q quote) Quote(c echo.Context) error {
 	ctx := c.Request().Context()
 	var body model.TransactionRequest
@@ -33,12 +46,14 @@ func (q quote) Quote(c echo.Context) error {
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote bind")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	err = c.Validate(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote validate")
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -50,6 +65,7 @@ func (q quote) Quote(c echo.Context) error {
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -58,16 +74,20 @@ func (q quote) Quote(c echo.Context) error {
 		libcommon.LogStringError(c, err, "quote: quote")
 
 		if errors.Cause(err).Error() == "w3: response handling failed: execution reverted" { // TODO: use a custom error
+			// 400
 			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
 		}
 
 		if serror.Is(err, serror.FUNC_NOT_ALLOWED, serror.CONTRACT_NOT_ALLOWED) {
+			// 403
 			return httperror.ForbiddenError(c, "The requested blockchain operation is not allowed")
 		}
 
+		// 500
 		return httperror.InternalError(c, "Quote Service Failed")
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, res)
 }
 

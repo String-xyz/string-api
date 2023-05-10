@@ -26,6 +26,16 @@ func heartbeat(c echo.Context) error {
 	return c.JSON(http.StatusOK, "alive")
 }
 
+// @title String API
+// @version 1.0
+// @description String API for executing transactions and managing users
+
+// @contact.name String API Support
+// @contact.url http://string.xyz
+// @contact.email support@stringxyz.com
+
+// @host string-api.xyz
+// @BasePath /
 func Start(config APIConfig) {
 	e := echo.New()
 	e.Validator = validator.New()

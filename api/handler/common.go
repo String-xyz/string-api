@@ -10,13 +10,13 @@ import (
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	service "github.com/String-xyz/string-api/pkg/service"
+	"github.com/String-xyz/string-api/pkg/model"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/labstack/echo/v4"
 )
 
-func SetJWTCookie(c echo.Context, jwt service.JWT) error {
+func SetJWTCookie(c echo.Context, jwt model.JWT) error {
 	cookie := new(http.Cookie)
 	cookie.Name = "StringJWT"
 	cookie.Value = jwt.Token
@@ -30,7 +30,7 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	return nil
 }
 
-func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse) error {
+func SetRefreshTokenCookie(c echo.Context, refresh model.RefreshTokenResponse) error {
 	cookie := new(http.Cookie)
 	cookie.Name = "StringRefreshToken"
 	cookie.Value = refresh.Token
@@ -44,7 +44,7 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	return nil
 }
 
-func SetAuthCookies(c echo.Context, jwt service.JWT) error {
+func SetAuthCookies(c echo.Context, jwt model.JWT) error {
 	err := SetJWTCookie(c, jwt)
 	if err != nil {
 		return err
