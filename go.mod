@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/String-xyz/go-lib v1.8.0
+	github.com/String-xyz/go-lib v1.8.1-0.20230511201101-8832eadeab95
 	github.com/aws/aws-sdk-go v1.44.168
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.33.4
@@ -125,4 +125,4 @@ require (
 	inet.af/netaddr v0.0.0-20220617031823-097006376321 // indirect
 )
 
-replace github.com/String-xyz/go-lib => ../go-lib
+// replace github.com/String-xyz/go-lib => ../go-lib
