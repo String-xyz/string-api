@@ -46,15 +46,13 @@ func (q quote) Quote(c echo.Context) error {
 	err := c.Bind(&body) // 'tag' binding: struct fields are annotated
 	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote bind")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 
 	err = c.Validate(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "quote: quote validate")
-		// 400
-		return httperror.InvalidPayloadError(c, err)
+		return httperror.InvalidPayload400(c, err)
 	}
 
 	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
@@ -65,8 +63,7 @@ func (q quote) Quote(c echo.Context) error {
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	res, err := q.Service.Quote(ctx, body, platformId)
@@ -74,17 +71,14 @@ func (q quote) Quote(c echo.Context) error {
 		libcommon.LogStringError(c, err, "quote: quote")
 
 		if errors.Cause(err).Error() == "w3: response handling failed: execution reverted" { // TODO: use a custom error
-			// 400
-			return httperror.BadRequestError(c, "The requested blockchain operation will revert")
+			return httperror.BadRequest400(c, "The requested blockchain operation will revert")
 		}
 
 		if serror.Is(err, serror.FUNC_NOT_ALLOWED, serror.CONTRACT_NOT_ALLOWED) {
-			// 403
-			return httperror.ForbiddenError(c, "The requested blockchain operation is not allowed")
+			return httperror.Forbidden403(c, "The requested blockchain operation is not allowed")
 		}
 
-		// 500
-		return httperror.InternalError(c, "Quote Service Failed")
+		return httperror.Internal500(c, "Quote Service Failed")
 	}
 
 	// 200

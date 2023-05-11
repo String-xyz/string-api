@@ -39,21 +39,18 @@ func (card card) GetAll(c echo.Context) error {
 
 	userId, ok := c.Get("userId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid userId")
+		return httperror.Internal500(c, "missing or invalid userId")
 	}
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: get All")
-		// 500
-		return httperror.InternalError(c, "Cards Service Failed")
+		return httperror.Internal500(c, "Cards Service Failed")
 	}
 
 	// 200

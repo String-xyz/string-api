@@ -53,8 +53,7 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 func (u user) Create(c echo.Context) error {
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	ctx := c.Request().Context()
@@ -62,21 +61,18 @@ func (u user) Create(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user:create user bind")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 
 	if err := c.Validate(body); err != nil {
-		// 400
-		return httperror.InvalidPayloadError(c, err)
+		return httperror.InvalidPayload400(c, err)
 	}
 
 	// base64 decode nonce
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: create user decode nonce")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 	body.Nonce = string(decodedNonce)
 
@@ -85,29 +81,24 @@ func (u user) Create(c echo.Context) error {
 		libcommon.LogStringError(c, err, "user: creating user")
 
 		if serror.Is(err, serror.ALREADY_IN_USE) {
-			// 409
-			return httperror.ConflictError(c)
+			return httperror.Conflict409(c)
 		}
 
 		if serror.Is(err, serror.NOT_FOUND) {
-			// 404
-			return httperror.NotFoundError(c)
+			return httperror.NotFound404(c)
 		}
 
 		if serror.Is(err, serror.EXPIRED) {
-			// 403
-			return httperror.ForbiddenError(c, "Nonce expired. Request a new one")
+			return httperror.Forbidden403(c, "Nonce expired. Request a new one")
 		}
 
-		// 500
-		return httperror.InternalError(c)
+		return httperror.Internal500(c)
 	}
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: unable to set auth cookies")
-		// 500
-		return httperror.InternalError(c)
+		return httperror.Internal500(c)
 	}
 
 	// 200
@@ -129,15 +120,13 @@ func (u user) Status(c echo.Context) error {
 	ctx := c.Request().Context()
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
-		// 401
-		return httperror.Unauthorized(c)
+		return httperror.Unauthorized401(c)
 	}
 
 	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: get status")
-		// 500
-		return httperror.InternalError(c)
+		return httperror.Internal500(c)
 	}
 	// 200
 	return c.JSON(http.StatusOK, status)
@@ -163,14 +152,12 @@ func (u user) Update(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update bind")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 
 	err = c.Validate(body)
 	if err != nil {
-		// 400
-		return httperror.InvalidPayloadError(c, err)
+		return httperror.InvalidPayload400(c, err)
 	}
 
 	_, userId := validUserId(IdParam(c), c)
@@ -178,8 +165,7 @@ func (u user) Update(c echo.Context) error {
 	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update")
-		// 500
-		return httperror.InternalError(c)
+		return httperror.Internal500(c)
 	}
 
 	// 200
@@ -206,19 +192,16 @@ func (u user) VerifyEmail(c echo.Context) error {
 	platformId, ok := c.Get("platformId").(string)
 
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
-		// 400
-		return httperror.BadRequestError(c, "Missing or invalid user id")
+		return httperror.BadRequest400(c, "Missing or invalid user id")
 	}
 
 	if !validator.ValidEmail(email) {
-		// 400
-		return httperror.BadRequestError(c, "Invalid email")
+		return httperror.BadRequest400(c, "Invalid email")
 	}
 
 	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
@@ -226,12 +209,10 @@ func (u user) VerifyEmail(c echo.Context) error {
 		libcommon.LogStringError(c, err, "user: email verification")
 
 		if serror.Is(err, serror.ALREADY_IN_USE) {
-			// 409
-			return httperror.ConflictError(c)
+			return httperror.Conflict409(c)
 		}
 
-		// 500
-		return httperror.InternalError(c, "Unable to send email verification")
+		return httperror.Internal500(c, "Unable to send email verification")
 	}
 
 	// 200
@@ -257,8 +238,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	// Get email from body
@@ -266,13 +246,11 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: pre validate email bind")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 
 	if !validator.ValidEmail(body.Email) {
-		// 400
-		return httperror.BadRequestError(c, "Invalid email")
+		return httperror.BadRequest400(c, "Invalid email")
 	}
 
 	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)

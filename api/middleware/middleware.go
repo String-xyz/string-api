@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"net/http"
-
 	libcommon "github.com/String-xyz/go-lib/common"
 	"github.com/String-xyz/go-lib/httperror"
 	"github.com/String-xyz/string-api/config"
@@ -32,7 +30,7 @@ func JWTAuth() echo.MiddlewareFunc {
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 
-			return httperror.Unauthorized(c)
+			return httperror.Unauthorized401(c)
 		},
 	}
 	return echoMiddleware.JWTWithConfig(config)
@@ -89,7 +87,7 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 				if err != nil {
 					libcommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
-				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
+				return httperror.Forbidden403("Error: Geo Location Forbidden")
 			}
 
 			return next(c)

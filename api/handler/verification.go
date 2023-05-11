@@ -37,8 +37,7 @@ func NewVerification(route *echo.Echo, service service.Verification, deviceServi
 func (v verification) Verify(c echo.Context) error {
 	verificationType := c.QueryParam("type")
 	if verificationType == "" {
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 	if verificationType == "email" {
 		// ?
@@ -59,8 +58,7 @@ func (v verification) verifyEmail(c echo.Context) error {
 	err := v.service.VerifyEmailWithEncryptedToken(ctx, token)
 	if err != nil {
 		libcommon.LogStringError(c, err, "verification: email verification")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 	// 200
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Email successfully verified"})
@@ -73,8 +71,7 @@ func (v verification) verifyDevice(c echo.Context) error {
 	err := v.deviceService.VerifyDevice(ctx, token)
 	if err != nil {
 		libcommon.LogStringError(c, err, "verification: device verification")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 	// 200
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Device successfully verified"})
