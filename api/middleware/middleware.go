@@ -87,7 +87,7 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 				if err != nil {
 					libcommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
-				return httperror.Forbidden403("Error: Geo Location Forbidden")
+				return httperror.Forbidden403(c, "Error: Geo Location Forbidden")
 			}
 
 			return next(c)
