@@ -6,7 +6,6 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -17,11 +16,6 @@ import (
 type UserRequest = model.UserRequest
 type UserUpdates = model.UpdateUserName
 
-type UserCreateResponse struct {
-	JWT  JWT        `json:"authToken"`
-	User model.User `json:"user"`
-}
-
 type User interface {
 	//GetStatus returns the onboarding status of an user
 	GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error)
@@ -29,7 +23,7 @@ type User interface {
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
-	Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error)
+	Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (resp model.UserLoginResponse, err error)
 
 	//Update updates the user firstname lastname middlename.
 	// It fetches the user using the walletAddress provided
@@ -66,13 +60,12 @@ func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardin
 	return res, libcommon.StringError(serror.NOT_FOUND)
 }
 
-func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (UserCreateResponse, error) {
+func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (resp model.UserLoginResponse, err error) {
 	_, finish := Span(ctx, "service.user.Create", SpanTag{"platformId": platformId})
 	defer finish()
 
-	resp := UserCreateResponse{}
-	key := config.Var.STRING_ENCRYPTION_KEY
-	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+	// Verify payload integrity
+	payload, err := verifyWalletAuthentication(request)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
@@ -91,11 +84,6 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 
 	if exists {
 		return resp, libcommon.StringError(serror.ALREADY_IN_USE)
-	}
-
-	// Verify payload integrity
-	if err := verifyWalletAuthentication(request); err != nil {
-		return resp, libcommon.StringError(err)
 	}
 
 	user, err := u.createUserData(ctx, addr)
@@ -134,7 +122,7 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	ctx2 := context.Background()
 	go u.unit21.Entity.Create(ctx2, user)
 
-	return UserCreateResponse{JWT: jwt, User: user}, nil
+	return model.UserLoginResponse{JWT: jwt, User: user}, nil
 }
 
 func (u user) createUserData(ctx context.Context, addr string) (model.User, error) {

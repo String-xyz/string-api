@@ -16,12 +16,8 @@ import (
 )
 
 type Login interface {
-	// NoncePayload send the user a nonce payload to be signed for authentication/login purpose
-	// User must provide a valid wallet address
-	NoncePayload(c echo.Context) error
-
-	//VerifySignature receives the signed noncePayload and verifies the signature to authenticate the user.
-	VerifySignature(c echo.Context) error
+	RequestToSign(c echo.Context) error
+	Login(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 	RefreshToken(c echo.Context) error
 }
@@ -36,29 +32,56 @@ func NewLogin(route *echo.Echo, service service.Auth, device service.Device) Log
 	return &login{service, device, nil}
 }
 
-func (l login) NoncePayload(c echo.Context) error {
+// @Summary Request To Sign
+// @Description RequestToSign sends the user a nonce payload to be signed for authentication/login purposes. User must provide a valid wallet address
+// @Tags Login
+// @Accept json
+// @Produce json
+// @Param walletAddress query string true "wallet address"
+// @Success 200 {object} model.SignatureRequest
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /login [get]
+func (l login) RequestToSign(c echo.Context) error {
 	walletAddress := c.QueryParam("walletAddress")
 
 	if !ethcommon.IsHexAddress(walletAddress) {
+		// 400
 		return httperror.BadRequestError(c, "Invalid wallet address")
 	}
 
 	SanitizeChecksums(&walletAddress)
 
 	// get nonce payload
-	payload, err := l.Service.PayloadToSign(c.Request().Context(), walletAddress)
+	signatureRequest, err := l.Service.PayloadToSign(c.Request().Context(), walletAddress)
 	if err != nil {
-		return DefaultErrorHandler(c, err, "login: NoncePayload")
+		// 500
+		return DefaultErrorHandler(c, err, "login: RequestToSign")
 	}
 
-	encodedNonce := b64.StdEncoding.EncodeToString([]byte(payload.Nonce))
-	return c.JSON(http.StatusOK, map[string]string{"nonce": encodedNonce})
+	// 200
+	return c.JSON(http.StatusOK, signatureRequest)
 }
 
-func (l login) VerifySignature(c echo.Context) error {
+// @Summary Login
+// @Description Login receives the signed noncePayload and verifies the signature to authenticate the user.
+// @Tags Login
+// @Accept json
+// @Produce json
+// @Param bypassDevice query boolean false "bypass device"
+// @Param payload body model.WalletSignaturePayloadSigned true "Wallet Signature Payload"
+// @Success 200 {object} model.UserLoginResponse
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 422 {object} error
+// @Failure 500 {object} error
+// @Router /login/sign [post]
+func (l login) Login(c echo.Context) error {
 	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -68,10 +91,12 @@ func (l login) VerifySignature(c echo.Context) error {
 	var body model.WalletSignaturePayloadSigned
 	if err := c.Bind(&body); err != nil {
 		libcommon.LogStringError(c, err, "login: binding body")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -79,6 +104,7 @@ func (l login) VerifySignature(c echo.Context) error {
 	decodedNonce, err := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
 		libcommon.LogStringError(c, err, "login: verify signature decode nonce")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
@@ -88,22 +114,26 @@ func (l login) VerifySignature(c echo.Context) error {
 		libcommon.LogStringError(c, err, "login: verify signature")
 
 		if serror.Is(err, serror.UNKNOWN_DEVICE) {
+			// 422
 			return httperror.Unprocessable(c)
 		}
 
 		if serror.Is(err, serror.INVALID_DATA) {
+			// 400
 			return httperror.BadRequestError(c, "Invalid Email")
 		}
 
 		if serror.Is(err, serror.EXPIRED) {
+			// 400
 			return httperror.BadRequestError(c, "Expired, request a new payload")
 		}
 
+		// 400
 		return httperror.BadRequestError(c, "Invalid Payload")
 	}
 
 	// Upsert IP address in user's device
-	var claims = &service.JWTClaims{}
+	var claims = &model.JWTClaims{}
 	_, _ = jwt.ParseWithClaims(resp.JWT.Token, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(config.Var.JWT_SECRET_KEY), nil
 	})
@@ -114,16 +144,30 @@ func (l login) VerifySignature(c echo.Context) error {
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		libcommon.LogStringError(c, err, "login: unable to set auth cookies")
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, resp)
 }
 
+// @Summary Refresh Token
+// @Description Refresh Token
+// @Tags Login
+// @Accept json
+// @Produce json
+// @Param walletAddress body string true "wallet address"
+// @Success 200 {object} model.RefreshTokenResponse
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /login/refresh [post]
 func (l login) RefreshToken(c echo.Context) error {
 	ctx := c.Request().Context()
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -131,10 +175,12 @@ func (l login) RefreshToken(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "login: binding body")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -143,6 +189,7 @@ func (l login) RefreshToken(c echo.Context) error {
 	cookie, err := c.Cookie("StringRefreshToken")
 	if err != nil {
 		libcommon.LogStringError(c, err, "RefreshToken: unable to get StringRefreshToken cookie")
+		// 401
 		return httperror.Unauthorized(c)
 	}
 
@@ -151,9 +198,11 @@ func (l login) RefreshToken(c echo.Context) error {
 		libcommon.LogStringError(c, err, "login: refresh token")
 
 		if serror.Is(err, serror.NOT_FOUND) {
+			// 400
 			return httperror.BadRequestError(c, "wallet address not associated with this user")
 		}
 
+		// 400
 		return httperror.BadRequestError(c, "Invalid or expired token")
 	}
 
@@ -161,18 +210,30 @@ func (l login) RefreshToken(c echo.Context) error {
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		libcommon.LogStringError(c, err, "RefreshToken: unable to set auth cookies")
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, resp)
 }
 
-// logout
+// @Summary Logout
+// @Description Logout of the application, invalidating the auth cookies
+// @Tags Login
+// @Accept json
+// @Produce json
+// @Success 204
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /login/logout [post]
 func (l login) Logout(c echo.Context) error {
 	// get refresh token from cookie
 	cookie, err := c.Cookie("StringRefreshToken")
 	if err != nil {
 		libcommon.LogStringError(c, err, "Logout: unable to get StringRefreshToken cookie")
+		// 401
 		return httperror.Unauthorized(c)
 	}
 
@@ -187,9 +248,11 @@ func (l login) Logout(c echo.Context) error {
 	err = DeleteAuthCookies(c)
 	if err != nil {
 		libcommon.LogStringError(c, err, "Logout: unable to delete auth cookies")
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 204
 	return c.JSON(http.StatusNoContent, nil)
 }
 
@@ -198,8 +261,8 @@ func (l login) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 		panic("No group attached to the User Handler")
 	}
 	l.Group = g
-	g.GET("", l.NoncePayload, ms...)
-	g.POST("/sign", l.VerifySignature, ms...)
+	g.GET("", l.RequestToSign, ms...)
+	g.POST("/sign", l.Login, ms...)
 	g.POST("/refresh", l.RefreshToken, ms...)
 	g.POST("/logout", l.Logout)
 }

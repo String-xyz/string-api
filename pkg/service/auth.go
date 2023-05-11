@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	b64 "encoding/base64"
+
 	libcommon "github.com/String-xyz/go-lib/common"
 	serror "github.com/String-xyz/go-lib/stringerror"
 	"github.com/String-xyz/string-api/config"
@@ -26,38 +28,19 @@ var hexRegex *regexp.Regexp = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
 var walletAuthenticationPrefix string = "Thank you for using String! By signing this message you are:\n\n1) Authorizing String to initiate off-chain transactions on your behalf, including your bank account, credit card, or debit card.\n\n2) Confirming that this wallet is owned by you.\n\nThis request will not trigger any blockchain transaction or cost any gas.\n\nNonce: "
 
-type RefreshTokenResponse struct {
-	Token string    `json:"token"`
-	ExpAt time.Time `json:"expAt"`
-}
-
-type JWT struct {
-	ExpAt        time.Time            `json:"expAt"`
-	IssuedAt     time.Time            `json:"issuedAt"`
-	Token        string               `json:"token"`
-	RefreshToken RefreshTokenResponse `json:"refreshToken"`
-}
-
-type JWTClaims struct {
-	UserId     string `json:"userId"`
-	PlatformId string `json:"platformId"`
-	DeviceId   string `json:"deviceId"`
-	jwt.StandardClaims
-}
-
 type Auth interface {
 	// PayloadToSign returns a payload to be sign by a wallet
 	// to authenticate an user, the payload expires in 15 minutes
-	PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error)
+	PayloadToSign(ctx context.Context, walletAddress string) (signatureRequest model.SignatureRequest, err error)
 
 	// VerifySignedPayload receives a signed payload from the user and verifies the signature
 	// if signature is valid it returns a JWT to authenticate the user
-	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error)
+	VerifySignedPayload(ctx context.Context, signature model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (model.UserLoginResponse, error)
 
-	GenerateJWT(string, string, ...model.Device) (JWT, error)
+	GenerateJWT(string, string, ...model.Device) (model.JWT, error)
 	ValidateAPIKeyPublic(ctx context.Context, key string) (string, error)
 	ValidateAPIKeySecret(ctx context.Context, key string) (string, error)
-	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (UserCreateResponse, error)
+	RefreshToken(ctx context.Context, token string, walletAddress string, platformId string) (model.UserLoginResponse, error)
 	InvalidateRefreshToken(token string) error
 }
 
@@ -72,38 +55,36 @@ func NewAuth(r repository.Repositories, v Verification, d Device) Auth {
 	return &auth{r, v, d}
 }
 
-func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (SignablePayload, error) {
+func (a auth) PayloadToSign(ctx context.Context, walletAddress string) (signatureRequest model.SignatureRequest, err error) {
 	_, finish := Span(ctx, "service.auth.PayloadToSign")
 	defer finish()
 
 	payload := model.WalletSignaturePayload{}
-	signable := SignablePayload{}
 
 	if !hexRegex.MatchString(walletAddress) {
-		return signable, libcommon.StringError(errors.New("missing or invalid address"))
+		return signatureRequest, libcommon.StringError(errors.New("missing or invalid address"))
 	}
 	payload.Address = walletAddress
 	payload.Timestamp = time.Now().Unix()
 	key := config.Var.STRING_ENCRYPTION_KEY
 	encrypted, err := libcommon.Encrypt(payload, key)
 	if err != nil {
-		return signable, libcommon.StringError(err)
+		return signatureRequest, libcommon.StringError(err)
 	}
-	return SignablePayload{walletAuthenticationPrefix + encrypted}, nil
+	signablePayload := SignablePayload{walletAuthenticationPrefix + encrypted}
+	encodedNonce := b64.StdEncoding.EncodeToString([]byte(signablePayload.Nonce))
+
+	return model.SignatureRequest{Nonce: encodedNonce}, nil
 }
 
-func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (UserCreateResponse, error) {
+func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string, bypassDevice bool) (model.UserLoginResponse, error) {
 	_, finish := Span(ctx, "service.auth.VerifySignedPayload", SpanTag{"platformId": platformId})
 	defer finish()
 
-	resp := UserCreateResponse{}
-	key := config.Var.STRING_ENCRYPTION_KEY
-	payload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
-	if err != nil {
-		return resp, libcommon.StringError(err)
-	}
+	resp := model.UserLoginResponse{}
 
-	if err := verifyWalletAuthentication(request); err != nil {
+	payload, err := verifyWalletAuthentication(request)
+	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
 
@@ -143,14 +124,14 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 		return resp, libcommon.StringError(err)
 	}
 
-	return UserCreateResponse{JWT: jwt, User: user}, nil
+	return model.UserLoginResponse{JWT: jwt, User: user}, nil
 }
 
 // GenerateJWT generates a jwt token and a refresh token which is saved on redis
-func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (JWT, error) {
-	claims := JWTClaims{}
+func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (model.JWT, error) {
+	claims := model.JWTClaims{}
 	refreshToken := uuidWithoutHyphens()
-	t := &JWT{
+	t := &model.JWT{
 		IssuedAt: time.Now(),
 		ExpAt:    time.Now().Add(time.Minute * 15),
 	}
@@ -177,7 +158,7 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 	if err != nil {
 		return *t, err
 	}
-	t.RefreshToken = RefreshTokenResponse{
+	t.RefreshToken = model.RefreshTokenResponse{
 		Token: refreshToken,
 		ExpAt: refreshObj.ExpiresAt,
 	}
@@ -186,7 +167,7 @@ func (a auth) GenerateJWT(userId string, platformId string, m ...model.Device) (
 }
 
 func (a auth) ValidateJWT(token string) (bool, error) {
-	var claims = &JWTClaims{}
+	var claims = &model.JWTClaims{}
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(config.Var.JWT_SECRET_KEY), nil
 	})
@@ -238,11 +219,11 @@ func (a auth) InvalidateRefreshToken(refreshToken string) error {
 	return a.repos.Auth.Delete(libcommon.ToSha256(refreshToken))
 }
 
-func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string, platformId string) (UserCreateResponse, error) {
+func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddress string, platformId string) (model.UserLoginResponse, error) {
 	_, finish := Span(ctx, "service.auth.RefreshToken", SpanTag{"platformId": platformId})
 	defer finish()
 
-	resp := UserCreateResponse{}
+	resp := model.UserLoginResponse{}
 	// get user id from refresh token
 	userId, err := a.repos.Auth.GetUserIdFromRefreshToken(libcommon.ToSha256(refreshToken))
 	if err != nil {
@@ -291,28 +272,28 @@ func (a auth) RefreshToken(ctx context.Context, refreshToken string, walletAddre
 	return resp, nil
 }
 
-func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) error {
+func verifyWalletAuthentication(request model.WalletSignaturePayloadSigned) (payload model.WalletSignaturePayload, err error) {
 	key := config.Var.STRING_ENCRYPTION_KEY
-	preSignedPayload, err := libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+	payload, err = libcommon.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
 	if err != nil {
-		return libcommon.StringError(err)
+		return payload, libcommon.StringError(err)
 	}
 	// Verify users signature
 	bytes := []byte(request.Nonce)
-	valid, err := common.ValidateExternalEVMSignature(request.Signature, preSignedPayload.Address, bytes, true) // true: expect eip131
+	valid, err := common.ValidateExternalEVMSignature(request.Signature, payload.Address, bytes, true) // true: expect eip131
 	if err != nil {
-		return libcommon.StringError(err)
+		return payload, libcommon.StringError(err)
 	}
 	if !valid {
-		return libcommon.StringError(errors.New("user signature invalid"))
+		return payload, libcommon.StringError(errors.New("user signature invalid"))
 	}
 
 	// Verify timestamp is not expired past 15 minutes
-	if time.Now().Unix() > preSignedPayload.Timestamp+(15*60) {
-		return libcommon.StringError(serror.EXPIRED)
+	if time.Now().Unix() > payload.Timestamp+(15*60) {
+		return payload, libcommon.StringError(serror.EXPIRED)
 	}
 
-	return nil
+	return payload, nil
 }
 
 func uuidWithoutHyphens() string {

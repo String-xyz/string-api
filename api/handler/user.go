@@ -37,9 +37,23 @@ func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Ver
 	return &user{userSrv, verificationSrv, nil}
 }
 
+// @Summary Create user
+// @Description Create user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param body body model.WalletSignaturePayloadSigned true "Wallet Signature Payload Signed"
+// @Success 200 {object} model.UserLoginResponse
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 403 {object} error
+// @Failure 409 {object} error
+// @Failure 500 {object} error
+// @Router /users [post]
 func (u user) Create(c echo.Context) error {
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -48,10 +62,12 @@ func (u user) Create(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user:create user bind")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	if err := c.Validate(body); err != nil {
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -59,6 +75,7 @@ func (u user) Create(c echo.Context) error {
 	decodedNonce, _ := b64.URLEncoding.DecodeString(body.Nonce)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: create user decode nonce")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 	body.Nonce = string(decodedNonce)
@@ -68,44 +85,77 @@ func (u user) Create(c echo.Context) error {
 		libcommon.LogStringError(c, err, "user: creating user")
 
 		if serror.Is(err, serror.ALREADY_IN_USE) {
+			// 409
 			return httperror.ConflictError(c)
 		}
 
 		if serror.Is(err, serror.NOT_FOUND) {
+			// 404
 			return httperror.NotFoundError(c)
 		}
 
 		if serror.Is(err, serror.EXPIRED) {
+			// 403
 			return httperror.ForbiddenError(c, "Nonce expired. Request a new one")
 		}
 
+		// 500
 		return httperror.InternalError(c)
 	}
 	// set auth cookies
 	err = SetAuthCookies(c, resp.JWT)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: unable to set auth cookies")
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, resp)
 }
 
+// @Summary Get user status
+// @Description Get user status
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} model.UserOnboardingStatus
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /users/{id}/status [get]
 func (u user) Status(c echo.Context) error {
 	ctx := c.Request().Context()
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
+		// 401
 		return httperror.Unauthorized(c)
 	}
 
 	status, err := u.userService.GetStatus(ctx, userId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: get status")
+		// 500
 		return httperror.InternalError(c)
 	}
+	// 200
 	return c.JSON(http.StatusOK, status)
 }
 
+// @Summary Update user
+// @Description Update user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Param body body model.UpdateUserName true "Update User Name"
+// @Success 200 {object} model.User
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /users/{id} [patch]
 func (u user) Update(c echo.Context) error {
 	ctx := c.Request().Context()
 	var body model.UpdateUserName
@@ -113,11 +163,13 @@ func (u user) Update(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update bind")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	err = c.Validate(body)
 	if err != nil {
+		// 400
 		return httperror.InvalidPayloadError(c, err)
 	}
 
@@ -126,29 +178,46 @@ func (u user) Update(c echo.Context) error {
 	user, err := u.userService.Update(ctx, userId, body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update")
+		// 500
 		return httperror.InternalError(c)
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, user)
 }
 
-// VerifyEmail send an email with a link, the user must click on the link for the email to be verified
-// the link sent is handled by (verification.VerifyEmail) handler
+// @Summary Verify email
+// @Description Verify email sends an email with a link, the user must click on the link for the email to be verified. The link sent is handled by (verification.VerifyEmail) handler
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Param email query string true "Email to verify"
+// @Success 200 {object} ResultMessage
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 409 {object} error
+// @Failure 500 {object} error
+// @Router /users/{id}/verify-email [get]
 func (u user) VerifyEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	email := c.QueryParam("email")
 	platformId, ok := c.Get("platformId").(string)
 
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
 	valid, userId := validUserId(IdParam(c), c)
 	if !valid {
+		// 400
 		return httperror.BadRequestError(c, "Missing or invalid user id")
 	}
 
 	if !validator.ValidEmail(email) {
+		// 400
 		return httperror.BadRequestError(c, "Invalid email")
 	}
 
@@ -157,20 +226,38 @@ func (u user) VerifyEmail(c echo.Context) error {
 		libcommon.LogStringError(c, err, "user: email verification")
 
 		if serror.Is(err, serror.ALREADY_IN_USE) {
+			// 409
 			return httperror.ConflictError(c)
 		}
 
+		// 500
 		return httperror.InternalError(c, "Unable to send email verification")
 	}
 
+	// 200
 	return c.JSON(http.StatusOK, ResultMessage{Status: "Verification email sent"})
 }
 
+// @Summary Pre validate email
+// @Description Pre validate email allows an organization to pre validate an email before the user signs up
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Param body body model.PreValidateEmail true "Pre Validate Email"
+// @Success 200 {object} ResultMessage
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 409 {object} error
+// @Failure 500 {object} error
+// @Router /users/{id}/email/pre-validate [post]
 func (u user) PreValidateEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Param("id")
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
+		// 500
 		return httperror.InternalError(c, "missing or invalid platformId")
 	}
 
@@ -179,19 +266,23 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: pre validate email bind")
+		// 400
 		return httperror.BadRequestError(c)
 	}
 
 	if !validator.ValidEmail(body.Email) {
+		// 400
 		return httperror.BadRequestError(c, "Invalid email")
 	}
 
 	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)
 	if err != nil {
+		// ?
 		return DefaultErrorHandler(c, err, "platformInternal: PreValidateEmail")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"validated": "true"})
+	// 200
+	return c.JSON(http.StatusOK, ResultMessage{Status: "validated"})
 }
 
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {

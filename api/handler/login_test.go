@@ -21,7 +21,7 @@ const (
 	testSignature     = "3a36eb06f09a1d8d4097101ecf656d11c64bac5bfcd66d0b2325ddabb20f38fdbd1a71e0a04365856c779f6517b4fc2fe8b90d7a93e0b9be9f5b27c3961c150c5f93"
 )
 
-func TestStatus200LoginNoncePayload(t *testing.T) {
+func TestStatus200LoginRequestToSign(t *testing.T) {
 	e := echo.New()
 
 	q := make(url.Values)
@@ -34,12 +34,12 @@ func TestStatus200LoginNoncePayload(t *testing.T) {
 	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.NoncePayload(c)) {
+	if assert.NoError(t, handler.RequestToSign(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
-func TestStatus200LoginVerifySignature(t *testing.T) {
+func TestStatus200LoginLogin(t *testing.T) {
 	e := echo.New()
 	e.Validator = validator.New()
 	body := model.WalletSignaturePayloadSigned{
@@ -57,12 +57,12 @@ func TestStatus200LoginVerifySignature(t *testing.T) {
 	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.VerifySignature(c)) {
+	if assert.NoError(t, handler.Login(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
-func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
+func TestStatus400MissingWalletLoginRequestToSign(t *testing.T) {
 	e := echo.New()
 
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -72,7 +72,7 @@ func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
 	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.NoncePayload(c)) {
+	if assert.NoError(t, handler.RequestToSign(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	}
 }
