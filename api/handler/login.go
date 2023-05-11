@@ -32,7 +32,7 @@ func NewLogin(route *echo.Echo, service service.Auth, device service.Device) Log
 	return &login{service, device, nil}
 }
 
-// @Summary RequestToSign
+// @Summary Request To Sign
 // @Description RequestToSign sends the user a nonce payload to be signed for authentication/login purposes. User must provide a valid wallet address
 // @Tags Login
 // @Accept json
