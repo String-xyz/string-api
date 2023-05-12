@@ -34,6 +34,8 @@ github.com/String-xyz/go-lib v1.8.1-0.20230511201101-8832eadeab95 h1:REWxPn4B4m7
 github.com/String-xyz/go-lib v1.8.1-0.20230511201101-8832eadeab95/go.mod h1:TFAJPYo6YXvk3A1p1WkFuoN5k1wGHbRTxuOg9KLjpUI=
 github.com/String-xyz/go-lib/v2 v2.0.1 h1:b3D0rcdh1rgCpK3y/trahe4a9cvckmnPr6eEw5ddYnE=
 github.com/String-xyz/go-lib/v2 v2.0.1/go.mod h1:CQWGpuggF+oiyzmMw+uaO6ophou3eIr4aqA6XxJKKJk=
+github.com/String-xyz/go-lib/v2 v2.0.2 h1:pGJXqs+/LiI/vIbhQmc2xflQ/CTOu7fWlTnZwlFxXFs=
+github.com/String-xyz/go-lib/v2 v2.0.2/go.mod h1:CQWGpuggF+oiyzmMw+uaO6ophou3eIr4aqA6XxJKKJk=
 github.com/VictoriaMetrics/fastcache v1.6.0 h1:C/3Oi3EiBCqufydp1neRZkqcwmEiuRT9c3fqvvgKm5o=
 github.com/VictoriaMetrics/fastcache v1.6.0/go.mod h1:0qHz5QP0GMX4pfmMA/zt5RgfNuXJrTP0zS7DqpHGGTw=
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
