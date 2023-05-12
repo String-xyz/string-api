@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"

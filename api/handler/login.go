@@ -4,9 +4,9 @@ import (
 	b64 "encoding/base64"
 	"net/http"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"

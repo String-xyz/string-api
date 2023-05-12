@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/pkg/errors"
 )
 

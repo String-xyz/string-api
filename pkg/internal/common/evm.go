@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"

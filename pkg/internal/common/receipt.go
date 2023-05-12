@@ -1,7 +1,7 @@
 package common
 
 import (
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"

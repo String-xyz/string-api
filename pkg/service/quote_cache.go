@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"

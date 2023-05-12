@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"

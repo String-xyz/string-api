@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/String-xyz/go-lib/common"
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	"github.com/String-xyz/go-lib/v2/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"golang.org/x/crypto/sha3"
 
