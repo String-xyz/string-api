@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ import (
 
 // This transaction should pass
 func TestEvaluateTransactionPass(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -33,6 +35,7 @@ func TestEvaluateTransactionPass(t *testing.T) {
 
 // Entity makes a credit card purchase over $1,500
 func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -53,6 +56,7 @@ func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
 // User links more than 5 cards to their account in a 1 hour span
 // Not currently functioning due to lag in Unit21 data ingestion
 func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -91,6 +95,7 @@ func TestEvaluateTransactionManyLinkedCards(t *testing.T) {
 
 // 10 or more FAILED transactions in a 1 hour span
 func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -133,6 +138,7 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 // User onboarded in the last 48 hours and has
 // transacted more than 7.5K in the last 90 minutes
 func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -173,9 +179,10 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 
 func evaluateMockTransaction(ctx context.Context, transaction model.Transaction, sqlxDB *sqlx.DB) (pass bool, err error) {
 	repos := TransactionRepos{
-		TxLeg: repository.NewTxLeg((sqlxDB)),
-		User:  repository.NewUser(sqlxDB),
-		Asset: repository.NewAsset(sqlxDB),
+		TxLeg:  repository.NewTxLeg((sqlxDB)),
+		User:   repository.NewUser(sqlxDB),
+		Asset:  repository.NewAsset(sqlxDB),
+		Device: repository.NewDevice(sqlxDB),
 	}
 
 	u21Transaction := NewTransaction(repos)

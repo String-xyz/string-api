@@ -23,6 +23,7 @@ type vars struct {
 	AWS_ACCT                 string `required:"false"`
 	AWS_ACCESS_KEY_ID        string `required:"false"`
 	AWS_SECRET_ACCESS_KEY    string `required:"false"`
+	DEBUG_MODE               string `required:"false"`
 	AWS_KMS_KEY_ID           string `required:"true"`
 	CHECKOUT_PUBLIC_KEY      string `required:"true"`
 	CHECKOUT_SECRET_KEY      string `required:"true"`
@@ -53,15 +54,18 @@ type vars struct {
 	STRING_WALLET_ID         string `required:"true"`
 	STRING_BANK_ID           string `required:"true"`
 	SERVICE_NAME             string `required:"true"`
-	DEBUG_MODE               string `required:"true"`
 	AUTH_EMAIL_ADDRESS       string `required:"true"`
 	RECEIPTS_EMAIL_ADDRESS   string `required:"true"`
 }
 
 var Var vars
 
-func LoadEnv() error {
-	godotenv.Load(".env")
+func LoadEnv(params ...string) error {
+	path := ".env"
+	if len(params) >= 1 && params[0] != "" {
+		path = params[0]
+	}
+	godotenv.Load(path)
 	missing := []string{}
 	stype := reflect.ValueOf(&Var).Elem()
 	for i := 0; i < stype.NumField(); i++ {

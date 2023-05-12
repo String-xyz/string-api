@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestCreateTransaction(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -38,6 +40,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestUpdateTransaction(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -88,9 +91,10 @@ func TestUpdateTransaction(t *testing.T) {
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 
 	repos := TransactionRepos{
-		TxLeg: repository.NewTxLeg((sqlxDB)),
-		User:  repository.NewUser(sqlxDB),
-		Asset: repository.NewAsset(sqlxDB),
+		TxLeg:  repository.NewTxLeg((sqlxDB)),
+		User:   repository.NewUser(sqlxDB),
+		Asset:  repository.NewAsset(sqlxDB),
+		Device: repository.NewDevice(sqlxDB),
 	}
 
 	u21Transaction := NewTransaction(repos)
@@ -106,9 +110,10 @@ func TestUpdateTransaction(t *testing.T) {
 
 func executeMockTransactionForUser(ctx context.Context, transaction model.Transaction, sqlxDB *sqlx.DB) (unit21Id string, err error) {
 	repos := TransactionRepos{
-		TxLeg: repository.NewTxLeg(sqlxDB),
-		User:  repository.NewUser(sqlxDB),
-		Asset: repository.NewAsset(sqlxDB),
+		TxLeg:  repository.NewTxLeg(sqlxDB),
+		User:   repository.NewUser(sqlxDB),
+		Asset:  repository.NewAsset(sqlxDB),
+		Device: repository.NewDevice(sqlxDB),
 	}
 
 	u21Transaction := NewTransaction(repos)
@@ -168,4 +173,9 @@ func mockTransactionRows(mock sqlmock.Sqlmock, transaction model.Transaction, us
 	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
 		AddRow(assetId2, "Noose The Goose", "Noose the Goose NFT", 0, true, transaction.NetworkId, "joepegs.com")
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deleted_at IS NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
+
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
+		AddRow(transaction.DeviceId, "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, userId)
+	mock.ExpectQuery("SELECT * FROM device WHERE id = $1 AND deleted_at IS NULL").WithArgs(transaction.DeviceId).WillReturnRows(mockedDeviceRow)
+
 }
