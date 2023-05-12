@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestCreateEntity(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -31,6 +33,7 @@ func TestCreateEntity(t *testing.T) {
 }
 
 func TestUpdateEntity(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -61,9 +64,9 @@ func TestUpdateEntity(t *testing.T) {
 		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, entityId)
 	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 AND deleted_at IS NULL LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedDeviceRow)
 
-	mockedPlatformRows := sqlmock.NewRows([]string{"user_id", "platform_id"}).
-		AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery("SELECT * FROM platform LEFT JOIN user_to_platform ON platform.id = user_to_platform.platform_id WHERE user_to_platform.user_id = $1 AND platform.deleted_at IS NULL GROUP BY platform.id LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedPlatformRows)
+	mockedPlatformRows := sqlmock.NewRows([]string{"id", "name", "description", "domains", "ip_addresses", "organization_id"}).
+		AddRow(uuid.NewString(), "Starcraft III", "Return of the Xel'Naga", nil, nil, uuid.NewString())
+	mock.ExpectQuery("SELECT platform.* FROM platform LEFT JOIN user_to_platform ON platform.id = user_to_platform.platform_id WHERE user_to_platform.user_id = $1 AND platform.deleted_at IS NULL LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedPlatformRows)
 
 	repos := EntityRepos{
 		Device:  repository.NewDevice(sqlxDB),
@@ -84,6 +87,7 @@ func TestUpdateEntity(t *testing.T) {
 }
 
 func TestAddInstruments(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -139,9 +143,9 @@ func createMockUser(mock sqlmock.Sqlmock, sqlxDB *sqlx.DB) (entityId string, uni
 		AddRow(uuid.NewString(), "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, entityId)
 	mock.ExpectQuery("SELECT * FROM device WHERE user_id = $1 AND deleted_at IS NULL LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedDeviceRow)
 
-	mockedPlatformRows := sqlmock.NewRows([]string{"id"}).
-		AddRow(entityId, uuid.NewString())
-	mock.ExpectQuery("SELECT * FROM platform LEFT JOIN user_to_platform ON platform.id = user_to_platform.platform_id WHERE user_to_platform.user_id = $1 AND platform.deleted_at IS NULL GROUP BY platform.id LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedPlatformRows)
+	mockedPlatformRows := sqlmock.NewRows([]string{"id", "name", "description", "domains", "ip_addresses", "organization_id"}).
+		AddRow(uuid.NewString(), "Starcraft III", "Return of the Xel'Naga", nil, nil, uuid.NewString())
+	mock.ExpectQuery("SELECT platform.* FROM platform LEFT JOIN user_to_platform ON platform.id = user_to_platform.platform_id WHERE user_to_platform.user_id = $1 AND platform.deleted_at IS NULL LIMIT $2 OFFSET $3").WithArgs(entityId, 100, 0).WillReturnRows(mockedPlatformRows)
 
 	repos := EntityRepos{
 		Device:  repository.NewDevice(sqlxDB),

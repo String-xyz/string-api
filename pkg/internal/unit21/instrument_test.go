@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestCreateInstrument(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
 	defer db.Close()
@@ -28,6 +30,7 @@ func TestCreateInstrument(t *testing.T) {
 }
 
 func TestUpdateInstrument(t *testing.T) {
+	config.LoadEnv("../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
