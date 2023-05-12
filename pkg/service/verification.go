@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	serror "github.com/String-xyz/go-lib/stringerror"
-	"github.com/String-xyz/go-lib/validator"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/String-xyz/go-lib/v2/validator"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 

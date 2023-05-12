@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 )
 
 func EncodeToBase64(object interface{}) (string, error) {

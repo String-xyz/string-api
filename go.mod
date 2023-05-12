@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/String-xyz/go-lib v1.8.0
 	github.com/aws/aws-sdk-go v1.44.168
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.33.4
@@ -38,6 +37,7 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
+	github.com/String-xyz/go-lib/v2 v2.0.2 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.7 // indirect
@@ -125,4 +125,4 @@ require (
 	inet.af/netaddr v0.0.0-20220617031823-097006376321 // indirect
 )
 
-//replace github.com/String-xyz/go-lib => ../go-lib
+// replace github.com/String-xyz/go-lib => ../go-lib

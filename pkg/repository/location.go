@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
-	baserepo "github.com/String-xyz/go-lib/repository"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	baserepo "github.com/String-xyz/go-lib/v2/repository"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/jmoiron/sqlx"
 )

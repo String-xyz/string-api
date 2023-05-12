@@ -3,7 +3,7 @@ package common
 import (
 	"encoding/base64"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"

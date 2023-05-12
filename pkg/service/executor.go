@@ -6,7 +6,7 @@ import (
 	"math"
 	"math/big"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"

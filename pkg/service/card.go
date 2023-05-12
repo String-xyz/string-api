@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/repository"
 )

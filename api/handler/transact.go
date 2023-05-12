@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
@@ -42,20 +42,17 @@ func (t transaction) Transact(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId, ok := c.Get("userId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid userId")
+		return httperror.Internal500(c, "missing or invalid userId")
 	}
 
 	deviceId, ok := c.Get("deviceId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid deviceId")
+		return httperror.Internal500(c, "missing or invalid deviceId")
 	}
 
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
-		// 500
-		return httperror.InternalError(c, "missing or invalid platformId")
+		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
 	var body model.ExecutionRequest
@@ -63,15 +60,13 @@ func (t transaction) Transact(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute bind")
-		// 400
-		return httperror.BadRequestError(c)
+		return httperror.BadRequest400(c)
 	}
 
 	err = c.Validate(&body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute validate")
-		// 400
-		return httperror.InvalidPayloadError(c, err)
+		return httperror.InvalidPayload400(c, err)
 	}
 
 	transactionRequest := body.Quote.TransactionRequest
@@ -89,12 +84,10 @@ func (t transaction) Transact(c echo.Context) error {
 		libcommon.LogStringError(c, err, "transact: execute")
 
 		if strings.Contains(err.Error(), "risk:") || strings.Contains(err.Error(), "payment:") {
-			// 403
-			return httperror.Unprocessable(c)
+			return httperror.Unprocessable422(c)
 		}
 
-		// 500
-		return httperror.InternalError(c)
+		return httperror.Internal500(c)
 	}
 
 	// 200

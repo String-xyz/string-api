@@ -10,6 +10,10 @@ import (
 )
 
 type vars struct {
+	AWS_ACCT                 string `required:"false"`
+	AWS_ACCESS_KEY_ID        string `required:"false"`
+	AWS_SECRET_ACCESS_KEY    string `required:"false"`
+	DEBUG_MODE               string `required:"false"`
 	BASE_URL                 string `required:"true"`
 	ENV                      string `required:"true"`
 	PORT                     string `required:"true"`
@@ -20,10 +24,6 @@ type vars struct {
 	OWLRACLE_API_KEY         string `required:"true"`
 	OWLRACLE_API_SECRET      string `required:"true"`
 	AWS_REGION               string `required:"true"`
-	AWS_ACCT                 string `required:"false"`
-	AWS_ACCESS_KEY_ID        string `required:"false"`
-	AWS_SECRET_ACCESS_KEY    string `required:"false"`
-	DEBUG_MODE               string `required:"false"`
 	AWS_KMS_KEY_ID           string `required:"true"`
 	CHECKOUT_PUBLIC_KEY      string `required:"true"`
 	CHECKOUT_SECRET_KEY      string `required:"true"`
