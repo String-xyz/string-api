@@ -1,8 +1,8 @@
 package store
 
 import (
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
 	"github.com/String-xyz/string-api/config"
 )
 

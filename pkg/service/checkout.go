@@ -6,7 +6,7 @@ import (
 	"math"
 	"strings"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
 	customer "github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/checkout/checkout-sdk-go"
