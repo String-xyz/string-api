@@ -60,7 +60,7 @@ func (u contact[T]) GetByData(ctx context.Context, data string) (model.Contact, 
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
-	return m, nil
+	return m, libcommon.StringError(err)
 }
 
 // TODO: replace references to GetByUserIdAndStatus with the following:

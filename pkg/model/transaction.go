@@ -40,10 +40,10 @@ type TransactionRequest struct {
 	AssetName   string   `json:"assetName" validate:"required,min=3,max=30"`   // Used for receipt
 	ChainId     uint64   `json:"chainId" validate:"required,number"`           // Chain ID to execute on e.g. 80000.
 	CxAddr      string   `json:"contractAddress" validate:"required,eth_addr"` // Address of contract ie "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-	CxFunc      string   `json:"contractFunction" validate:"required,string"`  // Function declaration ie "mintTo(address)"
-	CxReturn    string   `json:"contractReturn" validate:"required,string"`    // Function return type ie "uint256"
+	CxFunc      string   `json:"contractFunction" validate:"required"`         // Function declaration ie "mintTo(address)"
+	CxReturn    string   `json:"contractReturn" validate:"required"`           // Function return type ie "uint256"
 	CxParams    []string `json:"contractParameters" validate:"required"`       // Function parameters ie ["0x000000000000000000BEEF", "32"]
-	TxValue     string   `json:"txValue" validate:"required,string"`           // Amount of native token to send ie "0.08 ether"
+	TxValue     string   `json:"txValue" validate:"required"`                  // Amount of native token to send ie "0.08 ether"
 	TxGasLimit  string   `json:"gasLimit" validate:"required,number"`          // Gwei gas limit ie "210000 gwei"
 }
 
