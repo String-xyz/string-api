@@ -72,7 +72,6 @@ func (p platform[T]) AssociateContact(ctx context.Context, contactId string, pla
 	_, err := p.Store.ExecContext(ctx, `
 		INSERT INTO contact_to_platform (contact_id, platform_id) 
 		VALUES($1, $2)`, contactId, platformId)
-
 	if err != nil {
 		return libcommon.StringError(err)
 	}
