@@ -20,9 +20,10 @@ import (
 )
 
 type EmailVerification struct {
-	Timestamp int64
-	Email     string
-	UserId    string
+	Timestamp  int64
+	Email      string
+	UserId     string
+	PlatformId string
 }
 
 type DeviceVerification struct {
@@ -71,7 +72,7 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := config.Var.STRING_ENCRYPTION_KEY
-	code, err := libcommon.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId}, key)
+	code, err := libcommon.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId, PlatformId: platformId}, key)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
@@ -153,11 +154,9 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	}
 
 	// 3. Associate contact with platform
-	if platformId != "" {
-		err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
-		if err != nil {
-			return libcommon.StringError(err)
-		}
+	err = v.repos.Platform.AssociateContact(ctx, contact.Id, platformId)
+	if err != nil {
+		return libcommon.StringError(err)
 	}
 
 	// 4. update user in unit21
@@ -183,7 +182,7 @@ func (v verification) VerifyEmailWithEncryptedToken(ctx context.Context, encrypt
 		return libcommon.StringError(serror.EXPIRED)
 	}
 
-	err = v.VerifyEmail(ctx, received.UserId, received.Email, "")
+	err = v.VerifyEmail(ctx, received.UserId, received.Email, received.PlatformId)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
