@@ -158,8 +158,6 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 		if err != nil {
 			return libcommon.StringError(err)
 		}
-	} else {
-		return libcommon.StringError(serror.INVALID_DATA)
 	}
 
 	// 4. update user in unit21
