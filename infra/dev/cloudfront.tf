@@ -1,7 +1,7 @@
 resource "aws_cloudfront_distribution" "this" {
   enabled         = true
   is_ipv6_enabled = true
-  aliases         = ["string-api.${local.root_domain}", "www.string-api.${local.root_domain}"]
+  aliases         = ["api.${local.root_domain}"]
 
   origin {
     domain_name = aws_alb.alb.dns_name

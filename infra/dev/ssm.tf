@@ -22,8 +22,8 @@ data "aws_ssm_parameter" "string_bank_id" {
   name = "string-bank-id"     
 }
 
-data "aws_ssm_parameter" "user_jwt_secret" {
-  name = "user-jwt-secret"
+data "aws_ssm_parameter" "jwt_secret" {
+  name = "api-jwt-secret"
 }
 
 data "aws_ssm_parameter" "unit21_api_key" {

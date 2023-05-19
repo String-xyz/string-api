@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
+  cluster_name       = "core"
   env                = "dev"
-  service_name       = "string-api"
+  service_name       = "api"
   root_domain        = "dev.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -37,6 +37,10 @@ locals {
         {
           name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
+        },
+        { 
+          name = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
           name      = "STRING_ENCRYPTION_KEY"
@@ -162,7 +166,7 @@ locals {
         },
         {
           name  = "BASE_URL"
-          value = "https://string-api.dev.string-api.xyz/"
+          value = "https://api.dev.string-api.xyz/"
         },
         {
           name  = "UNIT21_ENV"
@@ -173,10 +177,25 @@ locals {
           value = "string"
         },
         {
+         name = "TEAM_PHONE_NUMBERS"
+         value = "+12062000000"
+        },
+        {
+          name = "AUTH_EMAIL_ADDRESS"
+          value = "auth@string.xyz"
+        },
+        {
+          name = "RECEIPTS_EMAIL_ADDRESS"
+          value = "receipts@stringxyz.com"
+        },
+        {
           name = "CHECKOUT_ENV"
           value = local.env
+        },
+        {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.sandbox2.unit21.com/evaluate"
         }
-        
       ],
       logConfiguration = {
         logDriver = "awsfirelens"

@@ -14,12 +14,13 @@ type vars struct {
 	AWS_ACCESS_KEY_ID        string `required:"false"`
 	AWS_SECRET_ACCESS_KEY    string `required:"false"`
 	DEBUG_MODE               string `required:"false"`
+	SERVICE_NAME             string `required:"false"`
+	STRING_HOTWALLET_ADDRESS string `required:"false"`
 	BASE_URL                 string `required:"true"`
 	ENV                      string `required:"true"`
 	PORT                     string `required:"true"`
-	STRING_HOTWALLET_ADDRESS string `required:"true"`
-	COINGECKO_API_URL        string `required:"true"`
 	COINCAP_API_URL          string `required:"true"`
+	COINGECKO_API_URL        string `required:"true"`
 	OWLRACLE_API_URL         string `required:"true"`
 	OWLRACLE_API_KEY         string `required:"true"`
 	OWLRACLE_API_SECRET      string `required:"true"`
@@ -53,7 +54,6 @@ type vars struct {
 	STRING_INTERNAL_ID       string `required:"true"`
 	STRING_WALLET_ID         string `required:"true"`
 	STRING_BANK_ID           string `required:"true"`
-	SERVICE_NAME             string `required:"true"`
 	AUTH_EMAIL_ADDRESS       string `required:"true"`
 	RECEIPTS_EMAIL_ADDRESS   string `required:"true"`
 }
