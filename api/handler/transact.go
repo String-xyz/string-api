@@ -31,6 +31,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
+// @Param saveCard query boolean false "do not save payment info"
 // @Param body body model.ExecutionRequest true "Execution Request"
 // @Success 200 {object} model.TransactionReceipt
 // @Failure 400 {object} error
@@ -54,6 +55,9 @@ func (t transaction) Transact(c echo.Context) error {
 	if !ok {
 		return httperror.Internal500(c, "missing or invalid platformId")
 	}
+
+	// Save Card by Default
+	saveCard := c.QueryParam("saveCard") != "false"
 
 	var body model.ExecutionRequest
 
@@ -79,7 +83,7 @@ func (t transaction) Transact(c echo.Context) error {
 
 	ip := c.RealIP()
 
-	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip, saveCard)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute")
 
