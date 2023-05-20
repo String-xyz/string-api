@@ -191,6 +191,16 @@ func (a auth) ValidateAPIKeyPublic(ctx context.Context, key string) (string, err
 		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
+	// platform must be active
+	platform, err := a.repos.Platform.GetById(ctx, *authKey.PlatformId)
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+
+	if platform.DeactivatedAt != nil {
+		return "", libcommon.StringError(errors.New("invalid api key"))
+	}
+
 	return *authKey.PlatformId, nil
 }
 
@@ -210,6 +220,16 @@ func (a auth) ValidateAPIKeySecret(ctx context.Context, key string) (string, err
 
 	if authKey.Data != data {
 		return "", libcommon.StringError(errors.New("invalid secret key"))
+	}
+
+	// platform must be active
+	platform, err := a.repos.Platform.GetById(ctx, *authKey.PlatformId)
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+
+	if platform.DeactivatedAt != nil {
+		return "", libcommon.StringError(errors.New("invalid api key"))
 	}
 
 	return *authKey.PlatformId, nil
