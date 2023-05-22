@@ -17,6 +17,7 @@ type User interface {
 	Create(c echo.Context) error
 	Status(c echo.Context) error
 	Update(c echo.Context) error
+	PreviewEmail(c echo.Context) error
 	VerifyEmail(c echo.Context) error
 	PreValidateEmail(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
@@ -263,6 +264,55 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "validated"})
 }
 
+// @Summary Get user email preview
+// @Description Get obscured user email
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+func (u user) PreviewEmail(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	var body model.WalletSignaturePayloadSigned
+
+	err := c.Bind(&body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: preview email bind")
+		return httperror.BadRequest400(c)
+	}
+
+	err = c.Validate(body)
+	if err != nil {
+		return httperror.InvalidPayload400(c, err)
+	}
+
+	// base64 decode nonce
+	decodedNonce, err := b64.URLEncoding.DecodeString(body.Nonce)
+	if err != nil {
+		libcommon.LogStringError(c, err, "login: verify signature decode nonce")
+		return httperror.BadRequest400(c)
+	}
+	body.Nonce = string(decodedNonce)
+
+	email, err := u.userService.PreviewEmail(ctx, body)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: preview email")
+
+		if serror.Is(err, serror.NOT_FOUND) {
+			return httperror.NotFound404(c)
+		}
+
+		if serror.Is(err, serror.EXPIRED) {
+			return httperror.BadRequest400(c, "Expired, request a new payload")
+		}
+
+		return httperror.BadRequest400(c, "Invalid Payload")
+	}
+
+	// 200
+	return c.JSON(http.StatusOK, email)
+}
+
 func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	if g == nil {
 		panic("No group attached to the User Handler")
@@ -271,6 +321,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	// create does not require JWT auth middleware
 	// hence adding only the first middleware only which is APIKey
 	g.POST("", u.Create, ms[0])
+	g.GET("/preview-email", u.PreviewEmail, ms[0])
 
 	// the rest of the endpoints do not require api key
 	ms = ms[1:]

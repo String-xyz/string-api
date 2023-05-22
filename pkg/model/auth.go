@@ -53,3 +53,7 @@ type WalletSignaturePayloadSigned struct {
 	Signature   string             `json:"signature" validate:"required,base64"`
 	Fingerprint FingerprintPayload `json:"fingerprint"`
 }
+
+type EmailPreview struct {
+	Email string `json:"email"`
+}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
@@ -17,7 +18,7 @@ type UserRequest = model.UserRequest
 type UserUpdates = model.UpdateUserName
 
 type User interface {
-	//GetStatus returns the onboarding status of an user
+	// GetStatus returns the onboarding status of a user
 	GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error)
 
 	// Create creates an user from a wallet signed payload
@@ -25,9 +26,12 @@ type User interface {
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
 	Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (resp model.UserLoginResponse, err error)
 
-	//Update updates the user firstname lastname middlename.
+	// Update updates the user's name fields (firstname, lastname, middlename).
 	// It fetches the user using the walletAddress provided
 	Update(ctx context.Context, userId string, request UserUpdates) (model.User, error)
+
+	// PreviewEmail returns a partially obfuscated version of the user's email address
+	PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error)
 }
 
 type user struct {
@@ -176,4 +180,74 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 	go u.unit21.Entity.Update(ctx2, user)
 
 	return user, nil
+}
+
+func (u user) PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error) {
+	_, finish := Span(ctx, "service.user.PreviewEmail")
+	defer finish()
+
+	// Get wallet address from payload
+	payload, err := verifyWalletAuthentication(request)
+	if err != nil {
+		return email, libcommon.StringError(err)
+	}
+
+	// Verify there is a user registered to this wallet address
+	instrument, err := u.repos.Instrument.GetWalletByAddr(ctx, payload.Address)
+	if err != nil {
+		return email, libcommon.StringError(err)
+	}
+
+	user, err := u.repos.User.GetById(ctx, instrument.UserId)
+	if err != nil {
+		return email, libcommon.StringError(err)
+	}
+
+	user.Email = getValidatedEmailOrEmpty(ctx, u.repos.Contact, user.Id)
+
+	if user.Email == "" {
+		return email, libcommon.StringError(serror.NOT_FOUND)
+	}
+
+	// Partially obfuscate email address
+	// Ex. an****@g***l.com
+	// This could possibly be done as a regex, but also readability is important
+	address := strings.Split(user.Email, "@")
+
+	// Allow for .co.uk, .co.jp, etc to be counted in the extension
+	domain := strings.SplitN(address[1], ".", 2)
+
+	ext := domain[1]
+
+	// Allow for single character addresses, if those exist
+	first_name_char := ""
+	if len(address[0]) >= 2 {
+		first_name_char = address[0][0:2]
+	} else if len(address[0]) == 1 {
+		first_name_char = address[0][0:1]
+	}
+
+	// If the name is 2 characters or less, add two stars minimum
+	num_name_stars := len(address[0]) - 2
+	if num_name_stars <= 0 {
+		num_name_stars = 2
+	}
+
+	name_stars := strings.Repeat("*", num_name_stars)
+
+	num_domain_stars := len(domain[0]) - 2
+	if num_domain_stars <= 0 {
+		num_domain_stars = 2
+	}
+
+	domain_stars := strings.Repeat("*", num_domain_stars)
+
+	first_domain_char := string(domain[0][0])
+	last_domain_char := string(domain[0][len(domain[0])-1])
+
+	obfs_domain := first_domain_char + domain_stars + last_domain_char + "." + ext
+
+	email.Email = first_name_char + name_stars + "@" + obfs_domain
+
+	return email, nil
 }
