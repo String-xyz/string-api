@@ -321,7 +321,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	// create does not require JWT auth middleware
 	// hence adding only the first middleware only which is APIKey
 	g.POST("", u.Create, ms[0])
-	g.GET("/preview-email", u.PreviewEmail, ms[0])
+	g.POST("/preview-email", u.PreviewEmail, ms[0])
 
 	// the rest of the endpoints do not require api key
 	ms = ms[1:]
