@@ -10,8 +10,7 @@ CLUSTER=core
 REPO=${ECR}/${SERVICE}
 
 SANDBOX_CLUSTER=sandbox-core
-SANDBOX_SERVICE=api
-SANDBOX_REPO=${ECR}/${SANDBOX_SERVICE}
+SANDBOX_REPO=${ECR}/sandbox-${SERVICE}
 
 all: build push deploy
 all-sandbox: build-sandbox push-sandbox deploy-sandbox
@@ -45,4 +44,4 @@ push-sandbox: test-envvars
 	docker push $(SANDBOX_REPO):${TAG}
 
 deploy-sandbox: test-envvars
-	aws ecs --region $(AWS_REGION) update-service --cluster $(SANDBOX_CLUSTER) --service ${SANDBOX_SERVICE} --force-new-deployment
+	aws ecs --region $(AWS_REGION) update-service --cluster $(SANDBOX_CLUSTER) --service ${SERVICE} --force-new-deployment
