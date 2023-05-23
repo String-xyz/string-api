@@ -37,6 +37,7 @@ data "aws_iam_policy_document" "task_policy" {
       data.aws_ssm_parameter.datadog.arn,
       data.aws_ssm_parameter.evm_private_key.arn,
       data.aws_ssm_parameter.string_encryption_secret.arn,
+      data.aws_ssm_parameter.jwt_secret.arn,
       data.aws_ssm_parameter.string_internal_id.arn,
       data.aws_ssm_parameter.string_wallet_id.arn,
       data.aws_ssm_parameter.string_bank_id.arn,

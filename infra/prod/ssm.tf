@@ -26,8 +26,8 @@ data "aws_ssm_parameter" "string_platform_id" {
   name = "string-placeholder-platform-id"
 }
 
-data "aws_ssm_parameter" "user_jwt_secret" {
-  name = "user-jwt-secret"
+data "aws_ssm_parameter" "jwt_secret" {
+  name = "api-jwt-secret"
 }
 
 data "aws_ssm_parameter" "unit21_api_key" {
