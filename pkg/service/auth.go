@@ -93,10 +93,12 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
+
 	user, err := a.repos.User.GetById(ctx, instrument.UserId)
 	if err != nil {
 		return resp, libcommon.StringError(err)
 	}
+
 	// TODO: remove user.Email and replace with association with contact via user and platform
 	user.Email = getValidatedEmailOrEmpty(ctx, a.repos.Contact, user.Id)
 
@@ -108,7 +110,6 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	// Send verification email if device is unknown and user has a validated email
 	// and if verification is not bypassed
 	if !bypassDevice && user.Email != "" && !isDeviceValidated(device) {
-		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
 		return resp, libcommon.StringError(serror.UNKNOWN_DEVICE)
 	}
 

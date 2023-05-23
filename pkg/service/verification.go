@@ -35,10 +35,9 @@ type DeviceVerification struct {
 type Verification interface {
 	// SendEmailVerification sends a link to the provided email for verification purpose, link expires in 15 minutes
 	SendEmailVerification(ctx context.Context, platformId string, userId string, email string) error
-
+	SendDeviceVerification(userId, email string, deviceId string, deviceDescription string) error
 	// VerifyEmail verifies the provided email and creates a contact
 	VerifyEmail(ctx context.Context, platformId string, userId string, email string) error
-	SendDeviceVerification(userId, email string, deviceId string, deviceDescription string) error
 	VerifyEmailWithEncryptedToken(ctx context.Context, encrypted string) error
 	PreValidateEmail(ctx context.Context, platformId, userId, email string) error
 }
