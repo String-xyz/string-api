@@ -6,13 +6,15 @@ import (
 	"github.com/String-xyz/go-lib/v2/database"
 	libmiddleware "github.com/String-xyz/go-lib/v2/middleware"
 	"github.com/String-xyz/go-lib/v2/validator"
+
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 
-	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
+
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 type APIConfig struct {
@@ -75,7 +77,7 @@ func StartInternal(config APIConfig) {
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
 	e.Use(libmiddleware.Recover())
 	e.Use(libmiddleware.RequestId())
-	e.Use(libmiddleware.Tracer("string-api"))
+	e.Use(libmiddleware.Tracer("api"))
 	e.Use(libmiddleware.CORS())
 	e.Use(libmiddleware.Logger(logger))
 	e.Use(libmiddleware.LogRequest())
