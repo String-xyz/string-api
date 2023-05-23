@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
+  cluster_name       = "core"
   env                = "prod"
-  service_name       = "string-api"
+  service_name       = "api"
   domain             = "api.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -22,7 +22,7 @@ locals {
   task_definition = jsonencode([
     {
       name      = local.service_name
-      image     = "${aws_ecr_repository.repo.repository_url}:${var.versioning}"
+      image     = "${aws_ecr_repository.rpo.repository_url}:${var.versioning}"
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
@@ -35,6 +35,10 @@ locals {
         {
           name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
+        },
+        {
+          name = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
           name      = "STRING_ENCRYPTION_KEY"
@@ -215,9 +219,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"

@@ -1,5 +1,9 @@
 resource "aws_ecs_cluster" "cluster" {
-  name = local.cluster_name
+  name = "string-core"
+}
+
+data "aws_ecs_cluster" "cluster" {
+  cluster_name  = local.cluster_name
 }
 
 resource "aws_ecs_task_definition" "task_definition" {
@@ -13,7 +17,22 @@ resource "aws_ecs_task_definition" "task_definition" {
   task_role_arn            = aws_iam_role.task_ecs_role.arn
 }
 
+# keeping the current repo alive until our next prod deployment
 resource "aws_ecr_repository" "repo" {
+  name                 = "string-api"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Environment = local.env
+    Name        = "string-api"
+  }
+}
+
+resource "aws_ecr_repository" "rpo" {
   name                 = local.service_name
   image_tag_mutability = "IMMUTABLE"
 
@@ -31,7 +50,7 @@ resource "aws_ecs_service" "ecs_service" {
   name            = local.service_name
   task_definition = local.service_name
   desired_count   = local.desired_task_count
-  cluster         = aws_ecs_cluster.cluster.name
+  cluster         = data.aws_ecs_cluster.cluster.cluster_name
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -61,7 +80,7 @@ resource "aws_ecs_service" "ecs_service" {
 resource "aws_appautoscaling_target" "ecs_target" {
   max_capacity       = 20
   min_capacity       = 1
-  resource_id        = "service/${aws_ecs_cluster.cluster.name}/${aws_ecs_service.ecs_service.name}"
+  resource_id        = "service/${data.aws_ecs_cluster.cluster.cluster_name}/${aws_ecs_service.ecs_service.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
