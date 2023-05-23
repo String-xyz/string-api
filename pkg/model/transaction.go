@@ -32,6 +32,7 @@ type PaymentInfo struct {
 	CardToken *string `json:"cardToken"`
 	CardId    *string `json:"cardId"`
 	CVV       *string `json:"cvv"`
+	SaveCard  bool    `json:"saveCard" validate:"boolean"`
 }
 
 // User will pass this in for a quote and receive Execution Parameters

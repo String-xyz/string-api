@@ -31,6 +31,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
+// @Param saveCard query boolean false "do not save payment info"
 // @Param body body model.ExecutionRequest true "Execution Request"
 // @Success 200 {object} model.TransactionReceipt
 // @Failure 400 {object} error
