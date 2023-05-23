@@ -81,7 +81,7 @@ resource "aws_alb_listener" "alb_https_listener" {
 }
 
  resource "aws_ssm_parameter" "alb_listerner" {
-    name = "${local.env}${local.service_name}-alb-listener-arn"
+    name = "${local.env}-${local.service_name}-alb-listener-arn"
     value = aws_alb_listener.alb_https_listener.arn
     type = "String"
  }
