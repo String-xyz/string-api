@@ -29,7 +29,7 @@ resource "aws_ecr_repository" "repo" {
 
 resource "aws_ecs_service" "ecs_service" {
   name            = local.service_name
-  task_definition = local.service_name
+  task_definition = "${local.env}-${local.service_name}"
   desired_count   = local.desired_task_count
   cluster         = aws_ecs_cluster.cluster.name
   launch_type     = "FARGATE"
