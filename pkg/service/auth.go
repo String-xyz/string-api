@@ -110,7 +110,6 @@ func (a auth) VerifySignedPayload(ctx context.Context, request model.WalletSigna
 	// Send verification email if device is unknown and user has a validated email
 	// and if verification is not bypassed
 	if !bypassDevice && user.Email != "" && !isDeviceValidated(device) {
-		go a.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
 		return resp, libcommon.StringError(serror.UNKNOWN_DEVICE)
 	}
 

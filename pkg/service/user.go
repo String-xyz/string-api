@@ -30,20 +30,30 @@ type User interface {
 	// It fetches the user using the walletAddress provided
 	Update(ctx context.Context, userId string, request UserUpdates) (model.User, error)
 
+	// GetUserByLoginPayload get the user without actually logging them in
+	GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error)
+
 	// PreviewEmail returns a partially obfuscated version of the user's email address
 	PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error)
+
+	// RequestDeviceVerification sends verify device email without needing user id
+	RequestDeviceVerification(ctx context.Context, request model.WalletSignaturePayloadSigned) (err error)
+
+	// GetDeviceStatus checks the status of the device verification
+	GetDeviceStatus(ctx context.Context, request model.WalletSignaturePayloadSigned) (model.UserOnboardingStatus, error)
 }
 
 type user struct {
-	repos       repository.Repositories
-	auth        Auth
-	fingerprint Fingerprint
-	device      Device
-	unit21      Unit21
+	repos               repository.Repositories
+	auth                Auth
+	fingerprint         Fingerprint
+	device              Device
+	unit21              Unit21
+	verificationService Verification
 }
 
-func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21) User {
-	return &user{repos, auth, fprint, device, unit21}
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21, verificationSrv Verification) User {
+	return &user{repos, auth, fprint, device, unit21, verificationSrv}
 }
 
 func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error) {
@@ -182,23 +192,87 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 	return user, nil
 }
 
-func (u user) PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error) {
-	_, finish := Span(ctx, "service.user.PreviewEmail")
+func (u user) GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error) {
+	_, finish := Span(ctx, "service.device.GetUserByLoginPayload")
 	defer finish()
 
 	// Get wallet address from payload
 	payload, err := verifyWalletAuthentication(request)
 	if err != nil {
-		return email, libcommon.StringError(err)
+		return user, libcommon.StringError(err)
 	}
 
 	// Verify there is a user registered to this wallet address
 	instrument, err := u.repos.Instrument.GetWalletByAddr(ctx, payload.Address)
 	if err != nil {
-		return email, libcommon.StringError(err)
+		return user, libcommon.StringError(err)
 	}
 
-	user, err := u.repos.User.GetById(ctx, instrument.UserId)
+	user, err = u.repos.User.GetById(ctx, instrument.UserId)
+	if err != nil {
+		return user, libcommon.StringError(err)
+	}
+
+	return user, nil
+}
+
+func (u user) RequestDeviceVerification(ctx context.Context, request model.WalletSignaturePayloadSigned) error {
+	_, finish := Span(ctx, "service.user.RequestDeviceVerification")
+	defer finish()
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+
+	user.Email = getValidatedEmailOrEmpty(ctx, u.repos.Contact, user.Id)
+
+	if user.Email == "" {
+		return libcommon.StringError(serror.NOT_FOUND)
+	}
+
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return libcommon.StringError(err)
+	}
+
+	if !isDeviceValidated(device) {
+		u.verificationService.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
+	}
+
+	return nil
+}
+
+func (u user) GetDeviceStatus(ctx context.Context, request model.WalletSignaturePayloadSigned) (model.UserOnboardingStatus, error) {
+	_, finish := Span(ctx, "service.user.GetDeviceStatus")
+	defer finish()
+
+	resp := model.UserOnboardingStatus{Status: "unverified"}
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
+	if err != nil {
+		return resp, libcommon.StringError(err)
+	}
+
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return resp, libcommon.StringError(err)
+	}
+
+	if !isDeviceValidated(device) {
+		return resp, nil
+	}
+
+	resp.Status = "verified"
+
+	return resp, nil
+}
+
+func (u user) PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error) {
+	_, finish := Span(ctx, "service.user.PreviewEmail")
+	defer finish()
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
 	if err != nil {
 		return email, libcommon.StringError(err)
 	}
