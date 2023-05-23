@@ -1,7 +1,3 @@
-resource "aws_ecs_cluster" "cluster" {
-  name = "string-core"
-}
-
 data "aws_ecs_cluster" "cluster" {
   cluster_name  = local.cluster_name
 }
@@ -17,22 +13,7 @@ resource "aws_ecs_task_definition" "task_definition" {
   task_role_arn            = aws_iam_role.task_ecs_role.arn
 }
 
-# keeping the current repo alive until our next prod deployment
 resource "aws_ecr_repository" "repo" {
-  name                 = "string-api"
-  image_tag_mutability = "IMMUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Environment = local.env
-    Name        = "string-api"
-  }
-}
-
-resource "aws_ecr_repository" "rpo" {
   name                 = local.service_name
   image_tag_mutability = "IMMUTABLE"
 

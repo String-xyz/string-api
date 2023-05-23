@@ -22,7 +22,7 @@ locals {
   task_definition = jsonencode([
     {
       name      = local.service_name
-      image     = "${aws_ecr_repository.rpo.repository_url}:${var.versioning}"
+      image     = "${aws_ecr_repository.repo.repository_url}:${var.versioning}"
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
