@@ -189,14 +189,14 @@ locals {
           value = "receipts@stringxyz.com"
         },
         {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.sandbox2.unit21.com/evaluate"
+        },
+        {
           name = "CHECKOUT_ENV"
           value = local.env
         },
-        {
-          name = "UNIT21_RTR_URL"
-          value ="https://rtr.sandbox2.unit21.com/evaluate"
-        }
-      ],
+      ]
       logConfiguration = {
         logDriver = "awsfirelens"
         secretOptions = [{
@@ -205,9 +205,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"

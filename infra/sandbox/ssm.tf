@@ -22,16 +22,12 @@ data "aws_ssm_parameter" "string_bank_id" {
   name = "string-bank-id"     
 }
 
-data "aws_ssm_parameter" "user_jwt_secret" {
-  name = "user-jwt-secret"
+data "aws_ssm_parameter" "jwt_secret" {
+  name = "sandbox-api-jwt-secret"
 }
 
 data "aws_ssm_parameter" "unit21_api_key" {
   name = "unit21-api-key"
-}
-
-data "aws_ssm_parameter" "customer_jwt_secret" {
-  name = "customer-jwt-secret"
 }
 
 data "aws_ssm_parameter" "checkout_public_key" {
