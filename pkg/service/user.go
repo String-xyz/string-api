@@ -44,12 +44,12 @@ type User interface {
 }
 
 type user struct {
-	repos               repository.Repositories
-	auth                Auth
-	fingerprint         Fingerprint
-	device              Device
-	unit21              Unit21
-	verificationService Verification
+	repos        repository.Repositories
+	auth         Auth
+	fingerprint  Fingerprint
+	device       Device
+	unit21       Unit21
+	verification Verification
 }
 
 func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21, verificationSrv Verification) User {
@@ -237,7 +237,7 @@ func (u user) RequestDeviceVerification(ctx context.Context, request model.Walle
 	}
 
 	if !isDeviceValidated(device) {
-		u.verificationService.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
+		u.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
 	}
 
 	return nil

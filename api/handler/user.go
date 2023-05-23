@@ -29,9 +29,9 @@ type ResultMessage struct {
 }
 
 type user struct {
-	userService         service.User
-	verificationService service.Verification
-	Group               *echo.Group
+	userService  service.User
+	verification service.Verification
+	Group        *echo.Group
 }
 
 func NewUser(route *echo.Echo, userSrv service.User, verificationSrv service.Verification) User {
@@ -205,7 +205,7 @@ func (u user) VerifyEmail(c echo.Context) error {
 		return httperror.BadRequest400(c, "Invalid email")
 	}
 
-	err := u.verificationService.SendEmailVerification(ctx, platformId, userId, email)
+	err := u.verification.SendEmailVerification(ctx, platformId, userId, email)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: email verification")
 
@@ -346,7 +346,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 		return httperror.BadRequest400(c, "Invalid email")
 	}
 
-	err = u.verificationService.PreValidateEmail(ctx, platformId, userId, body.Email)
+	err = u.verification.PreValidateEmail(ctx, platformId, userId, body.Email)
 	if err != nil {
 		// ?
 		return DefaultErrorHandler(c, err, "platformInternal: PreValidateEmail")
