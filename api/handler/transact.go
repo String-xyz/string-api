@@ -56,9 +56,6 @@ func (t transaction) Transact(c echo.Context) error {
 		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
-	// Save Card by Default
-	saveCard := c.QueryParam("saveCard") != "false"
-
 	var body model.ExecutionRequest
 
 	err := c.Bind(&body)
@@ -83,7 +80,7 @@ func (t transaction) Transact(c echo.Context) error {
 
 	ip := c.RealIP()
 
-	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip, saveCard)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute")
 

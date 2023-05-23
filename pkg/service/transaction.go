@@ -26,7 +26,7 @@ import (
 
 type Transaction interface {
 	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error)
-	Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string, saveCard bool) (res model.TransactionReceipt, err error)
+	Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error)
 }
 
 type TransactionRepos struct {
@@ -127,7 +127,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string, saveCard bool) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
 	_, finish := Span(ctx, "service.transaction.Execute", SpanTag{"platformId": platformId})
 	defer finish()
 

@@ -127,21 +127,25 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		}
 	}
 
-	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
-	fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
-
 	usd := convertAmount(p.floatEstimate.TotalUSD)
 	capture := false
 	request := &payments.Request{
-		Source:   &paymentSource,
-		Amount:   usd,
-		Currency: "USD",
-		Customer: &payments.Customer{
-			Name:  fullName,
-			Email: p.user.Email, // Replace with more robust email from platform and user
-		},
+		Source:    &paymentSource,
+		Amount:    usd,
+		Currency:  "USD",
 		Capture:   &capture,
 		PaymentIP: p.transactionModel.IPAddress,
+	}
+
+	// If user wants to save card, add customer info
+	if paymentInfo.SaveCard {
+		fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
+		fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
+
+		request.Customer = &payments.Customer{
+			Name:  fullName,
+			Email: p.user.Email, // Replace with more robust email from platform and user
+		}
 	}
 
 	idempotencyKey := checkout.NewIdempotencyKey()
@@ -168,6 +172,7 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
 		}
 	}
+
 	p.cardAuthorization = &auth
 	// TODO: Create entry for authorization in our DB associated with userWallet
 	return p, nil
