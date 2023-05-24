@@ -237,7 +237,7 @@ func (u user) RequestDeviceVerification(ctx context.Context, request model.Walle
 	}
 
 	if !isDeviceValidated(device) {
-		u.verification.SendDeviceVerification(user.Id, user.Email, device.Id, device.Description)
+		u.verification.SendDeviceVerification(ctx, user.Id, user.Email, device.Id, device.Description)
 	}
 
 	return nil
