@@ -1,26 +1,26 @@
 <a href='https://www.string.xyz'>
 <img src='https://uploads-ssl.webflow.com/63163482142485bcffc0cd47/6318c58524a46f188e0adef6_Logo-dark-lg-p-500.png'></img></a> 
-<header>Your {{.Params.ReceiptType}} Details</header> 
-<br>Dear {{.Params.CustomerName}},
+<header>Your {{.params.ReceiptType}} Details</header> 
+<br>Dear {{.params.CustomerName}},
 <br>Thank you for using String.  Here is your transaction receipt: 
-<br>Transaction Date: {{.Params.TransactionDate}}
-<br>String Payment ID: {{.Params.StringPaymentId}}
+<br>Transaction Date: {{.params.TransactionDate}}
+<br>String Payment ID: {{.params.StringPaymentId}}
 
-<br>Transaction ID: <a href={{.Params.TransactionExplorer}}>{{.Params.TransactionId}}</a>
-<br>Destination Wallet: <a href='{{.Params.DestinationExplorer}}'>{{.Params.DestinationAddress}}</a>
-<br>Payment Descriptor: {{.Params.PaymentDescriptor}}
-<br>Payment Method: {{.Params.PaymentMethod}}
-<br>Platform: {{.Params.Platform}}
-<br>Item Ordered: {{.Params.ItemOrdered}}
-<br>Token ID: {{.Params.TokenId}}
-<br>Subtotal: {{.Params.Subtotal}}
-<br>Network Fee: {{.Params.NetworkFee}}
-<br>Processing Fee: {{.Params.ProcessingFee}}
-<br>Total Charge: {{.Params.Total}}
+<br>Transaction ID: <a href={{.params.TransactionExplorer}}>{{.params.TransactionId}}</a>
+<br>Destination Wallet: <a href='{{.params.DestinationExplorer}}'>{{.params.DestinationAddress}}</a>
+<br>Payment Descriptor: {{.params.PaymentDescriptor}}
+<br>Payment Method: {{.params.PaymentMethod}}
+<br>Platform: {{.params.Platform}}
+<br>Item Ordered: {{.params.ItemOrdered}}
+<br>Token ID: {{.params.TokenId}}
+<br>Subtotal: {{.params.Subtotal}}
+<br>Network Fee: {{.params.NetworkFee}}
+<br>Processing Fee: {{.params.ProcessingFee}}
+<br>Total Charge: {{.params.Total}}
 
-<br>The transaction will appear on your card statement as {{.Params.PaymentDescriptor}}
+<br>The transaction will appear on your card statement as {{.params.PaymentDescriptor}}
 <br>All sales are final.  Please see our <a href='https://www.string.xyz/terms-of-service'>Terms of Service</a> 
-<br>Please reference your String Payment ID {{.Params.StringPaymentId}}
+<br>Please reference your String Payment ID {{.params.StringPaymentId}}
 <br><br>Service powered by String 
 <br>String XYZ LLC | 490 43rd St, #86, Oakland CA 94609. | NMLS ID: 2400614 
 <br>Please visit us at string.xyz.  Should you need to reach us, please contact us at <a href='mailto:support@string.xyz'>support@string.xyz</a>. 

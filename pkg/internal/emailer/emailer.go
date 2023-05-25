@@ -49,17 +49,16 @@ type ReceiptGenerationParams struct {
 }
 
 func (e emailer) SendEmailVerification(ctx context.Context, email string, code string) error {
+	link := config.Var.BASE_URL + "verification?type=email&token=" + code
+
 	tmpl, err := template.ParseFS(templatesFS, "templates/email_verification.tpl")
 	if err != nil {
 		return err
 	}
 
-	baseURL := config.Var.BASE_URL
-
 	var buf bytes.Buffer
 	err = tmpl.ExecuteTemplate(&buf, "email_verification.tpl", map[string]interface{}{
-		"BaseURL": baseURL,
-		"Code":    code,
+		"link": link,
 	})
 	if err != nil {
 		return err
@@ -81,8 +80,8 @@ func (e emailer) SendDeviceVerification(ctx context.Context, email string, link 
 
 	var buf bytes.Buffer
 	err = tmpl.ExecuteTemplate(&buf, "device_verification.tpl", map[string]interface{}{
-		"TextContent": textContent,
-		"Link":        link,
+		"textContent": textContent,
+		"link":        link,
 	})
 	if err != nil {
 		return err
@@ -103,7 +102,7 @@ func (e emailer) SendReceipt(ctx context.Context, email string, params ReceiptGe
 
 	var buf bytes.Buffer
 	err = tmpl.ExecuteTemplate(&buf, "receipt.tpl", map[string]interface{}{
-		"Params": params,
+		"params": params,
 	})
 	if err != nil {
 		return err
