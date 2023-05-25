@@ -102,7 +102,7 @@ func (e emailer) SendReceipt(ctx context.Context, email string, params ReceiptGe
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, "receip.tpl", map[string]interface{}{
+	err = tmpl.ExecuteTemplate(&buf, "receipt.tpl", map[string]interface{}{
 		"Params": params,
 	})
 	if err != nil {
