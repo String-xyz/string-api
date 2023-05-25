@@ -49,7 +49,6 @@ type ReceiptGenerationParams struct {
 }
 
 func (e emailer) SendEmailVerification(ctx context.Context, email string, code string) error {
-	// tmpl, err := template.ParseFiles("pkg/templates/email_verification.html")
 	tmpl, err := template.ParseFS(templatesFS, "templates/email_verification.tpl")
 	if err != nil {
 		return err
