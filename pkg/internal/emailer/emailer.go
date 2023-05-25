@@ -80,7 +80,7 @@ func (e emailer) SendDeviceVerification(ctx context.Context, email string, link 
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, "device_verification.html", map[string]interface{}{
+	err = tmpl.ExecuteTemplate(&buf, "device_verification.tpl", map[string]interface{}{
 		"TextContent": textContent,
 		"Link":        link,
 	})
@@ -102,7 +102,7 @@ func (e emailer) SendReceipt(ctx context.Context, email string, params ReceiptGe
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, "receipt.html", map[string]interface{}{
+	err = tmpl.ExecuteTemplate(&buf, "receip.tpl", map[string]interface{}{
 		"Params": params,
 	})
 	if err != nil {
