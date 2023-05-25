@@ -75,7 +75,6 @@ func (e emailer) SendEmailVerification(ctx context.Context, email string, code s
 }
 
 func (e emailer) SendDeviceVerification(ctx context.Context, email string, link string, textContent string) error {
-	// tmpl, err := template.ParseFiles("pkg/templates/device_verification.html")
 	tmpl, err := template.ParseFS(templatesFS, "templates/device_verification.tpl")
 	if err != nil {
 		return err
