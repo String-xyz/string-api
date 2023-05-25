@@ -97,7 +97,6 @@ func (e emailer) SendDeviceVerification(ctx context.Context, email string, link 
 
 func (e emailer) SendReceipt(ctx context.Context, email string, params ReceiptGenerationParams) error {
 	tmpl, err := template.ParseFS(templatesFS, "templates/receipt.tpl")
-	// tmpl, err := template.ParseFiles("pkg/templates/receipt.html")
 	if err != nil {
 		return err
 	}
