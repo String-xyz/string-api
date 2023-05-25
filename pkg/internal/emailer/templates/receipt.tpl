@@ -3,8 +3,8 @@
 <header>Your {{.Params.ReceiptType}} Details</header> 
 <br>Dear {{.Params.CustomerName}},
 <br>Thank you for using String.  Here is your transaction receipt: 
-<br>Transaction Date: .Params.TransactionDate 
-<br>String Payment ID: .Params.StringPaymentId
+<br>Transaction Date: {{.Params.TransactionDate}}
+<br>String Payment ID: {{.Params.StringPaymentId}}
 
 <br>Transaction ID: <a href={{.Params.TransactionExplorer}}>{{.Params.TransactionId}}</a>
 <br>Destination Wallet: <a href='{{.Params.DestinationExplorer}}'>{{.Params.DestinationAddress}}</a>
