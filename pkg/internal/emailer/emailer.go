@@ -1,8 +1,9 @@
-package service
+package emailer
 
 import (
 	"bytes"
 	"context"
+	"embed"
 	"text/template"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
@@ -11,17 +12,20 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-type Email interface {
+type Emailer interface {
 	SendReceipt(ctx context.Context, email string, params ReceiptGenerationParams) error
 	SendEmailVerification(ctx context.Context, email string, code string) error
 	SendDeviceVerification(ctx context.Context, email string, link string, textContent string) error
 }
 
-type email struct {
+//go:embed templates/*
+var templatesFS embed.FS
+
+type emailer struct {
 }
 
-func NewEmail() Email {
-	return &email{}
+func New() Emailer {
+	return &emailer{}
 }
 
 type ReceiptGenerationParams struct {
@@ -44,8 +48,9 @@ type ReceiptGenerationParams struct {
 	Total               string
 }
 
-func (e email) SendEmailVerification(ctx context.Context, email string, code string) error {
-	tmpl, err := template.ParseFiles("pkg/templates/email_verification.html")
+func (e emailer) SendEmailVerification(ctx context.Context, email string, code string) error {
+	// tmpl, err := template.ParseFiles("pkg/templates/email_verification.html")
+	tmpl, err := template.ParseFS(templatesFS, "templates/email_verification.tpl")
 	if err != nil {
 		return err
 	}
@@ -53,7 +58,7 @@ func (e email) SendEmailVerification(ctx context.Context, email string, code str
 	baseURL := config.Var.BASE_URL
 
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, "email_verification.html", map[string]interface{}{
+	err = tmpl.ExecuteTemplate(&buf, "email_verification.tpl", map[string]interface{}{
 		"BaseURL": baseURL,
 		"Code":    code,
 	})
@@ -69,8 +74,9 @@ func (e email) SendEmailVerification(ctx context.Context, email string, code str
 	return sendEmail(ctx, from, subject, to, textContent, buf.String())
 }
 
-func (e email) SendDeviceVerification(ctx context.Context, email string, link string, textContent string) error {
-	tmpl, err := template.ParseFiles("pkg/templates/device_verification.html")
+func (e emailer) SendDeviceVerification(ctx context.Context, email string, link string, textContent string) error {
+	// tmpl, err := template.ParseFiles("pkg/templates/device_verification.html")
+	tmpl, err := template.ParseFS(templatesFS, "templates/device_verification.tpl")
 	if err != nil {
 		return err
 	}
@@ -91,8 +97,9 @@ func (e email) SendDeviceVerification(ctx context.Context, email string, link st
 	return sendEmail(ctx, from, subject, to, textContent, buf.String())
 }
 
-func (e email) SendReceipt(ctx context.Context, email string, params ReceiptGenerationParams) error {
-	tmpl, err := template.ParseFiles("pkg/templates/receipt.html")
+func (e emailer) SendReceipt(ctx context.Context, email string, params ReceiptGenerationParams) error {
+	tmpl, err := template.ParseFS(templatesFS, "templates/receipt.tpl")
+	// tmpl, err := template.ParseFiles("pkg/templates/receipt.html")
 	if err != nil {
 		return err
 	}

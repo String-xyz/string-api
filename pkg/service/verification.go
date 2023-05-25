@@ -10,6 +10,7 @@ import (
 	"github.com/String-xyz/go-lib/v2/validator"
 	"github.com/String-xyz/string-api/config"
 
+	"github.com/String-xyz/string-api/pkg/internal/emailer"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -73,9 +74,9 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 	}
 	code = url.QueryEscape(code) // make sure special characters are browser friendly
 
-	e := NewEmail()
+	emailer := emailer.New()
 
-	return e.SendEmailVerification(ctx, email, code)
+	return emailer.SendEmailVerification(ctx, email, code)
 }
 
 func (v verification) SendDeviceVerification(ctx context.Context, userId string, email string, deviceId string, deviceDescription string) error {
@@ -93,8 +94,8 @@ func (v verification) SendDeviceVerification(ctx context.Context, userId string,
 
 	textContent := "We noticed that you attempted to log in from " + deviceDescription + " at " + time.Now().Local().Format(time.RFC1123) + ". Is this you?"
 
-	e := NewEmail()
-	return e.SendDeviceVerification(ctx, email, link, textContent)
+	emailer := emailer.New()
+	return emailer.SendDeviceVerification(ctx, email, link, textContent)
 }
 
 func (v verification) VerifyEmail(ctx context.Context, userId string, email string, platformId string) error {

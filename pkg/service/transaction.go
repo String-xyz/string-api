@@ -15,6 +15,7 @@ import (
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/emailer"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	repository "github.com/String-xyz/string-api/pkg/repository"
@@ -853,7 +854,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	transactionRequest := p.executionRequest.Quote.TransactionRequest
 	estimate := p.floatEstimate
 
-	receiptParams := ReceiptGenerationParams{
+	receiptParams := emailer.ReceiptGenerationParams{
 		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:        name,
 		StringPaymentId:     p.transactionModel.Id,
@@ -873,9 +874,9 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		Total:               common.FloatToUSDString(estimate.TotalUSD),
 	}
 
-	email := NewEmail()
+	emailer := emailer.New()
 
-	err = email.SendReceipt(ctx, contact.Data, receiptParams)
+	err = emailer.SendReceipt(ctx, contact.Data, receiptParams)
 	if err != nil {
 		log.Err(err).Msg("Error sending email receipt to user")
 		return libcommon.StringError(err)
