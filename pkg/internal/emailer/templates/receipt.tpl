@@ -14,7 +14,7 @@
 <br>Item Ordered: {{.Params.ItemOrdered}}
 <br>Token ID: {{.Params.TokenId}}
 <br>Subtotal: {{.Params.Subtotal}}
-<br>Network Fee:: {{.Params.NetworkFee}}
+<br>Network Fee: {{.Params.NetworkFee}}
 <br>Processing Fee: {{.Params.ProcessingFee}}
 <br>Total Charge: {{.Params.Total}}
 
