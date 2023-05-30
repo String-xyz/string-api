@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
-	"github.com/String-xyz/string-api/config"
 	"github.com/ethereum/go-ethereum/accounts"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -39,10 +38,6 @@ func BigNumberToFloat(bigNumber string, decimals uint64) (floatReturn float64, e
 	}
 	floatReturn = floatReturn * math.Pow(10, -float64(decimals))
 	return
-}
-
-func GetBaseURL() string {
-	return config.Var.BASE_URL
 }
 
 func FloatToUSDString(amount float64) string {

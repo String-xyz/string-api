@@ -15,6 +15,7 @@ import (
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/emailer"
 
 	"github.com/String-xyz/string-api/pkg/model"
 	repository "github.com/String-xyz/string-api/pkg/repository"
@@ -845,14 +846,6 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		name = "User"
 	}
 
-	receiptParams := common.ReceiptGenerationParams{
-		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
-		CustomerName:      name,
-		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: p.executionRequest.Quote.TransactionRequest.AssetName,
-		TransactionDate:   time.Now().Format(time.RFC1123),
-	}
-
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -861,20 +854,29 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	transactionRequest := p.executionRequest.Quote.TransactionRequest
 	estimate := p.floatEstimate
 
-	receiptBody := [][2]string{
-		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
-		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + transactionRequest.UserAddress + "'>" + transactionRequest.UserAddress + "</a>"},
-		{"Payment Descriptor", receiptParams.PaymentDescriptor},
-		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
-		{"Platform", platform.Name},
-		{"Item Ordered", p.executionRequest.Quote.TransactionRequest.AssetName},
-		{"Token ID", "1234"}, // TODO: retrieve dynamically, maybe after building token transfer detection
-		{"Subtotal", common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD)},
-		{"Network Fee:", common.FloatToUSDString(estimate.GasUSD)},
-		{"Processing Fee", common.FloatToUSDString(estimate.ServiceUSD)},
-		{"Total Charge", common.FloatToUSDString(estimate.TotalUSD)},
+	receiptParams := emailer.ReceiptGenerationParams{
+		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
+		CustomerName:        name,
+		StringPaymentId:     p.transactionModel.Id,
+		PaymentDescriptor:   p.executionRequest.Quote.TransactionRequest.AssetName,
+		TransactionDate:     time.Now().Format(time.RFC1123),
+		TransactionId:       *p.txId,
+		TransactionExplorer: p.chain.Explorer + "/tx/" + *p.txId,
+		DestinationAddress:  transactionRequest.UserAddress,
+		DestinationExplorer: p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
+		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
+		Platform:            platform.Name,
+		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
+		TokenId:             "1234", // TODO: retrieve dynamically
+		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
+		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
+		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
+		Total:               common.FloatToUSDString(estimate.TotalUSD),
 	}
-	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+
+	emailer := emailer.New()
+
+	err = emailer.SendReceipt(ctx, contact.Data, receiptParams)
 	if err != nil {
 		log.Err(err).Msg("Error sending email receipt to user")
 		return libcommon.StringError(err)
