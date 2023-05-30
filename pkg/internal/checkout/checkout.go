@@ -113,9 +113,18 @@ func (p Payments) GetById(paymentId string) (*GetPaymentResponse, error) {
 	return resp, nil
 }
 
+func (c Customers) Create(request CustomerRequest) (*CreateResponse, error) {
+	resp, err := c.client.Customers.Create(request)
+	if err != nil {
+		log.Err(err).Msg("internal checkout error while creating customer")
+		return nil, common.StringError(err)
+	}
+	return resp, nil
+}
+
 // GetById gets a customer by id and returns a GetCustomerResponse and an error if any.
 // This method also returns all the instruments associated with the customer.
-func (c Customers) GetById(customerId string) (*GetCustomerResponse, error) {
+func (c Customers) GetById(customerId string) (*CustomerResponse, error) {
 	resp, err := c.client.Customers.Get(customerId)
 	if err != nil {
 		log.Err(err).Msg("internal checkout error while getting customer by id")

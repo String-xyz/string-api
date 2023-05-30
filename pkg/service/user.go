@@ -7,6 +7,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
+
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
@@ -184,6 +185,10 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
+	// Create customer on checkout so we can use it when processing payments
+	go func(user model.User, email string, platformId string) {
+		createCustomer(user, email, platformId)
+	}(user, "", "")
 
 	// Create a new context since this will run in background
 	ctx2 := context.Background()

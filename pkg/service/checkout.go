@@ -3,6 +3,7 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/cockroachdb/errors"
 
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
+	"github.com/String-xyz/string-api/pkg/model"
 )
 
 type AuthorizedCharge struct {
@@ -27,6 +29,28 @@ type AuthorizedCharge struct {
 
 func convertAmount(amount float64) uint64 {
 	return uint64(math.Round(amount * 100))
+}
+
+// Create Customer from the internal user and update
+func createCustomer(user model.User, email string, platformId string) string {
+	client := checkout.New()
+	fmt.Sprintf("")
+	fullName := user.FirstName + " " + user.MiddleName + " " + user.LastName
+	fullName = strings.Replace(fullName, "  ", " ", 1)
+
+	resp, err := client.Customer.Create(checkout.CustomerRequest{
+		Email: email,
+		Name:  fullName,
+		Metadata: map[string]interface{}{
+			"platformId": platformId,
+		},
+	})
+
+	if err != nil {
+		return ""
+	}
+
+	return resp.Id
 }
 
 func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {
@@ -55,8 +79,8 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 // If the payment is successful, the payment status will be "captured".
 func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
 	usd := convertAmount(p.floatEstimate.TotalUSD)
-	cko := checkout.New()
-	captResp, err := cko.Payment.Capture(p.cardAuthorization.PaymentId, checkout.CaptureRequest{Amount: int64(usd)})
+	client := checkout.New()
+	captResp, err := client.Payment.Capture(p.cardAuthorization.PaymentId, checkout.CaptureRequest{Amount: int64(usd)})
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -68,7 +92,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	// If the payment was successful, the payment status will be "captured".
 	// If status is pending, we need to check the payment status again after a few seconds or use webhooks
 	// which is not implemented yet.
-	payResp, err := cko.Payment.GetById(p.cardAuthorization.PaymentId)
+	payResp, err := client.Payment.GetById(p.cardAuthorization.PaymentId)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -78,6 +102,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	}
 
 	p.PaymentStatus = payResp.Status
+	p.ActionId = captResp.ActionId
 
 	return p, nil
 }
@@ -107,12 +132,10 @@ func sourceForRequest(p transactionProcessingData) checkout.Source {
 	return nil
 }
 
-func customerForRequest(p transactionProcessingData) *checkout.CustomerRequest {
-	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
-	fullName = strings.Replace(fullName, "  ", " ", 1)
-	return &checkout.CustomerRequest{
-		Email: p.user.Email,
-		Name:  fullName,
+func customerForRequest(p transactionProcessingData) *checkout.Customer {
+	checkoutId := p.user.CheckoutId
+	return &checkout.Customer{
+		Id: checkoutId,
 	}
 }
 

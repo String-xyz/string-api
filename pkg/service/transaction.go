@@ -76,6 +76,7 @@ type transactionProcessingData struct {
 	floatEstimate      *model.Estimate[float64]
 	cardAuthorization  *AuthorizedCharge
 	PaymentStatus      checkout.PaymentStatus
+	ActionId           string
 	recipientWalletId  *string
 	txId               *string
 	cumulativeValue    *big.Int
@@ -817,7 +818,7 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.cardCapture.Accepted.ActionID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.ActionId}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, txLeg)
 	if err != nil {
 		return libcommon.StringError(err)

@@ -31,16 +31,18 @@ const (
 )
 
 type (
-	SourceType          = payments.SourceType
-	CustomerRequest     = ckocommon.CustomerRequest
-	InstrumentList      = []instruments.GetInstrumentResponse
-	GetCustomerResponse = customers.GetCustomerResponse
-	PaymentRequest      = nas.PaymentRequest
-	PaymentResponse     = nas.PaymentResponse
-	GetPaymentResponse  = nas.GetPaymentResponse
-	CaptureRequest      = nas.CaptureRequest
-	CaptureResponse     = payments.CaptureResponse
-	PaymentStatus       = payments.PaymentStatus
+	SourceType         = payments.SourceType
+	Customer           = ckocommon.CustomerRequest
+	CustomerRequest    = customers.CustomerRequest
+	CreateResponse     = ckocommon.IdResponse
+	InstrumentList     = []instruments.GetInstrumentResponse
+	CustomerResponse   = customers.GetCustomerResponse
+	PaymentRequest     = nas.PaymentRequest
+	PaymentResponse    = nas.PaymentResponse
+	GetPaymentResponse = nas.GetPaymentResponse
+	CaptureRequest     = nas.CaptureRequest
+	CaptureResponse    = payments.CaptureResponse
+	PaymentStatus      = payments.PaymentStatus
 )
 
 type Source interface {
