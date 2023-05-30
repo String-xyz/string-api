@@ -7,69 +7,14 @@ import (
 	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
-	"github.com/String-xyz/string-api/config"
-	customer "github.com/String-xyz/string-api/pkg/internal/checkout"
-	"github.com/checkout/checkout-sdk-go"
-	checkoutCommon "github.com/checkout/checkout-sdk-go/common"
-	"github.com/checkout/checkout-sdk-go/payments"
-	"github.com/checkout/checkout-sdk-go/tokens"
+	"github.com/cockroachdb/errors"
+
+	"github.com/String-xyz/string-api/pkg/internal/checkout"
 )
 
-func getConfig() (*checkout.Config, error) {
-	checkoutEnv := checkout.Sandbox
-
-	if config.Var.CHECKOUT_ENV == "prod" {
-		checkoutEnv = checkout.Production
-	}
-
-	var config, err = checkout.SdkConfig(&config.Var.CHECKOUT_SECRET_KEY, &config.Var.CHECKOUT_PUBLIC_KEY, checkoutEnv)
-	if err != nil {
-		return nil, libcommon.StringError(err)
-	}
-	return config, err
-}
-
-func convertAmount(amount float64) uint64 {
-	return uint64(math.Round(amount * 100))
-}
-
-func CreateToken(card *tokens.Card) (token *tokens.Response, err error) {
-	config, err := getConfig()
-	if err != nil {
-		return nil, libcommon.StringError(err)
-	}
-	client := tokens.NewClient(*config)
-
-	token, err = client.Request(&tokens.Request{Card: card})
-	if err != nil {
-		return token, libcommon.StringError(err)
-	}
-	return token, nil
-}
-
-func GetCustomerInstruments(Id string) ([]customer.CustomerInstrument, error) {
-	config, err := getConfig()
-	if err != nil {
-		return nil, libcommon.StringError(err)
-	}
-
-	customer := customer.NewCustomer(*config)
-
-	response, err := customer.GetCustomer(Id)
-	if err != nil {
-		return nil, libcommon.StringError(err)
-	}
-
-	// Success
-	if response.StatusResponse.StatusCode == 200 {
-		return response.Customer.Instruments, nil
-	}
-
-	return nil, nil
-}
-
 type AuthorizedCharge struct {
-	AuthId              string
+	PaymentId           string
+	SourceId            string
 	CheckoutFingerprint string
 	Last4               string
 	Issuer              string
@@ -80,130 +25,108 @@ type AuthorizedCharge struct {
 	CardholderName      string
 }
 
+func convertAmount(amount float64) uint64 {
+	return uint64(math.Round(amount * 100))
+}
+
 func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {
-	auth := AuthorizedCharge{}
-	config, err := getConfig()
-	if err != nil {
-		return p, libcommon.StringError(err)
-	}
-	client := payments.NewClient(*config)
-
-	paymentInfo := p.executionRequest.PaymentInfo
-	var paymentTokenId string
-	var paymentSource interface{}
-	if paymentInfo.CardId != nil && *paymentInfo.CardId != "" {
-		paymentSource = payments.IDSource{
-			Type: "id",
-			ID:   *paymentInfo.CardId,
-			CVV:  *paymentInfo.CVV,
-		}
-	} else {
-		if paymentInfo.CardToken != nil && *paymentInfo.CardToken != "" {
-			paymentTokenId = *paymentInfo.CardToken
-		} else if libcommon.IsLocalEnv() {
-
-			// Generate a payment token ID in case we don't yet have one in the front end
-			// For testing purposes only
-			card := tokens.Card{
-				Type:   checkoutCommon.Card,
-				Number: "4242424242424242", // Success
-				// Number: "4273149019799094", // succeed authorize, fail capture
-				// Number: "4544249167673670", // Declined - Insufficient funds
-				// Number:      "5148447461737269", // Invalid transaction (debit card)
-				ExpiryMonth: 2,
-				ExpiryYear:  2024,
-				Name:        "Customer Name",
-				CVV:         "100",
-			}
-			paymentToken, err := CreateToken(&card)
-			if err != nil {
-				return p, libcommon.StringError(err)
-			}
-			paymentTokenId = paymentToken.Created.Token
-		}
-		paymentSource = payments.TokenSource{
-			Type:  checkoutCommon.Token.String(),
-			Token: paymentTokenId,
-		}
-	}
-
 	usd := convertAmount(p.floatEstimate.TotalUSD)
-	capture := false
-	request := &payments.Request{
-		Source:    &paymentSource,
-		Amount:    usd,
+	source := sourceForRequest(p)
+	request := checkout.PaymentRequest{
+		Amount:    int64(usd),
 		Currency:  "USD",
-		Capture:   &capture,
-		PaymentIP: p.transactionModel.IPAddress,
+		Capture:   false,
+		PaymentIp: p.transactionModel.IPAddress,
 	}
+	request.Customer = customerForRequest(p)
 
-	// If user wants to save card, add customer info
-	if paymentInfo.SaveCard {
-		fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
-		fullName = strings.Replace(fullName, "  ", " ", 1) // If no middle name, ensure there is only one space between first name and last name
-
-		request.Customer = &payments.Customer{
-			Name:  fullName,
-			Email: p.user.Email, // Replace with more robust email from platform and user
-		}
-	}
-
-	idempotencyKey := checkout.NewIdempotencyKey()
-	params := checkout.Params{
-		IdempotencyKey: &idempotencyKey,
-	}
-	response, err := client.Request(request, &params)
+	client := checkout.New()
+	resp, err := client.Payment.Authorize(source, request)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
 
-	// Collect authorization ID and Instrument ID
-	if response.Processed != nil {
-		auth.AuthId = response.Processed.ID
-		auth.Approved = *response.Processed.Approved
-		auth.Status = string(response.Processed.Status)
-		auth.Summary = response.Processed.ResponseSummary
-		auth.CardType = string(response.Processed.Source.CardType)
+	p.cardAuthorization, err = hydrateAuthorization(resp)
 
-		if response.Processed.Source.CardSourceResponse != nil {
-			auth.Last4 = response.Processed.Source.CardSourceResponse.Last4
-			auth.Issuer = response.Processed.Source.Issuer
-			auth.CheckoutFingerprint = response.Processed.Source.CardSourceResponse.Fingerprint
-			auth.CardholderName = response.Processed.Source.CardSourceResponse.Name
-		}
+	return p, err
+}
+
+// CaptureCharge captures the payment for the given payment Id and sets the payment status to p
+// If the payment is successful, the payment status will be "captured".
+func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
+	usd := convertAmount(p.floatEstimate.TotalUSD)
+	cko := checkout.New()
+	captResp, err := cko.Payment.Capture(p.cardAuthorization.PaymentId, checkout.CaptureRequest{Amount: int64(usd)})
+	if err != nil {
+		return p, libcommon.StringError(err)
 	}
 
-	p.cardAuthorization = &auth
-	// TODO: Create entry for authorization in our DB associated with userWallet
+	if captResp.HttpMetadata.StatusCode != 202 {
+		return p, libcommon.StringError(errors.Newf("capture failed with status code %d", captResp.HttpMetadata.StatusCode))
+	}
+	// Lets get the payment status to see if the payment was successful or not.
+	// If the payment was successful, the payment status will be "captured".
+	// If status is pending, we need to check the payment status again after a few seconds or use webhooks
+	// which is not implemented yet.
+	payResp, err := cko.Payment.GetById(p.cardAuthorization.PaymentId)
+	if err != nil {
+		return p, libcommon.StringError(err)
+	}
+
+	if payResp.HttpMetadata.StatusCode != 200 {
+		return p, libcommon.StringError(errors.Newf("get payment failed with status code %d", payResp.HttpMetadata.StatusCode))
+	}
+
+	p.PaymentStatus = payResp.Status
+
 	return p, nil
 }
 
-func CaptureCharge(p transactionProcessingData) (transactionProcessingData, error) {
-	config, err := getConfig()
-	if err != nil {
-		return p, libcommon.StringError(err)
-	}
-	client := payments.NewClient(*config)
-
-	usd := convertAmount(p.floatEstimate.TotalUSD)
-
-	idempotencyKey := checkout.NewIdempotencyKey()
-	params := checkout.Params{
-		IdempotencyKey: &idempotencyKey,
-	}
-	request := payments.CapturesRequest{
-		Amount: usd,
+// sourceForRequest creates a sourcce from the transaction processing transactionProcessingData
+// this source is needed for the checkout payment request, keep in mind that as of now
+// only 2 sources are allowed; Id and Token, where Id is an instrument.
+// Becase the return type is an interface, check for null when calling this function
+// given that a nil value is return it none of the 2 data options is available.
+func sourceForRequest(p transactionProcessingData) checkout.Source {
+	paymentInfo := p.executionRequest.PaymentInfo
+	if paymentInfo.CardId != nil && *paymentInfo.CardId != "" {
+		return checkout.IdSource{
+			BaseSource: checkout.BaseSource{Type: checkout.SourceTypeId},
+			Id:         *paymentInfo.CardId,
+			CVV:        *paymentInfo.CVV,
+		}
 	}
 
-	capture, err := client.Captures(p.cardAuthorization.AuthId, &request, &params)
-	if err != nil {
-		return p, libcommon.StringError(err)
+	if paymentInfo.CardToken != nil && *paymentInfo.CardToken != "" {
+		return checkout.TokenSource{
+			BaseSource:        checkout.BaseSource{Type: checkout.SourceTypeToken},
+			Token:             *paymentInfo.CardToken,
+			StoreForFutureUse: paymentInfo.SaveCard,
+		}
+	}
+	return nil
+}
+
+func customerForRequest(p transactionProcessingData) *checkout.CustomerRequest {
+	fullName := p.user.FirstName + " " + p.user.MiddleName + " " + p.user.LastName
+	fullName = strings.Replace(fullName, "  ", " ", 1)
+	return &checkout.CustomerRequest{
+		Email: p.user.Email,
+		Name:  fullName,
+	}
+}
+
+func hydrateAuthorization(resp *checkout.PaymentResponse) (*AuthorizedCharge, error) {
+	card := resp.Source.ResponseCardSource
+	if card == nil {
+		return nil, libcommon.StringError(errors.New("card source not found in response"))
 	}
 
-	p.cardCapture = capture
-
-	// TODO: call action, err = client.Actions(capture.Accepted.ActionId) in another service to check on
-
-	// TODO: Create entry for capture in our DB associated with userWallet
-	return p, nil
+	return &AuthorizedCharge{
+		PaymentId: resp.Id,
+		Approved:  resp.Approved,
+		SourceId:  card.Id,
+		Issuer:    card.Issuer,
+		Last4:     card.Last4,
+	}, nil
 }
