@@ -5,14 +5,14 @@ import (
 	"github.com/checkout/checkout-sdk-go/configuration"
 	"github.com/checkout/checkout-sdk-go/nas"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/config"
 )
 
-const tst = "sk_sbox_qng7xllxv3oqj2dnhjs5tcf4zaa"
-
 func ckoEnv() configuration.Environment {
-	// if config.Var.CHECKOUT_ENV == "prod" {
-	// 	return configuration.Production()
-	// }
+	if config.Var.CHECKOUT_ENV == "prod" {
+		return configuration.Production()
+	}
 
 	return configuration.Sandbox()
 }
@@ -21,8 +21,8 @@ func defaultAPI() *nas.Api {
 	api, err := cko.
 		Builder().
 		StaticKeys().
-		WithPublicKey("pk_sbox_wpmezqltqm4lc5jqmu6p7ccq6iu").
-		WithSecretKey(tst).
+		WithPublicKey(config.Var.CHECKOUT_PUBLIC_KEY).
+		WithSecretKey(config.Var.CHECKOUT_SECRET_KEY).
 		WithEnvironment(ckoEnv()). // or Environment.PRODUCTION
 		Build()
 
