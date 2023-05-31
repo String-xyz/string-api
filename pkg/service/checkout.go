@@ -11,6 +11,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/model"
 )
@@ -131,6 +132,16 @@ func sourceForRequest(p transactionProcessingData) checkout.Source {
 			StoreForFutureUse: paymentInfo.SaveCard,
 		}
 	}
+
+	// for local development, we can use a test card token
+	if paymentInfo.CardToken != nil && *paymentInfo.CardToken == "" && config.Var.ENV == "local" {
+		return checkout.TokenSource{
+			BaseSource:        checkout.BaseSource{Type: checkout.SourceTypeToken},
+			Token:             checkout.DevCardToken(),
+			StoreForFutureUse: paymentInfo.SaveCard,
+		}
+	}
+
 	return nil
 }
 

@@ -1,13 +1,12 @@
 package checkout
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/String-xyz/go-lib/v2/common"
 	"github.com/checkout/checkout-sdk-go/nas"
 	"github.com/checkout/checkout-sdk-go/payments"
+	"github.com/checkout/checkout-sdk-go/tokens"
 	"github.com/rs/zerolog/log"
 )
 
@@ -145,10 +144,21 @@ func (c Customers) ListInstruments(customerId string) (InstrumentList, error) {
 	return resp.Instruments, nil
 }
 
-func prettyPrint(v interface{}) {
-	b, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		fmt.Println(err)
+// DevCardToken returns a token for a test card
+func DevCardToken() string {
+	request := tokens.CardTokenRequest{
+		Type:        tokens.Card,
+		Number:      "4242424242424242",
+		ExpiryMonth: 10,
+		ExpiryYear:  2025,
+		Name:        "DEV TOKEN",
+		CVV:         "123",
 	}
-	fmt.Print(string(b))
+
+	response, err := defaultAPI().Tokens.RequestCardToken(request)
+	if err != nil {
+		log.Err(err).Msg("internal checkout error while getting dev card token")
+		return ""
+	}
+	return response.Token
 }
