@@ -29,7 +29,7 @@ type User interface {
 
 	// Update updates the user's name fields (firstname, lastname, middlename).
 	// It fetches the user using the walletAddress provided
-	Update(ctx context.Context, userId string, request UserUpdates) (model.User, error)
+	Update(ctx context.Context, userId string, platformId string, request UserUpdates) (model.User, error)
 
 	// GetUserByLoginPayload get the user without actually logging them in
 	GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error)
@@ -176,7 +176,7 @@ func (u user) createUserData(ctx context.Context, addr string) (model.User, erro
 	return user, nil
 }
 
-func (u user) Update(ctx context.Context, userId string, request UserUpdates) (model.User, error) {
+func (u user) Update(ctx context.Context, userId string, platformId string, request UserUpdates) (model.User, error) {
 	_, finish := Span(ctx, "service.user.Update")
 	defer finish()
 
@@ -185,16 +185,35 @@ func (u user) Update(ctx context.Context, userId string, request UserUpdates) (m
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
-	// Create customer on checkout so we can use it when processing payments
-	go func(user model.User, email string, platformId string) {
-		createCustomer(user, email, platformId)
-	}(user, "", "")
-
+	// Create customer on checkout so we can use it when processing payments.
+	// We need to have their email and name
+	go u.createCheckoutCustomer(ctx, userId, platformId)
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
 	go u.unit21.Entity.Update(ctx2, user)
 
 	return user, nil
+}
+
+// createCustomer creates a customer on checkout so we can use it when processing payments
+// we are not returning error because we don't want to fail the user update and is also an async process
+func (u user) createCheckoutCustomer(ctx context.Context, userId string, platformId string) string {
+	_, finish := Span(ctx, "service.user.createCheckoutCustomer", SpanTag{"platformId": platformId})
+	defer finish()
+	user, err := u.repos.User.GetWithContact(ctx, userId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get contact")
+	}
+	customerId, err := createCustomer(user, platformId)
+	if err != nil {
+		log.Err(err).Msg("Failed to create customer on user update")
+	}
+	_, err = u.repos.User.Update(ctx, userId, model.UserUpdates{CheckoutId: &customerId})
+	if err != nil {
+		log.Err(err).Msg("Failed to update user with checkout customer id")
+	}
+
+	return customerId
 }
 
 func (u user) GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error) {

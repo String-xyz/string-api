@@ -70,6 +70,7 @@ type UserEmailLogin struct {
 type UserUpdates struct {
 	Type       *string         `json:"type" db:"type"`
 	Status     *string         `json:"status" db:"status"`
+	CheckoutId *string         `json:"checkoutId" db:"checkout_id"`
 	Tags       *types.JSONText `json:"tags" db:"tags"`
 	FirstName  *string         `json:"firstName" db:"first_name"`
 	MiddleName *string         `json:"middleName" db:"middle_name"`

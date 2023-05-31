@@ -23,6 +23,11 @@ type User struct {
 	Email      string     `json:"email"`
 }
 
+type UserWithContact struct {
+	User
+	Email string `"db:"email"`
+}
+
 type Platform struct {
 	Id             string         `json:"id,omitempty" db:"id"`
 	CreatedAt      time.Time      `json:"createdAt,omitempty" db:"created_at"`

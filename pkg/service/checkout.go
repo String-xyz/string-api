@@ -9,6 +9,7 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/cockroachdb/errors"
+	"github.com/rs/zerolog/log"
 
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -32,25 +33,26 @@ func convertAmount(amount float64) uint64 {
 }
 
 // Create Customer from the internal user and update
-func createCustomer(user model.User, email string, platformId string) string {
+func createCustomer(user model.UserWithContact, platformId string) (string, error) {
 	client := checkout.New()
-	fmt.Sprintf("")
-	fullName := user.FirstName + " " + user.MiddleName + " " + user.LastName
-	fullName = strings.Replace(fullName, "  ", " ", 1)
+	name := fmt.Sprintf("%s %s %s", user.FirstName, user.MiddleName, user.LastName)
+	fullName := strings.Replace(name, "  ", " ", 1)
 
 	resp, err := client.Customer.Create(checkout.CustomerRequest{
-		Email: email,
+		Email: user.Email,
 		Name:  fullName,
 		Metadata: map[string]interface{}{
 			"platformId": platformId,
+			"internalId": user.Id,
 		},
 	})
 
 	if err != nil {
-		return ""
+		log.Error().Err(err).Msg("Error creating checkout customer from internal user")
+		return "", err
 	}
 
-	return resp.Id
+	return resp.Id, nil
 }
 
 func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, error) {

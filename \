@@ -141,11 +141,9 @@ func (u user[T]) GetWithContact(ctx context.Context, userId string) (model.UserW
 	m := model.UserWithContact{}
 	query := `
 	SELECT u.*, c.data FROM string_user u
-	LEFT JOIN contact c 
+	LEFT JOIN user_contact c 
 	ON u.id = c.user_id
-	WHERE u.id = $1 
-	AND c.type = 'email' 
-	AND c.status = 'primary'
+	WHERE u.id = $1
 	LIMIT 1
 	`
 	err := u.Store.GetContext(ctx, &m, query, userId)
