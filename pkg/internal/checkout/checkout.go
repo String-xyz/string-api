@@ -133,7 +133,7 @@ func (c Customers) GetById(customerId string) (*CustomerResponse, error) {
 	return resp, nil
 }
 
-// ListInstruments is a convenience method that returns all the instruments associated with a customer.
+// ListInstruments is a convenience method that gets all the instruments associated with a customer.
 // It returns InstrumentList and an error if any.
 func (c Customers) ListInstruments(customerId string) (InstrumentList, error) {
 	resp, err := c.client.Customers.Get(customerId)
