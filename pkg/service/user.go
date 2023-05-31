@@ -203,6 +203,7 @@ func (u user) createCheckoutCustomer(ctx context.Context, userId string, platfor
 	user, err := u.repos.User.GetWithContact(ctx, userId)
 	if err != nil {
 		log.Err(err).Msg("Failed to get contact")
+		return ""
 	}
 	customerId, err := createCustomer(user, platformId)
 	if err != nil {
