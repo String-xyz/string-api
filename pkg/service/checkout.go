@@ -33,7 +33,7 @@ func convertAmount(amount float64) uint64 {
 	return uint64(math.Round(amount * 100))
 }
 
-// Create Customer from the internal user and update
+// Create Customer from the internal use
 func createCustomer(user model.UserWithContact, platformId string) (string, error) {
 	client := checkout.New()
 	name := fmt.Sprintf("%s %s %s", user.FirstName, user.MiddleName, user.LastName)
