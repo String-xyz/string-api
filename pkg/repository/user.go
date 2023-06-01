@@ -11,6 +11,7 @@ import (
 	"github.com/String-xyz/go-lib/v2/database"
 	baserepo "github.com/String-xyz/go-lib/v2/repository"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
+
 	"github.com/String-xyz/string-api/pkg/model"
 )
 
@@ -23,6 +24,7 @@ type User interface {
 	GetByType(ctx context.Context, label string) (model.User, error)
 	UpdateStatus(ctx context.Context, id string, status string) (model.User, error)
 	GetPlatforms(ctx context.Context, id string, limit int, offset int) ([]model.Platform, error)
+	GetWithContact(ctx context.Context, id string) (model.UserWithContact, error)
 }
 
 type user[T any] struct {
@@ -133,4 +135,24 @@ func (u user[T]) GetPlatforms(ctx context.Context, id string, limit int, offset 
 		return platforms, libcommon.StringError(err)
 	}
 	return platforms, nil
+}
+
+func (u user[T]) GetWithContact(ctx context.Context, userId string) (model.UserWithContact, error) {
+	m := model.UserWithContact{}
+	query := `
+	SELECT u.*, c.data as email FROM string_user u
+	LEFT JOIN contact c 
+	ON u.id = c.user_id
+	WHERE u.id = $1 
+	AND c.type = 'email' 
+	AND c.status = 'validated'
+	LIMIT 1
+	`
+	err := u.Store.GetContext(ctx, &m, query, userId)
+	if err != nil && err == sql.ErrNoRows {
+		return m, serror.NOT_FOUND
+	} else if err != nil {
+		return m, libcommon.StringError(err)
+	}
+	return m, nil
 }

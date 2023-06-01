@@ -10,6 +10,7 @@ import (
 
 type User struct {
 	Id         string     `json:"id" db:"id"`
+	CheckoutId string     `json:"-" db:"checkout_id"`
 	CreatedAt  time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt  time.Time  `json:"updatedAt" db:"updated_at"`
 	DeletedAt  *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
@@ -20,6 +21,11 @@ type User struct {
 	MiddleName string     `json:"middleName" db:"middle_name"`
 	LastName   string     `json:"lastName" db:"last_name"`
 	Email      string     `json:"email"`
+}
+
+type UserWithContact struct {
+	User
+	Email string `db:"email"`
 }
 
 type Platform struct {

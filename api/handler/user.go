@@ -8,9 +8,10 @@ import (
 	"github.com/String-xyz/go-lib/v2/httperror"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/String-xyz/go-lib/v2/validator"
+	"github.com/labstack/echo/v4"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/service"
-	"github.com/labstack/echo/v4"
 )
 
 type User interface {
@@ -149,6 +150,11 @@ func (u user) Status(c echo.Context) error {
 func (u user) Update(c echo.Context) error {
 	ctx := c.Request().Context()
 	var body model.UpdateUserName
+	platformId, ok := c.Get("platformId").(string)
+
+	if !ok {
+		return httperror.Internal500(c, "missing or invalid platformId")
+	}
 
 	err := c.Bind(&body)
 	if err != nil {
@@ -163,7 +169,7 @@ func (u user) Update(c echo.Context) error {
 
 	_, userId := validUserId(IdParam(c), c)
 
-	user, err := u.userService.Update(ctx, userId, body)
+	user, err := u.userService.Update(ctx, userId, platformId, body)
 	if err != nil {
 		libcommon.LogStringError(c, err, "user: update")
 		return httperror.Internal500(c)

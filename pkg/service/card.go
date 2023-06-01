@@ -4,12 +4,13 @@ import (
 	"context"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
+
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
 
 type Card interface {
-	FetchSavedCards(ctx context.Context, userId string, platformId string) (instruments []checkout.CustomerInstrument, err error)
+	FetchSavedCards(ctx context.Context, userId string, platformId string) (instruments checkout.InstrumentList, err error)
 }
 
 type card struct {
@@ -20,13 +21,15 @@ func NewCard(repos repository.Repositories) Card {
 	return &card{repos}
 }
 
-func (c card) FetchSavedCards(ctx context.Context, userId string, platformId string) (instruments []checkout.CustomerInstrument, err error) {
+func (c card) FetchSavedCards(ctx context.Context, userId string, platformId string) (instruments checkout.InstrumentList, err error) {
 	_, finish := Span(ctx, "service.card.FetchSavedCards", SpanTag{"platformId": platformId})
 	defer finish()
 
-	contact, err := c.repos.Contact.GetEmailByUserIdAndPlatformId(ctx, userId, platformId)
+	user, err := c.repos.User.GetById(ctx, userId)
 	if err != nil {
 		return nil, libcommon.StringError(err)
 	}
-	return GetCustomerInstruments(contact.Data)
+
+	client := checkout.New()
+	return client.Customer.ListInstruments(user.CheckoutId)
 }

@@ -14,15 +14,16 @@ import (
 	"github.com/String-xyz/go-lib/v2/database"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 
+	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/internal/emailer"
 
-	"github.com/String-xyz/string-api/pkg/model"
-	repository "github.com/String-xyz/string-api/pkg/repository"
-	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/pkg/model"
+	repository "github.com/String-xyz/string-api/pkg/repository"
 )
 
 type Transaction interface {
@@ -74,7 +75,8 @@ type transactionProcessingData struct {
 	executionRequest   *model.ExecutionRequest
 	floatEstimate      *model.Estimate[float64]
 	cardAuthorization  *AuthorizedCharge
-	cardCapture        *payments.CapturesResponse
+	PaymentStatus      checkout.PaymentStatus
+	ActionId           string
 	recipientWalletId  *string
 	txId               *string
 	cumulativeValue    *big.Int
@@ -816,7 +818,7 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.cardCapture.Accepted.ActionID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.ActionId}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, txLeg)
 	if err != nil {
 		return libcommon.StringError(err)
