@@ -25,7 +25,7 @@ type User struct {
 
 type UserWithContact struct {
 	User
-	Email string `"db:"email"`
+	Email string `db:"email"`
 }
 
 type Platform struct {

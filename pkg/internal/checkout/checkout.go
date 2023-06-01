@@ -73,6 +73,7 @@ func (p Payments) AuthorizeWithCard(card CardSource, request PaymentRequest) (*P
 }
 
 // AuthorizeWithCustomer authorizes a payment with a customer source type and returns a PaymentResponse and an error if any.
+// A default card is required to use this method.
 func (p Payments) AuthorizeWithCustomer(request PaymentRequest) (*PaymentResponse, error) {
 	resp, err := p.authorizing(request)
 	if err != nil {
@@ -138,7 +139,7 @@ func (c Customers) ListInstruments(customerId string) (InstrumentList, error) {
 	resp, err := c.client.Customers.Get(customerId)
 	if err != nil {
 		log.Err(err).Msg("internal checkout error while getting the customers instruments")
-		return resp.Instruments, common.StringError(err)
+		return InstrumentList{}, common.StringError(err)
 	}
 
 	return resp.Instruments, nil

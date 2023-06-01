@@ -140,12 +140,12 @@ func (u user[T]) GetPlatforms(ctx context.Context, id string, limit int, offset 
 func (u user[T]) GetWithContact(ctx context.Context, userId string) (model.UserWithContact, error) {
 	m := model.UserWithContact{}
 	query := `
-	SELECT u.*, c.data FROM string_user u
+	SELECT u.*, c.data as email FROM string_user u
 	LEFT JOIN contact c 
 	ON u.id = c.user_id
 	WHERE u.id = $1 
 	AND c.type = 'email' 
-	AND c.status = 'primary'
+	AND c.status = 'validated'
 	LIMIT 1
 	`
 	err := u.Store.GetContext(ctx, &m, query, userId)

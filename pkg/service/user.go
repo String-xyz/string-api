@@ -185,9 +185,10 @@ func (u user) Update(ctx context.Context, userId string, platformId string, requ
 	if err != nil {
 		return user, libcommon.StringError(err)
 	}
+	backgroundCtx := context.Background()
 	// Create customer on checkout so we can use it when processing payments.
 	// We need to have their email and name
-	go u.createCheckoutCustomer(ctx, userId, platformId)
+	go u.createCheckoutCustomer(backgroundCtx, userId, platformId)
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
 	go u.unit21.Entity.Update(ctx2, user)
@@ -205,9 +206,11 @@ func (u user) createCheckoutCustomer(ctx context.Context, userId string, platfor
 		log.Err(err).Msg("Failed to get contact")
 		return ""
 	}
+
 	customerId, err := createCustomer(user, platformId)
 	if err != nil {
 		log.Err(err).Msg("Failed to create customer on user update")
+		return ""
 	}
 	_, err = u.repos.User.Update(ctx, userId, model.UserUpdates{CheckoutId: &customerId})
 	if err != nil {
