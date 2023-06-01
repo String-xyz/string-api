@@ -4,8 +4,16 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/String-xyz/string-api/config"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
+
+func init() {
+	err := config.LoadEnv("../../../.env")
+	if err != nil {
+		fmt.Printf("error loading env: %v", err)
+	}
+}
 
 func generateToken() string {
 	request := tokens.CardTokenRequest{
