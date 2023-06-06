@@ -45,6 +45,17 @@ type (
 	PaymentStatus      = payments.PaymentStatus
 )
 
+type CardInstrument struct {
+	Id          string
+	Cvv         string
+	Last4       string
+	ExpiryMonth int
+	ExpiryYear  int
+	Type        string
+	CardType    string
+	Scheme      string
+}
+
 type Source interface {
 	GetType() payments.SourceType
 }

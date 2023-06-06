@@ -4,10 +4,13 @@ import (
 	"errors"
 
 	"github.com/String-xyz/go-lib/v2/common"
+	instruments "github.com/checkout/checkout-sdk-go/instruments/nas"
 	"github.com/checkout/checkout-sdk-go/nas"
 	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/checkout/checkout-sdk-go/tokens"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 type Checkout struct {
@@ -135,21 +138,38 @@ func (c Customers) GetById(customerId string) (*CustomerResponse, error) {
 
 // ListInstruments is a convenience method that gets all the instruments associated with a customer.
 // It returns InstrumentList and an error if any.
-func (c Customers) ListInstruments(customerId string) (InstrumentList, error) {
+func (c Customers) ListInstruments(customerId string) ([]CardInstrument, error) {
 	resp, err := c.client.Customers.Get(customerId)
 	if err != nil {
 		log.Err(err).Msg("internal checkout error while getting the customers instruments")
-		return InstrumentList{}, common.StringError(err)
+		return []CardInstrument{}, common.StringError(err)
 	}
 
-	return resp.Instruments, nil
+	return hydrateCardInstrument(resp.Instruments), nil
+}
+
+func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstrument {
+	var instruments []CardInstrument
+	for _, instrument := range resp {
+		card := instrument.GetCardInstrumentResponse
+		instruments = append(instruments, CardInstrument{
+			Id:          card.Id,
+			Last4:       card.Last4,
+			ExpiryMonth: card.ExpiryMonth,
+			ExpiryYear:  card.ExpiryYear,
+			Scheme:      card.Scheme,
+			Type:        string(card.Type),
+			CardType:    string(card.CardType),
+		})
+	}
+	return instruments
 }
 
 // DevCardToken returns a token for a test card
 func DevCardToken() string {
 	request := tokens.CardTokenRequest{
 		Type:        tokens.Card,
-		Number:      "4242424242424242",
+		Number:      getTestCardNumber(),
 		ExpiryMonth: 10,
 		ExpiryYear:  2025,
 		Name:        "DEV TOKEN",
@@ -162,4 +182,12 @@ func DevCardToken() string {
 		return ""
 	}
 	return response.Token
+}
+
+func getTestCardNumber() string {
+	// insufficent funds
+	if config.Var.TEST_CARD_TYPE == "fail" {
+		return "4546381219393284"
+	}
+	return "4242424242424242"
 }
