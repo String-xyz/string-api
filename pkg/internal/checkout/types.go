@@ -46,14 +46,14 @@ type (
 )
 
 type CardInstrument struct {
-	Id          string
-	Cvv         string
-	Last4       string
-	ExpiryMonth int
-	ExpiryYear  int
-	Type        string
-	CardType    string
-	Scheme      string
+	Id          string `json:"id,omitempty"`
+	Cvv         string `json:"cvv,omitempty"`
+	Last4       string `json:"last4,omitempty"`
+	ExpiryMonth int    `json:"expiryMonth,omitempty"`
+	ExpiryYear  int    `json:"expiryYear,omitempty"`
+	Type        string `json:"type,omitempty"`
+	CardType    string `json:"cardType,omitempty"`
+	Scheme      string `json:"scheme,omitempty"`
 }
 
 type Source interface {
