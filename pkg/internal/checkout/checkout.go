@@ -2,6 +2,8 @@ package checkout
 
 import (
 	"errors"
+	"math/rand"
+	"time"
 
 	"github.com/String-xyz/go-lib/v2/common"
 	instruments "github.com/checkout/checkout-sdk-go/instruments/nas"
@@ -169,7 +171,7 @@ func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstr
 func DevCardToken() string {
 	request := tokens.CardTokenRequest{
 		Type:        tokens.Card,
-		Number:      getTestCardNumber(),
+		Number:      getTestCard(config.Var.CARD_FAIL_PROBABILITY),
 		ExpiryMonth: 10,
 		ExpiryYear:  2025,
 		Name:        "DEV TOKEN",
@@ -184,10 +186,16 @@ func DevCardToken() string {
 	return response.Token
 }
 
-func getTestCardNumber() string {
-	// insufficent funds
-	if config.Var.TEST_CARD_TYPE == "fail" {
-		return "4546381219393284"
+func getTestCard(failProbability float64) string {
+	rand.Seed(time.Now().UnixNano())
+	// Generate a random number between 0 and 1
+	random := rand.Float64()
+	if random < failProbability {
+		// Choose a random fail card
+		index := rand.Intn(len(failCards))
+		return failCards[index]
 	}
-	return "4242424242424242"
+	// Choose a random success card
+	index := rand.Intn(len(successCards))
+	return successCards[index]
 }

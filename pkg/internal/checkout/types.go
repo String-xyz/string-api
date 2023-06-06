@@ -121,3 +121,18 @@ func idToSource(id IdSource) Source {
 func (b BaseSource) GetType() payments.SourceType {
 	return b.Type
 }
+
+// Test Credit Cards Only for Sandbox
+var successCards = []string{
+	"4242424242424242",
+	"5436031030606378",
+	"5305484748800098",
+	"345678901234564",
+}
+
+var failCards = []string{
+	"4644968546281686",
+	"5355228287185489",
+	"4546381219393284",
+	"5355229757805879",
+}
