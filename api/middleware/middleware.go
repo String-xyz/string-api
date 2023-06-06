@@ -3,12 +3,13 @@ package middleware
 import (
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
-	"github.com/String-xyz/string-api/config"
-	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+
+	"github.com/String-xyz/string-api/config"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 func JWTAuth() echo.MiddlewareFunc {
@@ -91,6 +92,14 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 			}
 
 			return next(c)
+		}
+	}
+}
+
+func CheckoutAuthHeader() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			return nil
 		}
 	}
 }
