@@ -111,7 +111,7 @@ type CreatePlatform struct {
 	Authentication AuthType `json:"authentication" db:"authentication"`
 }
 
-type PlaformContactUpdates struct {
+type PlatformContactUpdates struct {
 	Type   *string `json:"type" db:"type"`
 	Status *string `json:"status" db:"status"`
 	Data   *string `json:"data" db:"data"`

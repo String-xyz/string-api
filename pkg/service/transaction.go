@@ -162,7 +162,7 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 	ctx2 := context.Background()
 	go t.postProcess(ctx2, p)
 
-	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
+	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
