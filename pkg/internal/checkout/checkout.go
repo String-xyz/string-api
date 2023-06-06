@@ -1,7 +1,9 @@
 package checkout
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -163,9 +165,20 @@ func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstr
 			Scheme:      card.Scheme,
 			Type:        string(card.Type),
 			CardType:    string(card.CardType),
+			Expired:     isCardExpired(card.ExpiryMonth, card.ExpiryYear),
 		})
 	}
 	return instruments
+}
+
+func isCardExpired(expiryMonth, expiryYear int) bool {
+	if expiryYear < time.Now().Year() {
+		return true
+	}
+	if expiryYear == time.Now().Year() && expiryMonth < int(time.Now().Month()) {
+		return true
+	}
+	return false
 }
 
 // DevCardToken returns a token for a test card
@@ -200,4 +213,9 @@ func getTestCard(failProbability float64) string {
 	// Choose a random success card
 	index := rand.Intn(len(successCards))
 	return successCards[index]
+}
+
+func prettyPrint(v interface{}) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	fmt.Println(string(b))
 }

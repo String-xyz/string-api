@@ -54,6 +54,7 @@ type CardInstrument struct {
 	Type        string `json:"type,omitempty"`
 	CardType    string `json:"cardType,omitempty"`
 	Scheme      string `json:"scheme,omitempty"`
+	Expired     bool   `json:"expired,omitempty"`
 }
 
 type Source interface {
