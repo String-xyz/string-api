@@ -3,6 +3,7 @@ package checkout
 import (
 	"errors"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/String-xyz/go-lib/v2/common"
@@ -169,9 +170,10 @@ func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstr
 
 // DevCardToken returns a token for a test card
 func DevCardToken() string {
+	failChance, _ := strconv.ParseFloat(config.Var.CARD_FAIL_PROBABILITY, 64)
 	request := tokens.CardTokenRequest{
 		Type:        tokens.Card,
-		Number:      getTestCard(config.Var.CARD_FAIL_PROBABILITY),
+		Number:      getTestCard(failChance),
 		ExpiryMonth: 10,
 		ExpiryYear:  2025,
 		Name:        "DEV TOKEN",

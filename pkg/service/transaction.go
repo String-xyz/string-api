@@ -730,10 +730,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	}
 
 	if !p.cardAuthorization.Approved {
-		err := t.unit21CreateTransaction(ctx, p.transactionModel.Id)
-		if err != nil {
-			return p, libcommon.StringError(err)
-		}
+		go t.unit21CreateTransaction(ctx, p.transactionModel.Id)
 
 		return p, libcommon.StringError(errors.New("payment: Authorization Declined by Checkout"))
 	}
