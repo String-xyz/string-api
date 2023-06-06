@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	ckocommon "github.com/checkout/checkout-sdk-go/common"
 	"github.com/lib/pq"
 )
 
@@ -133,6 +134,17 @@ type Instrument struct {
 	UserId     string         `json:"userId" db:"user_id"`
 	LocationId sql.NullString `json:"locationId" db:"location_id"`
 	Name       string         `json:"name" db:"name"`
+}
+
+type CardResponse struct {
+	Type        ckocommon.InstrumentType `json:"type"`
+	Id          string                   `json:"id"`
+	Scheme      string                   `json:"scheme"`
+	Last4       string                   `json:"last4"`
+	ExpiryMonth int                      `json:"expiryMonth"`
+	ExpiryYear  int                      `json:"expiryYear"`
+	Expired     bool                     `json:"expired"`
+	CardType    ckocommon.CardType       `json:"cardType"`
 }
 
 type ContactToPlatform struct {
