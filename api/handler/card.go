@@ -5,8 +5,9 @@ import (
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
-	service "github.com/String-xyz/string-api/pkg/service"
 	"github.com/labstack/echo/v4"
+
+	service "github.com/String-xyz/string-api/pkg/service"
 )
 
 type Card interface {
@@ -29,7 +30,7 @@ func NewCard(route *echo.Echo, service service.Card) Card {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Success 200 {object} []checkout.CustomerInstrument
+// @Success 200 {object} checkout.InstrumentList
 // @Failure 400 {object} error
 // @Failure 401 {object} error
 // @Failure 500 {object} error
@@ -47,7 +48,7 @@ func (card card) GetAll(c echo.Context) error {
 		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
-	res, err := card.Service.FetchSavedCards(ctx, userId, platformId)
+	res, err := card.Service.ListByUserId(ctx, userId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "cards: get All")
 		return httperror.Internal500(c, "Cards Service Failed")
