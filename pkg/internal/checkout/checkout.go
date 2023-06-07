@@ -1,9 +1,7 @@
 package checkout
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -213,9 +211,4 @@ func getTestCard(failProbability float64) string {
 	// Choose a random success card
 	index := rand.Intn(len(successCards))
 	return successCards[index]
-}
-
-func prettyPrint(v interface{}) {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	fmt.Println(string(b))
 }
