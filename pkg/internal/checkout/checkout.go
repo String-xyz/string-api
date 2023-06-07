@@ -154,7 +154,7 @@ func (c Customers) ListInstruments(customerId string) ([]CardInstrument, error) 
 }
 
 func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstrument {
-	var instruments []CardInstrument
+	instruments := []CardInstrument{}
 	for _, instrument := range resp {
 		card := instrument.GetCardInstrumentResponse
 		instruments = append(instruments, CardInstrument{

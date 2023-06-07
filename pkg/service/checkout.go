@@ -65,7 +65,12 @@ func AuthorizeCharge(p transactionProcessingData) (transactionProcessingData, er
 		Capture:   false,
 		PaymentIp: p.transactionModel.IPAddress,
 	}
-	request.Customer = customerForRequest(p)
+
+	var err error
+	request.Customer, err = customerForRequest(p)
+	if err != nil {
+		return p, err
+	}
 
 	client := checkout.New()
 	resp, err := client.Payment.Authorize(source, request)
@@ -145,11 +150,14 @@ func sourceForRequest(p transactionProcessingData) checkout.Source {
 	return nil
 }
 
-func customerForRequest(p transactionProcessingData) *checkout.Customer {
-	checkoutId := p.user.CheckoutId
-	return &checkout.Customer{
-		Id: checkoutId,
+func customerForRequest(p transactionProcessingData) (*checkout.Customer, error) {
+	if p.user.CheckoutId == "" {
+		return nil, libcommon.StringError(errors.New("user checkout id is empty"))
 	}
+
+	return &checkout.Customer{
+		Id: p.user.CheckoutId,
+	}, nil
 }
 
 func hydrateAuthorization(resp *checkout.PaymentResponse) (*AuthorizedCharge, error) {
