@@ -169,7 +169,7 @@ func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstr
 	return instruments
 }
 
-func isCardExpired(expiryMonth, expiryYear int) bool {
+func isCardExpired(expiryMonth int, expiryYear int) bool {
 	if expiryYear < time.Now().Year() {
 		return true
 	}
