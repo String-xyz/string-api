@@ -157,12 +157,19 @@ func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstr
 	var instruments []CardInstrument
 	for _, instrument := range resp {
 		card := instrument.GetCardInstrumentResponse
+<<<<<<< HEAD
+=======
+
+>>>>>>> f02da75 (added card Expired)
 		instruments = append(instruments, CardInstrument{
 			Id:          card.Id,
 			Last4:       card.Last4,
 			ExpiryMonth: card.ExpiryMonth,
 			ExpiryYear:  card.ExpiryYear,
+<<<<<<< HEAD
 			Scheme:      card.Scheme,
+=======
+>>>>>>> f02da75 (added card Expired)
 			Type:        string(card.Type),
 			CardType:    string(card.CardType),
 			Expired:     isCardExpired(card.ExpiryMonth, card.ExpiryYear),
