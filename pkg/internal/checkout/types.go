@@ -45,6 +45,18 @@ type (
 	PaymentStatus      = payments.PaymentStatus
 )
 
+type CardInstrument struct {
+	Id          string `json:"id,omitempty"`
+	Cvv         string `json:"cvv,omitempty"`
+	Last4       string `json:"last4,omitempty"`
+	ExpiryMonth int    `json:"expiryMonth,omitempty"`
+	ExpiryYear  int    `json:"expiryYear,omitempty"`
+	Type        string `json:"type,omitempty"`
+	CardType    string `json:"cardType,omitempty"`
+	Scheme      string `json:"scheme,omitempty"`
+	Expired     bool   `json:"expired,omitempty"`
+}
+
 type Source interface {
 	GetType() payments.SourceType
 }
@@ -109,4 +121,19 @@ func idToSource(id IdSource) Source {
 
 func (b BaseSource) GetType() payments.SourceType {
 	return b.Type
+}
+
+// Test Credit Cards Only for Sandbox
+var successCards = []string{
+	"4242424242424242",
+	"5436031030606378",
+	"5305484748800098",
+	"345678901234564",
+}
+
+var failCards = []string{
+	"4644968546281686",
+	"5355228287185489",
+	"4546381219393284",
+	"5355229757805879",
 }

@@ -2,12 +2,18 @@ package checkout
 
 import (
 	"errors"
+	"math/rand"
+	"strconv"
+	"time"
 
 	"github.com/String-xyz/go-lib/v2/common"
+	instruments "github.com/checkout/checkout-sdk-go/instruments/nas"
 	"github.com/checkout/checkout-sdk-go/nas"
 	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/checkout/checkout-sdk-go/tokens"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 type Checkout struct {
@@ -135,21 +141,50 @@ func (c Customers) GetById(customerId string) (*CustomerResponse, error) {
 
 // ListInstruments is a convenience method that gets all the instruments associated with a customer.
 // It returns InstrumentList and an error if any.
-func (c Customers) ListInstruments(customerId string) (InstrumentList, error) {
+func (c Customers) ListInstruments(customerId string) ([]CardInstrument, error) {
 	resp, err := c.client.Customers.Get(customerId)
 	if err != nil {
 		log.Err(err).Msg("internal checkout error while getting the customers instruments")
-		return InstrumentList{}, common.StringError(err)
+		return []CardInstrument{}, common.StringError(err)
 	}
 
-	return resp.Instruments, nil
+	return hydrateCardInstrument(resp.Instruments), nil
+}
+
+func hydrateCardInstrument(resp []instruments.GetInstrumentResponse) []CardInstrument {
+	instruments := []CardInstrument{}
+	for _, instrument := range resp {
+		card := instrument.GetCardInstrumentResponse
+		instruments = append(instruments, CardInstrument{
+			Id:          card.Id,
+			Last4:       card.Last4,
+			ExpiryMonth: card.ExpiryMonth,
+			ExpiryYear:  card.ExpiryYear,
+			Scheme:      card.Scheme,
+			Type:        string(card.Type),
+			CardType:    string(card.CardType),
+			Expired:     isCardExpired(card.ExpiryMonth, card.ExpiryYear),
+		})
+	}
+	return instruments
+}
+
+func isCardExpired(expiryMonth int, expiryYear int) bool {
+	if expiryYear < time.Now().Year() {
+		return true
+	}
+	if expiryYear == time.Now().Year() && expiryMonth < int(time.Now().Month()) {
+		return true
+	}
+	return false
 }
 
 // DevCardToken returns a token for a test card
 func DevCardToken() string {
+	failChance, _ := strconv.ParseFloat(config.Var.CARD_FAIL_PROBABILITY, 64)
 	request := tokens.CardTokenRequest{
 		Type:        tokens.Card,
-		Number:      "4242424242424242",
+		Number:      getTestCard(failChance),
 		ExpiryMonth: 10,
 		ExpiryYear:  2025,
 		Name:        "DEV TOKEN",
@@ -162,4 +197,18 @@ func DevCardToken() string {
 		return ""
 	}
 	return response.Token
+}
+
+func getTestCard(failProbability float64) string {
+	rand.Seed(time.Now().UnixNano())
+	// Generate a random number between 0 and 1
+	random := rand.Float64()
+	if random < failProbability {
+		// Choose a random fail card
+		index := rand.Intn(len(failCards))
+		return failCards[index]
+	}
+	// Choose a random success card
+	index := rand.Intn(len(successCards))
+	return successCards[index]
 }

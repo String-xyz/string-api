@@ -16,6 +16,7 @@ type vars struct {
 	DEBUG_MODE               string `required:"false"`
 	SERVICE_NAME             string `required:"false"`
 	STRING_HOTWALLET_ADDRESS string `required:"false"`
+	CARD_FAIL_PROBABILITY    string `required:"false"`
 	BASE_URL                 string `required:"true"`
 	ENV                      string `required:"true"`
 	PORT                     string `required:"true"`
