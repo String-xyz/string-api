@@ -66,6 +66,11 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 		return libcommon.StringError(serror.ALREADY_IN_USE)
 	}
 
+	platform, err := v.repos.Platform.GetById(ctx, platformId)
+	if err != nil || platform.Id != platformId {
+		return libcommon.StringError(serror.INVALID_DATA)
+	}
+
 	// Encrypt required data to Base64 string and insert it in an email hyperlink
 	key := config.Var.STRING_ENCRYPTION_KEY
 	code, err := libcommon.Encrypt(EmailVerification{Timestamp: time.Now().Unix(), Email: email, UserId: userId, PlatformId: platformId}, key)
@@ -76,7 +81,7 @@ func (v verification) SendEmailVerification(ctx context.Context, platformId stri
 
 	emailer := emailer.New()
 
-	return emailer.SendEmailVerification(ctx, email, code)
+	return emailer.SendEmailVerification(ctx, email, code, platform.Name)
 }
 
 func (v verification) SendDeviceVerification(ctx context.Context, userId string, email string, deviceId string, deviceDescription string) error {
