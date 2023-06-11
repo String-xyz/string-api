@@ -41,11 +41,19 @@ func (v verification) Verify(c echo.Context) error {
 	}
 	if verificationType == "email" {
 		// ?
-		return v.verifyEmail(c)
+		err := v.verifyEmail(c)
+		if err != nil {
+			libcommon.LogStringError(c, err, "verification: email verification")
+		}
+		return err
 	}
 
 	// ?
-	return v.verifyDevice(c)
+	err := v.verifyDevice(c)
+	if err != nil {
+		libcommon.LogStringError(c, err, "verification: device verification")
+	}
+	return err
 }
 
 // Verify Email receives payload from an email link sent previsouly.
