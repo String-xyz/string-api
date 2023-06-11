@@ -6,6 +6,7 @@ import (
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	service "github.com/String-xyz/string-api/pkg/service"
 )
@@ -49,7 +50,7 @@ func (card card) GetAll(c echo.Context) error {
 	}
 
 	res, err := card.Service.ListByUserId(ctx, userId, platformId)
-	if err != nil {
+	if err != nil && errors.Cause(err).Error() != "404 Not Found" { // Not a string error
 		libcommon.LogStringError(c, err, "cards: get All")
 		return httperror.Internal500(c, "Cards Service Failed")
 	}
