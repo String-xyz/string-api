@@ -14,7 +14,7 @@ import (
 
 type Emailer interface {
 	SendReceipt(ctx context.Context, email string, params ReceiptGenerationParams) error
-	SendEmailVerification(ctx context.Context, email string, code string) error
+	SendEmailVerification(ctx context.Context, email string, code string, platformName string) error
 	SendDeviceVerification(ctx context.Context, email string, link string, textContent string) error
 }
 
@@ -48,7 +48,7 @@ type ReceiptGenerationParams struct {
 	Total               string
 }
 
-func (e emailer) SendEmailVerification(ctx context.Context, email string, code string) error {
+func (e emailer) SendEmailVerification(ctx context.Context, email string, code string, platformName string) error {
 	link := config.Var.BASE_URL + "verification?type=email&token=" + code
 
 	tmpl, err := template.ParseFS(templatesFS, "templates/email_verification.tpl")
@@ -64,7 +64,7 @@ func (e emailer) SendEmailVerification(ctx context.Context, email string, code s
 		return err
 	}
 
-	from := mail.NewEmail("String Authentication", config.Var.AUTH_EMAIL_ADDRESS)
+	from := mail.NewEmail(platformName+" via String", config.Var.AUTH_EMAIL_ADDRESS)
 	subject := "String Email Verification"
 	to := mail.NewEmail("New String User", email)
 	textContent := "Click the link below to complete your e-email verification!"

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/String-xyz/string-api/config"
 	"github.com/checkout/checkout-sdk-go/tokens"
 )
 
 func init() {
-	err := config.LoadEnv("../../../.env")
+	err := env.LoadEnv(&config.Var, "../../../.env")
 	if err != nil {
 		fmt.Printf("error loading env: %v", err)
 	}

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	env "github.com/String-xyz/go-lib/v2/config"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -17,7 +19,7 @@ import (
 )
 
 func TestCreateTransaction(t *testing.T) {
-	config.LoadEnv("../../../.env")
+	env.LoadEnv(&config.Var, "../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -40,7 +42,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestUpdateTransaction(t *testing.T) {
-	config.LoadEnv("../../../.env")
+	env.LoadEnv(&config.Var, "../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)

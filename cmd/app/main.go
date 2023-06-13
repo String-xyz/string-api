@@ -5,6 +5,7 @@ import (
 	"os"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
+	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/String-xyz/string-api/api"
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -16,7 +17,7 @@ import (
 
 func main() {
 	// load env vars
-	err := config.LoadEnv()
+	err := env.LoadEnv(&config.Var)
 	if err != nil {
 		panic(err)
 	}
