@@ -67,6 +67,7 @@ func (u user) Create(c echo.Context) error {
 	}
 
 	if err := c.Validate(body); err != nil {
+		libcommon.LogStringError(c, err, "user:create user validate body")
 		return httperror.InvalidPayload400(c, err)
 	}
 
@@ -164,6 +165,7 @@ func (u user) Update(c echo.Context) error {
 
 	err = c.Validate(body)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: update validate body")
 		return httperror.InvalidPayload400(c, err)
 	}
 
@@ -245,6 +247,7 @@ func (u user) RequestDeviceVerification(c echo.Context) error {
 
 	err = c.Validate(body)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: request device verify validate body")
 		return httperror.InvalidPayload400(c, err)
 	}
 
@@ -288,6 +291,7 @@ func (u user) GetDeviceStatus(c echo.Context) error {
 
 	err = c.Validate(body)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: request device verify validate body")
 		return httperror.InvalidPayload400(c, err)
 	}
 
@@ -355,6 +359,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	err = u.verification.PreValidateEmail(ctx, platformId, userId, body.Email)
 	if err != nil {
 		// ?
+		libcommon.LogStringError(c, err, "user: pre validate email")
 		return DefaultErrorHandler(c, err, "platformInternal: PreValidateEmail")
 	}
 
@@ -381,6 +386,7 @@ func (u user) PreviewEmail(c echo.Context) error {
 
 	err = c.Validate(body)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: preview email validate body")
 		return httperror.InvalidPayload400(c, err)
 	}
 
