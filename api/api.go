@@ -113,3 +113,8 @@ func cardRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewCard(e, services.Card)
 	handler.RegisterRoutes(e.Group("/cards"), middleware.JWTAuth())
 }
+
+func webhookRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewWebhook(e, services.Webhook)
+	handler.RegisterRoutes(e.Group("/webhooks"))
+}

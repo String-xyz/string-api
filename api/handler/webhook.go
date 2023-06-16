@@ -1,6 +1,10 @@
 package handler
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/labstack/echo/v4"
+
+	"github.com/String-xyz/string-api/pkg/service"
+)
 
 type Webhook interface {
 	Handle(c echo.Context) error
@@ -8,11 +12,12 @@ type Webhook interface {
 }
 
 type webhook struct {
-	Group *echo.Group
+	Service service.Webhook
+	Group   *echo.Group
 }
 
-func NewWebhook(route *echo.Echo) Webhook {
-	return &webhook{}
+func NewWebhook(route *echo.Echo, service service.Webhook) Webhook {
+	return &webhook{service, nil}
 }
 
 func (w *webhook) Handle(c echo.Context) error {
