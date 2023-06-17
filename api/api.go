@@ -60,6 +60,7 @@ func Start(config APIConfig) {
 	loginRoute(services, e)
 	verificationRoute(services, e)
 	cardRoute(services, e)
+	webhookRoute(services, e)
 
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -116,5 +117,5 @@ func cardRoute(services service.Services, e *echo.Echo) {
 
 func webhookRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewWebhook(e, services.Webhook)
-	handler.RegisterRoutes(e.Group("/webhooks"))
+	handler.RegisterRoutes(e.Group("/webhooks"), middleware.VerifyWebhookPayload())
 }

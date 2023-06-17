@@ -91,6 +91,8 @@ func (a PaymentDeclined) GetType() EventType {
 	return PaymentDeclinedEvent
 }
 
+// for the time being only 3 events are supported
+// if we need to support more events we need to add them here
 func (e *WebhookEvent) Unmarshal(data []byte) error {
 	type Alias WebhookEvent
 	alias := struct {

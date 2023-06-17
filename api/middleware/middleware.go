@@ -1,6 +1,12 @@
 package middleware
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/golang-jwt/jwt"
@@ -96,10 +102,34 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 	}
 }
 
-func CheckoutAuthHeader() echo.MiddlewareFunc {
+func VerifyWebhookPayload() echo.MiddlewareFunc {
+	secretKey := config.Var.WEBHOOK_SECRET_KEY
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			return nil
+			signatureHeader := c.Request().Header.Get("Cko-Signature")
+
+			body, err := io.ReadAll(c.Request().Body)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to read body")
+			}
+
+			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
+
+			mac := hmac.New(sha256.New, []byte(secretKey))
+			mac.Write(body)
+			expectedMAC := mac.Sum(nil)
+
+			receivedMAC, err := hex.DecodeString(signatureHeader)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to decode signature")
+			}
+
+			if !hmac.Equal(receivedMAC, expectedMAC) {
+				return httperror.Unauthorized401(c, "Failed to verify payload")
+			}
+
+			return next(c)
 		}
 	}
 }
