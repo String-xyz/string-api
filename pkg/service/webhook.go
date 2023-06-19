@@ -56,20 +56,24 @@ func (w *webhook) processEvent(ctx context.Context, event checkout.WebhookEvent)
 
 func (w webhook) authorizationApproved(ctx context.Context, data checkout.AuthorizationApproved) error {
 	log.Info().Msgf("authorization approved: %v", data)
+	checkout.PostToSlack(checkout.AuthorizationApprovedEvent)
 	return nil
 }
 
 func (w webhook) authorizationDeclined(ctx context.Context, data checkout.AuthorizationDeclined) error {
 	log.Info().Msgf("authorization declined: %v", data)
+	checkout.PostToSlack(checkout.AthorizationDeclinedEvent)
 	return nil
 }
 
 func (w webhook) paymentApproved(ctx context.Context, data checkout.PaymentApproved) error {
 	log.Info().Msgf("payment approved: %v", data)
+	checkout.PostToSlack(checkout.PaymentApprovedEvent)
 	return nil
 }
 
 func (w webhook) paymentCaptured(ctx context.Context, data checkout.PaymentCaptured) error {
 	log.Info().Msgf("payment captured: %v", data)
+	checkout.PostToSlack(checkout.PaymentCapturedEvent)
 	return nil
 }
