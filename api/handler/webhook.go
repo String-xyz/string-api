@@ -17,7 +17,7 @@ type Webhook interface {
 
 type webhook struct {
 	service service.Webhook
-	droup   *echo.Group
+	group   *echo.Group
 }
 
 func NewWebhook(route *echo.Echo, service service.Webhook) Webhook {
@@ -41,4 +41,5 @@ func (w webhook) Handle(c echo.Context) error {
 
 func (w webhook) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.POST("/checkout", w.Handle, ms...)
+	w.group = g
 }
