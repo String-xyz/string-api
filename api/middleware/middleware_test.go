@@ -9,13 +9,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/String-xyz/string-api/config"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	config.LoadEnv()
+	env.LoadEnv(&config.Var, "../../.env")
 }
 
 func TestVerifyWebhookPayload(t *testing.T) {

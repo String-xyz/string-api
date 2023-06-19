@@ -24,6 +24,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/twilio/twilio-go v1.1.0
 	golang.org/x/crypto v0.2.0
+	golang.org/x/net v0.7.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.49.1
 )
 
@@ -114,7 +115,6 @@ require (
 	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
-	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.2.0 // indirect
