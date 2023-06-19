@@ -110,7 +110,7 @@ func CaptureCharge(p transactionProcessingData) (transactionProcessingData, erro
 	}
 
 	p.PaymentStatus = payResp.Status
-	p.ActionId = captResp.ActionId
+	p.PaymentId = p.cardAuthorization.PaymentId
 
 	return p, nil
 }

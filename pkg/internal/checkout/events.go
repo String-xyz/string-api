@@ -45,7 +45,7 @@ type PaymentEvent struct {
 	AuthCode        string    `json:"auth_code,omitempty"`
 	Currency        string    `json:"currency,omitempty"`
 	PaymentType     string    `json:"payment_type,omitempty"`
-	proccesedOn     time.Time `json:"processed_on,omitempty"`
+	ProccesedOn     time.Time `json:"processed_on,omitempty"`
 	ResponseCode    string    `json:"response_code,omitempty"`
 	ResponseSummary string    `json:"response_summary,omitempty"`
 }
@@ -93,10 +93,11 @@ func (a PaymentDeclined) GetType() EventType {
 
 // for the time being only 3 events are supported
 // if we need to support more events we need to add them here
-func (e *WebhookEvent) Unmarshal(data []byte) error {
+func (e *WebhookEvent) UnmarshalJSON(data []byte) error {
 	type Alias WebhookEvent
 	alias := struct {
 		*Alias
+		// RawData lets us delay parsing the data field until we know the type
 		RawData json.RawMessage `json:"data,omitempty"`
 	}{
 		Alias: (*Alias)(e),
