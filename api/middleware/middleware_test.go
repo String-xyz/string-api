@@ -56,7 +56,7 @@ func TestVerifyWebhookPayload(t *testing.T) {
 			// Mock a request
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(tt.giveBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			req.Header.Set("Signature", tt.giveMAC)
+			req.Header.Set("Cko-Signature", tt.giveMAC)
 
 			// Mock a response recorder
 			rec := httptest.NewRecorder()
