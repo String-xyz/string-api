@@ -20,7 +20,7 @@ func NewWebhook() Webhook {
 	return &webhook{}
 }
 
-func (w *webhook) Handle(ctx context.Context, data []byte) error {
+func (w webhook) Handle(ctx context.Context, data []byte) error {
 	event := checkout.WebhookEvent{}
 	err := json.Unmarshal(data, &event)
 	if err != nil {
@@ -29,14 +29,14 @@ func (w *webhook) Handle(ctx context.Context, data []byte) error {
 	return w.processEvent(ctx, event)
 }
 
-func (w *webhook) processEvent(ctx context.Context, event checkout.WebhookEvent) error {
+func (w webhook) processEvent(ctx context.Context, event checkout.WebhookEvent) error {
 	switch event.Type {
 
 	case checkout.AuthorizationApprovedEvent:
 		payload := event.Data.(checkout.AuthorizationApproved)
 		return w.authorizationApproved(ctx, payload)
 
-	case checkout.AthorizationDeclinedEvent:
+	case checkout.AuthorizationDeclinedEvent:
 		payload := event.Data.(checkout.AuthorizationDeclined)
 		return w.authorizationDeclined(ctx, payload)
 
@@ -62,7 +62,7 @@ func (w webhook) authorizationApproved(ctx context.Context, data checkout.Author
 
 func (w webhook) authorizationDeclined(ctx context.Context, data checkout.AuthorizationDeclined) error {
 	log.Info().Msgf("authorization declined: %v", data)
-	checkout.PostToSlack(checkout.AthorizationDeclinedEvent)
+	checkout.PostToSlack(checkout.AuthorizationDeclinedEvent)
 	return nil
 }
 
