@@ -48,6 +48,8 @@ type vars struct {
 	STRING_BANK_ID           string `required:"true"`
 	AUTH_EMAIL_ADDRESS       string `required:"true"`
 	RECEIPTS_EMAIL_ADDRESS   string `required:"true"`
+	WEBHOOK_SECRET_KEY       string `required:"true"`
+	SLACK_WEBHOOK_URL        string `required:"true"`
 }
 
 var Var vars

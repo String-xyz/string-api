@@ -20,7 +20,6 @@ type Checkout struct {
 	ckoAPI   *nas.Api
 	Payment  Payments
 	Customer Customers
-	Events   Events
 }
 
 func New() *Checkout {
@@ -28,7 +27,6 @@ func New() *Checkout {
 	return &Checkout{
 		Payment:  Payments{client},
 		Customer: Customers{client},
-		Events:   Events{client},
 	}
 }
 

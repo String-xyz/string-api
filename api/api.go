@@ -60,6 +60,7 @@ func Start(config APIConfig) {
 	loginRoute(services, e)
 	verificationRoute(services, e)
 	cardRoute(services, e)
+	webhookRoute(services, e)
 
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -112,4 +113,9 @@ func quoteRoute(services service.Services, e *echo.Echo) {
 func cardRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewCard(e, services.Card)
 	handler.RegisterRoutes(e.Group("/cards"), middleware.JWTAuth())
+}
+
+func webhookRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewWebhook(e, services.Webhook)
+	handler.RegisterRoutes(e.Group("/webhooks"), middleware.VerifyWebhookPayload())
 }
