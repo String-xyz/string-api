@@ -9,7 +9,7 @@ type EventType string
 
 const (
 	AuthorizationApprovedEvent EventType = "authorization_approved"
-	AthorizationDeclinedEvent  EventType = "authorization_declined"
+	AuthorizationDeclinedEvent EventType = "authorization_declined"
 	PaymentApprovedEvent       EventType = "payment_approved"
 	PaymentCapturedEvent       EventType = "Payment_captured"
 	PaymentDeclinedEvent       EventType = "payment_declined"
@@ -76,7 +76,7 @@ func (a AuthorizationApproved) GetType() EventType {
 }
 
 func (a AuthorizationDeclined) GetType() EventType {
-	return AthorizationDeclinedEvent
+	return AuthorizationDeclinedEvent
 }
 
 func (a PaymentApproved) GetType() EventType {
@@ -113,7 +113,7 @@ func (e *WebhookEvent) UnmarshalJSON(data []byte) error {
 		err := json.Unmarshal(alias.RawData, &a)
 		e.Data = a
 		return err
-	case AthorizationDeclinedEvent:
+	case AuthorizationDeclinedEvent:
 		var a AuthorizationDeclined
 		err := json.Unmarshal(alias.RawData, &a)
 		e.Data = a
