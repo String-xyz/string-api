@@ -42,6 +42,8 @@ type Executor interface {
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
+	GetTokenIds(txId string) ([]string, error)
+	GetEventData(txId string, eventSignature string) ([]types.Log, error)
 }
 
 type executor struct {
@@ -278,4 +280,48 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	tx = *types.MustSignNewTx(&sk, signer, &dynamicFeeTx)
 
 	return tx, nil
+}
+
+func (e executor) GetEventData(txId string, eventSignature string) ([]types.Log, error) {
+	events := []types.Log{}
+	receipt, err := e.geth.TransactionReceipt(context.Background(), ethcommon.HexToHash(txId))
+	if err != nil {
+		return []types.Log{}, libcommon.StringError(err)
+	}
+
+	event := crypto.Keccak256Hash([]byte(eventSignature))
+
+	// Iterate through the logs to find the transfer event and extract the token ID.
+	for _, log := range receipt.Logs {
+		if log.Topics[0].Hex() == event.Hex() {
+			events = append(events, *log)
+		}
+	}
+	return events, nil
+}
+
+// This can be used to check if the recipient of an event such as transfer matches our hot wallet address
+func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []types.Log {
+	matches := []types.Log{}
+	for _, log := range logs {
+		for _, index := range indexes {
+			if log.Topics[index].Hex() == hexValues[index] {
+				matches = append(matches, log)
+			}
+		}
+	}
+	return matches
+}
+
+func (e executor) GetTokenIds(txId string) ([]string, error) {
+	logs, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+	if err != nil {
+		return []string{}, libcommon.StringError(err)
+	}
+	tokenIds := []string{}
+	for _, log := range logs {
+		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes())
+		tokenIds = append(tokenIds, tokenId.String())
+	}
+	return tokenIds, nil
 }
