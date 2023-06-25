@@ -81,7 +81,7 @@ type transactionProcessingData struct {
 	txId               *string
 	cumulativeValue    *big.Int
 	trueGas            *uint64
-	tokenIds           *string
+	tokenIds           string
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
@@ -411,7 +411,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		log.Err(err).Msg("Failed to get token ids")
 		// TODO: Handle error instead of returning it
 	}
-	*p.tokenIds = strings.Join(tokenIds, ",")
+	p.tokenIds = strings.Join(tokenIds, ",")
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()
@@ -875,7 +875,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
 		Platform:            platform.Name,
 		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
-		TokenId:             *p.tokenIds,
+		TokenId:             p.tokenIds,
 		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
 		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
 		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
