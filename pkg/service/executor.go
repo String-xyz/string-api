@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"math"
 	"math/big"
+	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
@@ -44,6 +45,7 @@ type Executor interface {
 	GetBalance() (float64, error)
 	GetTokenIds(txId string) ([]string, error)
 	GetEventData(txId string, eventSignature string) ([]types.Log, error)
+	ForwardTokens(txId string, recipient string) ([]string, []string, error)
 }
 
 type executor struct {
@@ -304,8 +306,12 @@ func (e executor) GetEventData(txId string, eventSignature string) ([]types.Log,
 func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []types.Log {
 	matches := []types.Log{}
 	for _, log := range logs {
-		for _, index := range indexes {
-			if log.Topics[index].Hex() == hexValues[index] {
+		for i, index := range indexes {
+			// Event Address is checksummed, but Event Topics are not
+			// compare RHS of topic with hexValues query
+			expected := hexValues[i]
+			RHS := log.Topics[index].Hex()[len(log.Topics[index].Hex())-len(expected):]
+			if strings.EqualFold(RHS, expected) {
 				matches = append(matches, log)
 			}
 		}
@@ -324,4 +330,43 @@ func (e executor) GetTokenIds(txId string) ([]string, error) {
 		tokenIds = append(tokenIds, tokenId.String())
 	}
 	return tokenIds, nil
+}
+
+func (e executor) ForwardTokens(txId string, recipient string) ([]string, []string, error) {
+	eventData, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+	if err != nil {
+		return []string{}, []string{}, libcommon.StringError(err)
+	}
+	hotWallet, err := e.getAccount()
+	if err != nil {
+		return []string{}, []string{}, libcommon.StringError(err)
+	}
+	// Filter events where recipient is our hot wallet
+	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
+	txIds := []string{}
+	tokenIds := []string{}
+	gasUsed := big.NewInt(0)
+	for _, log := range toForward {
+		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes()).String()
+		call := ContractCall{
+			CxAddr: log.Address.String(),
+			CxFunc: "safeTransferFrom(address,address,uint256)",
+			CxParams: []string{
+				hotWallet.String(),
+				recipient,
+				tokenId,
+			},
+			CxReturn:   "",
+			TxValue:    "0",
+			TxGasLimit: "800000",
+		}
+		tokenIds = append(tokenIds, tokenId)
+		forwardTxId, gas, err := e.Initiate(call)
+		txIds = append(txIds, forwardTxId)
+		gasUsed = gasUsed.Add(gasUsed, gas)
+		if err != nil {
+			return txIds, tokenIds, libcommon.StringError(err)
+		}
+	}
+	return txIds, tokenIds, nil
 }

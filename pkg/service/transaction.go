@@ -405,17 +405,6 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
-	// TESTING
-	tokenIds, err := executor.GetTokenIds(*p.txId)
-	if err != nil {
-		log.Err(err).Msg("Failed to get token ids")
-		// TODO: Handle error instead of returning it
-	}
-	p.tokenIds = strings.Join(tokenIds, ",")
-
-	// We can close the executor because we aren't using it after this
-	executor.Close()
-
 	// Update DB status and NetworkFee
 	status = "Tx Confirmed"
 	updateDB.Status = &status
@@ -426,6 +415,22 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		log.Err(err).Msg("Failed to update transaction repo with status 'Tx Confirmed'")
 		// TODO: Handle error instead of returning it
 	}
+
+	// Get the Token IDs which were transferred
+	tokenIds, err := executor.GetTokenIds(*p.txId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get token ids")
+		// TODO: Handle error instead of returning it
+	}
+	p.tokenIds = strings.Join(tokenIds, ",")
+
+	// Forward any tokens received to the user
+	// TODO: Use the TX ID/s from this in the receipt
+	// TODO: Find a way to charge for the gas used in this transaction
+	executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+
+	// We can close the executor because we aren't using it after this
+	executor.Close()
 
 	// compute profit
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
