@@ -37,7 +37,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
         },
         {
-          name = "JWT_SECRET_KEY"
+          name      = "JWT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
@@ -67,6 +67,10 @@ locals {
         {
           name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
+        },
+        {
+          name      = "CHECKOUT_SIGNATURE_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
           name      = "OWLRACLE_API_KEY"
@@ -119,6 +123,10 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name      = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
         }
       ]
       environment = [
@@ -155,7 +163,7 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
-          name = "COINCAP_API_URL"
+          name  = "COINCAP_API_URL"
           value = "https://api.coincap.io/v2/"
         },
         {
@@ -171,20 +179,12 @@ locals {
           value = "api.prod2"
         },
          {
-          name = "CHECKOUT_ENV"
+          name  = "CHECKOUT_ENV"
           value = local.env
         },
         {
           name  = "UNIT21_ORG_NAME"
           value = "string"
-        },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
         },
         {
           name  = "DD_SERVICE"
@@ -197,14 +197,6 @@ locals {
         {
           name  = "DD_ENV"
           value = local.env
-        },
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
         },
         {
           name  = "ECS_FARGATE"
