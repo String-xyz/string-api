@@ -68,13 +68,13 @@ type UserEmailLogin struct {
 }
 
 type UserUpdates struct {
-	DeactivatedAt *time.Time      `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string         `json:"type" db:"type"`
-	Status        *string         `json:"status" db:"status"`
-	Tags          *types.JSONText `json:"tags" db:"tags"`
-	FirstNname    *string         `json:"firstName" db:"first_name"`
-	MiddleName    *string         `json:"middleName" db:"middle_name"`
-	LastName      *string         `json:"lastName" db:"last_name"`
+	Type       *string         `json:"type" db:"type"`
+	Status     *string         `json:"status" db:"status"`
+	CheckoutId *string         `json:"checkoutId" db:"checkout_id"`
+	Tags       *types.JSONText `json:"tags" db:"tags"`
+	FirstName  *string         `json:"firstName" db:"first_name"`
+	MiddleName *string         `json:"middleName" db:"middle_name"`
+	LastName   *string         `json:"lastName" db:"last_name"`
 }
 
 type UserPKLogin struct {
@@ -95,16 +95,15 @@ type UserRequest struct {
 }
 
 type UpdateUserName struct {
-	FirstName  string `json:"firstName" db:"first_name" validate:"required"`
-	MiddleName string `json:"middleName" db:"middle_name" validate:"required"`
-	LastName   string `json:"lastName" db:"last_name" validate:"required"`
+	FirstName  string `json:"firstName" db:"first_name" validate:"max=255"`
+	MiddleName string `json:"middleName" db:"middle_name" validate:"max=255"`
+	LastName   string `json:"lastName" db:"last_name" validate:"max=255"`
 }
 
 type ContactUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Status        *string    `json:"status" db:"status"`
-	Data          *string    `json:"data" db:"data"`
+	Type   *string `json:"type" db:"type"`
+	Status *string `json:"status" db:"status"`
+	Data   *string `json:"data" db:"data"`
 }
 
 type CreatePlatform struct {
@@ -112,11 +111,10 @@ type CreatePlatform struct {
 	Authentication AuthType `json:"authentication" db:"authentication"`
 }
 
-type PlaformContactUpdates struct {
-	DeactivatedAt *time.Time `json:"deactivatedAt" db:"deactivated_at"`
-	Type          *string    `json:"type" db:"type"`
-	Status        *string    `json:"status" db:"status"`
-	Data          *string    `json:"data" db:"data"`
+type PlatformContactUpdates struct {
+	Type   *string `json:"type" db:"type"`
+	Status *string `json:"status" db:"status"`
+	Data   *string `json:"data" db:"data"`
 }
 
 type UpdateStatus struct {
@@ -133,5 +131,9 @@ type DeviceUpdates struct {
 }
 
 type RefreshTokenPayload struct {
-	WalletAddress string `json:"walletAddress" validate:"required"`
+	WalletAddress string `json:"walletAddress" validate:"required,eth_addr"`
+}
+
+type PreValidateEmail struct {
+	Email string `json:"email" validate:"required,email"`
 }

@@ -5,7 +5,7 @@ package service
 import (
 	"context"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/pkg/repository"
 )
 
@@ -27,7 +27,10 @@ func stringFee(chainId uint64) (float64, error) {
 }
 
 func ChainInfo(ctx context.Context, chainId uint64, networkRepo repository.Network, assetRepo repository.Asset) (Chain, error) {
-	network, err := networkRepo.GetByChainId(chainId)
+	_, finish := Span(ctx, "service.ChainInfo")
+	defer finish()
+
+	network, err := networkRepo.GetByChainId(ctx, chainId)
 	if err != nil {
 		return Chain{}, libcommon.StringError(err)
 	}

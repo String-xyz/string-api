@@ -1,36 +1,43 @@
 package middleware
 
 import (
-	"net/http"
-	"os"
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
-	"github.com/String-xyz/string-api/pkg/service"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+
+	"github.com/String-xyz/string-api/config"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 func JWTAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-			var claims = &service.JWTClaims{}
+			var claims = &model.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+				return []byte(config.Var.JWT_SECRET_KEY), nil
 			})
 
 			c.Set("userId", claims.UserId)
 			c.Set("deviceId", claims.DeviceId)
 			c.Set("platformId", claims.PlatformId)
+
 			return t, err
 		},
-		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		SigningKey: []byte(config.Var.JWT_SECRET_KEY),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
 			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 
-			return httperror.Unauthorized(c)
+			return httperror.Unauthorized401(c)
 		},
 	}
 	return echoMiddleware.JWTWithConfig(config)
@@ -40,7 +47,7 @@ func APIKeyPublicAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeyPublic(auth)
+			platformId, err := service.ValidateAPIKeyPublic(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeyPublicAuth middleware")
 				return false, err
@@ -58,12 +65,13 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			platformId, err := service.ValidateAPIKeySecret(auth)
+			platformId, err := service.ValidateAPIKeySecret(c.Request().Context(), auth)
 			if err != nil {
 				libcommon.LogStringError(c, err, "Error in APIKeySecretAuth middleware")
 				return false, err
 			}
 
+			// TODO: Validate platformId
 			c.Set("platformId", platformId)
 
 			return true, nil
@@ -86,7 +94,39 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 				if err != nil {
 					libcommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
-				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
+				return httperror.Forbidden403(c, "Error: Geo Location Forbidden")
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func VerifyWebhookPayload() echo.MiddlewareFunc {
+	secretKey := config.Var.WEBHOOK_SECRET_KEY
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			signatureHeader := c.Request().Header.Get("Cko-Signature")
+
+			body, err := io.ReadAll(c.Request().Body)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to read body")
+			}
+
+			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
+
+			mac := hmac.New(sha256.New, []byte(secretKey))
+			mac.Write(body)
+			expectedMAC := mac.Sum(nil)
+
+			receivedMAC, err := hex.DecodeString(signatureHeader)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to decode signature")
+			}
+
+			if !hmac.Equal(receivedMAC, expectedMAC) {
+				return httperror.Unauthorized401(c, "Failed to verify payload")
 			}
 
 			return next(c)

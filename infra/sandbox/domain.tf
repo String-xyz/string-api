@@ -20,6 +20,6 @@ module "acm" {
   zone_id     = data.aws_route53_zone.root.zone_id
   tags = {
     Environment = local.env
-    Name = "api.${local.root_domain}"
+    Name = "${local.env}-api.${local.root_domain}"
   }
 }

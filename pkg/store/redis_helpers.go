@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/pkg/errors"
 )
 

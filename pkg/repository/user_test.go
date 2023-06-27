@@ -27,7 +27,8 @@ func TestCreateUser(t *testing.T) {
 	defer db.Close()
 	mock.ExpectQuery(`INSERT INTO string_user`).WithArgs(m.FirstName, m.LastName, m.Type, m.Status)
 
-	NewUser(sqlxDB).Create(m)
+	ctx := context.Background()
+	NewUser(sqlxDB).Create(ctx, m)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, while inserting a new user", err)
 	}

@@ -6,7 +6,10 @@ import (
 	"testing"
 	"time"
 
+	env "github.com/String-xyz/go-lib/v2/config"
+
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/google/uuid"
@@ -16,6 +19,7 @@ import (
 )
 
 func TestCreateTransaction(t *testing.T) {
+	env.LoadEnv(&config.Var, "../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -38,6 +42,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestUpdateTransaction(t *testing.T) {
+	env.LoadEnv(&config.Var, "../../../.env")
 	ctx := context.Background()
 	db, mock, sqlxDB, err := initializeTest(t)
 	assert.NoError(t, err)
@@ -88,9 +93,10 @@ func TestUpdateTransaction(t *testing.T) {
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 
 	repos := TransactionRepos{
-		TxLeg: repository.NewTxLeg((sqlxDB)),
-		User:  repository.NewUser(sqlxDB),
-		Asset: repository.NewAsset(sqlxDB),
+		TxLeg:  repository.NewTxLeg((sqlxDB)),
+		User:   repository.NewUser(sqlxDB),
+		Asset:  repository.NewAsset(sqlxDB),
+		Device: repository.NewDevice(sqlxDB),
 	}
 
 	u21Transaction := NewTransaction(repos)
@@ -106,9 +112,10 @@ func TestUpdateTransaction(t *testing.T) {
 
 func executeMockTransactionForUser(ctx context.Context, transaction model.Transaction, sqlxDB *sqlx.DB) (unit21Id string, err error) {
 	repos := TransactionRepos{
-		TxLeg: repository.NewTxLeg(sqlxDB),
-		User:  repository.NewUser(sqlxDB),
-		Asset: repository.NewAsset(sqlxDB),
+		TxLeg:  repository.NewTxLeg(sqlxDB),
+		User:   repository.NewUser(sqlxDB),
+		Asset:  repository.NewAsset(sqlxDB),
+		Device: repository.NewDevice(sqlxDB),
 	}
 
 	u21Transaction := NewTransaction(repos)
@@ -155,17 +162,22 @@ func createMockTransactionForUser(userId string, amount string, sqlxDB *sqlx.DB)
 func mockTransactionRows(mock sqlmock.Sqlmock, transaction model.Transaction, userId string, assetId1 string, assetId2 string, instrumentId1 string, instrumentId2 string) {
 	mockedTxLegRow1 := sqlmock.NewRows([]string{"id", "timestamp", "amount", "value", "asset_id", "user_id", "instrument_id"}).
 		AddRow(transaction.OriginTxLegId, time.Now(), transaction.TransactionAmount, transaction.TransactionAmount, assetId1, userId, instrumentId1)
-	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND deactivated_at IS NULL").WithArgs(transaction.OriginTxLegId).WillReturnRows(mockedTxLegRow1)
+	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND deleted_at IS NULL").WithArgs(transaction.OriginTxLegId).WillReturnRows(mockedTxLegRow1)
 
 	mockedTxLegRow2 := sqlmock.NewRows([]string{"id", "timestamp", "amount", "value", "asset_id", "user_id", "instrument_id"}).
 		AddRow(transaction.DestinationTxLegId, time.Now(), "1", transaction.TransactionAmount, assetId2, userId, instrumentId2)
-	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND deactivated_at IS NULL").WithArgs(transaction.DestinationTxLegId).WillReturnRows(mockedTxLegRow2)
+	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND deleted_at IS NULL").WithArgs(transaction.DestinationTxLegId).WillReturnRows(mockedTxLegRow2)
 
 	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
 		AddRow(assetId1, "USD", "fiat USD", 6, false, transaction.NetworkId, "self")
-	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deactivated_at IS NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
+	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deleted_at IS NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
 
 	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
 		AddRow(assetId2, "Noose The Goose", "Noose the Goose NFT", 0, true, transaction.NetworkId, "joepegs.com")
-	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deactivated_at IS NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
+	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deleted_at IS NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
+
+	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
+		AddRow(transaction.DeviceId, "Mobile", "iPhone 11S", uuid.NewString(), pq.StringArray{"187.25.24.128"}, userId)
+	mock.ExpectQuery("SELECT * FROM device WHERE id = $1 AND deleted_at IS NULL").WithArgs(transaction.DeviceId).WillReturnRows(mockedDeviceRow)
+
 }

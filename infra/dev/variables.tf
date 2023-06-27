@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
+  cluster_name       = "core"
   env                = "dev"
-  service_name       = "string-api"
+  service_name       = "api"
   root_domain        = "dev.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -38,6 +38,10 @@ locals {
           name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
         },
+        { 
+          name = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
+        },
         {
           name      = "STRING_ENCRYPTION_KEY"
           valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
@@ -57,10 +61,6 @@ locals {
         {
           name      = "UNIT21_API_KEY"
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
-        },
-        {
-          name      = "IPSTACK_API_KEY"
-          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
         },
         {
           name      = "CHECKOUT_PUBLIC_KEY"
@@ -121,10 +121,6 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
-        },
-        {
-          name      = "TEAM_PHONE_NUMBERS"
-          valuefrom = data.aws_ssm_parameter.team_phone_numbers.arn
         }
       ]
       environment = [
@@ -170,7 +166,7 @@ locals {
         },
         {
           name  = "BASE_URL"
-          value = "https://string-api.dev.string-api.xyz/"
+          value = "https://api.dev.string-api.xyz/"
         },
         {
           name  = "UNIT21_ENV"
@@ -181,42 +177,26 @@ locals {
           value = "string"
         },
         {
+         name = "TEAM_PHONE_NUMBERS"
+         value = "+12062000000"
+        },
+        {
+          name = "AUTH_EMAIL_ADDRESS"
+          value = "auth@string.xyz"
+        },
+        {
+          name = "RECEIPTS_EMAIL_ADDRESS"
+          value = "receipts@stringxyz.com"
+        },
+        {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.sandbox2.unit21.com/evaluate"
+        },
+        {
           name = "CHECKOUT_ENV"
           value = local.env
         },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        },
-        {
-          name  = "DD_ENV"
-          value = local.env
-        },
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
-          name  = "ECS_FARGATE"
-          value = "true"
-        }
-      ],
+      ]
       logConfiguration = {
         logDriver = "awsfirelens"
         secretOptions = [{
@@ -225,9 +205,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"
@@ -247,6 +227,20 @@ locals {
         hostPort      = 8126,
         protocol      = "tcp",
         containerPort = 8126
+        }
+      ],
+      environment = [
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
+        },
+        {
+          name  = "DD_ENV"
+          value = local.env
         }
       ]
     },

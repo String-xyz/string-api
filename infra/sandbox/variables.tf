@@ -1,7 +1,7 @@
 locals {
-  cluster_name       = "core-sandbox"
+  cluster_name       = "sandbox-core"
   env                = "sandbox"
-  service_name       = "sandbox-string-api"
+  service_name       = "api"
   root_domain        = "sandbox.string-api.xyz"
   container_port     = "3000"
   origin_id          = "sandbox-api"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.1"
+  default = "v1.0.0"
 }
 
 locals {
@@ -39,6 +39,10 @@ locals {
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
         },
         {
+          name      = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
+        },
+        {
           name      = "STRING_ENCRYPTION_KEY"
           valueFrom = data.aws_ssm_parameter.string_encryption_secret.arn
         },
@@ -59,16 +63,16 @@ locals {
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
         },
         {
-          name      = "IPSTACK_API_KEY"
-          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
-        },
-        {
           name      = "CHECKOUT_PUBLIC_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_public_key.arn
         },
         {
           name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
+        },
+        {
+          name      = "CHECKOUT_SIGNATURE_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
           name      = "OWLRACLE_API_KEY"
@@ -121,6 +125,10 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name      = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
         },
         {
           name      = "TEAM_PHONE_NUMBERS"
@@ -181,40 +189,20 @@ locals {
           value = "string"
         },
         {
+          name = "AUTH_EMAIL_ADDRESS"
+          value = "auth@string.xyz"
+        },
+        {
+          name = "RECEIPTS_EMAIL_ADDRESS"
+          value = "receipts@stringxyz.com"
+        },
+        {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.sandbox2.unit21.com/evaluate"
+        },
+        {
           name = "CHECKOUT_ENV"
           value = local.env
-        },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        },
-        {
-          name  = "DD_ENV"
-          value = local.env
-        },
-        {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
-          name  = "ECS_FARGATE"
-          value = "true"
         }
       ],
       logConfiguration = {
@@ -225,9 +213,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"
@@ -247,6 +235,14 @@ locals {
         {
           name  = "DD_ENV"
           value = local.env
+        },
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
         }
       ]
       portMappings = [{

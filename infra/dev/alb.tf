@@ -1,11 +1,10 @@
 module "alb_acm" {
   source            = "../acm"
-  alternative_names = ["www.string-api.${local.root_domain}"]
-  domain_name       = "string-api.${local.root_domain}"
+  domain_name       = "api.${local.root_domain}"
   aws_region        = "us-west-2"
   zone_id           = data.aws_route53_zone.root.zone_id
   tags = {
-    Name = "string-api-${local.root_domain}-alb"
+    Name = "api-${local.root_domain}-alb"
   }
 }
 
@@ -95,7 +94,7 @@ resource "aws_alb_listener_rule" "ecs_alb_listener_rule" {
 
   condition {
     host_header {
-      values = ["string-api.${local.root_domain}"]
+      values = ["api.${local.root_domain}"]
     }
   }
 }

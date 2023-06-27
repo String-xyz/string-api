@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
+  cluster_name       = "core"
   env                = "prod"
-  service_name       = "string-api"
+  service_name       = "api"
   domain             = "api.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.0-alpha"
+  default = "v1.0.7-alpha"
 }
 
 locals {
@@ -35,6 +35,10 @@ locals {
         {
           name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
+        },
+        {
+          name      = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
           name      = "STRING_ENCRYPTION_KEY"
@@ -57,16 +61,16 @@ locals {
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
         },
         {
-          name      = "IPSTACK_API_KEY"
-          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
-        },
-        {
           name      = "CHECKOUT_PUBLIC_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_public_key.arn
         },
         {
           name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
+        },
+        {
+          name      = "CHECKOUT_SIGNATURE_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
           name      = "OWLRACLE_API_KEY"
@@ -119,6 +123,14 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name      = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
+        },
+        {
+          name      = "TEAM_PHONE_NUMBERS"
+          valuefrom = data.aws_ssm_parameter.team_phone_numbers.arn
         }
       ]
       environment = [
@@ -155,7 +167,7 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
-          name = "COINCAP_API_URL"
+          name  = "COINCAP_API_URL"
           value = "https://api.coincap.io/v2/"
         },
         {
@@ -171,20 +183,12 @@ locals {
           value = "api.prod2"
         },
          {
-          name = "CHECKOUT_ENV"
+          name  = "CHECKOUT_ENV"
           value = local.env
         },
         {
           name  = "UNIT21_ORG_NAME"
           value = "string"
-        },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
         },
         {
           name  = "DD_SERVICE"
@@ -199,14 +203,6 @@ locals {
           value = local.env
         },
         {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
           name  = "ECS_FARGATE"
           value = "true"
         }
@@ -219,9 +215,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"

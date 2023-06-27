@@ -3,13 +3,13 @@ package service
 import (
 	"math"
 	"math/big"
-	"os"
 	"strconv"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/store"
@@ -46,7 +46,7 @@ type CostCache struct {
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
+	EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error)
 	LookupUSD(quantity float64, coins ...string) (float64, error)
 }
 
@@ -60,14 +60,14 @@ func NewCost(redis database.RedisStore) Cost {
 	}
 }
 
-func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error) {
+func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
 
 	// Query cost of native token in USD
 	nativeCost, err := c.LookupUSD(1, chain.CoingeckoName, chain.CoincapName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
@@ -81,7 +81,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Query owlracle for gas
 	ethGasFee, err := c.lookupGas(chain.OwlracleName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
@@ -96,7 +96,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	// Also for buying tokens directly
 	tokenCost, err := c.LookupUSD(costToken, p.TokenName)
 	if err != nil {
-		return model.Quote{}, libcommon.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 	if p.UseBuffer {
 		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
@@ -128,7 +128,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 	totalUSD = centCeiling(totalUSD)
 
 	// Fill out CostEstimate and return
-	return model.Quote{
+	return model.Estimate[float64]{
 		Timestamp:  timestamp,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,
@@ -161,7 +161,7 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
 		var empty interface{}
-		err = common.GetJson(os.Getenv("COINGECKO_API_URL")+"ping", &empty)
+		err = common.GetJson(config.Var.COINGECKO_API_URL+"ping", &empty)
 		if err == nil {
 			cacheObject.Value, err = c.coingeckoUSD(coins[0])
 			if err != nil {
@@ -205,7 +205,7 @@ func (c cost) lookupGas(network string) (float64, error) {
 }
 
 func (c cost) coingeckoUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
+	requestURL := config.Var.COINGECKO_API_URL + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
@@ -226,7 +226,7 @@ func (c cost) coingeckoUSD(coin string) (float64, error) {
 }
 
 func (c cost) coincapUSD(coin string) (float64, error) {
-	requestURL := os.Getenv("COINCAP_API_URL") + "assets?search=" + coin
+	requestURL := config.Var.COINCAP_API_URL + "assets?search=" + coin
 	body := make(map[string]interface{})
 	err := common.GetJsonGeneric(requestURL, &body)
 	if err != nil {
@@ -245,10 +245,10 @@ func (c cost) coincapUSD(coin string) (float64, error) {
 }
 
 func (c cost) owlracle(network string) (float64, error) {
-	requestURL := os.Getenv("OWLRACLE_API_URL") +
+	requestURL := config.Var.OWLRACLE_API_URL +
 		network +
 		"/gas?apikey=" +
-		os.Getenv("OWLRACLE_API_KEY") +
+		config.Var.OWLRACLE_API_KEY +
 		"&accept=100"
 	var res OwlracleJSON
 	err := common.GetJsonGeneric(requestURL, &res)

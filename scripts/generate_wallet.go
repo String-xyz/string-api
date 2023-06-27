@@ -5,8 +5,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/base64"
 	"fmt"
-	"os"
 
+	env "github.com/String-xyz/string-api/config"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 )
 
@@ -82,7 +81,7 @@ func PutSSM(name string, value string, overwrite bool) error {
 		return StringError(err)
 	}
 	ssmClient := ssm.NewFromConfig(cfg)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := env.Var.AWS_KMS_KEY_ID
 	input := &ssm.PutParameterInput{
 		Name:      &name,
 		Value:     &value,
@@ -119,8 +118,6 @@ func GetSSM(name string) (string, error) {
 }
 
 func GenerateWallet() error {
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
-
 	preExistingWallet, _ := GetAddress()
 	if preExistingWallet != "" {
 		fmt.Printf("\n WARNING: WALLET CREDENTIALS FOR %+v ARE ALREADY BEING STORED IN SSM.  THIS SCRIPT WILL EXIT.", preExistingWallet)
@@ -178,7 +175,7 @@ func GetAddress() (string, error) {
 }
 
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := os.Getenv("AWS_REGION")
+	region := env.Var.AWS_REGION
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -186,7 +183,7 @@ func EncryptBytesToKMS(data []byte) (string, error) {
 		return "", StringError(err)
 	}
 	kmsService := kms.New(session)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := env.Var.AWS_KMS_KEY_ID
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
 		Plaintext: data,

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
-	baserepo "github.com/String-xyz/go-lib/repository"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	baserepo "github.com/String-xyz/go-lib/v2/repository"
 	"github.com/String-xyz/string-api/pkg/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -99,9 +99,9 @@ func (a auth[T]) GetUserIdFromRefreshToken(refreshToken string) (string, error) 
 	if authStrat.ExpiresAt.Before(time.Now()) {
 		return "", libcommon.StringError(fmt.Errorf("refresh token expired"))
 	}
-	// assert token has not been deactivated
-	if authStrat.DeactivatedAt != nil {
-		return "", libcommon.StringError(fmt.Errorf("refresh token deactivated at %s", authStrat.DeactivatedAt))
+	// assert token has not been deleted
+	if authStrat.DeletedAt != nil {
+		return "", libcommon.StringError(fmt.Errorf("refresh token deactivated at %s", authStrat.DeletedAt))
 	}
 	// if all is well, return the user id
 	return authStrat.Data, nil

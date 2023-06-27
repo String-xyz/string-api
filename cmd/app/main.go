@@ -1,34 +1,36 @@
 package main
 
 import (
+	"log"
 	"os"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/String-xyz/string-api/api"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
-
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
 
 func main() {
-	// load .env file
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	// load env vars
+	err := env.LoadEnv(&config.Var)
+	if err != nil {
+		panic(err)
+	}
 	lg := zerolog.New(os.Stdout)
 	if !libcommon.IsLocalEnv() {
-		tracer.Start()
+		setupTracer()
+		defer profiler.Stop()
 		defer tracer.Stop()
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
-	}
+	port := config.Var.PORT
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	// zerolog.SetGlobalLevel(zerolog.Disabled) // quiet mode
 	db := store.MustNewPG()
 
 	redis := store.NewRedis()
@@ -40,4 +42,25 @@ func main() {
 		Port:   port,
 		Logger: &lg,
 	})
+}
+
+func setupTracer() {
+	rules := []tracer.SamplingRule{tracer.RateRule(1)}
+	tracer.Start(
+		tracer.WithSamplingRules(rules),
+		tracer.WithService("api"),
+		tracer.WithEnv(config.Var.ENV),
+	)
+
+	err := profiler.Start(
+		profiler.WithService("api"),
+		profiler.WithEnv(config.Var.ENV),
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+		))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }

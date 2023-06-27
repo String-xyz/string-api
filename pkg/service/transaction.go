@@ -10,23 +10,25 @@ import (
 	"strings"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/database"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
 
+	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/emailer"
 
-	"github.com/String-xyz/string-api/pkg/model"
-	repository "github.com/String-xyz/string-api/pkg/repository"
-	"github.com/checkout/checkout-sdk-go/payments"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/pkg/model"
+	repository "github.com/String-xyz/string-api/pkg/repository"
 )
 
 type Transaction interface {
-	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error)
-	Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (model.TransactionReceipt, error)
+	Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error)
+	Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error)
 }
 
 type TransactionRepos struct {
@@ -61,29 +63,32 @@ func NewTransaction(repos repository.Repositories, redis database.RedisStore, un
 }
 
 type transactionProcessingData struct {
-	userId                        *string
-	user                          *model.User
-	deviceId                      *string
-	ip                            *string
-	platformId                    *string
-	executor                      *Executor
-	processingFeeAsset            *model.Asset
-	transactionModel              *model.Transaction
-	chain                         *Chain
-	executionRequest              *model.ExecutionRequest
-	precisionSafeExecutionRequest *model.PrecisionSafeExecutionRequest
-	cardAuthorization             *AuthorizedCharge
-	cardCapture                   *payments.CapturesResponse
-	recipientWalletId             *string
-	txId                          *string
-	cumulativeValue               *big.Int
-	trueGas                       *uint64
+	userId             *string
+	user               *model.User
+	deviceId           *string
+	ip                 *string
+	platformId         *string
+	executor           *Executor
+	processingFeeAsset *model.Asset
+	transactionModel   *model.Transaction
+	chain              *Chain
+	executionRequest   *model.ExecutionRequest
+	floatEstimate      *model.Estimate[float64]
+	cardAuthorization  *AuthorizedCharge
+	PaymentStatus      checkout.PaymentStatus
+	PaymentId          string
+	recipientWalletId  *string
+	txId               *string
+	cumulativeValue    *big.Int
+	trueGas            *uint64
 }
 
-func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (model.PrecisionSafeExecutionRequest, error) {
-	// TODO: use prefab service to parse d and fill out known params
-	res := model.PrecisionSafeExecutionRequest{TransactionRequest: d}
+func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
+	_, finish := Span(ctx, "service.transaction.Quote", SpanTag{"platformId": platformId})
+	defer finish()
 
+	// TODO: use prefab service to parse d and fill out known params
+	res.TransactionRequest = d
 	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(ctx, uint64(d.ChainId), t.repos.Network, t.repos.Asset)
 	if err != nil {
@@ -95,7 +100,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 	if !allowed {
-		return res, libcommon.StringError(errors.New("contract not allowed"))
+		return res, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	}
 
 	executor := NewExecutor()
@@ -108,7 +113,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
-	res.PrecisionSafeQuote = common.QuoteToPrecise(estimateUSD)
+	res.Estimate = common.EstimateToPrecise(estimateUSD)
 	executor.Close()
 
 	// Sign entire payload
@@ -125,9 +130,12 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	return res, nil
 }
 
-func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
+func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, userId string, deviceId string, platformId string, ip string) (res model.TransactionReceipt, err error) {
+	_, finish := Span(ctx, "service.transaction.Execute", SpanTag{"platformId": platformId})
+	defer finish()
+
 	t.getStringInstrumentsAndUserId()
-	p := transactionProcessingData{precisionSafeExecutionRequest: &e, executionRequest: &model.ExecutionRequest{}, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
+	p := transactionProcessingData{executionRequest: &e, userId: &userId, deviceId: &deviceId, ip: &ip, platformId: &platformId}
 
 	// Pre-flight transaction setup
 	p, err = t.transactionSetup(ctx, p)
@@ -154,16 +162,18 @@ func (t transaction) Execute(ctx context.Context, e model.PrecisionSafeExecution
 	ctx2 := context.Background()
 	go t.postProcess(ctx2, p)
 
-	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId}, nil
+	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
-	// get user object
+	_, finish := Span(ctx, "service.transaction.transactionSetup", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	user, err := t.repos.User.GetById(ctx, *p.userId)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	email, err := t.repos.Contact.GetByUserIdAndType(user.Id, "email")
+	email, err := t.repos.Contact.GetByUserIdAndType(ctx, user.Id, "email")
 	if err != nil && errors.Cause(err).Error() != "not found" {
 		return p, libcommon.StringError(err)
 	}
@@ -171,21 +181,21 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 	p.user = &user
 
 	// Pull chain info needed for execution from repository
-	chain, err := ChainInfo(ctx, p.precisionSafeExecutionRequest.ChainId, t.repos.Network, t.repos.Asset)
+	chain, err := ChainInfo(ctx, p.executionRequest.Quote.TransactionRequest.ChainId, t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
 	p.chain = &chain
 
 	// Create new Tx in repository, populate it with known info
-	transactionModel, err := t.repos.Transaction.Create(model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
+	transactionModel, err := t.repos.Transaction.Create(ctx, model.Transaction{Status: "Created", NetworkId: chain.UUID, DeviceId: *p.deviceId, IPAddress: *p.ip, PlatformId: *p.platformId})
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
 	p.transactionModel = &transactionModel
 
 	updateDB := &model.TransactionUpdates{}
-	processingFeeAsset, err := t.populateInitialTxModelData(*p.precisionSafeExecutionRequest, updateDB)
+	processingFeeAsset, err := t.populateInitialTxModelData(ctx, *p.executionRequest, updateDB)
 	p.processingFeeAsset = &processingFeeAsset
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -213,34 +223,41 @@ func (t transaction) transactionSetup(ctx context.Context, p transactionProcessi
 }
 
 func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.safetyCheck", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	// Test the Tx and update model status
-	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.precisionSafeExecutionRequest.TransactionRequest, *p.chain, false, false)
+	estimateUSD, estimateETH, estimateEVM, err := t.testTransaction(*p.executor, p.executionRequest.Quote.TransactionRequest, *p.chain, false, false)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
+
 	err = t.updateTransactionStatus(ctx, "Tested and Estimated", p.transactionModel.Id)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
 
 	// Verify the Quote and update model status
-	_, err = verifyQuote(*p.precisionSafeExecutionRequest, estimateUSD)
+	_, err = verifyQuote(*p.executionRequest, estimateUSD)
 	if err != nil {
 		// Update cache if price is too volatile
 		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
 			quoteCache := NewQuoteCache(t.redis)
-			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.TransactionRequest, estimateEVM)
+			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.Quote.TransactionRequest, estimateEVM)
 			if err != nil {
 				return p, libcommon.StringError(err)
 			}
 		}
 		return p, libcommon.StringError(err)
 	}
+
 	err = t.updateTransactionStatus(ctx, "Quote Verified", p.transactionModel.Id)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	*p.executionRequest = common.ExecutionRequestToImprecise(*p.precisionSafeExecutionRequest)
+
+	floatEstimate := common.EstimateToImprecise(p.executionRequest.Quote.Estimate)
+	p.floatEstimate = &floatEstimate
 
 	// Get current balance of primary token
 	balance, err := (*p.executor).GetBalance()
@@ -274,7 +291,6 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 	}
 
 	evaluation, err := t.unit21.Transaction.Evaluate(ctx, txModel)
-
 	if err != nil {
 		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
 		log.Err(err).Msg("Error evaluating transaction in Unit21")
@@ -304,13 +320,17 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 }
 
 func (t transaction) initiateTransaction(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.initiateTransaction", SpanTag{"platformId": p.platformId})
+	defer finish()
+
+	request := p.executionRequest.Quote.TransactionRequest
 	call := ContractCall{
-		CxAddr:     p.executionRequest.CxAddr,
-		CxFunc:     p.executionRequest.CxFunc,
-		CxReturn:   p.executionRequest.CxReturn,
-		CxParams:   p.executionRequest.CxParams,
-		TxValue:    p.executionRequest.TxValue,
-		TxGasLimit: p.executionRequest.TxGasLimit,
+		CxAddr:     request.CxAddr,
+		CxFunc:     request.CxFunc,
+		CxReturn:   request.CxReturn,
+		CxParams:   request.CxParams,
+		TxValue:    request.TxValue,
+		TxGasLimit: request.TxGasLimit,
 	}
 
 	txId, value, err := (*p.executor).Initiate(call)
@@ -323,7 +343,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
 	wei := floatToFixedString(eth, 18)
-	usd := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usd := floatToFixedString(p.floatEstimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	responseLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       wei,
@@ -332,7 +352,7 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 		UserId:       *p.userId,
 		InstrumentId: t.ids.StringWalletId,
 	}
-	responseLeg, err = t.repos.TxLeg.Create(responseLeg)
+	responseLeg, err = t.repos.TxLeg.Create(ctx, responseLeg)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -354,6 +374,9 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 }
 
 func (t transaction) postProcess(ctx context.Context, p transactionProcessingData) {
+	_, finish := Span(ctx, "service.transaction.postProcess", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	// Reinitialize Executor
 	executor := NewExecutor()
 	p.executor = &executor
@@ -455,7 +478,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 }
 
-func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
+func (t transaction) populateInitialTxModelData(ctx context.Context, e model.ExecutionRequest, m *model.TransactionUpdates) (model.Asset, error) {
 	txType := "fiat-to-crypto"
 	m.Type = &txType
 	// TODO populate transactionModel.Tags with key-val pairs for Unit21
@@ -464,12 +487,12 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	// TODO populate transactionModel.PlatformId with UUID of customer
 	// bytes, err := json.Marshal()
 
-	contractParams := pq.StringArray(e.CxParams)
+	contractParams := pq.StringArray(e.Quote.TransactionRequest.CxParams)
 	m.ContractParams = &contractParams
-	contractFunc := e.CxFunc + e.CxReturn
+	contractFunc := e.Quote.TransactionRequest.CxFunc + e.Quote.TransactionRequest.CxReturn
 	m.ContractFunc = &contractFunc
 
-	asset, err := t.repos.Asset.GetByName("USD")
+	asset, err := t.repos.Asset.GetByName(ctx, "USD")
 	if err != nil {
 		return model.Asset{}, libcommon.StringError(err)
 	}
@@ -477,17 +500,8 @@ func (t transaction) populateInitialTxModelData(e model.PrecisionSafeExecutionRe
 	return asset, nil
 }
 
-func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Quote, float64, CallEstimate, error) {
-	res := model.Quote{}
-
-	call := ContractCall{
-		CxAddr:     request.CxAddr,
-		CxFunc:     request.CxFunc,
-		CxReturn:   request.CxReturn,
-		CxParams:   request.CxParams,
-		TxValue:    request.TxValue,
-		TxGasLimit: request.TxGasLimit,
-	}
+func (t transaction) testTransaction(executor Executor, request model.TransactionRequest, chain Chain, useBuffer bool, useCache bool) (model.Estimate[float64], float64, CallEstimate, error) {
+	res := model.Estimate[float64]{}
 
 	quoteCache := NewQuoteCache(t.redis)
 	estimateEVM := CallEstimate{}
@@ -501,6 +515,14 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	}
 
 	if recalculate {
+		call := ContractCall{
+			CxAddr:     request.CxAddr,
+			CxFunc:     request.CxFunc,
+			CxReturn:   request.CxReturn,
+			CxParams:   request.CxParams,
+			TxValue:    request.TxValue,
+			TxGasLimit: request.TxGasLimit,
+		}
 		// Estimate value and gas of Tx request
 		estimateEVM, err = executor.Estimate(call)
 		if err != nil {
@@ -543,26 +565,25 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	return res, eth, estimateEVM, nil
 }
 
-func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote) (bool, error) {
+func verifyQuote(e model.ExecutionRequest, newEstimate model.Estimate[float64]) (bool, error) {
 	// Null out values which have changed since payload was signed
 	dataToValidate := e
-	dataToValidate.Signature = ""
-	dataToValidate.CardToken = ""
-	bytesToValidate, err := json.Marshal(dataToValidate)
+	dataToValidate.Quote.Signature = ""
+	bytesToValidate, err := json.Marshal(dataToValidate.Quote)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
-	valid, err := common.ValidateEVMSignature(e.Signature, bytesToValidate, true)
+	valid, err := common.ValidateEVMSignature(e.Quote.Signature, bytesToValidate, true)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
 	if !valid {
 		return false, libcommon.StringError(errors.New("verifyQuote: invalid signature"))
 	}
-	if newEstimate.Timestamp-e.Timestamp > 20 {
+	if newEstimate.Timestamp-e.Quote.Estimate.Timestamp > 20 {
 		return false, libcommon.StringError(errors.New("verifyQuote: quote expired"))
 	}
-	quotedTotal, err := strconv.ParseFloat(e.TotalUSD, 64)
+	quotedTotal, err := strconv.ParseFloat(e.Quote.Estimate.TotalUSD, 64)
 	if err != nil {
 		return false, libcommon.StringError(err)
 	}
@@ -573,10 +594,12 @@ func verifyQuote(e model.PrecisionSafeExecutionRequest, newEstimate model.Quote)
 }
 
 func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transactionProcessingData) (string, error) {
+	_, finish := Span(ctx, "service.transaction.addCardInstrumentIdIfNew", SpanTag{"platformId": p.platformId})
+	defer finish()
 	// Create a new context since there are sub routines that run in background
 	ctx2 := context.Background()
 
-	instrument, err := t.repos.Instrument.GetCardByFingerprint(p.cardAuthorization.CheckoutFingerprint)
+	instrument, err := t.repos.Instrument.GetCardByFingerprint(ctx, p.cardAuthorization.CheckoutFingerprint)
 	if err != nil && !strings.Contains(err.Error(), "not found") { // because we are wrapping error and care about its value
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.UserId != "" {
@@ -585,9 +608,9 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 	}
 
 	// We should gather type from the payment processor
-	instrument_type := "Debit Card"
+	instrument_type := "debit card"
 	if p.cardAuthorization.CardType == "CREDIT" {
-		instrument_type = "Credit Card"
+		instrument_type = "credit card"
 	}
 	// Create a new instrument
 	instrument = model.Instrument{ // No locationId until fingerprint
@@ -598,7 +621,8 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 		PublicKey: p.cardAuthorization.CheckoutFingerprint,
 		Name:      p.cardAuthorization.CardholderName,
 	}
-	instrument, err = t.repos.Instrument.Create(instrument)
+
+	instrument, err = t.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -609,10 +633,13 @@ func (t transaction) addCardInstrumentIdIfNew(ctx context.Context, p transaction
 }
 
 func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address string, id string) (string, error) {
+	_, finish := Span(ctx, "service.transaction.addWalletInstrumentIdIfNew")
+	defer finish()
+
 	// Create a new context since this will run in background
 	ctx2 := context.Background()
 
-	instrument, err := t.repos.Instrument.GetWalletByAddr(address)
+	instrument, err := t.repos.Instrument.GetWalletByAddr(ctx, address)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return "", libcommon.StringError(err)
 	} else if err == nil && instrument.PublicKey == address {
@@ -621,8 +648,8 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 	}
 
 	// Create a new instrument
-	instrument = model.Instrument{Type: "Crypto Wallet", Status: "external", Network: "ethereum", PublicKey: address, UserId: id} // No locationId or userId because this wallet was not registered with the user and is some other recipient
-	instrument, err = t.repos.Instrument.Create(instrument)
+	instrument = model.Instrument{Type: "crypto wallet", Status: "external", Network: "ethereum", PublicKey: address, UserId: id} // No locationId or userId because this wallet was not registered with the user and is some other recipient
+	instrument, err = t.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		return "", libcommon.StringError(err)
 	}
@@ -633,6 +660,9 @@ func (t transaction) addWalletInstrumentIdIfNew(ctx context.Context, address str
 }
 
 func (t transaction) authCard(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
+	_, finish := Span(ctx, "service.transaction.authCard", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	// auth their card
 	p, err := AuthorizeCharge(p)
 	if err != nil {
@@ -646,7 +676,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	}
 
 	// Create Origin Tx leg
-	usdWei := floatToFixedString(p.executionRequest.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usdWei := floatToFixedString(p.floatEstimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	origin := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       usdWei,
@@ -655,10 +685,11 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		UserId:       *p.userId,
 		InstrumentId: instrumentId,
 	}
-	origin, err = t.repos.TxLeg.Create(origin)
+	origin, err = t.repos.TxLeg.Create(ctx, origin)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
+
 	txLegUpdates := model.TransactionUpdates{OriginTxLegId: &origin.Id}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, txLegUpdates)
 	if err != nil {
@@ -670,7 +701,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		return p, libcommon.StringError(err)
 	}
 
-	recipientWalletId, err := t.addWalletInstrumentIdIfNew(ctx, p.executionRequest.UserAddress, *p.userId)
+	recipientWalletId, err := t.addWalletInstrumentIdIfNew(ctx, p.executionRequest.Quote.TransactionRequest.UserAddress, *p.userId)
 	p.recipientWalletId = &recipientWalletId
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -686,7 +717,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 		InstrumentId: recipientWalletId,  // Required by the db. the instrument which received the asset (wallet usually)
 	}
 
-	destinationLeg, err = t.repos.TxLeg.Create(destinationLeg)
+	destinationLeg, err = t.repos.TxLeg.Create(ctx, destinationLeg)
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
@@ -699,10 +730,7 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	}
 
 	if !p.cardAuthorization.Approved {
-		err := t.unit21CreateTransaction(ctx, p.transactionModel.Id)
-		if err != nil {
-			return p, libcommon.StringError(err)
-		}
+		go t.unit21CreateTransaction(ctx, p.transactionModel.Id)
 
 		return p, libcommon.StringError(errors.New("payment: Authorization Declined by Checkout"))
 	}
@@ -720,6 +748,9 @@ func confirmTx(executor Executor, txId string) (uint64, error) {
 
 // TODO: rewrite this transaction to reference the asset(s) received by the user, not what we paid
 func (t transaction) tenderTransaction(ctx context.Context, p transactionProcessingData) (float64, error) {
+	_, finish := Span(ctx, "service.transaction.tenderTransaction", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	cost := NewCost(t.redis)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
@@ -727,7 +758,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
-	profit := p.executionRequest.Quote.TotalUSD - trueUSD
+	profit := p.floatEstimate.TotalUSD - trueUSD
 
 	// Create Receive Tx leg
 	asset, err := t.repos.Asset.GetById(ctx, p.chain.GasTokenId)
@@ -735,7 +766,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 		return profit, libcommon.StringError(err)
 	}
 	wei := floatToFixedString(trueEth, int(asset.Decimals))
-	usd := floatToFixedString(p.executionRequest.Quote.TotalUSD, 6)
+	usd := floatToFixedString(p.floatEstimate.TotalUSD, 6)
 
 	txModel, err := t.repos.Transaction.GetById(ctx, p.transactionModel.Id)
 	if err != nil {
@@ -762,13 +793,16 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 }
 
 func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData) error {
+	_, finish := Span(ctx, "service.transaction.chargeCard", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	p, err := CaptureCharge(p)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
 
 	// Create Receipt Tx leg
-	usdWei := floatToFixedString(p.executionRequest.Quote.TotalUSD, int(p.processingFeeAsset.Decimals))
+	usdWei := floatToFixedString(p.floatEstimate.TotalUSD, int(p.processingFeeAsset.Decimals))
 	receiptLeg := model.TxLeg{
 		Timestamp:    time.Now(),
 		Amount:       usdWei,
@@ -777,11 +811,11 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 		UserId:       t.ids.StringUserId,
 		InstrumentId: t.ids.StringBankId,
 	}
-	receiptLeg, err = t.repos.TxLeg.Create(receiptLeg)
+	receiptLeg, err = t.repos.TxLeg.Create(ctx, receiptLeg)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.cardCapture.Accepted.ActionID}
+	txLeg := model.TransactionUpdates{ReceiptTxLegId: &receiptLeg.Id, PaymentCode: &p.PaymentId}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, txLeg)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -791,46 +825,57 @@ func (t transaction) chargeCard(ctx context.Context, p transactionProcessingData
 }
 
 func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessingData) error {
+	_, finish := Span(ctx, "service.transaction.sendEmailReceipt", SpanTag{"platformId": p.platformId})
+	defer finish()
+
 	user, err := t.repos.User.GetById(ctx, *p.userId)
 	if err != nil {
 		log.Err(err).Msg("Error getting user from repo")
 		return libcommon.StringError(err)
 	}
+
 	contact, err := t.repos.Contact.GetByUserId(ctx, user.Id)
 	if err != nil {
 		log.Err(err).Msg("Error getting user contact from repo")
 		return libcommon.StringError(err)
 	}
+
 	name := user.FirstName // + " " + user.MiddleName + " " + user.LastName
 	if name == "" {
 		name = "User"
 	}
-	receiptParams := common.ReceiptGenerationParams{
-		ReceiptType:       "NFT Purchase", // TODO: retrieve dynamically
-		CustomerName:      name,
-		StringPaymentId:   p.transactionModel.Id,
-		PaymentDescriptor: "String Digital Asset", // TODO: retrieve dynamically
-		TransactionDate:   time.Now().Format(time.RFC1123),
-	}
+
 	platform, err := t.repos.Platform.GetById(ctx, *p.platformId)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
 
-	receiptBody := [][2]string{
-		{"Transaction ID", "<a href='" + p.chain.Explorer + "/tx/" + *p.txId + "'>" + *p.txId + "</a>"},
-		{"Destination Wallet", "<a href='" + p.chain.Explorer + "/address/" + p.executionRequest.UserAddress + "'>" + p.executionRequest.UserAddress + "</a>"},
-		{"Payment Descriptor", receiptParams.PaymentDescriptor},
-		{"Payment Method", p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4},
-		{"Platform", platform.Name},
-		{"Item Ordered", "String Fighter NFT"}, // TODO: retrieve dynamically
-		{"Token ID", "1234"},                   // TODO: retrieve dynamically, maybe after building token transfer detection
-		{"Subtotal", common.FloatToUSDString(p.executionRequest.Quote.BaseUSD + p.executionRequest.Quote.TokenUSD)},
-		{"Network Fee:", common.FloatToUSDString(p.executionRequest.Quote.GasUSD)},
-		{"Processing Fee", common.FloatToUSDString(p.executionRequest.Quote.ServiceUSD)},
-		{"Total Charge", common.FloatToUSDString(p.executionRequest.Quote.TotalUSD)},
+	transactionRequest := p.executionRequest.Quote.TransactionRequest
+	estimate := p.floatEstimate
+
+	receiptParams := emailer.ReceiptGenerationParams{
+		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
+		CustomerName:        name,
+		StringPaymentId:     p.transactionModel.Id,
+		PaymentDescriptor:   p.executionRequest.Quote.TransactionRequest.AssetName,
+		TransactionDate:     time.Now().Format(time.RFC1123),
+		TransactionId:       *p.txId,
+		TransactionExplorer: p.chain.Explorer + "/tx/" + *p.txId,
+		DestinationAddress:  transactionRequest.UserAddress,
+		DestinationExplorer: p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
+		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
+		Platform:            platform.Name,
+		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
+		TokenId:             "1234", // TODO: retrieve dynamically
+		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
+		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
+		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
+		Total:               common.FloatToUSDString(estimate.TotalUSD),
 	}
-	err = common.EmailReceipt(contact.Data, receiptParams, receiptBody)
+
+	emailer := emailer.New()
+
+	err = emailer.SendReceipt(ctx, contact.Data, receiptParams)
 	if err != nil {
 		log.Err(err).Msg("Error sending email receipt to user")
 		return libcommon.StringError(err)
@@ -843,6 +888,9 @@ func floatToFixedString(value float64, decimals int) string {
 }
 
 func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId string) (err error) {
+	_, finish := Span(ctx, "service.transaction.unit21CreateTransaction", SpanTag{"transactionId": transactionId})
+	defer finish()
+
 	txModel, err := t.repos.Transaction.GetById(ctx, transactionId)
 	if err != nil {
 		log.Err(err).Msg("Error getting tx model in Unit21 in Tx Postprocess")
@@ -859,6 +907,9 @@ func (t transaction) unit21CreateTransaction(ctx context.Context, transactionId 
 }
 
 func (t transaction) updateTransactionStatus(ctx context.Context, status string, transactionId string) (err error) {
+	_, finish := Span(ctx, "service.transaction.updateTransactionStatus", SpanTag{"transactionId": transactionId})
+	defer finish()
+
 	updateDB := &model.TransactionUpdates{Status: &status}
 	err = t.repos.Transaction.Update(ctx, transactionId, updateDB)
 	if err != nil {
@@ -873,9 +924,12 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 }
 
 func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
+	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
+	defer finish()
+
 	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
-		return false, libcommon.StringError(errors.New("contract not allowed by platform on network"))
+		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	} else if err != nil {
 		return false, libcommon.StringError(err)
 	}
@@ -889,5 +943,5 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 			return true, nil
 		}
 	}
-	return false, libcommon.StringError(errors.New("function is not allowed on this contract"))
+	return false, libcommon.StringError(serror.FUNC_NOT_ALLOWED)
 }

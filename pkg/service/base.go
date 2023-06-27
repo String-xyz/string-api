@@ -13,4 +13,6 @@ type Services struct {
 	Verification Verification
 	Device       Device
 	Unit21       Unit21
+	Card         Card
+	Webhook      Webhook
 }

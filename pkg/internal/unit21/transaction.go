@@ -3,9 +3,9 @@ package unit21
 import (
 	"context"
 	"encoding/json"
-	"os"
 
-	libcommon "github.com/String-xyz/go-lib/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -47,7 +47,7 @@ func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction
 		return false, libcommon.StringError(err)
 	}
 
-	url := os.Getenv("UNIT21_RTR_URL")
+	url := config.Var.UNIT21_RTR_URL
 	if url == "" {
 		url = "https://rtr.sandbox2.unit21.com/evaluate"
 	}
@@ -88,7 +88,7 @@ func (t transaction) Create(ctx context.Context, transaction model.Transaction) 
 		return "", libcommon.StringError(err)
 	}
 
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/events/create"
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction create failed")
@@ -119,8 +119,8 @@ func (t transaction) Update(ctx context.Context, transaction model.Transaction) 
 		return "", libcommon.StringError(err)
 	}
 
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.Id + "/update"
+	orgName := config.Var.UNIT21_ORG_NAME
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/" + orgName + "/events/" + transaction.Id + "/update"
 	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 
 	if err != nil {

@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"os"
 	"time"
 
-	libcommon "github.com/String-xyz/go-lib/common"
-	serror "github.com/String-xyz/go-lib/stringerror"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 
 	"github.com/String-xyz/string-api/pkg/model"
@@ -19,8 +19,8 @@ type Device interface {
 	VerifyDevice(ctx context.Context, encrypted string) error
 	UpsertDeviceIP(ctx context.Context, deviceId string, Ip string) (err error)
 	InvalidateUnknownDevice(ctx context.Context, device model.Device) error
-	CreateDeviceIfNeeded(userId, visitorId, requestId string) (model.Device, error)
-	CreateUnknownDevice(userId string) (model.Device, error)
+	CreateDeviceIfNeeded(ctx context.Context, userId, visitorId, requestId string) (model.Device, error)
+	CreateUnknownDevice(ctx context.Context, userId string) (model.Device, error)
 }
 
 type device struct {
@@ -33,7 +33,10 @@ func NewDevice(repos repository.Repositories, f Fingerprint) Device {
 }
 
 func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
+	key := config.Var.STRING_ENCRYPTION_KEY
+	_, finish := Span(ctx, "service.device.VerifyDevice")
+	defer finish()
+
 	received, err := libcommon.Decrypt[DeviceVerification](encrypted, key)
 	if err != nil {
 		return libcommon.StringError(err)
@@ -48,6 +51,9 @@ func (d device) VerifyDevice(ctx context.Context, encrypted string) error {
 }
 
 func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) (err error) {
+	_, finish := Span(ctx, "service.device.UpsertDeviceIP")
+	defer finish()
+
 	device, err := d.repos.Device.GetById(ctx, deviceId)
 	if err != nil {
 		return
@@ -64,10 +70,10 @@ func (d device) UpsertDeviceIP(ctx context.Context, deviceId string, ip string) 
 	return
 }
 
-func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model.Device, error) {
+func (d device) CreateDeviceIfNeeded(ctx context.Context, userId, visitorId, requestId string) (model.Device, error) {
 	if visitorId == "" || requestId == "" {
 		/* fingerprint is not available, create an unknown device. It should be invalidated on every login */
-		device, err := d.getOrCreateUnknownDevice(userId, "unknown")
+		device, err := d.getOrCreateUnknownDevice(ctx, userId, "unknown")
 		if err != nil {
 			return device, libcommon.StringError(err)
 		}
@@ -80,7 +86,7 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 		return device, libcommon.StringError(err)
 	} else {
 		/* device recognized, create or get the device */
-		device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, visitorId)
+		device, err := d.repos.Device.GetByUserIdAndFingerprint(ctx, userId, visitorId)
 		if err == nil {
 			return device, err
 		}
@@ -91,7 +97,7 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 			if fpErr != nil {
 				return model.Device{}, libcommon.StringError(fpErr)
 			}
-			device, dErr := d.createDevice(userId, visitor, "a new device "+visitor.UserAgent+" ")
+			device, dErr := d.createDevice(ctx, userId, visitor, "a new device "+visitor.UserAgent+" ")
 			return device, dErr
 		}
 
@@ -99,17 +105,20 @@ func (d device) CreateDeviceIfNeeded(userId, visitorId, requestId string) (model
 	}
 }
 
-func (d device) CreateUnknownDevice(userId string) (model.Device, error) {
+func (d device) CreateUnknownDevice(ctx context.Context, userId string) (model.Device, error) {
 	visitor := FPVisitor{
 		VisitorId: "unknown",
 		Type:      "unknown",
 		UserAgent: "unknown",
 	}
-	device, err := d.createDevice(userId, visitor, "an unknown device")
+	device, err := d.createDevice(ctx, userId, visitor, "an unknown device")
 	return device, libcommon.StringError(err)
 }
 
 func (d device) InvalidateUnknownDevice(ctx context.Context, device model.Device) error {
+	_, finish := Span(ctx, "service.device.InvalidateUnknownDevice")
+	defer finish()
+
 	if device.Fingerprint != "unknown" {
 		return nil // only unknown devices can be invalidated
 	}
@@ -118,13 +127,13 @@ func (d device) InvalidateUnknownDevice(ctx context.Context, device model.Device
 	return d.repos.Device.Update(ctx, device.Id, device)
 }
 
-func (d device) createDevice(userId string, visitor FPVisitor, description string) (model.Device, error) {
+func (d device) createDevice(ctx context.Context, userId string, visitor FPVisitor, description string) (model.Device, error) {
 	addresses := pq.StringArray{}
 	if visitor.IPAddress.String != "" {
 		addresses = pq.StringArray{visitor.IPAddress.String}
 	}
 
-	return d.repos.Device.Create(model.Device{
+	return d.repos.Device.Create(ctx, model.Device{
 		UserId:      userId,
 		Fingerprint: visitor.VisitorId,
 		Type:        visitor.Type,
@@ -134,10 +143,10 @@ func (d device) createDevice(userId string, visitor FPVisitor, description strin
 	})
 }
 
-func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device, error) {
+func (d device) getOrCreateUnknownDevice(ctx context.Context, userId, visitorId string) (model.Device, error) {
 	var device model.Device
 
-	device, err := d.repos.Device.GetByUserIdAndFingerprint(userId, "unknown")
+	device, err := d.repos.Device.GetByUserIdAndFingerprint(ctx, userId, "unknown")
 	if err != nil && !serror.Is(err, serror.NOT_FOUND) {
 		return device, libcommon.StringError(err)
 	}
@@ -147,7 +156,7 @@ func (d device) getOrCreateUnknownDevice(userId, visitorId string) (model.Device
 	}
 
 	// if device is not found, create a new one
-	device, err = d.CreateUnknownDevice(userId)
+	device, err = d.CreateUnknownDevice(ctx, userId)
 	return device, libcommon.StringError(err)
 }
 

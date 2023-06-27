@@ -22,24 +22,12 @@ data "aws_ssm_parameter" "string_bank_id" {
   name = "string-bank-id"     
 }
 
-data "aws_ssm_parameter" "string_platform_id" {
-  name = "string-placeholder-platform-id"  
-}
-
-data "aws_ssm_parameter" "user_jwt_secret" {
-  name = "user-jwt-secret"
+data "aws_ssm_parameter" "jwt_secret" {
+  name = "api-jwt-secret"
 }
 
 data "aws_ssm_parameter" "unit21_api_key" {
   name = "unit21-api-key"
-}
-
-data "aws_ssm_parameter" "ipstack_api_key" {
-  name = "ipstack-api-key"
-}
-
-data "aws_ssm_parameter" "customer_jwt_secret" {
-  name = "customer-jwt-secret"
 }
 
 data "aws_ssm_parameter" "checkout_public_key" {
@@ -100,10 +88,6 @@ data "aws_ssm_parameter" "redis_auth_token" {
 
 data "aws_ssm_parameter" "redis_host_url" {
   name  = "redis-host-url"
-}
-
-data "aws_ssm_parameter" "team_phone_numbers" {
-  name = "team-phone-numbers"
 }
 
 data "aws_kms_key" "kms_key" {

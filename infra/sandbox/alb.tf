@@ -4,7 +4,8 @@ module "alb_acm" {
   aws_region        = "us-west-2"
   zone_id           = data.aws_route53_zone.root.zone_id
   tags = {
-    Name = "api-${local.root_domain}-alb"
+    Name        = "${local.env}-api-${local.root_domain}-alb"
+    Environment = local.env
   }
 }
 
@@ -25,13 +26,13 @@ resource "aws_alb" "alb" {
 }
  
  resource "aws_ssm_parameter" "alb" {
-    name = "${local.service_name}-alb-arn"
+    name = "${local.env}-${local.service_name}-alb-arn"
     value = aws_alb.alb.arn
     type = "String"
  }
 
   resource "aws_ssm_parameter" "alb_dns" {
-    name = "${local.service_name}-alb-dns"
+    name = "${local.env}-${local.service_name}-alb-dns"
     value = aws_alb.alb.dns_name
     type = "String"
  }
@@ -80,7 +81,7 @@ resource "aws_alb_listener" "alb_https_listener" {
 }
 
  resource "aws_ssm_parameter" "alb_listerner" {
-    name = "${local.service_name}-alb-listener-arn"
+    name = "${local.env}-${local.service_name}-alb-listener-arn"
     value = aws_alb_listener.alb_https_listener.arn
     type = "String"
  }

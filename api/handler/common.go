@@ -6,17 +6,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/String-xyz/go-lib/common"
-	libcommon "github.com/String-xyz/go-lib/common"
-	"github.com/String-xyz/go-lib/httperror"
-	serror "github.com/String-xyz/go-lib/stringerror"
-	service "github.com/String-xyz/string-api/pkg/service"
+	"github.com/String-xyz/go-lib/v2/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/String-xyz/string-api/pkg/model"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/labstack/echo/v4"
 )
 
-func SetJWTCookie(c echo.Context, jwt service.JWT) error {
+func SetJWTCookie(c echo.Context, jwt model.JWT) error {
 	cookie := new(http.Cookie)
 	cookie.Name = "StringJWT"
 	cookie.Value = jwt.Token
@@ -30,9 +30,9 @@ func SetJWTCookie(c echo.Context, jwt service.JWT) error {
 	return nil
 }
 
-func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse) error {
+func SetRefreshTokenCookie(c echo.Context, refresh model.RefreshTokenResponse) error {
 	cookie := new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = "StringRefreshToken"
 	cookie.Value = refresh.Token
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
@@ -44,7 +44,7 @@ func SetRefreshTokenCookie(c echo.Context, refresh service.RefreshTokenResponse)
 	return nil
 }
 
-func SetAuthCookies(c echo.Context, jwt service.JWT) error {
+func SetAuthCookies(c echo.Context, jwt model.JWT) error {
 	err := SetJWTCookie(c, jwt)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = "StringRefreshToken"
 	cookie.Value = ""
 	cookie.HttpOnly = true
 	cookie.Expires = time.Now()
@@ -129,28 +129,28 @@ func DefaultErrorHandler(c echo.Context, err error, handlerName string) error {
 	common.LogStringError(c, err, handlerName)
 
 	if serror.Is(err, serror.NOT_FOUND) {
-		return httperror.NotFoundError(c)
+		return httperror.NotFound404(c)
 	}
 
 	if serror.Is(err, serror.FORBIDDEN) {
-		return httperror.ForbiddenError(c, "Invoking member lacks authority")
+		return httperror.Forbidden403(c, "Invoking member lacks authority")
 	}
 
 	if serror.Is(err, serror.INVALID_RESET_TOKEN) {
-		return httperror.BadRequestError(c, "Invalid password reset token")
+		return httperror.BadRequest400(c, "Invalid password reset token")
 	}
 
 	if serror.Is(err, serror.INVALID_PASSWORD) {
-		return httperror.BadRequestError(c, "Invalid password")
+		return httperror.BadRequest400(c, "Invalid password")
 	}
 
 	if serror.Is(err, serror.ALREADY_IN_USE) {
-		return httperror.ConflictError(c, "Already in use")
+		return httperror.Conflict409(c, "Already in use")
 	}
 
 	if serror.Is(err, serror.INVALID_DATA) {
-		return httperror.BadRequestError(c, "Invalid data")
+		return httperror.BadRequest400(c, "Invalid data")
 	}
 
-	return httperror.InternalError(c)
+	return httperror.Internal500(c)
 }

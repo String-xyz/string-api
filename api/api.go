@@ -3,16 +3,18 @@ package api
 import (
 	"net/http"
 
-	"github.com/String-xyz/go-lib/database"
-	libmiddleware "github.com/String-xyz/go-lib/middleware"
-	"github.com/String-xyz/go-lib/validator"
+	"github.com/String-xyz/go-lib/v2/database"
+	libmiddleware "github.com/String-xyz/go-lib/v2/middleware"
+	"github.com/String-xyz/go-lib/v2/validator"
+
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
 
-	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
+
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 type APIConfig struct {
@@ -26,6 +28,16 @@ func heartbeat(c echo.Context) error {
 	return c.JSON(http.StatusOK, "alive")
 }
 
+// @title String API
+// @version 1.0
+// @description String API for executing transactions and managing users
+
+// @contact.name String API Support
+// @contact.url http://string.xyz
+// @contact.email support@stringxyz.com
+
+// @host string-api.xyz
+// @BasePath /
 func Start(config APIConfig) {
 	e := echo.New()
 	e.Validator = validator.New()
@@ -47,6 +59,8 @@ func Start(config APIConfig) {
 	userRoute(services, e)
 	loginRoute(services, e)
 	verificationRoute(services, e)
+	cardRoute(services, e)
+	webhookRoute(services, e)
 
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
@@ -62,10 +76,10 @@ func StartInternal(config APIConfig) {
 }
 
 func baseMiddleware(logger *zerolog.Logger, e *echo.Echo) {
-	e.Use(libmiddleware.Tracer())
-	e.Use(libmiddleware.CORS())
-	e.Use(libmiddleware.RequestId())
 	e.Use(libmiddleware.Recover())
+	e.Use(libmiddleware.RequestId())
+	e.Use(libmiddleware.Tracer("api"))
+	e.Use(libmiddleware.CORS())
 	e.Use(libmiddleware.Logger(logger))
 	e.Use(libmiddleware.LogRequest())
 }
@@ -78,6 +92,7 @@ func transactRoute(services service.Services, e *echo.Echo) {
 func userRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewUser(e, services.User, services.Verification)
 	handler.RegisterRoutes(e.Group("/users"), middleware.APIKeyPublicAuth(services.Auth), middleware.JWTAuth())
+	handler.RegisterPrivateRoutes(e.Group("/users"), middleware.APIKeySecretAuth(services.Auth))
 }
 
 func loginRoute(services service.Services, e *echo.Echo) {
@@ -93,4 +108,14 @@ func verificationRoute(services service.Services, e *echo.Echo) {
 func quoteRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewQuote(e, services.Transaction)
 	handler.RegisterRoutes(e.Group("/quotes"), middleware.JWTAuth())
+}
+
+func cardRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewCard(e, services.Card)
+	handler.RegisterRoutes(e.Group("/cards"), middleware.JWTAuth())
+}
+
+func webhookRoute(services service.Services, e *echo.Echo) {
+	handler := handler.NewWebhook(e, services.Webhook)
+	handler.RegisterRoutes(e.Group("/webhooks"), middleware.VerifyWebhookPayload())
 }

@@ -10,20 +10,19 @@ import (
 func NewRepos(config APIConfig) repository.Repositories {
 	// TODO: Make sure all of the repos are initialized here
 	return repository.Repositories{
-		Auth:           repository.NewAuth(config.Redis, config.DB),
-		Apikey:         repository.NewApikey(config.DB),
-		User:           repository.NewUser(config.DB),
-		Contact:        repository.NewContact(config.DB),
-		Contract:       repository.NewContract(config.DB),
-		Instrument:     repository.NewInstrument(config.DB),
-		Device:         repository.NewDevice(config.DB),
-		UserToPlatform: repository.NewUserToPlatform(config.DB),
-		Asset:          repository.NewAsset(config.DB),
-		Network:        repository.NewNetwork(config.DB),
-		Transaction:    repository.NewTransaction(config.DB),
-		TxLeg:          repository.NewTxLeg(config.DB),
-		Location:       repository.NewLocation(config.DB),
-		Platform:       repository.NewPlatform(config.DB),
+		Auth:        repository.NewAuth(config.Redis, config.DB),
+		Apikey:      repository.NewApikey(config.DB),
+		User:        repository.NewUser(config.DB),
+		Contact:     repository.NewContact(config.DB),
+		Contract:    repository.NewContract(config.DB),
+		Instrument:  repository.NewInstrument(config.DB),
+		Device:      repository.NewDevice(config.DB),
+		Asset:       repository.NewAsset(config.DB),
+		Network:     repository.NewNetwork(config.DB),
+		Transaction: repository.NewTransaction(config.DB),
+		TxLeg:       repository.NewTxLeg(config.DB),
+		Location:    repository.NewLocation(config.DB),
+		Platform:    repository.NewPlatform(config.DB),
 	}
 }
 
@@ -49,7 +48,9 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 	geofencing := service.NewGeofencing(config.Redis)
 
 	transaction := service.NewTransaction(repos, config.Redis, unit21)
-	user := service.NewUser(repos, auth, fingerprint, device, unit21)
+	user := service.NewUser(repos, auth, fingerprint, device, unit21, verification)
+
+	card := service.NewCard(repos)
 
 	return service.Services{
 		Auth:         auth,
@@ -60,5 +61,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		User:         user,
 		Verification: verification,
 		Device:       device,
+		Card:         card,
 	}
 }
