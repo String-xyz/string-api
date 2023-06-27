@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.7-alpha"
+  default = "v1.0.0"
 }
 
 locals {
@@ -69,7 +69,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
         },
         {
-          name      = "CHECKOUT_SIGNATURE_KEY"
+          name      = "WEBHOOK_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
@@ -182,7 +182,19 @@ locals {
           name  = "UNIT21_ENV"
           value = "api.prod2"
         },
-         {
+        {
+          name = "AUTH_EMAIL_ADDRESS"
+          value = "auth@string.xyz"
+        },
+        {
+          name = "RECEIPTS_EMAIL_ADDRESS"
+          value = "receipts@stringxyz.com"
+        },
+        {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.prod2.unit21.com/evaluate"
+        },
+        {
           name  = "CHECKOUT_ENV"
           value = local.env
         },
