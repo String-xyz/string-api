@@ -127,6 +127,10 @@ locals {
         {
           name      = "SLACK_WEBHOOK_URL"
           valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
+        },
+        {
+          name      = "TEAM_PHONE_NUMBERS"
+          valuefrom = data.aws_ssm_parameter.team_phone_numbers.arn
         }
       ]
       environment = [

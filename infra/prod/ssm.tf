@@ -102,6 +102,10 @@ data "aws_ssm_parameter" "slack_webhook_url" {
   name = "slack-webhook-url"
 }
 
+data "aws_ssm_parameter" "team_phone_numbers" {
+  name = "team-phone-numbers"
+}
+
 data "aws_kms_key" "kms_key" {
   key_id = "alias/main-kms-key"
 }
