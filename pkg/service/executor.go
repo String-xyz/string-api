@@ -364,7 +364,6 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 			TxGasLimit: "800000",
 		}
 		tokenIds = append(tokenIds, tokenId)
-		// fmt.Printf("\nForwarding token %+v ID %+v to wallet %+v", call.CxAddr, tokenId, recipient)
 		forwardTxId, gas, err := e.Initiate(call)
 		txIds = append(txIds, forwardTxId)
 		gasUsed = gasUsed.Add(gasUsed, gas)

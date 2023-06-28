@@ -61,16 +61,3 @@ func TestFilterEventData(t *testing.T) {
 
 	assert.Equal(t, 0, len(filteredEvents))
 }
-
-// Can't do this without loading the env :(
-// func TestForwardToken(t *testing.T) {
-// 	e, err := setupTest()
-// 	assert.NoError(t, err)
-
-// 	txIds, gas, err := e.ForwardTokens("0xe27a6a4b4ee6cbd51242faf21044941de70f5ba65ea86673d7abde75eb6c2f56",
-// 		"0x44A4b9E2A69d86BA382a511f845CbF2E31286770")
-// 	assert.NoError(t, err)
-
-// 	fmt.Printf("TxIds: %v\n", txIds)
-// 	fmt.Printf("Gas: %v\n", gas)
-// }
