@@ -310,6 +310,9 @@ func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []type
 			// Event Address is checksummed, but Event Topics are not
 			// compare RHS of topic with hexValues query
 			expected := hexValues[i]
+			if expected[:2] == "0x" {
+				expected = expected[2:]
+			}
 			RHS := log.Topics[index].Hex()[len(log.Topics[index].Hex())-len(expected):]
 			if strings.EqualFold(RHS, expected) {
 				matches = append(matches, log)
@@ -361,6 +364,7 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 			TxGasLimit: "800000",
 		}
 		tokenIds = append(tokenIds, tokenId)
+		// fmt.Printf("\nForwarding token %+v ID %+v to wallet %+v", call.CxAddr, tokenId, recipient)
 		forwardTxId, gas, err := e.Initiate(call)
 		txIds = append(txIds, forwardTxId)
 		gasUsed = gasUsed.Add(gasUsed, gas)
