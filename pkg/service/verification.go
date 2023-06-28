@@ -132,6 +132,9 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	ctx2 := context.Background() // Create a new context since this will run in background
 	go v.unit21.Entity.Update(ctx2, user)
 
+	// 5. Create user in Checkout
+	go v.createCheckoutCustomer(ctx2, userId, platformId)
+
 	return nil
 }
 
@@ -164,4 +167,29 @@ func (v verification) PreValidateEmail(ctx context.Context, platformId, userId, 
 	defer finish()
 
 	return v.VerifyEmail(ctx, userId, email, platformId)
+}
+
+// TODO: REMOVE DUPLICATE AND UPSERT INTELLIGENTLY
+// createCustomer creates a customer on checkout so we can use it when processing payments
+// we are not returning error because we don't want to fail the user update and is also an async process
+func (v verification) createCheckoutCustomer(ctx context.Context, userId string, platformId string) string {
+	_, finish := Span(ctx, "service.user.createCheckoutCustomer", SpanTag{"platformId": platformId})
+	defer finish()
+	user, err := v.repos.User.GetWithContact(ctx, userId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get contact")
+		return ""
+	}
+
+	customerId, err := createCustomer(user, platformId)
+	if err != nil {
+		log.Err(err).Msg("Failed to create customer on user update")
+		return ""
+	}
+	_, err = v.repos.User.Update(ctx, userId, model.UserUpdates{CheckoutId: &customerId})
+	if err != nil {
+		log.Err(err).Msg("Failed to update user with checkout customer id")
+	}
+
+	return customerId
 }

@@ -1,14 +1,21 @@
 package middleware
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
-	"github.com/String-xyz/string-api/config"
-	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+
+	"github.com/String-xyz/string-api/config"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 func JWTAuth() echo.MiddlewareFunc {
@@ -88,6 +95,38 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 					libcommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
 				return httperror.Forbidden403(c, "Error: Geo Location Forbidden")
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func VerifyWebhookPayload() echo.MiddlewareFunc {
+	secretKey := config.Var.WEBHOOK_SECRET_KEY
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			signatureHeader := c.Request().Header.Get("Cko-Signature")
+
+			body, err := io.ReadAll(c.Request().Body)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to read body")
+			}
+
+			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
+
+			mac := hmac.New(sha256.New, []byte(secretKey))
+			mac.Write(body)
+			expectedMAC := mac.Sum(nil)
+
+			receivedMAC, err := hex.DecodeString(signatureHeader)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to decode signature")
+			}
+
+			if !hmac.Equal(receivedMAC, expectedMAC) {
+				return httperror.Unauthorized401(c, "Failed to verify payload")
 			}
 
 			return next(c)

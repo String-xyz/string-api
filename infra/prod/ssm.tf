@@ -42,6 +42,10 @@ data "aws_ssm_parameter" "checkout_private_key" {
   name = "checkout-private-key"
 }
 
+data "aws_ssm_parameter" "checkout_signature_key" {
+  name = "checkout-signature-key"
+}
+
 data "aws_ssm_parameter" "owlracle_api_key" {
   name = "owlracle-api-key"
 }
@@ -92,6 +96,14 @@ data "aws_ssm_parameter" "redis_auth_token" {
 
 data "aws_ssm_parameter" "redis_host_url" {
   name = "redis-host-url"
+}
+
+data "aws_ssm_parameter" "slack_webhook_url" {
+  name = "slack-webhook-url"
+}
+
+data "aws_ssm_parameter" "team_phone_numbers" {
+  name = "team-phone-numbers"
 }
 
 data "aws_kms_key" "kms_key" {

@@ -14,4 +14,5 @@ type Services struct {
 	Device       Device
 	Unit21       Unit21
 	Card         Card
+	Webhook      Webhook
 }
