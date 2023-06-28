@@ -39,7 +39,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
         },
         { 
-          name = "JWT_SECRET_KEY"
+          name      = "JWT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
