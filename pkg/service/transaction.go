@@ -81,6 +81,7 @@ type transactionProcessingData struct {
 	txId               *string
 	cumulativeValue    *big.Int
 	trueGas            *uint64
+	tokenIds           string
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
@@ -404,9 +405,6 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
-	// We can close the executor because we aren't using it after this
-	executor.Close()
-
 	// Update DB status and NetworkFee
 	status = "Tx Confirmed"
 	updateDB.Status = &status
@@ -417,6 +415,22 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		log.Err(err).Msg("Failed to update transaction repo with status 'Tx Confirmed'")
 		// TODO: Handle error instead of returning it
 	}
+
+	// Get the Token IDs which were transferred
+	tokenIds, err := executor.GetTokenIds(*p.txId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get token ids")
+		// TODO: Handle error instead of returning it
+	}
+	p.tokenIds = strings.Join(tokenIds, ",")
+
+	// Forward any tokens received to the user
+	// TODO: Use the TX ID/s from this in the receipt
+	// TODO: Find a way to charge for the gas used in this transaction
+	executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+
+	// We can close the executor because we aren't using it after this
+	executor.Close()
 
 	// compute profit
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
@@ -866,7 +880,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
 		Platform:            platform.Name,
 		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
-		TokenId:             "1234", // TODO: retrieve dynamically
+		TokenId:             p.tokenIds,
 		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
 		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
 		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
