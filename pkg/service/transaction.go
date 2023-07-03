@@ -427,7 +427,9 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	// Forward any tokens received to the user
 	// TODO: Use the TX ID/s from this in the receipt
 	// TODO: Find a way to charge for the gas used in this transaction
-	executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	if err == nil { // There will be an error if no ERC721 transfer events were detected
+		executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	}
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()
