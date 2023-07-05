@@ -37,9 +37,9 @@ type CallEstimate struct {
 
 type Executor interface {
 	Initialize(network Chain) error
-	Initiate(call ContractCall) (string, *big.Int, error)
-	Estimate(call ContractCall) (CallEstimate, error)
-	TxWait(txId string) (uint64, error)
+	Initiate(calls []ContractCall) ([]string, *big.Int, error)
+	Estimate(calls []ContractCall) (CallEstimate, error)
+	TxWait(txIds []string) (uint64, error)
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
@@ -83,54 +83,80 @@ func (e *executor) Close() error {
 	return nil
 }
 
-func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
-	// Generate blockchain message
-	msg, err := e.generateTransactionMessage(call)
-	if err != nil {
-		return CallEstimate{}, libcommon.StringError(err)
+func (e executor) Estimate(calls []ContractCall) (CallEstimate, error) {
+	// Generate blockchain messages
+	w3calls := []w3types.Caller{}
+	estimatedGasses := make([]uint64, len(calls))
+	totalValue := big.NewInt(0)
+	for i, call := range calls {
+		// TODO: Further optimize this to take in the calls array
+		msg, err := e.generateTransactionMessage(call)
+		if err != nil {
+			return CallEstimate{}, libcommon.StringError(err)
+		}
+		totalValue = totalValue.Add(totalValue, msg.Value)
+		w3calls = append(w3calls, eth.EstimateGas(&msg, nil).Returns(&estimatedGasses[i]))
 	}
-
-	// Estimate gas of message
-	var estimatedGas uint64
-	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
+	// Estimate gas of messages
+	err := e.client.Call(w3calls...)
 	if err != nil {
 		// Execution Will Revert!
-		return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: false}, libcommon.StringError(err)
+		return CallEstimate{Value: *big.NewInt(0), Gas: 0, Success: false}, libcommon.StringError(err)
 	}
-	return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: true}, nil
+	// Call(w3calls) should fill out estimatedGasses array
+	totalGas := uint64(0)
+	for _, gas := range estimatedGasses {
+		totalGas += gas
+	}
+	return CallEstimate{Value: *totalValue, Gas: totalGas, Success: true}, nil
 }
 
-func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
-	tx, err := e.generateTransactionRequest(call)
-	if err != nil {
-		return "", nil, libcommon.StringError(err)
+func (e executor) Initiate(calls []ContractCall) ([]string, *big.Int, error) {
+	w3calls := []w3types.Caller{}
+	hashes := make([]ethcommon.Hash, len(calls))
+	totalValue := big.NewInt(0)
+	for i, call := range calls {
+		// TODO: Further optimize this to take in the calls array
+		tx, err := e.generateTransactionRequest(call)
+		if err != nil {
+			return []string{}, nil, libcommon.StringError(err)
+		}
+		totalValue = totalValue.Add(totalValue, tx.Value())
+		w3calls = append(w3calls, eth.SendTx(&tx).Returns(&hashes[i]))
 	}
 
-	// Call tx and retrieve hash
-	var hash ethcommon.Hash
-	err = e.client.Call(eth.SendTx(&tx).Returns(&hash))
+	// Call txs and retrieve hashes
+	err := e.client.Call(w3calls...)
 	if err != nil {
 		// Execution failed!
-		return "", nil, libcommon.StringError(err)
+		return []string{}, nil, libcommon.StringError(err)
 	}
-	return hash.String(), tx.Value(), nil
+	hashStrings := make([]string, len(hashes))
+	for i := range hashes {
+		hashStrings[i] = hashes[i].String()
+	}
+	return hashStrings, totalValue, nil
 }
 
-func (e executor) TxWait(txId string) (uint64, error) {
-	txHash := ethcommon.HexToHash(txId)
-	receipt := types.Receipt{}
-	for receipt.Status == 0 {
-		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
-		// TransactionReceipt returns error "not found" while tx is pending
-		if err != nil && err.Error() != "not found" {
-			return 0, libcommon.StringError(err)
+func (e executor) TxWait(txIds []string) (uint64, error) {
+	totalGasUsed := uint64(0)
+	for _, txId := range txIds {
+		txHash := ethcommon.HexToHash(txId)
+		receipt := types.Receipt{}
+		for receipt.Status == 0 {
+			pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
+			// TransactionReceipt returns error "not found" while tx is pending
+			if err != nil && err.Error() != "not found" {
+				return 0, libcommon.StringError(err)
+			}
+			if pendingReceipt != nil {
+				receipt = *pendingReceipt
+			}
+			// TODO: Sleep for a few ms to keep the cpu cooler
 		}
-		if pendingReceipt != nil {
-			receipt = *pendingReceipt
-		}
-		// TODO: Sleep for a few ms to keep the cpu cooler
+		totalGasUsed += receipt.GasUsed
 	}
-	return receipt.GasUsed, nil
+	return totalGasUsed, nil
 }
 
 func (e executor) GetByChainId() (uint64, error) {

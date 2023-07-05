@@ -90,7 +90,6 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 
 	// TODO: use prefab service to parse d and fill out known params
 	res.TransactionRequest = d
-	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(ctx, uint64(d.ChainId), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, libcommon.StringError(err)
@@ -531,16 +530,19 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	}
 
 	if recalculate {
-		call := ContractCall{
-			CxAddr:     request.CxAddr,
-			CxFunc:     request.CxFunc,
-			CxReturn:   request.CxReturn,
-			CxParams:   request.CxParams,
-			TxValue:    request.TxValue,
-			TxGasLimit: request.TxGasLimit,
+		calls := []ContractCall{}
+		for _, action := range request.Actions {
+			calls = append(calls, ContractCall{
+				CxAddr:     action.CxAddr,
+				CxFunc:     action.CxFunc,
+				CxReturn:   action.CxReturn,
+				CxParams:   action.CxParams,
+				TxValue:    action.TxValue,
+				TxGasLimit: action.TxGasLimit,
+			})
 		}
 		// Estimate value and gas of Tx request
-		estimateEVM, err = executor.Estimate(call)
+		estimateEVM, err = executor.Estimate(calls)
 		if err != nil {
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}

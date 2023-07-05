@@ -65,24 +65,28 @@ func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest
 }
 
 func sanitizeTransactionRequest(request model.TransactionRequest) model.TransactionRequest {
-	// Structs are pointers
-	sanitized := model.TransactionRequest{
-		UserAddress: request.UserAddress,
-		ChainId:     request.ChainId,
-		CxAddr:      request.CxAddr,
-		CxFunc:      request.CxFunc,
-		CxReturn:    request.CxReturn,
-		CxParams:    append([]string{}, request.CxParams...), // So are arrays
-		TxValue:     request.TxValue,                         // Get this from model.TransactionRequest because it requires no estimation
-		TxGasLimit:  request.TxGasLimit,
-	}
-	// Treat the users address as a wildcard
-	for i, param := range sanitized.CxParams {
-		if param == sanitized.UserAddress {
-			sanitized.CxParams[i] = "*"
+	actions := []model.TransactionAction{}
+	for i := range request.Actions {
+		actions = append(actions, model.TransactionAction{
+			CxAddr:     request.Actions[i].CxAddr,
+			CxFunc:     request.Actions[i].CxFunc,
+			CxReturn:   request.Actions[i].CxReturn,
+			CxParams:   append([]string{}, request.Actions[i].CxParams...),
+			TxValue:    request.Actions[i].TxValue,
+			TxGasLimit: request.Actions[i].TxGasLimit,
+		})
+		for j, param := range actions[i].CxParams {
+			if param == request.UserAddress {
+				actions[i].CxParams[j] = "*"
+			}
 		}
 	}
-	sanitized.UserAddress = "*"
+	sanitized := model.TransactionRequest{
+		UserAddress: request.UserAddress,
+		AssetName:   request.AssetName,
+		ChainId:     request.ChainId,
+		Actions:     actions,
+	}
 	return sanitized
 }
 
