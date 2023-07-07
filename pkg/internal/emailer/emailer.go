@@ -29,23 +29,23 @@ func New() Emailer {
 }
 
 type ReceiptGenerationParams struct {
-	ReceiptType         string
-	CustomerName        string
-	PaymentDescriptor   string
-	TransactionDate     string
-	StringPaymentId     string
-	TransactionId       string
-	TransactionExplorer string
-	DestinationAddress  string
-	DestinationExplorer string
-	PaymentMethod       string
-	Platform            string
-	ItemOrdered         string
-	TokenId             string
-	Subtotal            string
-	NetworkFee          string
-	ProcessingFee       string
-	Total               string
+	ReceiptType          string
+	CustomerName         string
+	PaymentDescriptor    string
+	TransactionDate      string
+	StringPaymentId      string
+	TransactionIds       []string
+	TransactionExplorers []string
+	DestinationAddress   string
+	DestinationExplorer  string
+	PaymentMethod        string
+	Platform             string
+	ItemOrdered          string
+	TokenIds             string
+	Subtotal             string
+	NetworkFee           string
+	ProcessingFee        string
+	Total                string
 }
 
 func (e emailer) SendEmailVerification(ctx context.Context, email string, code string, platformName string) error {

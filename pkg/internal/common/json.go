@@ -53,6 +53,20 @@ func GetJsonGeneric(url string, target interface{}) error {
 	return nil
 }
 
+func GetJsonDebug(url string) (string, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Get(url)
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+	defer response.Body.Close()
+	jsonData, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", libcommon.StringError(err)
+	}
+	return string(jsonData), nil
+}
+
 func parseJSON[T any](b []byte) (T, error) {
 	var r T
 	if err := json.Unmarshal(b, &r); err != nil {

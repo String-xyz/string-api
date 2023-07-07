@@ -13,6 +13,7 @@ import (
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/database"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/lmittmann/w3"
 
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -78,7 +79,7 @@ type transactionProcessingData struct {
 	PaymentStatus      checkout.PaymentStatus
 	PaymentId          string
 	recipientWalletId  *string
-	txId               *string
+	txIds              []string
 	cumulativeValue    *big.Int
 	trueGas            *uint64
 	tokenIds           string
@@ -162,7 +163,13 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 	ctx2 := context.Background()
 	go t.postProcess(ctx2, p)
 
-	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
+	ids := []string{}
+	urls := []string{}
+	for _, id := range p.txIds {
+		ids = append(ids, id)
+		urls = append(urls, p.chain.Explorer+"/tx/"+id)
+	}
+	return model.TransactionReceipt{TxIds: ids, TxURLs: urls, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
@@ -324,21 +331,26 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 	defer finish()
 
 	request := p.executionRequest.Quote.TransactionRequest
-	call := ContractCall{
-		CxAddr:     request.CxAddr,
-		CxFunc:     request.CxFunc,
-		CxReturn:   request.CxReturn,
-		CxParams:   request.CxParams,
-		TxValue:    request.TxValue,
-		TxGasLimit: request.TxGasLimit,
+	calls := []ContractCall{}
+	for _, action := range request.Actions {
+
+		call := ContractCall{
+			CxAddr:     action.CxAddr,
+			CxFunc:     action.CxFunc,
+			CxReturn:   action.CxReturn,
+			CxParams:   action.CxParams,
+			TxValue:    action.TxValue,
+			TxGasLimit: action.TxGasLimit,
+		}
+		calls = append(calls, call)
 	}
 
-	txId, value, err := (*p.executor).Initiate(call)
+	txIds, value, err := (*p.executor).Initiate(calls)
 	p.cumulativeValue = value
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	p.txId = &txId
+	p.txIds = append(p.txIds, txIds...)
 
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
@@ -364,7 +376,8 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 
 	status := "Transaction Initiated"
 	txAmount := p.cumulativeValue.String()
-	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: p.txId, TransactionAmount: &txAmount}
+	hashes := strings.Join(p.txIds, ", ")
+	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: &hashes, TransactionAmount: &txAmount}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, updateDB)
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -397,7 +410,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// confirm the Tx on the EVM
-	trueGas, err := confirmTx(executor, *p.txId)
+	trueGas, err := confirmTx(executor, p.txIds)
 	p.trueGas = &trueGas
 	if err != nil {
 		log.Err(err).Msg("Failed to confirm transaction")
@@ -416,7 +429,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// Get the Token IDs which were transferred
-	tokenIds, err := executor.GetTokenIds(*p.txId)
+	tokenIds, err := executor.GetTokenIds(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token ids")
 		// TODO: Handle error instead of returning it
@@ -427,7 +440,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	// TODO: Use the TX ID/s from this in the receipt
 	// TODO: Find a way to charge for the gas used in this transaction
 	if err == nil { // There will be an error if no ERC721 transfer events were detected
-		executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+		executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
 	}
 
 	// We can close the executor because we aren't using it after this
@@ -502,9 +515,19 @@ func (t transaction) populateInitialTxModelData(ctx context.Context, e model.Exe
 	// TODO populate transactionModel.PlatformId with UUID of customer
 	// bytes, err := json.Marshal()
 
-	contractParams := pq.StringArray(e.Quote.TransactionRequest.CxParams)
+	// For now just concat everything
+	concatParams := []string{}
+	concatFuncs := []string{}
+	for _, action := range e.Quote.TransactionRequest.Actions {
+		concatParams = append(concatParams, "[")
+		concatParams = append(concatParams, action.CxParams...)
+		concatParams = append(concatParams, "]")
+		concatFuncs = append(concatFuncs, action.CxFunc+action.CxReturn)
+	}
+
+	contractParams := pq.StringArray(concatParams)
 	m.ContractParams = &contractParams
-	contractFunc := e.Quote.TransactionRequest.CxFunc + e.Quote.TransactionRequest.CxReturn
+	contractFunc := strings.Join(concatFuncs, ",")
 	m.ContractFunc = &contractFunc
 
 	asset, err := t.repos.Asset.GetByName(ctx, "USD")
@@ -554,6 +577,17 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		}
 	}
 
+	// Factor in approvals to Token Cost
+	tokenAddresses := []string{}
+	tokenAmounts := []big.Int{}
+	for _, action := range request.Actions {
+		if strings.ToLower(strings.ReplaceAll(action.CxFunc, " ", "")) == "approve(address,uint256)" {
+			tokenAddresses = append(tokenAddresses, action.CxAddr)
+			// It should be safe at this point to w3.I without panic
+			tokenAmounts = append(tokenAmounts, *w3.I(action.CxParams[1]))
+		}
+	}
+
 	// Calculate total eth estimate as float64
 	gas := new(big.Int)
 	gas.SetUint64(estimateEVM.Gas)
@@ -570,8 +604,8 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		CostETH:    estimateEVM.Value,
 		UseBuffer:  useBuffer,
 		GasUsedWei: estimateEVM.Gas,
-		CostToken:  *big.NewInt(0),
-		TokenName:  "",
+		CostTokens: tokenAmounts,
+		TokenAddrs: tokenAddresses,
 	}
 
 	// Estimate Cost in USD to execute Tx request
@@ -756,8 +790,8 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	return p, nil
 }
 
-func confirmTx(executor Executor, txId string) (uint64, error) {
-	trueGas, err := executor.TxWait(txId)
+func confirmTx(executor Executor, txIds []string) (uint64, error) {
+	trueGas, err := executor.TxWait(txIds)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
@@ -871,24 +905,29 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	transactionRequest := p.executionRequest.Quote.TransactionRequest
 	estimate := p.floatEstimate
 
+	explorers := []string{}
+	for _, id := range p.txIds {
+		explorers = append(explorers, p.chain.Explorer+"/tx"+id)
+	}
+
 	receiptParams := emailer.ReceiptGenerationParams{
-		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
-		CustomerName:        name,
-		StringPaymentId:     p.transactionModel.Id,
-		PaymentDescriptor:   p.executionRequest.Quote.TransactionRequest.AssetName,
-		TransactionDate:     time.Now().Format(time.RFC1123),
-		TransactionId:       *p.txId,
-		TransactionExplorer: p.chain.Explorer + "/tx/" + *p.txId,
-		DestinationAddress:  transactionRequest.UserAddress,
-		DestinationExplorer: p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
-		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
-		Platform:            platform.Name,
-		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
-		TokenId:             p.tokenIds,
-		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
-		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
-		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
-		Total:               common.FloatToUSDString(estimate.TotalUSD),
+		ReceiptType:          "NFT Purchase", // TODO: retrieve dynamically
+		CustomerName:         name,
+		StringPaymentId:      p.transactionModel.Id,
+		PaymentDescriptor:    p.executionRequest.Quote.TransactionRequest.AssetName,
+		TransactionDate:      time.Now().Format(time.RFC1123),
+		TransactionIds:       p.txIds,
+		TransactionExplorers: explorers,
+		DestinationAddress:   transactionRequest.UserAddress,
+		DestinationExplorer:  p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
+		PaymentMethod:        p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
+		Platform:             platform.Name,
+		ItemOrdered:          p.executionRequest.Quote.TransactionRequest.AssetName,
+		TokenIds:             p.tokenIds,
+		Subtotal:             common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
+		NetworkFee:           common.FloatToUSDString(estimate.GasUSD),
+		ProcessingFee:        common.FloatToUSDString(estimate.ServiceUSD),
+		Total:                common.FloatToUSDString(estimate.TotalUSD),
 	}
 
 	emailer := emailer.New()
@@ -945,21 +984,25 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
 
-	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
-	if err != nil && err == serror.NOT_FOUND {
-		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
-	} else if err != nil {
-		return false, libcommon.StringError(err)
-	}
+	for _, action := range request.Actions {
+		cxAddr := action.CxAddr
+		contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, cxAddr, networkId, platformId)
+		if err != nil && err == serror.NOT_FOUND {
+			return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
+		} else if err != nil {
+			return false, libcommon.StringError(err)
+		}
 
-	if len(contract.Functions) == 0 {
-		return true, nil
-	}
+		if len(contract.Functions) == 0 {
+			continue
+		}
 
-	for _, function := range contract.Functions {
-		if function == request.CxFunc {
-			return true, nil
+		for _, function := range contract.Functions {
+			if function == action.CxFunc {
+				continue
+			}
 		}
 	}
-	return false, libcommon.StringError(serror.FUNC_NOT_ALLOWED)
+
+	return true, nil
 }

@@ -17,12 +17,12 @@ import (
 )
 
 type EstimationParams struct {
-	ChainId    uint64  `json:"chainId"`
-	CostETH    big.Int `json:"costETH"`
-	UseBuffer  bool    `json:"useBuffer"`
-	GasUsedWei uint64  `json:"gasUsedWei"`
-	CostToken  big.Int `json:"costToken"`
-	TokenName  string  `json:"tokenName"`
+	ChainId    uint64    `json:"chainId"`
+	CostETH    big.Int   `json:"costETH"`
+	UseBuffer  bool      `json:"useBuffer"`
+	GasUsedWei uint64    `json:"gasUsedWei"`
+	CostTokens []big.Int `json:"costToken"`
+	TokenAddrs []string  `json:"tokenName"`
 }
 
 type OwlracleJSON struct {
@@ -38,6 +38,25 @@ type OwlracleJSON struct {
 		BaseFee              float64 `json:"baseFee"`
 		EstimatedFee         float64 `json:"estimatedFee"`
 	} `json:"speeds"`
+}
+
+type CoingeckoPlatform struct {
+	Id              string `json:"id"`
+	ChainIdentifier uint64 `json:"chain_identifier"`
+	Name            string `json:"name"`
+	ShortName       string `json:"shortname"`
+}
+
+type CoingeckoCoin struct {
+	ID        string            `json:"id"`
+	Symbol    string            `json:"symbol"`
+	Name      string            `json:"name"`
+	Platforms map[string]string `json:"platforms"`
+}
+
+type CoinKey struct {
+	ChainId uint64
+	Address string
 }
 
 type CostCache struct {
@@ -58,6 +77,53 @@ func NewCost(redis database.RedisStore) Cost {
 	return &cost{
 		redis: redis,
 	}
+}
+
+// Get a huge list of data from coingecko to look up token names by address
+func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error) {
+	// get list of platform names from coingecko to create mapping to chainid
+	var platforms []CoingeckoPlatform
+	err := common.GetJsonGeneric("https://api.coingecko.com/api/v3/asset_platforms", &platforms)
+	if err != nil {
+		return map[uint64]string{}, map[string]uint64{}, libcommon.StringError(err)
+	}
+
+	id_to_platform := make(map[uint64]string)
+	platform_to_id := make(map[string]uint64)
+	for _, p := range platforms {
+		if p.ChainIdentifier != 0 {
+			id_to_platform[p.ChainIdentifier] = p.Id
+			platform_to_id[p.Id] = p.ChainIdentifier
+		}
+	}
+	return id_to_platform, platform_to_id, nil
+}
+
+func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
+	_, platform_to_id, err := GetCoingeckoPlatformMapping()
+	if err != nil {
+		return map[CoinKey]string{}, libcommon.StringError(err)
+	}
+
+	// get list of platform names from coingecko to create mapping to chainid
+	var coins []CoingeckoCoin
+	err = common.GetJsonGeneric("https://api.coingecko.com/api/v3/coins/list?include_platform=true", &coins)
+	if err != nil {
+		return map[CoinKey]string{}, libcommon.StringError(err)
+	}
+
+	coin_key_to_id := make(map[CoinKey]string)
+	for _, coin := range coins {
+		for key, val := range coin.Platforms {
+			newKey := CoinKey{
+				ChainId: platform_to_id[key],
+				Address: val,
+			}
+			coin_key_to_id[newKey] = coin.ID
+		}
+	}
+
+	return coin_key_to_id, nil
 }
 
 func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error) {
@@ -90,22 +156,32 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainId)
 	}
 
-	// Query cost of token in USD if used and apply buffer
-	costToken := common.WeiToEther(&p.CostToken)
-	// tokenCost in contract call ERC-20 token costs
-	// Also for buying tokens directly
-	tokenCost, err := c.LookupUSD(costToken, p.TokenName)
+	// // Query cost of token in USD if used and apply buffer
+	totalTokenCost := 0.0
+	coinMapping, err := GetCoingeckoCoinMapping()
 	if err != nil {
 		return estimate, libcommon.StringError(err)
 	}
-	if p.UseBuffer {
-		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
+	for i, costToken := range p.CostTokens {
+		costTokenEth := common.WeiToEther(&costToken)
+		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
+		if !ok {
+			return estimate, errors.New("token not found")
+		}
+		tokenCost, err := c.LookupUSD(costTokenEth, tokenName)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
+		if p.UseBuffer {
+			tokenCost *= 1.0 + common.TokenBuffer(tokenName)
+		}
+		totalTokenCost += tokenCost
 	}
 
 	// Compute service fee
 	upcharge := chain.StringFee
 	baseCheckoutFee := 0.3
-	serviceFee := (transactionCost+gasInUSD+tokenCost)*upcharge + baseCheckoutFee
+	serviceFee := (transactionCost+gasInUSD+totalTokenCost)*upcharge + baseCheckoutFee
 
 	// floor
 	if transactionCost < 0.01 {
@@ -118,11 +194,11 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 	// Round up to nearest cent
 	transactionCost = centCeiling(transactionCost)
 	gasInUSD = centCeiling(gasInUSD)
-	tokenCost = centCeiling(tokenCost)
+	totalTokenCost = centCeiling(totalTokenCost)
 	serviceFee = centCeiling(serviceFee)
 
 	// sum total
-	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
+	totalUSD := transactionCost + gasInUSD + totalTokenCost + serviceFee
 
 	// Round that up as well to account for any floating imprecision
 	totalUSD = centCeiling(totalUSD)
@@ -132,7 +208,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		Timestamp:  timestamp,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,
-		TokenUSD:   tokenCost,
+		TokenUSD:   totalTokenCost,
 		ServiceUSD: serviceFee,
 		TotalUSD:   totalUSD,
 	}, nil

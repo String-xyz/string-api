@@ -43,11 +43,11 @@ type Executor interface {
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
-	GetTokenIds(txId string) ([]string, error)
-	GetTokenQuantities(txId string) ([]string, error)
-	GetEventData(txId string, eventSignature string) ([]types.Log, error)
-	ForwardNonFungibleTokens(txId string, recipient string) ([]string, []string, error)
-	ForwardTokens(txId string, recipient string) ([]string, []string, []string, error)
+	GetTokenIds(txIds []string) ([]string, error)
+	GetTokenQuantities(txIds []string) ([]string, error)
+	GetEventData(txIds []string, eventSignature string) ([]types.Log, error)
+	ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error)
+	ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error)
 }
 
 type executor struct {
@@ -312,19 +312,21 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	return tx, nil
 }
 
-func (e executor) GetEventData(txId string, eventSignature string) ([]types.Log, error) {
+func (e executor) GetEventData(txIds []string, eventSignature string) ([]types.Log, error) {
 	events := []types.Log{}
-	receipt, err := e.geth.TransactionReceipt(context.Background(), ethcommon.HexToHash(txId))
-	if err != nil {
-		return []types.Log{}, libcommon.StringError(err)
-	}
+	for _, txId := range txIds {
+		receipt, err := e.geth.TransactionReceipt(context.Background(), ethcommon.HexToHash(txId))
+		if err != nil {
+			return []types.Log{}, libcommon.StringError(err)
+		}
 
-	event := crypto.Keccak256Hash([]byte(eventSignature))
+		event := crypto.Keccak256Hash([]byte(eventSignature))
 
-	// Iterate through the logs to find the transfer event and extract the token ID.
-	for _, log := range receipt.Logs {
-		if log.Topics[0].Hex() == event.Hex() {
-			events = append(events, *log)
+		// Iterate through the logs to find the transfer event and extract the token ID.
+		for _, log := range receipt.Logs {
+			if log.Topics[0].Hex() == event.Hex() {
+				events = append(events, *log)
+			}
 		}
 	}
 	return events, nil
@@ -350,8 +352,8 @@ func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []type
 	return matches
 }
 
-func (e executor) GetTokenIds(txId string) ([]string, error) {
-	logs, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) GetTokenIds(txIds []string) ([]string, error) {
+	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, libcommon.StringError(err)
 	}
@@ -369,8 +371,8 @@ func (e executor) GetTokenIds(txId string) ([]string, error) {
 	return tokenIds, nil
 }
 
-func (e executor) GetTokenQuantities(txId string) ([]string, error) {
-	logs, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) GetTokenQuantities(txIds []string) ([]string, error) {
+	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, libcommon.StringError(err)
 	}
@@ -382,8 +384,8 @@ func (e executor) GetTokenQuantities(txId string) ([]string, error) {
 	return quantities, nil
 }
 
-func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]string, []string, error) {
-	eventData, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error) {
+	eventData, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, []string{}, libcommon.StringError(err)
 	}
@@ -393,9 +395,10 @@ func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]str
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	txIds := []string{}
+	filteredTxIds := []string{}
 	tokenIds := []string{}
 	gasUsed := big.NewInt(0)
+	calls := []ContractCall{}
 	for _, log := range toForward {
 		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes()).String()
 		call := ContractCall{
@@ -411,18 +414,21 @@ func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]str
 			TxGasLimit: "800000",
 		}
 		tokenIds = append(tokenIds, tokenId)
-		forwardTxId, gas, err := e.Initiate(call)
-		txIds = append(txIds, forwardTxId)
-		gasUsed = gasUsed.Add(gasUsed, gas)
+		calls = append(calls, call)
 		if err != nil {
 			return txIds, tokenIds, libcommon.StringError(err)
 		}
 	}
+
+	forwardTxIds, gas, err := e.Initiate(calls)
+	filteredTxIds = append(filteredTxIds, forwardTxIds...)
+	gasUsed = gasUsed.Add(gasUsed, gas)
+
 	return txIds, tokenIds, nil
 }
 
-func (e executor) ForwardTokens(txId string, recipient string) ([]string, []string, []string, error) {
-	eventData, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error) {
+	eventData, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, []string{}, []string{}, libcommon.StringError(err)
 	}
@@ -432,10 +438,11 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	txIds := []string{}
+	filteredTxIds := []string{}
 	tokens := []string{}
 	quantities := []string{}
 	gasUsed := big.NewInt(0)
+	calls := []ContractCall{}
 	for _, log := range toForward {
 		quantity := new(big.Int).SetBytes(log.Data).String()
 		token := log.Address.String()
@@ -453,12 +460,15 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 		}
 		tokens = append(tokens, token)
 		quantities = append(quantities, quantity)
-		forwardTxId, gas, err := e.Initiate(call)
-		txIds = append(txIds, forwardTxId)
-		gasUsed = gasUsed.Add(gasUsed, gas)
+		calls = append(calls, call)
 		if err != nil {
 			return txIds, tokens, quantities, libcommon.StringError(err)
 		}
 	}
+
+	forwardTxIds, gas, err := e.Initiate(calls)
+	filteredTxIds = append(filteredTxIds, forwardTxIds...)
+	gasUsed = gasUsed.Add(gasUsed, gas)
+
 	return txIds, tokens, quantities, nil
 }

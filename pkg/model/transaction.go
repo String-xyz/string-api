@@ -53,7 +53,7 @@ type TransactionAction struct {
 }
 
 type TransactionReceipt struct {
-	TxId        string `json:"txId"`
-	TxURL       string `json:"txUrl"`
-	TxTimestamp string `json:"txTimestamp"`
+	TxIds       []string `json:"txIds"`
+	TxURLs      []string `json:"txUrls"`
+	TxTimestamp string   `json:"txTimestamp"`
 }

@@ -72,10 +72,13 @@ func (t transaction) Transact(c echo.Context) error {
 
 	transactionRequest := body.Quote.TransactionRequest
 
-	SanitizeChecksums(&transactionRequest.CxAddr, &transactionRequest.UserAddress)
-	// Sanitize Checksum for body.CxParams?  It might look like this:
-	for i := range transactionRequest.CxParams {
-		SanitizeChecksums(&transactionRequest.CxParams[i])
+	// TODO: These should already be sanitized by the quote, double check when there's time
+	SanitizeChecksums(&transactionRequest.UserAddress)
+	for i := range transactionRequest.Actions {
+		SanitizeChecksums(&transactionRequest.Actions[i].CxAddr, &transactionRequest.UserAddress)
+		for j := range transactionRequest.Actions[i].CxParams {
+			SanitizeChecksums(&transactionRequest.Actions[i].CxParams[j])
+		}
 	}
 
 	ip := c.RealIP()
