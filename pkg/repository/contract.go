@@ -51,6 +51,7 @@ func (u contract[T]) Create(ctx context.Context, insert model.Contract) (model.C
 
 func (u contract[T]) GetByAddressAndNetworkAndPlatform(ctx context.Context, address string, networkId string, platformId string) (model.Contract, error) {
 	m := model.Contract{}
+	fmt.Printf("address: %s, network: %s, platform: %s\n", address, networkId, platformId)
 	err := u.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE address = $1 AND network_id = $2 AND platform_id = $3 AND deactivated_at IS NULL LIMIT 1", u.Table), address, networkId, platformId)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND

@@ -78,9 +78,7 @@ func (t transaction) Transact(c echo.Context) error {
 		SanitizeChecksums(&transactionRequest.CxParams[i])
 	}
 
-	ip := c.RealIP()
-
-	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId, ip)
+	res, err := t.Service.Execute(ctx, body, userId, deviceId, platformId)
 	if err != nil {
 		libcommon.LogStringError(c, err, "transact: execute")
 

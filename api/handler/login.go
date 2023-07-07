@@ -84,7 +84,7 @@ func (l login) Login(c echo.Context) error {
 	}
 
 	strBypassDevice := c.QueryParam("bypassDevice")
-	bypassDevice := strBypassDevice == "true" // convert to bool. default is false
+	bypassDevice := strBypassDevice == "false" // convert to bool. default is false
 
 	var body model.WalletSignaturePayloadSigned
 	if err := c.Bind(&body); err != nil {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
@@ -132,6 +133,9 @@ func (d device) createDevice(ctx context.Context, userId string, visitor FPVisit
 	if visitor.IPAddress.String != "" {
 		addresses = pq.StringArray{visitor.IPAddress.String}
 	}
+
+	fmt.Printf("\n\n>>>>>>>>>>>>Creating device with visitor: %+v\n", visitor)
+	fmt.Printf("\n\n>>>>>>>>>>>>Creating device with addresses: %+v\n", addresses)
 
 	return d.repos.Device.Create(ctx, model.Device{
 		UserId:      userId,

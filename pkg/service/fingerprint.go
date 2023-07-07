@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -64,6 +65,7 @@ func (f fingerprint) hydrateVisitor(visitor common.FPVisitor) (FPVisitor, error)
 	if len(visit.IPLocation.Subdivisions) != 0 {
 		state = visit.IPLocation.Subdivisions[0].ISOCode
 	}
+	fmt.Printf("\n\n>>>>>>>>>>>> visit: %+v\n", visit)
 
 	return FPVisitor{
 		VisitorId:  visitor.Id,
