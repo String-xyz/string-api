@@ -166,7 +166,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		costTokenEth := common.WeiToEther(&costToken)
 		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
 		if !ok {
-			return estimate, errors.New("token not found")
+			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
 		}
 		tokenCost, err := c.LookupUSD(costTokenEth, tokenName)
 		if err != nil {
