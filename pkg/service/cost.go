@@ -115,6 +115,10 @@ func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
 	coin_key_to_id := make(map[CoinKey]string)
 	for _, coin := range coins {
 		for key, val := range coin.Platforms {
+			// There's some weird data floating around in here.  Ignore it.
+			if len(val) != 42 || val[:2] != "0x" {
+				continue
+			}
 			newKey := CoinKey{
 				ChainId: platform_to_id[key],
 				Address: common.SanitizeChecksum(val),
