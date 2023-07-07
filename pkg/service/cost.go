@@ -117,7 +117,7 @@ func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
 		for key, val := range coin.Platforms {
 			newKey := CoinKey{
 				ChainId: platform_to_id[key],
-				Address: val,
+				Address: common.SanitizeChecksum(val),
 			}
 			coin_key_to_id[newKey] = coin.ID
 		}
@@ -164,6 +164,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 	}
 	for i, costToken := range p.CostTokens {
 		costTokenEth := common.WeiToEther(&costToken)
+
 		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
 		if !ok {
 			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
