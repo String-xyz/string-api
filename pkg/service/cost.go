@@ -163,10 +163,18 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 	// // Query cost of token in USD if used and apply buffer
 	totalTokenCost := 0.0
 	coinMapping, err := GetCoingeckoCoinMapping()
+	// Coingecko is going down during testing.  Comment this out if needed.
 	if err != nil {
 		return estimate, libcommon.StringError(err)
 	}
 	for i, costToken := range p.CostTokens {
+		// For testing only, dev fuji usdc is not listed on coingecko
+		if p.TokenAddrs[i] == "0x671E35F91Cc497385f9f7d0dFCB7192848b1015b" {
+			costTokenEth := common.WeiToEther(&costToken)
+			totalTokenCost += 1.0 * costTokenEth
+			continue
+		}
+
 		costTokenEth := common.WeiToEther(&costToken)
 
 		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}]

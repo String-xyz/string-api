@@ -83,6 +83,7 @@ type transactionProcessingData struct {
 	cumulativeValue    *big.Int
 	trueGas            *uint64
 	tokenIds           string
+	tokenQuantities    string
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
@@ -428,7 +429,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
-	// Get the Token IDs which were transferred
+	// Get the Token IDs which were transferred to the API
 	tokenIds, err := executor.GetTokenIds(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token ids")
@@ -436,12 +437,27 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 	p.tokenIds = strings.Join(tokenIds, ",")
 
-	// Forward any tokens received to the user
+	// Forward any non fungible tokens received to the user
 	// TODO: Use the TX ID/s from this in the receipt
 	// TODO: Find a way to charge for the gas used in this transaction
 	if err == nil { // There will be an error if no ERC721 transfer events were detected
+		executor.ForwardNonFungibleTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	}
+
+	// Get the Token quantities which were transferred to the API
+	tokenQuantities, err := executor.GetTokenQuantities(p.txIds)
+	if err != nil {
+		log.Err(err).Msg("Failed to get token quantities")
+		// TODO: Handle error instead of returning it
+	}
+
+	p.tokenQuantities = strings.Join(tokenQuantities, ",")
+
+	if err == nil {
 		executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
 	}
+
+	// TODO: Get the final gas total here and cache it to the quote cache.  And use it for subsequent quotes.
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()

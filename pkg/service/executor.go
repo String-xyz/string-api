@@ -88,21 +88,29 @@ func (e executor) Estimate(calls []ContractCall) (CallEstimate, error) {
 	w3calls := []w3types.Caller{}
 	estimatedGasses := make([]uint64, len(calls))
 	totalValue := big.NewInt(0)
+	includesApprove := false
 	for i, call := range calls {
 		// TODO: Further optimize this to take in the calls array
-		msg, err := e.generateTransactionMessage(call)
+		msg, err := e.generateTransactionMessage(call, uint64(i))
 		if err != nil {
 			return CallEstimate{}, libcommon.StringError(err)
 		}
 		totalValue = totalValue.Add(totalValue, msg.Value)
+
 		w3calls = append(w3calls, eth.EstimateGas(&msg, nil).Returns(&estimatedGasses[i]))
+
+		// simulation will not track the state of the blockchain after approval
+		if strings.Contains(strings.ToLower(strings.ReplaceAll(call.CxFunc, " ", "")), "approve") {
+			includesApprove = true
+		}
 	}
 	// Estimate gas of messages
 	err := e.client.Call(w3calls...)
-	if err != nil {
-		// Execution Will Revert!
+	_, ok := err.(w3.CallErrors)
+	if !includesApprove && (err != nil && ok) {
 		return CallEstimate{Value: *big.NewInt(0), Gas: 0, Success: false}, libcommon.StringError(err)
 	}
+
 	// Call(w3calls) should fill out estimatedGasses array
 	totalGas := uint64(0)
 	for _, gas := range estimatedGasses {
@@ -117,7 +125,7 @@ func (e executor) Initiate(calls []ContractCall) ([]string, *big.Int, error) {
 	totalValue := big.NewInt(0)
 	for i, call := range calls {
 		// TODO: Further optimize this to take in the calls array
-		tx, err := e.generateTransactionRequest(call)
+		tx, err := e.generateTransactionRequest(call, uint64(i))
 		if err != nil {
 			return []string{}, nil, libcommon.StringError(err)
 		}
@@ -127,10 +135,17 @@ func (e executor) Initiate(calls []ContractCall) ([]string, *big.Int, error) {
 
 	// Call txs and retrieve hashes
 	err := e.client.Call(w3calls...)
-	if err != nil {
-		// Execution failed!
-		return []string{}, nil, libcommon.StringError(err)
+	callErrs, ok := err.(w3.CallErrors)
+	if err != nil && ok {
+		catErrs := ""
+		for _, callErr := range callErrs {
+			if callErr != nil {
+				catErrs += callErr.Error() + " "
+			}
+		}
+		return []string{}, nil, libcommon.StringError(errors.New(catErrs))
 	}
+
 	hashStrings := make([]string, len(hashes))
 	for i := range hashes {
 		hashStrings[i] = hashes[i].String()
@@ -214,7 +229,7 @@ func (e executor) GetBalance() (float64, error) {
 	return fbalance, nil // We like thinking in floats
 }
 
-func (e executor) generateTransactionMessage(call ContractCall) (w3types.Message, error) {
+func (e executor) generateTransactionMessage(call ContractCall, incrementNonce uint64) (w3types.Message, error) {
 	sender, err := e.getAccount()
 	if err != nil {
 		return w3types.Message{}, libcommon.StringError(err)
@@ -261,14 +276,14 @@ func (e executor) generateTransactionMessage(call ContractCall) (w3types.Message
 		GasTipCap: tipCap,
 		Value:     value,
 		Input:     data,
-		Nonce:     nonce,
+		Nonce:     nonce + incrementNonce,
 	}, nil
 }
 
-func (e executor) generateTransactionRequest(call ContractCall) (types.Transaction, error) {
+func (e executor) generateTransactionRequest(call ContractCall, incrementNonce uint64) (types.Transaction, error) {
 	tx := types.Transaction{}
 
-	msg, err := e.generateTransactionMessage(call)
+	msg, err := e.generateTransactionMessage(call, 0)
 	if err != nil {
 		return tx, libcommon.StringError(err)
 	}
@@ -293,7 +308,7 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	// Generate blockchain tx
 	dynamicFeeTx := types.DynamicFeeTx{
 		ChainID:   chainIdBig,
-		Nonce:     msg.Nonce,
+		Nonce:     msg.Nonce + incrementNonce,
 		GasTipCap: tipCap,
 		GasFeeCap: feeCap,
 		Gas:       w3.I(call.TxGasLimit).Uint64(),
@@ -466,6 +481,7 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 		}
 	}
 
+	// TODO: use this
 	forwardTxIds, gas, err := e.Initiate(calls)
 	filteredTxIds = append(filteredTxIds, forwardTxIds...)
 	gasUsed = gasUsed.Add(gasUsed, gas)
