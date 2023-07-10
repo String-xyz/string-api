@@ -29,14 +29,13 @@ func NewContract(db database.Queryable) Contract {
 func (u contract[T]) GetForValidation(ctx context.Context, address string, networkId string, platformId string) (model.Contract, error) {
 	m := model.Contract{}
 	err := u.Store.GetContext(ctx, &m, `
-	SELECT * FROM contract c 
+	SELECT c.* FROM contract c 
 	INNER JOIN contract_to_platform cp 
 	ON c.id = cp.contract_id AND cp.platform_id = $3
 	WHERE c.address = $1 AND c.network_id = $2 
 	AND deactivated_at IS NULL LIMIT 1
 	`,
 		address, networkId, platformId)
-
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
