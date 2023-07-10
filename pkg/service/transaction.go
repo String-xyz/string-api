@@ -943,7 +943,7 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
 
-	contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, request.CxAddr, networkId, platformId)
+	contract, err := t.repos.Contract.GetForValidation(ctx, request.CxAddr, networkId, platformId)
 	if err != nil && err == serror.NOT_FOUND {
 		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 	} else if err != nil {
