@@ -3,6 +3,7 @@ package unit21
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/string-api/config"
@@ -14,7 +15,7 @@ import (
 )
 
 type Transaction interface {
-	Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error)
+	Evaluate(ctx context.Context, transaction model.Transaction) (results []rule, err error)
 	Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
 	Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
 }
@@ -34,17 +35,17 @@ func NewTransaction(r TransactionRepos) Transaction {
 	return &transaction{repos: r}
 }
 
-func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction) (pass bool, err error) {
+func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction) (results []rule, err error) {
 	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 transaction source")
-		return false, libcommon.StringError(err)
+		return results, libcommon.StringError(err)
 	}
 
 	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to gather Unit21 digital data")
-		return false, libcommon.StringError(err)
+		return results, libcommon.StringError(err)
 	}
 
 	url := config.Var.UNIT21_RTR_URL
@@ -55,7 +56,7 @@ func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction
 	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
 		log.Err(err).Msg("Unit21 Transaction evaluate failed")
-		return false, libcommon.StringError(err)
+		return results, libcommon.StringError(err)
 	}
 
 	// var u21Response *createEventResponse
@@ -63,16 +64,19 @@ func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		log.Err(err).Msg("Reading body failed")
-		return false, libcommon.StringError(err)
+		return results, libcommon.StringError(err)
 	}
 
 	for _, rule := range *response.RuleExecutions {
-		if rule.Status != "PASS" {
-			return false, nil
+		if !common.SliceContains([]string{"PASS", "ERROR"}, rule.Status) {
+			results = append(results, rule)
+		}
+		if rule.Status == "ERROR" {
+			log.Err(errors.New("Unit21 Transaction evaluate failed for " + rule.RuleName)).Msg("Unit21 Transaction evaluate failed")
 		}
 	}
 
-	return true, nil
+	return results, nil
 }
 
 func (t transaction) Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {

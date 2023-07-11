@@ -291,14 +291,14 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 		return p, libcommon.StringError(err)
 	}
 
-	evaluation, err := t.unit21.Transaction.Evaluate(ctx, txModel)
+	results, err := t.unit21.Transaction.Evaluate(ctx, txModel)
 	if err != nil {
 		// If Unit21 Evaluate fails, just log, but otherwise continue with the transaction
 		log.Err(err).Msg("Error evaluating transaction in Unit21")
 		return p, nil // NOTE: intentionally returning nil here in order to continue the transaction
 	}
 
-	if !evaluation {
+	if len(results) > 0 {
 		err = t.updateTransactionStatus(ctx, "Failed", p.transactionModel.Id)
 		if err != nil {
 			return p, libcommon.StringError(err)
@@ -308,8 +308,11 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 		if err != nil {
 			return p, libcommon.StringError(err)
 		}
-
-		return p, libcommon.StringError(errors.New("risk: Transaction Failed Unit21 Real Time Rules Evaluation"))
+		errorString := "\n"
+		for _, rule := range results {
+			errorString += fmt.Sprintln("Rule: ", rule.RuleName, " - ", rule.Status)
+		}
+		return p, libcommon.StringError(errors.New(fmt.Sprintf("risk: Transaction Failed Unit21 Real Time Rules Evaluation with results: %+v", errorString)))
 	}
 
 	err = t.updateTransactionStatus(ctx, "Unit21 Authorized", p.transactionModel.Id)
