@@ -60,9 +60,13 @@ type CoinKey struct {
 	Address string `json:"address"`
 }
 
+func (c CoinKey) String() string {
+	return fmt.Sprintf("%d:%s", c.ChainId, c.Address)
+}
+
 type CoingeckoMapCache struct {
-	Timestamp int64              `json:"timestamp"`
-	Value     map[CoinKey]string `json:"value"`
+	Timestamp int64             `json:"timestamp"`
+	Value     map[string]string `json:"value"`
 }
 
 type CostCache struct {
@@ -105,20 +109,20 @@ func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error)
 	return id_to_platform, platform_to_id, nil
 }
 
-func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
+func GetCoingeckoCoinMapping() (map[string]string, error) {
 	_, platform_to_id, err := GetCoingeckoPlatformMapping()
 	if err != nil {
-		return map[CoinKey]string{}, libcommon.StringError(err)
+		return map[string]string{}, libcommon.StringError(err)
 	}
 
 	// get list of platform names from coingecko to create mapping to chainid
 	var coins []CoingeckoCoin
 	err = common.GetJsonGeneric("https://api.coingecko.com/api/v3/coins/list?include_platform=true", &coins)
 	if err != nil {
-		return map[CoinKey]string{}, libcommon.StringError(err)
+		return map[string]string{}, libcommon.StringError(err)
 	}
 
-	coin_key_to_id := make(map[CoinKey]string)
+	coin_key_to_id := make(map[string]string)
 	for _, coin := range coins {
 		for key, val := range coin.Platforms {
 			// There's some weird data floating around in here.  Ignore it.
@@ -128,7 +132,7 @@ func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
 			newKey := CoinKey{
 				ChainId: platform_to_id[key],
 				Address: common.SanitizeChecksum(val),
-			}
+			}.String()
 			coin_key_to_id[newKey] = coin.ID
 		}
 	}
@@ -138,11 +142,11 @@ func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
 
 // TODO: This logic is being reused, abstract it by templating and refactor
 // i.e. LookupCache<T any>(cacheName string, rateLimit float, updateMethod func() (T, error)) (T, error)
-func (c cost) LookupCoingeckoMapping() (map[CoinKey]string, error) {
+func (c cost) LookupCoingeckoMapping() (map[string]string, error) {
 	cacheName := "coingecko_mapping"
 	cacheObject, err := store.GetObjectFromCache[CoingeckoMapCache](c.redis, cacheName)
 	if err != nil {
-		return map[CoinKey]string{}, libcommon.StringError(err)
+		return map[string]string{}, libcommon.StringError(err)
 	}
 	if len(cacheObject.Value) == 0 || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(0.004, 1) {
 		updatedObject := CoingeckoMapCache{}
@@ -214,7 +218,7 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 
 		costTokenEth := common.WeiToEther(&costToken)
 
-		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
+		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}.String()]
 		if !ok {
 			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
 		}
