@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v2.0.0"
+  default = "v2.1.0"
 }
 
 locals {
@@ -26,7 +26,11 @@ locals {
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
-        "com.datadoghq.ad.check_names" : "[\"${local.service_name}\"]",
+        "com.datadoghq.ad.logs" : "[{\"service\":\"${local.service_name}\"}]",
+        "com.datadoghq.ad.check_names" :local.service_name,
+        "com.datadoghq.tags.env": local.env,
+        "com.datadoghq.tags.service": local.service_name,
+        "com.datadoghq.tags.version": var.versioning
       },
       portMappings = [
         {
