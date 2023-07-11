@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -55,8 +56,13 @@ type CoingeckoCoin struct {
 }
 
 type CoinKey struct {
-	ChainId uint64
-	Address string
+	ChainId uint64 `json:"chainId"`
+	Address string `json:"address"`
+}
+
+type CoingeckoMapCache struct {
+	Timestamp int64              `json:"timestamp"`
+	Value     map[CoinKey]string `json:"value"`
 }
 
 type CostCache struct {
@@ -130,6 +136,34 @@ func GetCoingeckoCoinMapping() (map[CoinKey]string, error) {
 	return coin_key_to_id, nil
 }
 
+// TODO: This logic is being reused, abstract it by templating and refactor
+// i.e. LookupCache<T any>(cacheName string, rateLimit float, updateMethod func() (T, error)) (T, error)
+func (c cost) LookupCoingeckoMapping() (map[CoinKey]string, error) {
+	cacheName := "coingecko_mapping"
+	cacheObject, err := store.GetObjectFromCache[CoingeckoMapCache](c.redis, cacheName)
+	if err != nil {
+		return map[CoinKey]string{}, libcommon.StringError(err)
+	}
+	if len(cacheObject.Value) == 0 || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(0.004, 1) {
+		updatedObject := CoingeckoMapCache{}
+		updatedObject.Timestamp = time.Now().Unix()
+		updatedObject.Value, err = GetCoingeckoCoinMapping()
+		// If update fails, return the old object
+		if err != nil {
+			return cacheObject.Value, libcommon.StringError(err)
+		}
+		err = store.PutObjectInCache(c.redis, cacheName, updatedObject)
+		// If store fails, return the new object anyway
+		if err != nil {
+			return updatedObject.Value, libcommon.StringError(err)
+		}
+		cacheObject = updatedObject
+	}
+
+	// Return the old or new object
+	return cacheObject.Value, nil
+}
+
 func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
@@ -162,10 +196,13 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 
 	// // Query cost of token in USD if used and apply buffer
 	totalTokenCost := 0.0
-	coinMapping, err := GetCoingeckoCoinMapping()
+	coinMapping, err := c.LookupCoingeckoMapping()
 	// Coingecko is going down during testing.  Comment this out if needed.
-	if err != nil {
+	if err != nil && len(coinMapping) == 0 {
 		return estimate, libcommon.StringError(err)
+	} else if err != nil {
+		// TODO: Log error and continue
+		fmt.Printf("LookupCoingeckoMapping failed: %s", err)
 	}
 	for i, costToken := range p.CostTokens {
 		// For testing only, dev fuji usdc is not listed on coingecko
