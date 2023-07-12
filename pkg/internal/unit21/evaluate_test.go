@@ -2,6 +2,7 @@ package unit21
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -50,7 +51,7 @@ func TestEvaluateTransactionAbnormalAmounts(t *testing.T) {
 	instrumentId2 := uuid.NewString()
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.False(t, pass)
 }
 
@@ -114,7 +115,7 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 		instrumentId2 := uuid.NewString()
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 		pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.False(t, pass)
 		transaction.Status = "Failed"
 		mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
@@ -132,7 +133,7 @@ func TestEvaluateTransactionHighFailedTransactionAmount(t *testing.T) {
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	time.Sleep(10 * time.Second)
 	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.False(t, pass)
 }
 
@@ -174,7 +175,7 @@ func TestEvaluateTransactionNewUserHighSpend(t *testing.T) {
 	mockTransactionRows(mock, transaction, userId, assetId1, assetId2, instrumentId1, instrumentId2)
 	time.Sleep(10 * time.Second)
 	pass, err := evaluateMockTransaction(ctx, transaction, sqlxDB)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.False(t, pass)
 }
 
@@ -188,7 +189,17 @@ func evaluateMockTransaction(ctx context.Context, transaction model.Transaction,
 
 	u21Transaction := NewTransaction(repos)
 
-	pass, err = u21Transaction.Evaluate(ctx, transaction)
+	results, err := u21Transaction.Evaluate(ctx, transaction)
+	if err != nil {
+		return false, err
+	}
+	if len(results) > 0 {
+		errorString := "\n"
+		for _, rule := range results {
+			errorString += fmt.Sprintln("Rule: ", rule.RuleName, " - ", rule.Status)
+		}
+		return false, fmt.Errorf("risk: Transaction Failed Unit21 Real Time Rules Evaluation with results: %+v", errorString)
+	}
 
-	return
+	return true, err
 }

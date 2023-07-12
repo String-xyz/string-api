@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.0"
+  default = "v2.1.2"
 }
 
 locals {
@@ -26,7 +26,11 @@ locals {
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
-        "com.datadoghq.ad.check_names" : "[\"${local.service_name}\"]",
+        "com.datadoghq.ad.logs" : "[{\"service\":\"${local.service_name}\"}]",
+        "com.datadoghq.ad.check_names" :local.service_name,
+        "com.datadoghq.tags.env": local.env,
+        "com.datadoghq.tags.service": local.service_name,
+        "com.datadoghq.tags.version": var.versioning
       },
       portMappings = [
         {
@@ -69,6 +73,10 @@ locals {
         {
           name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
+        },
+        {
+          name      = "WEBHOOK_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
           name      = "CHECKOUT_SIGNATURE_KEY"
@@ -203,6 +211,22 @@ locals {
         {
           name = "CHECKOUT_ENV"
           value = local.env
+        },
+        {
+          name  = "DD_SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DD_VERSION"
+          value = var.versioning
+        },
+        {
+          name  = "DD_ENV"
+          value = local.env
+        },
+        {
+          name  = "ECS_FARGATE"
+          value = "true"
         }
       ],
       logConfiguration = {
@@ -231,20 +255,6 @@ locals {
         name      = "DD_API_KEY"
         valueFrom = data.aws_ssm_parameter.datadog.arn
       }],
-      environment = [ 
-        {
-          name  = "DD_ENV"
-          value = local.env
-        },
-        {
-          name  = "DD_SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DD_VERSION"
-          value = var.versioning
-        }
-      ]
       portMappings = [{
         hostPort      = 8126,
         protocol      = "tcp",

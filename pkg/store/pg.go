@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
-	"github.com/String-xyz/string-api/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
 	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 var pgDB *sqlx.DB
@@ -47,7 +48,7 @@ func MustNewPG() *sqlx.DB {
 	if pgDB != nil {
 		return pgDB
 	}
-	sqltrace.Register(DBDriver, &pq.Driver{}, sqltrace.WithServiceName("string-api"))
+	sqltrace.Register(DBDriver, &pq.Driver{}, sqltrace.WithServiceName("api"))
 	connection, err := sqlxtrace.Open(DBDriver, strConnection())
 	if err != nil {
 		panic(err)

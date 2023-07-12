@@ -30,6 +30,10 @@ github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 h1:fLjPD/aNc3UIO
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/String-xyz/go-lib/v2 v2.0.3 h1:Ls+kgTuZfhjv3J5zDK61ZZ/nFyip3+0AnIRk+Ciq1Ps=
 github.com/String-xyz/go-lib/v2 v2.0.3/go.mod h1:ifMnKUbxfLatYJjFMcrhgjdMicJNAlCIa1vNOoqc24w=
+github.com/String-xyz/go-lib/v2 v2.1.0 h1:vhrqe/gkZpS8ROtyK9B2Bav3Xjc0gWxsNOVnE48HtJM=
+github.com/String-xyz/go-lib/v2 v2.1.0/go.mod h1:ifMnKUbxfLatYJjFMcrhgjdMicJNAlCIa1vNOoqc24w=
+github.com/String-xyz/go-lib/v2 v2.1.1 h1:fHVsH5konF17O8c/hX71vE1LxlMjDZ3dTLUYuDilQNs=
+github.com/String-xyz/go-lib/v2 v2.1.1/go.mod h1:ifMnKUbxfLatYJjFMcrhgjdMicJNAlCIa1vNOoqc24w=
 github.com/VictoriaMetrics/fastcache v1.6.0 h1:C/3Oi3EiBCqufydp1neRZkqcwmEiuRT9c3fqvvgKm5o=
 github.com/VictoriaMetrics/fastcache v1.6.0/go.mod h1:0qHz5QP0GMX4pfmMA/zt5RgfNuXJrTP0zS7DqpHGGTw=
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
