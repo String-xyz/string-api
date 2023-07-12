@@ -1005,7 +1005,7 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 
 	for _, action := range request.Actions {
 		cxAddr := action.CxAddr
-		contract, err := t.repos.Contract.GetByAddressAndNetworkAndPlatform(ctx, cxAddr, networkId, platformId)
+		contract, err := t.repos.Contract.GetForValidation(ctx, cxAddr, networkId, platformId)
 		if err != nil && err == serror.NOT_FOUND {
 			return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 		} else if err != nil {
