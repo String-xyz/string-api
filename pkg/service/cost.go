@@ -80,12 +80,21 @@ type Cost interface {
 }
 
 type cost struct {
-	redis database.RedisStore // cached token and gas costs
+	redis              database.RedisStore // cached token and gas costs
+	subnetTokenProxies map[CoinKey]CoinKey
 }
 
 func NewCost(redis database.RedisStore) Cost {
+	// Temporarily hard-coding this to reduce future cost-of-change with database
+	subnetTokenProxies := map[CoinKey]CoinKey{
+		// USDc DFK Subnet -> USDc Avalanche:
+		{ChainId: 53935, Address: "0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a"}: {ChainId: 43114, Address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"},
+		// String USDc Fuji Testnet -> USDc Avalanche
+		{ChainId: 43113, Address: "0x671E35F91Cc497385f9f7d0dFCB7192848b1015b"}: {ChainId: 43114, Address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"},
+	}
 	return &cost{
-		redis: redis,
+		redis:              redis,
+		subnetTokenProxies: subnetTokenProxies,
 	}
 }
 
@@ -209,16 +218,16 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		fmt.Printf("LookupCoingeckoMapping failed: %s", err)
 	}
 	for i, costToken := range p.CostTokens {
-		// For testing only, dev fuji usdc is not listed on coingecko
-		if p.TokenAddrs[i] == "0x671E35F91Cc497385f9f7d0dFCB7192848b1015b" {
-			costTokenEth := common.WeiToEther(&costToken)
-			totalTokenCost += 1.0 * costTokenEth
-			continue
+		// TODO: Get subnetTokenProxies from the database
+		coinKey := CoinKey{chain.ChainId, p.TokenAddrs[i]}
+		proxy := c.subnetTokenProxies[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
+		if proxy.Address != "" {
+			coinKey = proxy
 		}
 
 		costTokenEth := common.WeiToEther(&costToken)
 
-		tokenName, ok := coinMapping[CoinKey{chain.ChainId, p.TokenAddrs[i]}.String()]
+		tokenName, ok := coinMapping[coinKey.String()]
 		if !ok {
 			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
 		}
@@ -288,16 +297,20 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 		return 0.0, libcommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
-		cacheObject.Timestamp = time.Now().Unix()
 		// If coingecko is down, use coincap to get the price
 		var empty interface{}
-		err = common.GetJson(config.Var.COINGECKO_API_URL+"ping", &empty)
+		err = common.GetJsonGeneric(config.Var.COINGECKO_API_URL+"ping", &empty)
 		if err == nil {
+			// Only update timestamp if we reacquire the value
+			cacheObject.Timestamp = time.Now().Unix()
 			cacheObject.Value, err = c.coingeckoUSD(coins[0])
 			if err != nil {
 				return 0, libcommon.StringError(err)
 			}
-		} else if len(coins) > 1 {
+
+		} else if len(coins) > 1 && coins[1] != "" {
+			// Only update the timestamp if we reacquire the value
+			cacheObject.Timestamp = time.Now().Unix()
 			cacheObject.Value, err = c.coincapUSD(coins[1])
 
 			if err != nil {
@@ -310,6 +323,7 @@ func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
 		}
 	}
 
+	// If both services are down, use the last value we had
 	return cacheObject.Value * quantity, nil
 }
 
