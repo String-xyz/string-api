@@ -166,9 +166,12 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 
 	ids := []string{}
 	urls := []string{}
-	for _, id := range p.txIds {
-		ids = append(ids, id)
-		urls = append(urls, p.chain.Explorer+"/tx/"+id)
+	for i, id := range p.txIds {
+		// check if lowercase version of p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc contains the word "approve"
+		if !strings.Contains(strings.ToLower(p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc), "approve") {
+			ids = append(ids, id)
+			urls = append(urls, p.chain.Explorer+"/tx/"+id)
+		}
 	}
 	return model.TransactionReceipt{TxIds: ids, TxURLs: urls, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
 }
@@ -937,23 +940,23 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	}
 
 	receiptParams := emailer.ReceiptGenerationParams{
-		ReceiptType:          "NFT Purchase", // TODO: retrieve dynamically
-		CustomerName:         name,
-		StringPaymentId:      p.transactionModel.Id,
-		PaymentDescriptor:    p.executionRequest.Quote.TransactionRequest.AssetName,
-		TransactionDate:      time.Now().Format(time.RFC1123),
-		TransactionIds:       p.txIds,
-		TransactionExplorers: explorers,
-		DestinationAddress:   transactionRequest.UserAddress,
-		DestinationExplorer:  p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
-		PaymentMethod:        p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
-		Platform:             platform.Name,
-		ItemOrdered:          p.executionRequest.Quote.TransactionRequest.AssetName,
-		TokenIds:             p.tokenIds,
-		Subtotal:             common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
-		NetworkFee:           common.FloatToUSDString(estimate.GasUSD),
-		ProcessingFee:        common.FloatToUSDString(estimate.ServiceUSD),
-		Total:                common.FloatToUSDString(estimate.TotalUSD),
+		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
+		CustomerName:        name,
+		StringPaymentId:     p.transactionModel.Id,
+		PaymentDescriptor:   p.executionRequest.Quote.TransactionRequest.AssetName,
+		TransactionDate:     time.Now().Format(time.RFC1123),
+		TransactionId:       p.txIds[0],   // For now assume there were 2 and the approval one was removed
+		TransactionExplorer: explorers[0], // For now assume there were 2 and the approval one was removed
+		DestinationAddress:  transactionRequest.UserAddress,
+		DestinationExplorer: p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
+		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
+		Platform:            platform.Name,
+		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
+		TokenIds:            p.tokenIds,
+		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
+		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
+		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),
+		Total:               common.FloatToUSDString(estimate.TotalUSD),
 	}
 
 	emailer := emailer.New()
