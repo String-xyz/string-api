@@ -482,9 +482,14 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 	}
 
 	// TODO: use this
-	forwardTxIds, gas, err := e.Initiate(calls)
-	filteredTxIds = append(filteredTxIds, forwardTxIds...)
-	gasUsed = gasUsed.Add(gasUsed, gas)
+	if len(calls) > 0 {
+		forwardTxIds, gas, err := e.Initiate(calls)
+		if err != nil {
+			return txIds, tokens, quantities, libcommon.StringError(err)
+		}
+		filteredTxIds = append(filteredTxIds, forwardTxIds...)
+		gasUsed = gasUsed.Add(gasUsed, gas)
+	}
 
 	return txIds, tokens, quantities, nil
 }
