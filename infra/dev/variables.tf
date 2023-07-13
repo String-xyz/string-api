@@ -75,6 +75,10 @@ locals {
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
         },
         {
+          name      = "WEBHOOK_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
+        },
+        {
           name      = "OWLRACLE_API_KEY"
           valueFrom = data.aws_ssm_parameter.owlracle_api_key.arn
         },
@@ -125,6 +129,10 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name      = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
         }
       ]
       environment = [
