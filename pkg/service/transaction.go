@@ -383,7 +383,15 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 
 	status := "Transaction Initiated"
 	txAmount := p.cumulativeValue.String()
-	hashes := strings.Join(p.txIds, ", ")
+
+	hashesOtherThanApprove := []string{}
+	for i, txId := range p.txIds {
+		if !strings.Contains(strings.ToLower(p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc), "approve") {
+			hashesOtherThanApprove = append(hashesOtherThanApprove, txId)
+		}
+	}
+
+	hashes := strings.Join(hashesOtherThanApprove, ", ")
 	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: &hashes, TransactionAmount: &txAmount}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, updateDB)
 	if err != nil {
@@ -952,7 +960,7 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
 		Platform:            platform.Name,
 		ItemOrdered:         p.executionRequest.Quote.TransactionRequest.AssetName,
-		TokenIds:            p.tokenIds,
+		TokenId:             p.tokenIds,
 		Subtotal:            common.FloatToUSDString(estimate.BaseUSD + estimate.TokenUSD),
 		NetworkFee:          common.FloatToUSDString(estimate.GasUSD),
 		ProcessingFee:       common.FloatToUSDString(estimate.ServiceUSD),

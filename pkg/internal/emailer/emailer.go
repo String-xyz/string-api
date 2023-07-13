@@ -41,7 +41,7 @@ type ReceiptGenerationParams struct {
 	PaymentMethod       string
 	Platform            string
 	ItemOrdered         string
-	TokenIds            string
+	TokenId             string
 	Subtotal            string
 	NetworkFee          string
 	ProcessingFee       string
