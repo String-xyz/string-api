@@ -460,6 +460,13 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
 	}
 
+	// Cull any TXIDs from Approve(), the user and Unit21 and the receipt don't need them
+	for i, action := range p.executionRequest.Quote.TransactionRequest.Actions {
+		if strings.Contains(strings.ToLower(action.CxFunc), "approve") {
+			p.txIds = append(p.txIds[:i], p.txIds[i+1:]...)
+		}
+	}
+
 	// TODO: Get the final gas total here and cache it to the quote cache.  And use it for subsequent quotes.
 
 	// We can close the executor because we aren't using it after this
