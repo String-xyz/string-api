@@ -13,6 +13,7 @@ import (
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/database"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/lmittmann/w3"
 
 	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/String-xyz/string-api/pkg/internal/common"
@@ -78,10 +79,11 @@ type transactionProcessingData struct {
 	PaymentStatus      checkout.PaymentStatus
 	PaymentId          string
 	recipientWalletId  *string
-	txId               *string
+	txIds              []string
 	cumulativeValue    *big.Int
 	trueGas            *uint64
 	tokenIds           string
+	tokenQuantities    string
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
@@ -90,7 +92,6 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 
 	// TODO: use prefab service to parse d and fill out known params
 	res.TransactionRequest = d
-	// chain, err := model.ChainInfo(uint64(d.ChainId))
 	chain, err := ChainInfo(ctx, uint64(d.ChainId), t.repos.Network, t.repos.Asset)
 	if err != nil {
 		return res, libcommon.StringError(err)
@@ -163,7 +164,16 @@ func (t transaction) Execute(ctx context.Context, e model.ExecutionRequest, user
 	ctx2 := context.Background()
 	go t.postProcess(ctx2, p)
 
-	return model.TransactionReceipt{TxId: *p.txId, TxURL: p.chain.Explorer + "/tx/" + *p.txId, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
+	ids := []string{}
+	urls := []string{}
+	for i, id := range p.txIds {
+		// check if lowercase version of p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc contains the word "approve"
+		if !strings.Contains(strings.ToLower(p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc), "approve") {
+			ids = append(ids, id)
+			urls = append(urls, p.chain.Explorer+"/tx/"+id)
+		}
+	}
+	return model.TransactionReceipt{TxIds: ids, TxURLs: urls, TxTimestamp: time.Now().Format(time.RFC1123)}, nil
 }
 
 func (t transaction) transactionSetup(ctx context.Context, p transactionProcessingData) (transactionProcessingData, error) {
@@ -328,21 +338,26 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 	defer finish()
 
 	request := p.executionRequest.Quote.TransactionRequest
-	call := ContractCall{
-		CxAddr:     request.CxAddr,
-		CxFunc:     request.CxFunc,
-		CxReturn:   request.CxReturn,
-		CxParams:   request.CxParams,
-		TxValue:    request.TxValue,
-		TxGasLimit: request.TxGasLimit,
+	calls := []ContractCall{}
+	for _, action := range request.Actions {
+
+		call := ContractCall{
+			CxAddr:     action.CxAddr,
+			CxFunc:     action.CxFunc,
+			CxReturn:   action.CxReturn,
+			CxParams:   action.CxParams,
+			TxValue:    action.TxValue,
+			TxGasLimit: action.TxGasLimit,
+		}
+		calls = append(calls, call)
 	}
 
-	txId, value, err := (*p.executor).Initiate(call)
+	txIds, value, err := (*p.executor).Initiate(calls)
 	p.cumulativeValue = value
 	if err != nil {
 		return p, libcommon.StringError(err)
 	}
-	p.txId = &txId
+	p.txIds = append(p.txIds, txIds...)
 
 	// Create Response Tx leg
 	eth := common.WeiToEther(value)
@@ -368,7 +383,16 @@ func (t transaction) initiateTransaction(ctx context.Context, p transactionProce
 
 	status := "Transaction Initiated"
 	txAmount := p.cumulativeValue.String()
-	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: p.txId, TransactionAmount: &txAmount}
+
+	hashesOtherThanApprove := []string{}
+	for i, txId := range p.txIds {
+		if !strings.Contains(strings.ToLower(p.executionRequest.Quote.TransactionRequest.Actions[i].CxFunc), "approve") {
+			hashesOtherThanApprove = append(hashesOtherThanApprove, txId)
+		}
+	}
+
+	hashes := strings.Join(hashesOtherThanApprove, ", ")
+	updateDB := &model.TransactionUpdates{Status: &status, TransactionHash: &hashes, TransactionAmount: &txAmount}
 	err = t.repos.Transaction.Update(ctx, p.transactionModel.Id, updateDB)
 	if err != nil {
 		return p, libcommon.StringError(err)
@@ -401,7 +425,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// confirm the Tx on the EVM
-	trueGas, err := confirmTx(executor, *p.txId)
+	trueGas, err := confirmTx(executor, p.txIds)
 	p.trueGas = &trueGas
 	if err != nil {
 		log.Err(err).Msg("Failed to confirm transaction")
@@ -419,20 +443,42 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
-	// Get the Token IDs which were transferred
-	tokenIds, err := executor.GetTokenIds(*p.txId)
+	// Get the Token IDs which were transferred to the API
+	tokenIds, err := executor.GetTokenIds(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token ids")
 		// TODO: Handle error instead of returning it
 	}
 	p.tokenIds = strings.Join(tokenIds, ",")
 
-	// Forward any tokens received to the user
+	// Forward any non fungible tokens received to the user
 	// TODO: Use the TX ID/s from this in the receipt
 	// TODO: Find a way to charge for the gas used in this transaction
 	if err == nil { // There will be an error if no ERC721 transfer events were detected
-		executor.ForwardTokens(*p.txId, p.executionRequest.Quote.TransactionRequest.UserAddress)
+		executor.ForwardNonFungibleTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
 	}
+
+	// Get the Token quantities which were transferred to the API
+	tokenQuantities, err := executor.GetTokenQuantities(p.txIds)
+	if err != nil {
+		log.Err(err).Msg("Failed to get token quantities")
+		// TODO: Handle error instead of returning it
+	}
+
+	p.tokenQuantities = strings.Join(tokenQuantities, ",")
+
+	if err == nil {
+		executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	}
+
+	// Cull any TXIDs from Approve(), the user and Unit21 and the receipt don't need them
+	for i, action := range p.executionRequest.Quote.TransactionRequest.Actions {
+		if strings.Contains(strings.ToLower(action.CxFunc), "approve") {
+			p.txIds = append(p.txIds[:i], p.txIds[i+1:]...)
+		}
+	}
+
+	// TODO: Get the final gas total here and cache it to the quote cache.  And use it for subsequent quotes.
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()
@@ -506,9 +552,19 @@ func (t transaction) populateInitialTxModelData(ctx context.Context, e model.Exe
 	// TODO populate transactionModel.PlatformId with UUID of customer
 	// bytes, err := json.Marshal()
 
-	contractParams := pq.StringArray(e.Quote.TransactionRequest.CxParams)
+	// For now just concat everything
+	concatParams := []string{}
+	concatFuncs := []string{}
+	for _, action := range e.Quote.TransactionRequest.Actions {
+		concatParams = append(concatParams, "[")
+		concatParams = append(concatParams, action.CxParams...)
+		concatParams = append(concatParams, "]")
+		concatFuncs = append(concatFuncs, action.CxFunc+action.CxReturn)
+	}
+
+	contractParams := pq.StringArray(concatParams)
 	m.ContractParams = &contractParams
-	contractFunc := e.Quote.TransactionRequest.CxFunc + e.Quote.TransactionRequest.CxReturn
+	contractFunc := strings.Join(concatFuncs, ",")
 	m.ContractFunc = &contractFunc
 
 	asset, err := t.repos.Asset.GetByName(ctx, "USD")
@@ -534,16 +590,19 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	}
 
 	if recalculate {
-		call := ContractCall{
-			CxAddr:     request.CxAddr,
-			CxFunc:     request.CxFunc,
-			CxReturn:   request.CxReturn,
-			CxParams:   request.CxParams,
-			TxValue:    request.TxValue,
-			TxGasLimit: request.TxGasLimit,
+		calls := []ContractCall{}
+		for _, action := range request.Actions {
+			calls = append(calls, ContractCall{
+				CxAddr:     action.CxAddr,
+				CxFunc:     action.CxFunc,
+				CxReturn:   action.CxReturn,
+				CxParams:   action.CxParams,
+				TxValue:    action.TxValue,
+				TxGasLimit: action.TxGasLimit,
+			})
 		}
 		// Estimate value and gas of Tx request
-		estimateEVM, err = executor.Estimate(call)
+		estimateEVM, err = executor.Estimate(calls)
 		if err != nil {
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
@@ -552,6 +611,17 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 			if err != nil {
 				return res, 0, CallEstimate{}, libcommon.StringError(err)
 			}
+		}
+	}
+
+	// Factor in approvals to Token Cost
+	tokenAddresses := []string{}
+	tokenAmounts := []big.Int{}
+	for _, action := range request.Actions {
+		if strings.ToLower(strings.ReplaceAll(action.CxFunc, " ", "")) == "approve(address,uint256)" {
+			tokenAddresses = append(tokenAddresses, action.CxAddr)
+			// It should be safe at this point to w3.I without panic
+			tokenAmounts = append(tokenAmounts, *w3.I(action.CxParams[1]))
 		}
 	}
 
@@ -571,8 +641,8 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 		CostETH:    estimateEVM.Value,
 		UseBuffer:  useBuffer,
 		GasUsedWei: estimateEVM.Gas,
-		CostToken:  *big.NewInt(0),
-		TokenName:  "",
+		CostTokens: tokenAmounts,
+		TokenAddrs: tokenAddresses,
 	}
 
 	// Estimate Cost in USD to execute Tx request
@@ -757,8 +827,8 @@ func (t transaction) authCard(ctx context.Context, p transactionProcessingData) 
 	return p, nil
 }
 
-func confirmTx(executor Executor, txId string) (uint64, error) {
-	trueGas, err := executor.TxWait(txId)
+func confirmTx(executor Executor, txIds []string) (uint64, error) {
+	trueGas, err := executor.TxWait(txIds)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
@@ -872,14 +942,19 @@ func (t transaction) sendEmailReceipt(ctx context.Context, p transactionProcessi
 	transactionRequest := p.executionRequest.Quote.TransactionRequest
 	estimate := p.floatEstimate
 
+	explorers := []string{}
+	for _, id := range p.txIds {
+		explorers = append(explorers, p.chain.Explorer+"/tx"+id)
+	}
+
 	receiptParams := emailer.ReceiptGenerationParams{
 		ReceiptType:         "NFT Purchase", // TODO: retrieve dynamically
 		CustomerName:        name,
 		StringPaymentId:     p.transactionModel.Id,
 		PaymentDescriptor:   p.executionRequest.Quote.TransactionRequest.AssetName,
 		TransactionDate:     time.Now().Format(time.RFC1123),
-		TransactionId:       *p.txId,
-		TransactionExplorer: p.chain.Explorer + "/tx/" + *p.txId,
+		TransactionId:       p.txIds[0],   // For now assume there were 2 and the approval one was removed
+		TransactionExplorer: explorers[0], // For now assume there were 2 and the approval one was removed
 		DestinationAddress:  transactionRequest.UserAddress,
 		DestinationExplorer: p.chain.Explorer + "/address/" + transactionRequest.UserAddress,
 		PaymentMethod:       p.cardAuthorization.Issuer + " " + p.cardAuthorization.Last4,
@@ -946,21 +1021,25 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
 
-	contract, err := t.repos.Contract.GetForValidation(ctx, request.CxAddr, networkId, platformId)
-	if err != nil && err == serror.NOT_FOUND {
-		return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
-	} else if err != nil {
-		return false, libcommon.StringError(err)
-	}
+	for _, action := range request.Actions {
+		cxAddr := action.CxAddr
+		contract, err := t.repos.Contract.GetForValidation(ctx, cxAddr, networkId, platformId)
+		if err != nil && err == serror.NOT_FOUND {
+			return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
+		} else if err != nil {
+			return false, libcommon.StringError(err)
+		}
 
-	if len(contract.Functions) == 0 {
-		return true, nil
-	}
+		if len(contract.Functions) == 0 {
+			continue
+		}
 
-	for _, function := range contract.Functions {
-		if function == request.CxFunc {
-			return true, nil
+		for _, function := range contract.Functions {
+			if function == action.CxFunc {
+				continue
+			}
 		}
 	}
-	return false, libcommon.StringError(serror.FUNC_NOT_ALLOWED)
+
+	return true, nil
 }

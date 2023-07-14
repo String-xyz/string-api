@@ -55,10 +55,13 @@ func (q quote) Quote(c echo.Context) error {
 		return httperror.InvalidPayload400(c, err)
 	}
 
-	SanitizeChecksums(&body.CxAddr, &body.UserAddress)
-	// Sanitize Checksum for body.CxParams?  It might look like this:
-	for i := range body.CxParams {
-		SanitizeChecksums(&body.CxParams[i])
+	// TODO: See if there's a way to batch these into a single call of SanitizeChecksums
+	SanitizeChecksums(&body.UserAddress)
+	for i := range body.Actions {
+		SanitizeChecksums(&body.Actions[i].CxAddr, &body.UserAddress)
+		for j := range body.Actions[i].CxParams {
+			SanitizeChecksums(&body.Actions[i].CxParams[j])
+		}
 	}
 
 	platformId, ok := c.Get("platformId").(string)

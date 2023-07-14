@@ -37,17 +37,17 @@ type CallEstimate struct {
 
 type Executor interface {
 	Initialize(network Chain) error
-	Initiate(call ContractCall) (string, *big.Int, error)
-	Estimate(call ContractCall) (CallEstimate, error)
-	TxWait(txId string) (uint64, error)
+	Initiate(calls []ContractCall) ([]string, *big.Int, error)
+	Estimate(calls []ContractCall) (CallEstimate, error)
+	TxWait(txIds []string) (uint64, error)
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
-	GetTokenIds(txId string) ([]string, error)
-	GetTokenQuantities(txId string) ([]string, error)
-	GetEventData(txId string, eventSignature string) ([]types.Log, error)
-	ForwardNonFungibleTokens(txId string, recipient string) ([]string, []string, error)
-	ForwardTokens(txId string, recipient string) ([]string, []string, []string, error)
+	GetTokenIds(txIds []string) ([]string, error)
+	GetTokenQuantities(txIds []string) ([]string, error)
+	GetEventData(txIds []string, eventSignature string) ([]types.Log, error)
+	ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error)
+	ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error)
 }
 
 type executor struct {
@@ -83,54 +83,95 @@ func (e *executor) Close() error {
 	return nil
 }
 
-func (e executor) Estimate(call ContractCall) (CallEstimate, error) {
-	// Generate blockchain message
-	msg, err := e.generateTransactionMessage(call)
-	if err != nil {
-		return CallEstimate{}, libcommon.StringError(err)
+func (e executor) Estimate(calls []ContractCall) (CallEstimate, error) {
+	// Generate blockchain messages
+	w3calls := []w3types.Caller{}
+	estimatedGasses := make([]uint64, len(calls))
+	totalValue := big.NewInt(0)
+	includesApprove := false
+	for i, call := range calls {
+		// TODO: Further optimize this to take in the calls array
+		msg, err := e.generateTransactionMessage(call, uint64(i))
+		if err != nil {
+			return CallEstimate{}, libcommon.StringError(err)
+		}
+		totalValue = totalValue.Add(totalValue, msg.Value)
+
+		w3calls = append(w3calls, eth.EstimateGas(&msg, nil).Returns(&estimatedGasses[i]))
+
+		// simulation will not track the state of the blockchain after approval
+		if strings.Contains(strings.ToLower(strings.ReplaceAll(call.CxFunc, " ", "")), "approve") {
+			includesApprove = true
+		}
+	}
+	// Estimate gas of messages
+	err := e.client.Call(w3calls...)
+	_, ok := err.(w3.CallErrors)
+	if !includesApprove && (err != nil && ok) {
+		return CallEstimate{Value: *big.NewInt(0), Gas: 0, Success: false}, libcommon.StringError(err)
 	}
 
-	// Estimate gas of message
-	var estimatedGas uint64
-	err = e.client.Call(eth.EstimateGas(&msg, nil).Returns(&estimatedGas))
-	if err != nil {
-		// Execution Will Revert!
-		return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: false}, libcommon.StringError(err)
+	// Call(w3calls) should fill out estimatedGasses array
+	totalGas := uint64(0)
+	for _, gas := range estimatedGasses {
+		totalGas += gas
 	}
-	return CallEstimate{Value: *msg.Value, Gas: estimatedGas, Success: true}, nil
+	return CallEstimate{Value: *totalValue, Gas: totalGas, Success: true}, nil
 }
 
-func (e executor) Initiate(call ContractCall) (string, *big.Int, error) {
-	tx, err := e.generateTransactionRequest(call)
-	if err != nil {
-		return "", nil, libcommon.StringError(err)
+func (e executor) Initiate(calls []ContractCall) ([]string, *big.Int, error) {
+	w3calls := []w3types.Caller{}
+	hashes := make([]ethcommon.Hash, len(calls))
+	totalValue := big.NewInt(0)
+	for i, call := range calls {
+		// TODO: Further optimize this to take in the calls array
+		tx, err := e.generateTransactionRequest(call, uint64(i))
+		if err != nil {
+			return []string{}, nil, libcommon.StringError(err)
+		}
+		totalValue = totalValue.Add(totalValue, tx.Value())
+		w3calls = append(w3calls, eth.SendTx(&tx).Returns(&hashes[i]))
 	}
 
-	// Call tx and retrieve hash
-	var hash ethcommon.Hash
-	err = e.client.Call(eth.SendTx(&tx).Returns(&hash))
-	if err != nil {
-		// Execution failed!
-		return "", nil, libcommon.StringError(err)
+	// Call txs and retrieve hashes
+	err := e.client.Call(w3calls...)
+	callErrs, ok := err.(w3.CallErrors)
+	if err != nil && ok {
+		catErrs := ""
+		for _, callErr := range callErrs {
+			if callErr != nil {
+				catErrs += callErr.Error() + " "
+			}
+		}
+		return []string{}, nil, libcommon.StringError(errors.New(catErrs))
 	}
-	return hash.String(), tx.Value(), nil
+
+	hashStrings := make([]string, len(hashes))
+	for i := range hashes {
+		hashStrings[i] = hashes[i].String()
+	}
+	return hashStrings, totalValue, nil
 }
 
-func (e executor) TxWait(txId string) (uint64, error) {
-	txHash := ethcommon.HexToHash(txId)
-	receipt := types.Receipt{}
-	for receipt.Status == 0 {
-		pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
-		// TransactionReceipt returns error "not found" while tx is pending
-		if err != nil && err.Error() != "not found" {
-			return 0, libcommon.StringError(err)
+func (e executor) TxWait(txIds []string) (uint64, error) {
+	totalGasUsed := uint64(0)
+	for _, txId := range txIds {
+		txHash := ethcommon.HexToHash(txId)
+		receipt := types.Receipt{}
+		for receipt.Status == 0 {
+			pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
+			// TransactionReceipt returns error "not found" while tx is pending
+			if err != nil && err.Error() != "not found" {
+				return 0, libcommon.StringError(err)
+			}
+			if pendingReceipt != nil {
+				receipt = *pendingReceipt
+			}
+			// TODO: Sleep for a few ms to keep the cpu cooler
 		}
-		if pendingReceipt != nil {
-			receipt = *pendingReceipt
-		}
-		// TODO: Sleep for a few ms to keep the cpu cooler
+		totalGasUsed += receipt.GasUsed
 	}
-	return receipt.GasUsed, nil
+	return totalGasUsed, nil
 }
 
 func (e executor) GetByChainId() (uint64, error) {
@@ -188,7 +229,7 @@ func (e executor) GetBalance() (float64, error) {
 	return fbalance, nil // We like thinking in floats
 }
 
-func (e executor) generateTransactionMessage(call ContractCall) (w3types.Message, error) {
+func (e executor) generateTransactionMessage(call ContractCall, incrementNonce uint64) (w3types.Message, error) {
 	sender, err := e.getAccount()
 	if err != nil {
 		return w3types.Message{}, libcommon.StringError(err)
@@ -235,14 +276,14 @@ func (e executor) generateTransactionMessage(call ContractCall) (w3types.Message
 		GasTipCap: tipCap,
 		Value:     value,
 		Input:     data,
-		Nonce:     nonce,
+		Nonce:     nonce + incrementNonce,
 	}, nil
 }
 
-func (e executor) generateTransactionRequest(call ContractCall) (types.Transaction, error) {
+func (e executor) generateTransactionRequest(call ContractCall, incrementNonce uint64) (types.Transaction, error) {
 	tx := types.Transaction{}
 
-	msg, err := e.generateTransactionMessage(call)
+	msg, err := e.generateTransactionMessage(call, 0)
 	if err != nil {
 		return tx, libcommon.StringError(err)
 	}
@@ -267,7 +308,7 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	// Generate blockchain tx
 	dynamicFeeTx := types.DynamicFeeTx{
 		ChainID:   chainIdBig,
-		Nonce:     msg.Nonce,
+		Nonce:     msg.Nonce + incrementNonce,
 		GasTipCap: tipCap,
 		GasFeeCap: feeCap,
 		Gas:       w3.I(call.TxGasLimit).Uint64(),
@@ -286,19 +327,21 @@ func (e executor) generateTransactionRequest(call ContractCall) (types.Transacti
 	return tx, nil
 }
 
-func (e executor) GetEventData(txId string, eventSignature string) ([]types.Log, error) {
+func (e executor) GetEventData(txIds []string, eventSignature string) ([]types.Log, error) {
 	events := []types.Log{}
-	receipt, err := e.geth.TransactionReceipt(context.Background(), ethcommon.HexToHash(txId))
-	if err != nil {
-		return []types.Log{}, libcommon.StringError(err)
-	}
+	for _, txId := range txIds {
+		receipt, err := e.geth.TransactionReceipt(context.Background(), ethcommon.HexToHash(txId))
+		if err != nil {
+			return []types.Log{}, libcommon.StringError(err)
+		}
 
-	event := crypto.Keccak256Hash([]byte(eventSignature))
+		event := crypto.Keccak256Hash([]byte(eventSignature))
 
-	// Iterate through the logs to find the transfer event and extract the token ID.
-	for _, log := range receipt.Logs {
-		if log.Topics[0].Hex() == event.Hex() {
-			events = append(events, *log)
+		// Iterate through the logs to find the transfer event and extract the token ID.
+		for _, log := range receipt.Logs {
+			if log.Topics[0].Hex() == event.Hex() {
+				events = append(events, *log)
+			}
 		}
 	}
 	return events, nil
@@ -324,8 +367,8 @@ func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []type
 	return matches
 }
 
-func (e executor) GetTokenIds(txId string) ([]string, error) {
-	logs, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) GetTokenIds(txIds []string) ([]string, error) {
+	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, libcommon.StringError(err)
 	}
@@ -343,8 +386,8 @@ func (e executor) GetTokenIds(txId string) ([]string, error) {
 	return tokenIds, nil
 }
 
-func (e executor) GetTokenQuantities(txId string) ([]string, error) {
-	logs, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) GetTokenQuantities(txIds []string) ([]string, error) {
+	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, libcommon.StringError(err)
 	}
@@ -356,8 +399,8 @@ func (e executor) GetTokenQuantities(txId string) ([]string, error) {
 	return quantities, nil
 }
 
-func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]string, []string, error) {
-	eventData, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error) {
+	eventData, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, []string{}, libcommon.StringError(err)
 	}
@@ -367,9 +410,10 @@ func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]str
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	txIds := []string{}
+	filteredTxIds := []string{}
 	tokenIds := []string{}
 	gasUsed := big.NewInt(0)
+	calls := []ContractCall{}
 	for _, log := range toForward {
 		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes()).String()
 		call := ContractCall{
@@ -385,18 +429,21 @@ func (e executor) ForwardNonFungibleTokens(txId string, recipient string) ([]str
 			TxGasLimit: "800000",
 		}
 		tokenIds = append(tokenIds, tokenId)
-		forwardTxId, gas, err := e.Initiate(call)
-		txIds = append(txIds, forwardTxId)
-		gasUsed = gasUsed.Add(gasUsed, gas)
+		calls = append(calls, call)
 		if err != nil {
 			return txIds, tokenIds, libcommon.StringError(err)
 		}
 	}
+
+	forwardTxIds, gas, err := e.Initiate(calls)
+	filteredTxIds = append(filteredTxIds, forwardTxIds...)
+	gasUsed = gasUsed.Add(gasUsed, gas)
+
 	return txIds, tokenIds, nil
 }
 
-func (e executor) ForwardTokens(txId string, recipient string) ([]string, []string, []string, error) {
-	eventData, err := e.GetEventData(txId, "Transfer(address,address,uint256)")
+func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error) {
+	eventData, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
 		return []string{}, []string{}, []string{}, libcommon.StringError(err)
 	}
@@ -406,10 +453,11 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	txIds := []string{}
+	filteredTxIds := []string{}
 	tokens := []string{}
 	quantities := []string{}
 	gasUsed := big.NewInt(0)
+	calls := []ContractCall{}
 	for _, log := range toForward {
 		quantity := new(big.Int).SetBytes(log.Data).String()
 		token := log.Address.String()
@@ -427,12 +475,21 @@ func (e executor) ForwardTokens(txId string, recipient string) ([]string, []stri
 		}
 		tokens = append(tokens, token)
 		quantities = append(quantities, quantity)
-		forwardTxId, gas, err := e.Initiate(call)
-		txIds = append(txIds, forwardTxId)
-		gasUsed = gasUsed.Add(gasUsed, gas)
+		calls = append(calls, call)
 		if err != nil {
 			return txIds, tokens, quantities, libcommon.StringError(err)
 		}
 	}
+
+	// TODO: use this
+	if len(calls) > 0 {
+		forwardTxIds, gas, err := e.Initiate(calls)
+		if err != nil {
+			return txIds, tokens, quantities, libcommon.StringError(err)
+		}
+		filteredTxIds = append(filteredTxIds, forwardTxIds...)
+		gasUsed = gasUsed.Add(gasUsed, gas)
+	}
+
 	return txIds, tokens, quantities, nil
 }
