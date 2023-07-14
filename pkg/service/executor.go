@@ -439,7 +439,7 @@ func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]
 			return txIds, tokenIds, libcommon.StringError(err)
 		}
 	}
-
+  
 	return forwardTxIds, tokenIds, nil
 }
 
@@ -482,6 +482,8 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 		if err != nil {
 			return txIds, tokens, quantities, libcommon.StringError(err)
 		}
+		filteredTxIds = append(filteredTxIds, forwardTxIds...)
+		gasUsed = gasUsed.Add(gasUsed, gas)
 	}
 
 	return forwardTxIds, tokens, quantities, nil
