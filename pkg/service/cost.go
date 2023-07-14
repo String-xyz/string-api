@@ -107,19 +107,19 @@ func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error)
 		return map[uint64]string{}, map[string]uint64{}, libcommon.StringError(err)
 	}
 
-	id_to_platform := make(map[uint64]string)
-	platform_to_id := make(map[string]uint64)
+	idToPlatform := make(map[uint64]string)
+	platformToId := make(map[string]uint64)
 	for _, p := range platforms {
 		if p.ChainIdentifier != 0 {
-			id_to_platform[p.ChainIdentifier] = p.Id
-			platform_to_id[p.Id] = p.ChainIdentifier
+			idToPlatform[p.ChainIdentifier] = p.Id
+			platformToId[p.Id] = p.ChainIdentifier
 		}
 	}
-	return id_to_platform, platform_to_id, nil
+	return idToPlatform, platformToId, nil
 }
 
 func GetCoingeckoCoinMapping() (map[string]string, error) {
-	_, platform_to_id, err := GetCoingeckoPlatformMapping()
+	_, platformToId, err := GetCoingeckoPlatformMapping()
 	if err != nil {
 		return map[string]string{}, libcommon.StringError(err)
 	}
@@ -131,7 +131,7 @@ func GetCoingeckoCoinMapping() (map[string]string, error) {
 		return map[string]string{}, libcommon.StringError(err)
 	}
 
-	coin_key_to_id := make(map[string]string)
+	coinKeyToId := make(map[string]string)
 	for _, coin := range coins {
 		for key, val := range coin.Platforms {
 			// There's some weird data floating around in here.  Ignore it.
@@ -139,14 +139,14 @@ func GetCoingeckoCoinMapping() (map[string]string, error) {
 				continue
 			}
 			newKey := CoinKey{
-				ChainId: platform_to_id[key],
+				ChainId: platformToId[key],
 				Address: common.SanitizeChecksum(val),
 			}.String()
-			coin_key_to_id[newKey] = coin.ID
+			coinKeyToId[newKey] = coin.ID
 		}
 	}
 
-	return coin_key_to_id, nil
+	return coinKeyToId, nil
 }
 
 // TODO: This logic is being reused, abstract it by templating and refactor
