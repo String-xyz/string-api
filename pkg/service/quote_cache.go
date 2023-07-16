@@ -16,7 +16,7 @@ import (
 
 type QuoteCache interface {
 	CheckUpdateCachedTransactionRequest(request model.TransactionRequest, desiredInterval int64) (recalculate bool, callEstimate CallEstimate, err error)
-	PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error
+	PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) (CallEstimate, error)
 	UpdateMaxCachedTrueGas(request model.TransactionRequest, gas uint64) error
 }
 
@@ -65,11 +65,11 @@ func (q quoteCache) UpdateMaxCachedTrueGas(request model.TransactionRequest, gas
 	return nil
 }
 
-func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) error {
+func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest, data CallEstimate) (CallEstimate, error) {
 	key := tokenizeTransactionRequest(sanitizeTransactionRequest(request))
 	cacheObject, err := store.GetObjectFromCache[callEstimateCache](q.redis, key)
 	if err != nil {
-		return libcommon.StringError(err)
+		return CallEstimate{}, libcommon.StringError(err)
 	}
 	// Never lower the known gas value - this can come from estimation or a real transaction
 	if data.Gas < cacheObject.Gas {
@@ -83,9 +83,11 @@ func (q quoteCache) PutCachedTransactionRequest(request model.TransactionRequest
 	}
 	err = store.PutObjectInCache(q.redis, tokenizeTransactionRequest(sanitizeTransactionRequest(request)), cacheObject)
 	if err != nil {
-		return libcommon.StringError(err)
+		return CallEstimate{}, libcommon.StringError(err)
 	}
-	return nil
+	value := big.NewInt(0)
+	value.SetString(cacheObject.Value, 10)
+	return CallEstimate{Value: *value, Gas: cacheObject.Gas, Success: cacheObject.Success}, nil
 }
 
 func sanitizeTransactionRequest(request model.TransactionRequest) model.TransactionRequest {
