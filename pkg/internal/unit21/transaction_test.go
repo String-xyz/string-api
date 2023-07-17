@@ -168,12 +168,12 @@ func mockTransactionRows(mock sqlmock.Sqlmock, transaction model.Transaction, us
 		AddRow(transaction.DestinationTxLegId, time.Now(), "1", transaction.TransactionAmount, assetId2, userId, instrumentId2)
 	mock.ExpectQuery("SELECT * FROM tx_leg WHERE id = $1 AND deleted_at IS NULL").WithArgs(transaction.DestinationTxLegId).WillReturnRows(mockedTxLegRow2)
 
-	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
-		AddRow(assetId1, "USD", "fiat USD", 6, false, transaction.NetworkId, "self")
+	mockedAssetRow1 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "value_oracle"}).
+		AddRow(assetId1, "USD", "fiat USD", 6, false, "self")
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deleted_at IS NULL").WithArgs(assetId1).WillReturnRows(mockedAssetRow1)
 
-	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "network_id", "value_oracle"}).
-		AddRow(assetId2, "Noose The Goose", "Noose the Goose NFT", 0, true, transaction.NetworkId, "joepegs.com")
+	mockedAssetRow2 := sqlmock.NewRows([]string{"id", "name", "description", "decimals", "is_crypto", "value_oracle"}).
+		AddRow(assetId2, "Noose The Goose", "Noose the Goose NFT", 0, true, "joepegs.com")
 	mock.ExpectQuery("SELECT * FROM asset WHERE id = $1 AND deleted_at IS NULL").WithArgs(assetId2).WillReturnRows(mockedAssetRow2)
 
 	mockedDeviceRow := sqlmock.NewRows([]string{"id", "type", "description", "fingerprint", "ip_addresses", "user_id"}).
