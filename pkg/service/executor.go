@@ -158,16 +158,21 @@ func (e executor) TxWait(txIds []string) (uint64, error) {
 	for _, txId := range txIds {
 		txHash := ethcommon.HexToHash(txId)
 		receipt := types.Receipt{}
-		for receipt.Status == 0 {
+		pending := true
+		for pending {
 			pendingReceipt, err := e.geth.TransactionReceipt(context.Background(), txHash)
 			// TransactionReceipt returns error "not found" while tx is pending
 			if err != nil && err.Error() != "not found" {
-				return 0, libcommon.StringError(err)
+				return totalGasUsed, libcommon.StringError(err)
 			}
 			if pendingReceipt != nil {
 				receipt = *pendingReceipt
+				pending = false
 			}
 			// TODO: Sleep for a few ms to keep the cpu cooler
+		}
+		if receipt.Status == 0 {
+			return totalGasUsed, libcommon.StringError(errors.New("transaction failed"))
 		}
 		totalGasUsed += receipt.GasUsed
 	}
@@ -380,9 +385,6 @@ func (e executor) GetTokenIds(txIds []string) ([]string, error) {
 		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes())
 		tokenIds = append(tokenIds, tokenId.String())
 	}
-	if len(tokenIds) == 0 {
-		return []string{}, libcommon.StringError(errors.New("no token ids found / no ERC721 transfer events found"))
-	}
 	return tokenIds, nil
 }
 
@@ -410,15 +412,13 @@ func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	filteredTxIds := []string{}
 	tokenIds := []string{}
-	gasUsed := big.NewInt(0)
 	calls := []ContractCall{}
 	for _, log := range toForward {
 		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes()).String()
 		call := ContractCall{
 			CxAddr: log.Address.String(),
-			CxFunc: "safeTransferFrom(address,address,uint256)",
+			CxFunc: "transferFrom(address,address,uint256)",
 			CxParams: []string{
 				hotWallet.String(),
 				recipient,
@@ -430,16 +430,17 @@ func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]
 		}
 		tokenIds = append(tokenIds, tokenId)
 		calls = append(calls, call)
+	}
+
+	forwardTxIds := []string{}
+	if len(calls) > 0 {
+		forwardTxIds, _, err = e.Initiate(calls)
 		if err != nil {
 			return txIds, tokenIds, libcommon.StringError(err)
 		}
 	}
 
-	forwardTxIds, gas, err := e.Initiate(calls)
-	filteredTxIds = append(filteredTxIds, forwardTxIds...)
-	gasUsed = gasUsed.Add(gasUsed, gas)
-
-	return txIds, tokenIds, nil
+	return forwardTxIds, tokenIds, nil
 }
 
 func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error) {
@@ -453,19 +454,16 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 	}
 	// Filter events where recipient is our hot wallet
 	toForward := FilterEventData(eventData, []int{2}, []string{hotWallet.String()})
-	filteredTxIds := []string{}
 	tokens := []string{}
 	quantities := []string{}
-	gasUsed := big.NewInt(0)
 	calls := []ContractCall{}
 	for _, log := range toForward {
 		quantity := new(big.Int).SetBytes(log.Data).String()
 		token := log.Address.String()
 		call := ContractCall{
 			CxAddr: token,
-			CxFunc: "safeTransferFrom(address,address,uint256)",
+			CxFunc: "transfer(address,uint256)",
 			CxParams: []string{
-				hotWallet.String(),
 				recipient,
 				quantity,
 			},
@@ -476,20 +474,15 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 		tokens = append(tokens, token)
 		quantities = append(quantities, quantity)
 		calls = append(calls, call)
-		if err != nil {
-			return txIds, tokens, quantities, libcommon.StringError(err)
-		}
 	}
 
-	// TODO: use this
+	forwardTxIds := []string{}
 	if len(calls) > 0 {
-		forwardTxIds, gas, err := e.Initiate(calls)
+		forwardTxIds, _, err = e.Initiate(calls)
 		if err != nil {
 			return txIds, tokens, quantities, libcommon.StringError(err)
 		}
-		filteredTxIds = append(filteredTxIds, forwardTxIds...)
-		gasUsed = gasUsed.Add(gasUsed, gas)
 	}
 
-	return txIds, tokens, quantities, nil
+	return forwardTxIds, tokens, quantities, nil
 }

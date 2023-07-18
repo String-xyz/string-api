@@ -80,8 +80,9 @@ type transactionProcessingData struct {
 	PaymentId          string
 	recipientWalletId  *string
 	txIds              []string
+	forwardTxIds       []string
 	cumulativeValue    *big.Int
-	trueGas            *uint64
+	trueGas            uint64
 	tokenIds           string
 	tokenQuantities    string
 }
@@ -254,7 +255,7 @@ func (t transaction) safetyCheck(ctx context.Context, p transactionProcessingDat
 		// Update cache if price is too volatile
 		if errors.Cause(err).Error() == "verifyQuote: price too volatile" {
 			quoteCache := NewQuoteCache(t.redis)
-			err = quoteCache.PutCachedTransactionRequest(p.executionRequest.Quote.TransactionRequest, estimateEVM)
+			_, err = quoteCache.PutCachedTransactionRequest(p.executionRequest.Quote.TransactionRequest, estimateEVM)
 			if err != nil {
 				return p, libcommon.StringError(err)
 			}
@@ -426,7 +427,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 
 	// confirm the Tx on the EVM
 	trueGas, err := confirmTx(executor, p.txIds)
-	p.trueGas = &trueGas
+	p.trueGas = trueGas
 	if err != nil {
 		log.Err(err).Msg("Failed to confirm transaction")
 		// TODO: Handle error instead of returning it
@@ -443,7 +444,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 		// TODO: Handle error instead of returning it
 	}
 
-	// Get the Token IDs which were transferred to the API
+	// Get the Token IDs which were transferred
 	tokenIds, err := executor.GetTokenIds(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token ids")
@@ -454,21 +455,28 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	// Forward any non fungible tokens received to the user
 	// TODO: Use the TX ID/s from this in the receipt
 	// TODO: Find a way to charge for the gas used in this transaction
-	if err == nil { // There will be an error if no ERC721 transfer events were detected
-		executor.ForwardNonFungibleTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	if len(tokenIds) > 0 {
+		forwardTxIds /*forwardTokenIds*/, _, err := executor.ForwardNonFungibleTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+		if err != nil {
+			log.Err(err).Msg("Failed to forward non fungible tokens")
+		}
+		p.forwardTxIds = append(p.forwardTxIds, forwardTxIds...)
 	}
 
-	// Get the Token quantities which were transferred to the API
+	// Get the Token quantities which were transferred
 	tokenQuantities, err := executor.GetTokenQuantities(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token quantities")
 		// TODO: Handle error instead of returning it
 	}
-
 	p.tokenQuantities = strings.Join(tokenQuantities, ",")
 
-	if err == nil {
-		executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	if len(tokenQuantities) > 0 {
+		forwardTxIds /*forwardTokenAddresses*/, _ /*tokenQuantities*/, _, err := executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
+		if err != nil {
+			log.Err(err).Msg("Failed to forward tokens")
+		}
+		p.forwardTxIds = append(p.forwardTxIds, forwardTxIds...)
 	}
 
 	// Cull any TXIDs from Approve(), the user and Unit21 and the receipt don't need them
@@ -479,9 +487,21 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// TODO: Get the final gas total here and cache it to the quote cache.  And use it for subsequent quotes.
+	forwardGas, err := confirmTx(executor, p.forwardTxIds)
+	if err != nil {
+		log.Err(err).Msg("Failed to confirm forwarding transactions")
+	}
+	p.trueGas += forwardGas
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()
+
+	// Cache the gas associated with this transaction
+	qc := NewQuoteCache(t.redis)
+	err = qc.UpdateMaxCachedTrueGas(p.executionRequest.Quote.TransactionRequest, p.trueGas)
+	if err != nil {
+		log.Err(err).Msg("Failed to update quote true gas cache")
+	}
 
 	// compute profit
 	// TODO: factor request.processingFeeAsset in the event of crypto-to-usd
@@ -607,7 +627,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 			return res, 0, CallEstimate{}, libcommon.StringError(err)
 		}
 		if useCache {
-			err = quoteCache.PutCachedTransactionRequest(request, estimateEVM)
+			estimateEVM, err = quoteCache.PutCachedTransactionRequest(request, estimateEVM)
 			if err != nil {
 				return res, 0, CallEstimate{}, libcommon.StringError(err)
 			}
@@ -841,7 +861,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	defer finish()
 
 	cost := NewCost(t.redis)
-	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(*p.trueGas)))
+	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(trueEth, p.chain.CoingeckoName, p.chain.CoincapName)
 	if err != nil {
