@@ -32,8 +32,16 @@ func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, 
 	m := model.Asset{}
 
 	query, args, err := a.Named(`
-		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2) 
-		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2) RETURNING *`, insert)
+		WITH insert_asset AS (
+			INSERT INTO asset (name, description, decimals, is_crypto, value_oracle, value_oracle_2) 
+			VALUES(:name, :description, :decimals, :is_crypto, :value_oracle, :value_oracle_2) 
+			ON CONFLICT (name) DO NOTHING
+			RETURNING *
+		)
+		INSERT INTO asset_to_network (asset_id, network_id)
+		VALUES(insert_asset.id, :network_id)
+		ON CONFLICT (asset_id, network_id) DO NOTHING
+	`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
