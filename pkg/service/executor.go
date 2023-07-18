@@ -48,6 +48,7 @@ type Executor interface {
 	GetEventData(txIds []string, eventSignature string) ([]types.Log, error)
 	ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error)
 	ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error)
+	GetGasRate(boostPercent int64, tipPercent int64) (*big.Int, *big.Int, error)
 }
 
 type executor struct {
@@ -257,9 +258,11 @@ func (e executor) generateTransactionMessage(call ContractCall, incrementNonce u
 		return w3types.Message{}, libcommon.StringError(err)
 	}
 
-	// Get dynamic fee tx gas params
-	tipCap, _ := e.geth.SuggestGasTipCap(context.Background())
-	feeCap, _ := e.geth.SuggestGasPrice(context.Background())
+	// TODO: get boost factors from gas analysis engine
+	gas, tip, err := e.GetGasRate(10, 10)
+	if err != nil {
+		return w3types.Message{}, libcommon.StringError(err)
+	}
 
 	// Get handle to function we wish to call
 	funcEVM, err := w3.NewFunc(call.CxFunc, call.CxReturn)
@@ -277,8 +280,8 @@ func (e executor) generateTransactionMessage(call ContractCall, incrementNonce u
 	return w3types.Message{
 		From:      sender,
 		To:        &to,
-		GasFeeCap: feeCap,
-		GasTipCap: tipCap,
+		GasFeeCap: gas,
+		GasTipCap: tip,
 		Value:     value,
 		Input:     data,
 		Nonce:     nonce + incrementNonce,
@@ -300,9 +303,11 @@ func (e executor) generateTransactionRequest(call ContractCall, incrementNonce u
 		return tx, libcommon.StringError(err)
 	}
 
-	// Get dynamic fee tx gas params
-	tipCap, _ := e.geth.SuggestGasTipCap(context.Background())
-	feeCap, _ := e.geth.SuggestGasPrice(context.Background())
+	// TODO: get boost factors from gas analysis engine
+	gas, tip, err := e.GetGasRate(10, 10)
+	if err != nil {
+		return tx, libcommon.StringError(err)
+	}
 
 	// Type conversion for chainId
 	chainIdBig := new(big.Int).SetUint64(chainId64)
@@ -314,8 +319,8 @@ func (e executor) generateTransactionRequest(call ContractCall, incrementNonce u
 	dynamicFeeTx := types.DynamicFeeTx{
 		ChainID:   chainIdBig,
 		Nonce:     msg.Nonce + incrementNonce,
-		GasTipCap: tipCap,
-		GasFeeCap: feeCap,
+		GasTipCap: tip,
+		GasFeeCap: gas,
 		Gas:       w3.I(call.TxGasLimit).Uint64(),
 		To:        msg.To,
 		Value:     msg.Value,
@@ -485,4 +490,42 @@ func (e executor) ForwardTokens(txIds []string, recipient string) ([]string, []s
 	}
 
 	return forwardTxIds, tokens, quantities, nil
+}
+
+func (e executor) GetGasRate(boostPercent int64, tipPercent int64) (*big.Int, *big.Int, error) {
+	gasPrice, err := e.geth.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, nil, libcommon.StringError(err)
+	}
+
+	gasBoost := big.NewInt(gasPrice.Int64())
+	gasBoost.Mul(gasBoost, big.NewInt(boostPercent))
+	gasBoost.Div(gasBoost, big.NewInt(100))
+	gasPrice.Add(gasBoost, gasPrice)
+	tip := big.NewInt(gasPrice.Int64())
+	tip.Mul(tip, big.NewInt(tipPercent))
+	tip.Div(tip, big.NewInt(100))
+
+	return gasPrice, tip, nil
+}
+
+func GetGasRate(chain Chain, boostPercent int64, tipPercent int64) (*big.Int, *big.Int, error) {
+	geth, err := ethclient.Dial(chain.RPC)
+	if err != nil {
+		return nil, nil, libcommon.StringError(err)
+	}
+	gasPrice, err := geth.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, nil, libcommon.StringError(err)
+	}
+
+	gasBoost := big.NewInt(gasPrice.Int64())
+	gasBoost.Mul(gasBoost, big.NewInt(boostPercent))
+	gasBoost.Div(gasBoost, big.NewInt(100))
+	gasPrice.Add(gasBoost, gasPrice)
+	tip := big.NewInt(gasPrice.Int64())
+	tip.Mul(tip, big.NewInt(tipPercent))
+	tip.Div(tip, big.NewInt(100))
+
+	return gasPrice, tip, nil
 }
