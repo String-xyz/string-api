@@ -195,10 +195,22 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 	// transactionCost is for native token transaction cost (tx_value)
 	transactionCost := costEth * nativeCost
 
-	// Query owlracle for gas
-	ethGasFee, err := c.lookupGas(chain.OwlracleName)
-	if err != nil {
-		return estimate, libcommon.StringError(err)
+	ethGasFee := 0.0
+	if chain.OwlracleName == "internal" {
+		// Use the internal gas rate calculator
+		// Recommended gas rate with 10% boost and 10% tip respectively
+		gas, tip, err := GetGasRate(chain, 10, 10)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
+		gasWithTip := big.NewInt(0).Add(gas, tip)
+		ethGasFee = float64(gasWithTip.Int64()) / 1e9
+	} else {
+		// Query owlracle for gas
+		ethGasFee, err = c.lookupGas(chain.OwlracleName)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
