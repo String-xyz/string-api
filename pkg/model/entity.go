@@ -234,6 +234,7 @@ type Contract struct {
 	Name           string         `json:"name" db:"name"`
 	Address        string         `json:"address" db:"address"`
 	Functions      pq.StringArray `json:"functions" db:"functions" swaggertype:"array,string"`
+	Type           string         `json:"type" db:"type"`
 	NetworkId      string         `json:"networkId" db:"network_id"`
 	OrganizationId string         `json:"organizationId" db:"organization_id"`
 }
