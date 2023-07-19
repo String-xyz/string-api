@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -65,6 +66,17 @@ func BetterStringify(jsonBody any) (betterString string, err error) {
 func SliceContains(elems []string, v string) bool {
 	for _, s := range elems {
 		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+func StringContainsAny(target string, substrs []string) bool {
+	// convert target to lowercase
+	noSpaceLowerCase := strings.ReplaceAll(strings.ToLower(target), " ", "")
+	for _, substr := range substrs {
+		if strings.Contains(noSpaceLowerCase, strings.ReplaceAll(strings.ToLower(substr), " ", "")) {
 			return true
 		}
 	}
