@@ -5,6 +5,9 @@ import (
 	"time"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
+	env "github.com/String-xyz/go-lib/v2/config"
+
+	"github.com/String-xyz/string-api/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,7 +80,7 @@ func TestEncryptDecryptUnencoded(t *testing.T) {
 }
 
 func TestEncryptDecryptKMS(t *testing.T) {
-
+	env.LoadEnv(&config.Var, "../../../.env")
 	obj := "herein lie the secrets of the universe"
 	objEncrypted, err := EncryptStringToKMS(obj)
 	assert.NoError(t, err)
