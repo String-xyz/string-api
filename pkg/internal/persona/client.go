@@ -44,8 +44,10 @@ func (c *PersonaClient) doRequest(method, url string, payload, result interface{
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
+
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Key-Inflection", "camel")
 
 	resp, err := c.Client.Do(req)
 	if err != nil {

@@ -1,40 +1,52 @@
 package persona
 
 import (
-	"fmt"
 	"net/http"
+
+	"github.com/String-xyz/go-lib/v2/common"
 )
 
-type Inquiry struct {
-	Id             string `json:"id"`
-	Status         string `json:"status"`
-	CreatedAt      string `json:"created_at"`
-	LastUpdatedAt  string `json:"last_updated_at"`
-	CompletedSteps []struct {
-		Type   string `json:"type"`
-		Status string `json:"status"`
-	} `json:"completed_steps"`
-}
+/*
+The inquiry represents a single instance of an individual attempting to verify their identity.
+The primary use of the inquiry endpoints is to fetch submitted information from the flow.
 
-type InquiryPayload struct {
-	AccountID string `json:"account_id"`
-	Template  string `json:"template"`
-}
+Inquiries are created when the individual begins to verify their identity.
+Check for the following statuses to determine whether the individual has finished the flow.
+
+* Created	- The individual started the inquiry.
+* Pending	- The individual submitted a verification within the inquiry.
+* Completed	- The individual passed all required verifications within the inquiry.
+
+Approved/Declined (Optional)
+These are optional statuses applied by you to execute custom decisioning logic.
+* Expired	- The individual did not complete the inquiry within 24 hours.
+* Failed	- The individual exceeded the allowed number of verification attempts on the inquiry and cannot continue.
+
+*/
 
 func (c *PersonaClient) CreateInquiry(payload InquiryPayload) (*Inquiry, error) {
 	inquiry := &Inquiry{}
 	err := c.doRequest(http.MethodPost, "/v1/inquiries", payload, inquiry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create inquiry: %w", err)
+		return nil, common.StringError(err, "failed to create inquiry")
 	}
 	return inquiry, nil
 }
 
-func (c *PersonaClient) GetInquiry(id string) (*Inquiry, error) {
+func (c *PersonaClient) GetInquiryById(id string) (*Inquiry, error) {
 	inquiry := &Inquiry{}
 	err := c.doRequest(http.MethodGet, "/v1/inquiries/"+id, nil, inquiry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get inquiry: %w", err)
+		return nil, common.StringError(err, "failed to get inquiry")
 	}
 	return inquiry, nil
+}
+
+func (c *PersonaClient) ListInquiriesByAccount(accountId string) (*ListInquiryResponse, error) {
+	inquiries := &ListInquiryResponse{}
+	err := c.doRequest(http.MethodGet, "/v1/inquiries?filter[account-id]="+accountId, nil, inquiries)
+	if err != nil {
+		return nil, common.StringError(err, "failed to list inquiries")
+	}
+	return inquiries, nil
 }

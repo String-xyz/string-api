@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package persona
 
 import (
@@ -35,7 +38,7 @@ func TestDoRequest(t *testing.T) {
 	}
 }
 
-func TestGetVerifications(t *testing.T) {
+func TestGetVerificationById(t *testing.T) {
 	testServer := testServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte(`[{"id":"test-verification"}]`))
 	}))
@@ -44,14 +47,10 @@ func TestGetVerifications(t *testing.T) {
 	c := New("test-key")
 	c.BaseURL = testServer.URL
 
-	v, err := c.GetVerifications()
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
+	v, err := c.GetVerificationById("test-verification")
 
-	if len(v) != 1 {
-		t.Errorf("Expected one verification, got %v", len(v))
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, v)
 }
 
 func TestGetTemplates(t *testing.T) {
@@ -81,7 +80,7 @@ func TestCreateInquiry(t *testing.T) {
 		var payload InquiryPayload
 		err := json.NewDecoder(r.Body).Decode(&payload)
 		assert.NoError(t, err)
-		assert.Equal(t, "test-account", payload.AccountID)
+		assert.Equal(t, "test-account", payload.AccountId)
 		assert.Equal(t, "test-template", payload.Template)
 
 		inquiry := &Inquiry{
@@ -95,7 +94,7 @@ func TestCreateInquiry(t *testing.T) {
 
 	client := NewPersonaClient(server.URL, "test-key")
 	inquiry, err := client.CreateInquiry(InquiryPayload{
-		AccountID: "test-account",
+		AccountId: "test-account",
 		Template:  "test-template",
 	})
 	assert.NoError(t, err)
@@ -118,7 +117,7 @@ func TestGetInquiry(t *testing.T) {
 	defer server.Close()
 
 	client := NewPersonaClient(server.URL, "test-key")
-	inquiry, err := client.GetInquiry("test-id")
+	inquiry, err := client.GetInquiryById("test-id")
 	assert.NoError(t, err)
 	assert.Equal(t, "test-id", inquiry.Id)
 	assert.Equal(t, "completed", inquiry.Status)
