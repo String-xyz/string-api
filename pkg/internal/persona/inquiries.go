@@ -21,12 +21,40 @@ Approved/Declined (Optional)
 These are optional statuses applied by you to execute custom decisioning logic.
 * Expired	- The individual did not complete the inquiry within 24 hours.
 * Failed	- The individual exceeded the allowed number of verification attempts on the inquiry and cannot continue.
-
 */
 
-func (c *PersonaClient) CreateInquiry(payload InquiryPayload) (*Inquiry, error) {
+type InquiryCreate struct {
+	Attributes InquiryCreationAttributes `json:"attributes"`
+}
+
+type InquiryCreateRequest struct {
+	Data InquiryCreate `json:"data"`
+}
+
+type Inquiry struct {
+	Id            string            `json:"id"`
+	Type          string            `json:"type"`
+	Attributes    InquiryAttributes `json:"attributes"`
+	Relationships Relationships     `json:"relationships"`
+}
+
+type InquiryResponse struct {
+	Data     Inquiry    `json:"data"`
+	Included []Included `json:"included"`
+}
+
+type InquiryListItem struct {
+	Data Inquiry `json:"data"`
+}
+
+type ListInquiryResponse struct {
+	Data  []InquiryListItem `json:"data"`
+	Links Link              `json:"links"`
+}
+
+func (c *PersonaClient) CreateInquiry(request InquiryCreateRequest) (*Inquiry, error) {
 	inquiry := &Inquiry{}
-	err := c.doRequest(http.MethodPost, "/v1/inquiries", payload, inquiry)
+	err := c.doRequest(http.MethodPost, "/v1/inquiries", request, inquiry)
 	if err != nil {
 		return nil, common.StringError(err, "failed to create inquiry")
 	}

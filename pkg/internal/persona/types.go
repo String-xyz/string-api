@@ -32,7 +32,7 @@ type Link struct {
 	Next *string `json:"next"`
 }
 
-type PhoneURL struct {
+type PhotoURL struct {
 	Page          *string  `json:"page"`
 	Url           *string  `json:"url"`
 	fileName      *string  `json:"fileName"`
@@ -89,6 +89,21 @@ type Behavior struct {
 	BehaviorThreatLevel    string  `json:"behaviorThreatLevel"`
 }
 
+type AccountField struct {
+	Name                  HashValue  `json:"name"`
+	Address               HashValue  `json:"address"`
+	IdentificationNumbers ArrayValue `json:"identificationNumbers"`
+	Birthdate             Value      `json:"birthdate"`
+	PhoneNumber           Value      `json:"phoneNumber"`
+	EmailAddress          Value      `json:"emailAddress"`
+	SelfiePhoto           Value      `json:"selfiePhoto"`
+}
+
+type InquiryField struct {
+	AddressStreet1 StringValue `json:"addressStreet1"`
+	AddressStreet2 StringValue `json:"addressStreet2"`
+}
+
 type Attribute struct {
 	Status          string     `json:"status"`
 	CreatedAt       time.Time  `json:"createdAt"`
@@ -103,9 +118,54 @@ type Attribute struct {
 	ExpiredAt       *time.Time `json:"expiredAt"`
 }
 
-type InquiryField struct {
-	AddressStreet1 StringValue `json:"addressStreet1"`
-	AddressStreet2 StringValue `json:"addressStreet2"`
+type AccountAttributes struct {
+	Attribute
+	Fields AccountField `json:"fields"`
+}
+
+type CommonFields struct {
+	// City of residence address. Not all international addresses use this attribute.
+	AddresCity string `json:"address-city,omitempty"`
+	// Street name of residence address.
+	AddressStreet1 string `json:"address-street-1,omitempty"`
+	// Extension of residence address, usually apartment or suite number.
+	AddressStreet2 string `json:"address-street-2,omitempty"`
+	// State or subdivision of residence address. In the US,
+	// this should be the unabbreviated name. Not all international addresses use this attribute.
+	AddressSubdivision string `json:"address-subdivision,omitempty"`
+	// Postal code of residence address. Not all international addresses use this attribute.
+	AddressPostalCode string `json:"address-postal-code,omitempty"`
+	// Birthdate, must be in the format "YYYY-MM-DD".
+	Birthdate string `json:"birthdate,omitempty"`
+	// ISO 3166-1 alpha 2 country code of the government ID to be verified. This is generally their country of residence as well.
+	CountryCode string `json:"country-code,omitempty"`
+
+	EmailAddress string `json:"email-address,omitempty"`
+	// Given or first name.
+	NameFirst string `json:"name-first,omitempty"`
+	// Family or last name.
+	NameLast string `json:"name-last,omitempty"`
+
+	NameMiddle string `json:"name-middle,omitempty"`
+
+	PhoneNumber string `json:"phone-number,omitempty"`
+
+	SocialSecurityNumber string `json:"social-security-number,omitempty"`
+}
+
+type InquiryCreationAttributes struct {
+	AccountId                string `json:"account-id"`
+	CountryCode              string `json:"country-code"`
+	InquityTemplateId        string `json:"inquiry-template-id"`
+	InquityTemplateVersionId string `json:"inquiry-template-version-id"`
+	// Template ID for flow requirements (use this field if your template ID starts with tmpl_).
+	// You must pass in either template-id OR inquiry-template-id OR inquiry-template-version-id
+	TemplateId        string `json:"template-id"`
+	TemplateVersionId string `json:"template-version-id"`
+	// for styling
+	ThemeId string `json:"theme-id"`
+
+	Fields CommonFields `json:"fields"`
 }
 
 type InquiryAttributes struct {
@@ -125,7 +185,7 @@ type VerificationAttributes struct {
 	LeftPhotoUrl   *string    `json:"leftPhotoUrl"`
 	RightPhotoUrl  *string    `json:"rightPhotoUrl"`
 	CenterPhotoUrl *string    `json:"centerPhotoUrl"`
-	PhotoUrls      []PhoneURL `json:"photoUrls"`
+	PhotoUrls      []PhotoURL `json:"photoUrls"`
 	Checks         []Check    `json:"checks"`
 	CaptureMethod  string     `json:"captureMethod"`
 }
@@ -135,7 +195,7 @@ type IncludeAttributes struct {
 	SelfiePhoto             *string   `json:"selfiePhoto"`
 	SelfiePhotoUrl          *string   `json:"selfiePhotoUrl"`
 	FrontPhotoUrl           *PhotoURL `json:"frontPhotoUrl"`
-	BackPhotoUrl            *PhoneURL `json:"backPhotoUrl"`
+	BackPhotoUrl            *PhotoURL `json:"backPhotoUrl"`
 	VideoUrl                *string   `json:"videoUrl"`
 	IdClass                 string    `json:"idClass"`
 	CaptureMethod           string    `json:"captureMethod"`
@@ -168,29 +228,11 @@ type IncludeAttributes struct {
 	IdentificationNumber    string    `json:"identificationNumber"`
 }
 
-type AccountField struct {
-	Name                  HashValue  `json:"name"`
-	Address               HashValue  `json:"address"`
-	IdentificationNumbers ArrayValue `json:"identificationNumbers"`
-	Birthdate             Value      `json:"birthdate"`
-	PhoneNumber           Value      `json:"phoneNumber"`
-	EmailAddress          Value      `json:"emailAddress"`
-	SelfiePhoto           Value      `json:"selfiePhoto"`
-}
-
-type Include struct {
+type Included struct {
 	Id            string            `json:"id"`
 	Type          string            `json:"type"`
 	Atrributes    IncludeAttributes `json:"attributes"`
 	Relationships Relationships     `json:"relationships"`
-}
-
-type Inquiry struct {
-	Id             string         `json:"id"`
-	Status         string         `json:"status"`
-	CreatedAt      string         `json:"createdAt"`
-	LastUpdatedAt  string         `json:"lastUpdatedAt"`
-	CompletedSteps CompletedSteps `json:"completedSteps"`
 }
 
 type InquiryPayload struct {
@@ -219,25 +261,5 @@ type IdentityVerificationPayload struct {
 type Verification struct {
 	Id            string                 `json:"id"`
 	Attributes    VerificationAttributes `json:"attributes"`
-	Relationships Relationship           `json:"relationships"`
-}
-
-type Account struct {
-	Type       string    `json:"type"`
-	Id         string    `json:"id"`
-	Attributes Attribute `json:"attributes"`
-}
-
-type AccountResponse struct {
-	Data Account `json:"data"`
-}
-
-type ListAccountResponse struct {
-	Data  []Account `json:"data"`
-	Links Link      `json:"links"`
-}
-
-type ListInquiryResponse struct {
-	Data  []Inquiry `json:"data"`
-	Links Link      `json:"links"`
+	Relationships Relationships          `json:"relationships"`
 }
