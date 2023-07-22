@@ -32,6 +32,12 @@ Check for the following statuses to monitor progress and find completed results.
 
 */
 
+type Verification struct {
+	Id            string                 `json:"id"`
+	Attributes    VerificationAttributes `json:"attributes"`
+	Relationships Relationships          `json:"relationships"`
+}
+
 func (c *PersonaClient) GetVerificationById(id string) (*Verification, error) {
 	verification := &Verification{}
 	err := c.doRequest(http.MethodGet, "/v1/verifications/"+id, nil, verification)

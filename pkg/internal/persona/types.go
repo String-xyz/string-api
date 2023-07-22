@@ -13,8 +13,8 @@ type HashValue struct {
 }
 
 type StringValue struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
+	Type  string  `json:"type"`
+	Value *string `json:"value"`
 }
 
 type ArrayValue struct {
@@ -89,19 +89,19 @@ type Behavior struct {
 	BehaviorThreatLevel    string  `json:"behaviorThreatLevel"`
 }
 
-type AccountField struct {
-	Name                  HashValue  `json:"name"`
-	Address               HashValue  `json:"address"`
-	IdentificationNumbers ArrayValue `json:"identificationNumbers"`
-	Birthdate             Value      `json:"birthdate"`
-	PhoneNumber           Value      `json:"phoneNumber"`
-	EmailAddress          Value      `json:"emailAddress"`
-	SelfiePhoto           Value      `json:"selfiePhoto"`
+type AccountFields struct {
+	Name                  HashValue   `json:"name"`
+	Address               HashValue   `json:"address"`
+	IdentificationNumbers ArrayValue  `json:"identification_numbers"`
+	Birthdate             Value       `json:"birthdate"`
+	PhoneNumber           StringValue `json:"phone_number"`
+	EmailAddress          StringValue `json:"email_address"`
+	SelfiePhoto           Value       `json:"selfie_photo"`
 }
 
-type InquiryField struct {
-	AddressStreet1 StringValue `json:"addressStreet1"`
-	AddressStreet2 StringValue `json:"addressStreet2"`
+type InquiryFields struct {
+	AddressStreet1 string `json:"addressStreet1"`
+	AddressStreet2 string `json:"addressStreet2"`
 }
 
 type Attribute struct {
@@ -120,10 +120,11 @@ type Attribute struct {
 
 type AccountAttributes struct {
 	Attribute
-	Fields AccountField `json:"fields"`
+	Fields AccountFields `json:"fields"`
 }
 
 type CommonFields struct {
+	Attribute
 	// City of residence address. Not all international addresses use this attribute.
 	AddresCity string `json:"address-city,omitempty"`
 	// Street name of residence address.
@@ -153,45 +154,7 @@ type CommonFields struct {
 	SocialSecurityNumber string `json:"social-security-number,omitempty"`
 }
 
-type InquiryCreationAttributes struct {
-	AccountId                string `json:"account-id"`
-	CountryCode              string `json:"country-code"`
-	InquityTemplateId        string `json:"inquiry-template-id"`
-	InquityTemplateVersionId string `json:"inquiry-template-version-id"`
-	// Template ID for flow requirements (use this field if your template ID starts with tmpl_).
-	// You must pass in either template-id OR inquiry-template-id OR inquiry-template-version-id
-	TemplateId        string `json:"template-id"`
-	TemplateVersionId string `json:"template-version-id"`
-	// for styling
-	ThemeId string `json:"theme-id"`
-
-	Fields CommonFields `json:"fields"`
-}
-
-type InquiryAttributes struct {
-	Attribute
-	ReferenceId      *string       `json:"referenceId"`
-	Behaviors        Behavior      `json:"behaviors"`
-	Notes            *string       `json:"notes"`
-	Tags             []interface{} `json:"tags"`
-	PreviousStepName string        `json:"previousStepName"`
-	NextStepName     string        `json:"nextStepName"`
-	Fields           InquiryField  `json:"fields"`
-}
-
-type VerificationAttributes struct {
-	Attribute
-	CountryCode    *string    `json:"countryCode"`
-	LeftPhotoUrl   *string    `json:"leftPhotoUrl"`
-	RightPhotoUrl  *string    `json:"rightPhotoUrl"`
-	CenterPhotoUrl *string    `json:"centerPhotoUrl"`
-	PhotoUrls      []PhotoURL `json:"photoUrls"`
-	Checks         []Check    `json:"checks"`
-	CaptureMethod  string     `json:"captureMethod"`
-}
-
-type IncludeAttributes struct {
-	VerificationAttributes
+type CommonAttributes struct {
 	SelfiePhoto             *string   `json:"selfiePhoto"`
 	SelfiePhotoUrl          *string   `json:"selfiePhotoUrl"`
 	FrontPhotoUrl           *PhotoURL `json:"frontPhotoUrl"`
@@ -228,16 +191,30 @@ type IncludeAttributes struct {
 	IdentificationNumber    string    `json:"identificationNumber"`
 }
 
-type Included struct {
-	Id            string            `json:"id"`
-	Type          string            `json:"type"`
-	Atrributes    IncludeAttributes `json:"attributes"`
-	Relationships Relationships     `json:"relationships"`
+type InquiryCreationAttributes struct {
+	AccountId                string `json:"account-id"`
+	CountryCode              string `json:"country-code"`
+	InquityTemplateId        string `json:"inquiry-template-id"`
+	InquityTemplateVersionId string `json:"inquiry-template-version-id"`
+	// Template ID for flow requirements (use this field if your template ID starts with tmpl_).
+	// You must pass in either template-id OR inquiry-template-id OR inquiry-template-version-id
+	TemplateId        string `json:"template-id"`
+	TemplateVersionId string `json:"template-version-id"`
+	// for styling
+	ThemeId string `json:"theme-id"`
+
+	Fields CommonFields `json:"fields"`
 }
 
-type InquiryPayload struct {
-	AccountId string `json:"accountId"`
-	Template  string `json:"template"`
+type InquiryAttributes struct {
+	Attribute
+	ReferenceId      *string       `json:"referenceId"`
+	Behaviors        Behavior      `json:"behaviors"`
+	Notes            *string       `json:"notes"`
+	Tags             []interface{} `json:"tags"`
+	PreviousStepName string        `json:"previousStepName"`
+	NextStepName     string        `json:"nextStepName"`
+	Fields           InquiryFields `json:"fields"`
 }
 
 type CompletedSteps struct {
@@ -245,21 +222,25 @@ type CompletedSteps struct {
 	Status string `json:"status"`
 }
 
-type IdentityVerification struct {
-	Id             string         `json:"id"`
-	Status         string         `json:"status"`
-	CreatedAt      string         `json:"createdAt"`
-	LastUpdatedAt  string         `json:"lastUpdatedAt"`
-	CompletedSteps CompletedSteps `json:"completedSteps"`
+type VerificationAttributes struct {
+	CommonAttributes
+	CountryCode    *string    `json:"countryCode"`
+	LeftPhotoUrl   *string    `json:"leftPhotoUrl"`
+	RightPhotoUrl  *string    `json:"rightPhotoUrl"`
+	CenterPhotoUrl *string    `json:"centerPhotoUrl"`
+	PhotoUrls      []PhotoURL `json:"photoUrls"`
+	Checks         []Check    `json:"checks"`
+	CaptureMethod  string     `json:"captureMethod"`
 }
 
-type IdentityVerificationPayload struct {
-	AccountId string `json:"accountId"`
-	Template  string `json:"template"`
+type IncludeAttributes struct {
+	VerificationAttributes
+	CommonAttributes
 }
 
-type Verification struct {
-	Id            string                 `json:"id"`
-	Attributes    VerificationAttributes `json:"attributes"`
-	Relationships Relationships          `json:"relationships"`
+type Included struct {
+	Id            string            `json:"id"`
+	Type          string            `json:"type"`
+	Atrributes    IncludeAttributes `json:"attributes"`
+	Relationships Relationships     `json:"relationships"`
 }
