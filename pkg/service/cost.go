@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"math"
 	"math/big"
@@ -13,6 +15,7 @@ import (
 	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
 )
@@ -81,10 +84,11 @@ type Cost interface {
 
 type cost struct {
 	redis              database.RedisStore // cached token and gas costs
+	repos              repository.Repositories
 	subnetTokenProxies map[CoinKey]CoinKey
 }
 
-func NewCost(redis database.RedisStore) Cost {
+func NewCost(redis database.RedisStore, repos repository.Repositories) Cost {
 	// Temporarily hard-coding this to reduce future cost-of-change with database
 	subnetTokenProxies := map[CoinKey]CoinKey{
 		// USDc DFK Subnet -> USDc Avalanche:
@@ -94,6 +98,7 @@ func NewCost(redis database.RedisStore) Cost {
 	}
 	return &cost{
 		redis:              redis,
+		repos:              repos,
 		subnetTokenProxies: subnetTokenProxies,
 	}
 }
@@ -116,6 +121,42 @@ func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error)
 		}
 	}
 	return idToPlatform, platformToId, nil
+}
+
+func GetCoingeckoCoinData(id string) (CoingeckoCoin, error) {
+	var coin CoingeckoCoin
+	err := common.GetJsonGeneric( /*config.Var.COINGECKO_API_URL+"coins/"*/ "https://api.coingecko.com/api/v3/coins/"+id+"?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false", &coin)
+	if err != nil {
+		return coin, libcommon.StringError(err)
+	}
+	fmt.Printf("coin: %+v\n", coin)
+	return coin, nil
+}
+
+func (c cost) AddCoinToAssetTable(id string) error {
+	coinData, err := GetCoingeckoCoinData(id)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+	_, err = c.repos.Asset.GetByName(context.Background(), coinData.Name)
+	if err != nil && err == serror.NOT_FOUND {
+		// add it to the asset table
+		_, err := c.repos.Asset.Create(context.Background(), model.Asset{
+			Name:        coinData.Symbol, // Name in our database is the symbol
+			Description: coinData.Name,   // Description in our database is the name, note: coingecko provides an actual description
+			Decimals:    18,              // TODO: Get this from coinData - it's listed per network.  Decimals only affects display.
+			IsCrypto:    true,
+			ValueOracle: sql.NullString{String: id, Valid: true},
+			// Why is network_id missing from Asset entity?
+			// TODO: Get second oracle data using data from first oracle
+		})
+		if err != nil {
+			return libcommon.StringError(err)
+		}
+	} else if err != nil {
+		return libcommon.StringError(err)
+	}
+	return nil
 }
 
 func GetCoingeckoCoinMapping() (map[string]string, error) {
@@ -243,6 +284,9 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		if !ok {
 			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
 		}
+
+		// Check if the token is in our database and add it if it's not in there
+
 		tokenCost, err := c.LookupUSD(costTokenEth, tokenName)
 		if err != nil {
 			return estimate, libcommon.StringError(err)

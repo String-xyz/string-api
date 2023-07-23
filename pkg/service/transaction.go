@@ -655,7 +655,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	if err != nil {
 		return res, eth, CallEstimate{}, libcommon.StringError(err)
 	}
-	cost := NewCost(t.redis)
+	cost := NewCost(t.redis, t.repos)
 	estimationParams := EstimationParams{
 		ChainId:    chainId,
 		CostETH:    estimateEVM.Value,
@@ -860,7 +860,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	_, finish := Span(ctx, "service.transaction.tenderTransaction", SpanTag{"platformId": p.platformId})
 	defer finish()
 
-	cost := NewCost(t.redis)
+	cost := NewCost(t.redis, t.repos)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
 	trueUSD, err := cost.LookupUSD(trueEth, p.chain.CoingeckoName, p.chain.CoincapName)
