@@ -92,16 +92,16 @@ type Behavior struct {
 type AccountFields struct {
 	Name                  HashValue   `json:"name"`
 	Address               HashValue   `json:"address"`
-	IdentificationNumbers ArrayValue  `json:"identification_numbers"`
+	IdentificationNumbers ArrayValue  `json:"identificationNumbers"`
 	Birthdate             Value       `json:"birthdate"`
-	PhoneNumber           StringValue `json:"phone_number"`
-	EmailAddress          StringValue `json:"email_address"`
-	SelfiePhoto           Value       `json:"selfie_photo"`
+	PhoneNumber           StringValue `json:"phoneNumber"`
+	EmailAddress          StringValue `json:"emailAddress"`
+	SelfiePhoto           Value       `json:"selfiePhoto"`
 }
 
 type InquiryFields struct {
-	AddressStreet1 string `json:"addressStreet1"`
-	AddressStreet2 string `json:"addressStreet2"`
+	AddressStreet1 StringValue `json:"addressStreet1"`
+	AddressStreet2 StringValue `json:"addressStreet2"`
 }
 
 type Attribute struct {
@@ -126,82 +126,82 @@ type AccountAttributes struct {
 type CommonFields struct {
 	Attribute
 	// City of residence address. Not all international addresses use this attribute.
-	AddresCity string `json:"address-city,omitempty"`
+	AddresCity string `json:"addressCity,omitempty"`
 	// Street name of residence address.
-	AddressStreet1 string `json:"address-street-1,omitempty"`
+	AddressStreet1 string `json:"addressStreet1,omitempty"`
 	// Extension of residence address, usually apartment or suite number.
-	AddressStreet2 string `json:"address-street-2,omitempty"`
+	AddressStreet2 string `json:"addressStreet2,omitempty"`
 	// State or subdivision of residence address. In the US,
 	// this should be the unabbreviated name. Not all international addresses use this attribute.
-	AddressSubdivision string `json:"address-subdivision,omitempty"`
+	AddressSubdivision string `json:"addressSubdivision,omitempty"`
 	// Postal code of residence address. Not all international addresses use this attribute.
-	AddressPostalCode string `json:"address-postal-code,omitempty"`
+	AddressPostalCode string `json:"addressPostalCode,omitempty"`
 	// Birthdate, must be in the format "YYYY-MM-DD".
 	Birthdate string `json:"birthdate,omitempty"`
 	// ISO 3166-1 alpha 2 country code of the government ID to be verified. This is generally their country of residence as well.
-	CountryCode string `json:"country-code,omitempty"`
+	CountryCode string `json:"countryCode,omitempty"`
 
-	EmailAddress string `json:"email-address,omitempty"`
+	EmailAddress string `json:"emailAddress,omitempty"`
 	// Given or first name.
-	NameFirst string `json:"name-first,omitempty"`
+	NameFirst string `json:"nameFirst,omitempty"`
 	// Family or last name.
-	NameLast string `json:"name-last,omitempty"`
+	NameLast string `json:"nameLast,omitempty"`
 
-	NameMiddle string `json:"name-middle,omitempty"`
+	NameMiddle string `json:"nameMiddle,omitempty"`
 
-	PhoneNumber string `json:"phone-number,omitempty"`
+	PhoneNumber string `json:"phoneNumber,omitempty"`
 
-	SocialSecurityNumber string `json:"social-security-number,omitempty"`
+	SocialSecurityNumber string `json:"socialSecurityNumber,omitempty"`
 }
 
 type CommonAttributes struct {
-	SelfiePhoto             *string   `json:"selfiePhoto"`
-	SelfiePhotoUrl          *string   `json:"selfiePhotoUrl"`
-	FrontPhotoUrl           *PhotoURL `json:"frontPhotoUrl"`
-	BackPhotoUrl            *PhotoURL `json:"backPhotoUrl"`
-	VideoUrl                *string   `json:"videoUrl"`
-	IdClass                 string    `json:"idClass"`
-	CaptureMethod           string    `json:"captureMethod"`
-	EntityConfidenceScore   int       `json:"entityConfidenceScore"`
-	EntityConfidenceReasons []string  `json:"entityConfidenceReasons"`
-	NameFirst               string    `json:"nameFirst"`
-	NameMiddle              *string   `json:"nameMiddle"`
-	NameLast                string    `json:"nameLast"`
-	NameSuffix              *string   `json:"nameSuffix"`
-	Birthdate               string    `json:"birthdate"`
-	AddressStreet1          string    `json:"addressStreet1"`
-	AddressStreet2          *string   `json:"addressStreet2"`
-	AddressCity             string    `json:"addressCity"`
-	AddressSubdivision      string    `json:"addressSubdivision"`
-	AddressPostalCode       string    `json:"addressPostalCode"`
-	IssuingAuthority        string    `json:"issuingAuthority"`
-	IssuingSubdivision      string    `json:"issuingSubdivision"`
-	Nationality             *string   `json:"nationality"`
-	DocumentNumber          *string   `json:"documentNumber"`
-	VisaStatus              *string   `json:"visaStatus"`
-	IssueDate               string    `json:"issueDate"`
-	ExpirationDate          string    `json:"expirationDate"`
-	Designations            *string   `json:"designations"`
-	Birthplace              *string   `json:"birthplace"`
-	Endorsements            *string   `json:"endorsements"`
-	Height                  *string   `json:"height"`
-	Sex                     string    `json:"sex"`
-	Restrictions            *string   `json:"restrictions"`
-	VehicleClass            *string   `json:"vehicleClass"`
-	IdentificationNumber    string    `json:"identificationNumber"`
+	SelfiePhoto             *string  `json:"selfiePhoto"`
+	SelfiePhotoUrl          *string  `json:"selfiePhotoUrl"`
+	FrontPhotoUrl           *string  `json:"frontPhotoUrl"`
+	BackPhotoUrl            *string  `json:"backPhotoUrl"`
+	VideoUrl                *string  `json:"videoUrl"`
+	IdClass                 string   `json:"idClass"`
+	CaptureMethod           string   `json:"captureMethod"`
+	EntityConfidenceScore   float64  `json:"entityConfidenceScore"`
+	EntityConfidenceReasons []string `json:"entityConfidenceReasons"`
+	NameFirst               string   `json:"nameFirst"`
+	NameMiddle              *string  `json:"nameMiddle"`
+	NameLast                string   `json:"nameLast"`
+	NameSuffix              *string  `json:"nameSuffix"`
+	Birthdate               string   `json:"birthdate"`
+	AddressStreet1          string   `json:"addressStreet1"`
+	AddressStreet2          *string  `json:"addressStreet2"`
+	AddressCity             string   `json:"addressCity"`
+	AddressSubdivision      string   `json:"addressSubdivision"`
+	AddressPostalCode       string   `json:"addressPostalCode"`
+	IssuingAuthority        string   `json:"issuingAuthority"`
+	IssuingSubdivision      string   `json:"issuingSubdivision"`
+	Nationality             *string  `json:"nationality"`
+	DocumentNumber          *string  `json:"documentNumber"`
+	VisaStatus              *string  `json:"visaStatus"`
+	IssueDate               string   `json:"issueDate"`
+	ExpirationDate          string   `json:"expirationDate"`
+	Designations            *string  `json:"designations"`
+	Birthplace              *string  `json:"birthplace"`
+	Endorsements            *string  `json:"endorsements"`
+	Height                  *string  `json:"height"`
+	Sex                     string   `json:"sex"`
+	Restrictions            *string  `json:"restrictions"`
+	VehicleClass            *string  `json:"vehicleClass"`
+	IdentificationNumber    string   `json:"identificationNumber"`
 }
 
 type InquiryCreationAttributes struct {
-	AccountId                string `json:"account-id"`
-	CountryCode              string `json:"country-code"`
-	InquityTemplateId        string `json:"inquiry-template-id"`
-	InquityTemplateVersionId string `json:"inquiry-template-version-id"`
+	AccountId                string `json:"accountId"`
+	CountryCode              string `json:"countryCode"`
+	InquityTemplateId        string `json:"inquiryTemplateId"`
+	InquityTemplateVersionId string `json:"inquiryTemplateVersionId"`
 	// Template ID for flow requirements (use this field if your template ID starts with tmpl_).
 	// You must pass in either template-id OR inquiry-template-id OR inquiry-template-version-id
-	TemplateId        string `json:"template-id"`
-	TemplateVersionId string `json:"template-version-id"`
+	TemplateId        string `json:"templateId"`
+	TemplateVersionId string `json:"templateVersionId"`
 	// for styling
-	ThemeId string `json:"theme-id"`
+	ThemeId string `json:"themeId"`
 
 	Fields CommonFields `json:"fields"`
 }
@@ -223,6 +223,7 @@ type CompletedSteps struct {
 }
 
 type VerificationAttributes struct {
+	Attribute
 	CommonAttributes
 	CountryCode    *string    `json:"countryCode"`
 	LeftPhotoUrl   *string    `json:"leftPhotoUrl"`
@@ -233,14 +234,9 @@ type VerificationAttributes struct {
 	CaptureMethod  string     `json:"captureMethod"`
 }
 
-type IncludeAttributes struct {
-	VerificationAttributes
-	CommonAttributes
-}
-
 type Included struct {
-	Id            string            `json:"id"`
-	Type          string            `json:"type"`
-	Atrributes    IncludeAttributes `json:"attributes"`
-	Relationships Relationships     `json:"relationships"`
+	Id            string                 `json:"id"`
+	Type          string                 `json:"type"`
+	Atrributes    VerificationAttributes `json:"attributes"`
+	Relationships Relationships          `json:"relationships"`
 }

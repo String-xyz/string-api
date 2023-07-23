@@ -43,17 +43,13 @@ type InquiryResponse struct {
 	Included []Included `json:"included"`
 }
 
-type InquiryListItem struct {
-	Data Inquiry `json:"data"`
-}
-
 type ListInquiryResponse struct {
-	Data  []InquiryListItem `json:"data"`
-	Links Link              `json:"links"`
+	Data  []Inquiry `json:"data"`
+	Links Link      `json:"links"`
 }
 
-func (c *PersonaClient) CreateInquiry(request InquiryCreateRequest) (*Inquiry, error) {
-	inquiry := &Inquiry{}
+func (c *PersonaClient) CreateInquiry(request InquiryCreateRequest) (*InquiryResponse, error) {
+	inquiry := &InquiryResponse{}
 	err := c.doRequest(http.MethodPost, "/v1/inquiries", request, inquiry)
 	if err != nil {
 		return nil, common.StringError(err, "failed to create inquiry")
@@ -61,8 +57,8 @@ func (c *PersonaClient) CreateInquiry(request InquiryCreateRequest) (*Inquiry, e
 	return inquiry, nil
 }
 
-func (c *PersonaClient) GetInquiryById(id string) (*Inquiry, error) {
-	inquiry := &Inquiry{}
+func (c *PersonaClient) GetInquiryById(id string) (*InquiryResponse, error) {
+	inquiry := &InquiryResponse{}
 	err := c.doRequest(http.MethodGet, "/v1/inquiries/"+id, nil, inquiry)
 	if err != nil {
 		return nil, common.StringError(err, "failed to get inquiry")
