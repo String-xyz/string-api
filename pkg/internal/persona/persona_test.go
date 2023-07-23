@@ -36,8 +36,13 @@ func TestDoRequest(t *testing.T) {
 }
 
 func TestGetVerificationById(t *testing.T) {
-	testServer := testServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte(`[{"id":"test-verification"}]`))
+	testServer := testServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		verification := &VerificationResponse{Data: Verification{
+			Id:   "test-id",
+			Type: "verification",
+		}}
+
+		json.NewEncoder(w).Encode(verification)
 	}))
 	defer func() { testServer.Close() }()
 

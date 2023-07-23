@@ -34,6 +34,7 @@ Check for the following statuses to monitor progress and find completed results.
 
 type Verification struct {
 	Id            string                 `json:"id"`
+	Type          string                 `json:"type"`
 	Attributes    VerificationAttributes `json:"attributes"`
 	Relationships Relationships          `json:"relationships"`
 }
