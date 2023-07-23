@@ -38,8 +38,12 @@ type Verification struct {
 	Relationships Relationships          `json:"relationships"`
 }
 
-func (c *PersonaClient) GetVerificationById(id string) (*Verification, error) {
-	verification := &Verification{}
+type VerificationResponse struct {
+	Data Verification `json:"data"`
+}
+
+func (c *PersonaClient) GetVerificationById(id string) (*VerificationResponse, error) {
+	verification := &VerificationResponse{}
 	err := c.doRequest(http.MethodGet, "/v1/verifications/"+id, nil, verification)
 	if err != nil {
 		return nil, common.StringError(err, "failed to get verification by id")

@@ -64,6 +64,5 @@ func (c *PersonaClient) doRequest(method, url string, payload, result interface{
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
 	}
-
 	return nil
 }
