@@ -35,6 +35,33 @@ func TestDoRequest(t *testing.T) {
 	}
 }
 
+func TestCreateAccount(t *testing.T) {
+	testServer := testServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1/accounts", r.URL.String())
+		assert.Equal(t, http.MethodPost, r.Method)
+
+		var payload AccountCreateRequest
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		assert.NoError(t, err)
+		assert.Equal(t, "Testable", payload.Data.Attributes.NameFirst)
+		assert.Equal(t, "Testerson", payload.Data.Attributes.NameLast)
+
+		account := &AccountResponse{Data: Account{
+			Id:   "test-id",
+			Type: "account",
+		}}
+
+		json.NewEncoder(w).Encode(account)
+	}))
+	defer func() { testServer.Close() }()
+	c := New("test-key")
+	c.BaseURL = testServer.URL
+	v, err := c.CreateAccount(AccountCreateRequest{Data: AccountCreate{Attributes: CommonFields{NameFirst: "Testable", NameLast: "Testerson"}}})
+	assert.NoError(t, err)
+	assert.NotNil(t, v)
+	assert.Equal(t, "test-id", v.Data.Id)
+}
+
 func TestGetVerificationById(t *testing.T) {
 	testServer := testServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		verification := &VerificationResponse{Data: Verification{
