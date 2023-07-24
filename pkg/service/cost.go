@@ -80,6 +80,7 @@ type CostCache struct {
 type Cost interface {
 	EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error)
 	LookupUSD(quantity float64, coins ...string) (float64, error)
+	AddCoinToAssetTable(id string, networkId string, address string) error
 }
 
 type cost struct {
@@ -125,29 +126,29 @@ func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error)
 
 func GetCoingeckoCoinData(id string) (CoingeckoCoin, error) {
 	var coin CoingeckoCoin
-	err := common.GetJsonGeneric( /*config.Var.COINGECKO_API_URL+"coins/"*/ "https://api.coingecko.com/api/v3/coins/"+id+"?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false", &coin)
+	err := common.GetJsonGeneric("https://api.coingecko.com/api/v3/coins/"+id+"?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false", &coin)
 	if err != nil {
 		return coin, libcommon.StringError(err)
 	}
-	fmt.Printf("coin: %+v\n", coin)
 	return coin, nil
 }
 
-func (c cost) AddCoinToAssetTable(id string) error {
+func (c cost) AddCoinToAssetTable(id string, networkId string, address string) error {
 	coinData, err := GetCoingeckoCoinData(id)
 	if err != nil {
 		return libcommon.StringError(err)
 	}
-	_, err = c.repos.Asset.GetByName(context.Background(), coinData.Name)
+	_, err = c.repos.Asset.GetByKey(context.Background(), networkId, address)
 	if err != nil && err == serror.NOT_FOUND {
 		// add it to the asset table
 		_, err := c.repos.Asset.Create(context.Background(), model.Asset{
-			Name:        coinData.Symbol, // Name in our database is the symbol
-			Description: coinData.Name,   // Description in our database is the name, note: coingecko provides an actual description
+			Name:        coinData.Symbol, // Name in our database is the Symbol
+			Description: coinData.Name,   // Description in our database is the Name, note: coingecko provides an actual description
 			Decimals:    18,              // TODO: Get this from coinData - it's listed per network.  Decimals only affects display.
 			IsCrypto:    true,
 			ValueOracle: sql.NullString{String: id, Valid: true},
-			// Why is network_id missing from Asset entity?
+			NetworkId:   networkId,
+			Address:     sql.NullString{String: address, Valid: true},
 			// TODO: Get second oracle data using data from first oracle
 		})
 		if err != nil {
@@ -156,6 +157,8 @@ func (c cost) AddCoinToAssetTable(id string) error {
 	} else if err != nil {
 		return libcommon.StringError(err)
 	}
+	// Check if we are on a new chain
+
 	return nil
 }
 
@@ -286,6 +289,10 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate mod
 		}
 
 		// Check if the token is in our database and add it if it's not in there
+		err = c.AddCoinToAssetTable(tokenName, chain.UUID, p.TokenAddrs[i])
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
 
 		tokenCost, err := c.LookupUSD(costTokenEth, tokenName)
 		if err != nil {

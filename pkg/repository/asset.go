@@ -17,6 +17,7 @@ type Asset interface {
 	Create(ctx context.Context, m model.Asset) (model.Asset, error)
 	GetById(ctx context.Context, id string) (model.Asset, error)
 	GetByName(ctx context.Context, name string) (model.Asset, error)
+	GetByKey(ctx context.Context, networkId string, address string) (model.Asset, error)
 	Update(ctx context.Context, Id string, updates any) error
 }
 
@@ -32,16 +33,8 @@ func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, 
 	m := model.Asset{}
 
 	query, args, err := a.Named(`
-		WITH insert_asset AS (
-			INSERT INTO asset (name, description, decimals, is_crypto, value_oracle, value_oracle_2) 
-			VALUES(:name, :description, :decimals, :is_crypto, :value_oracle, :value_oracle_2) 
-			ON CONFLICT (name) DO NOTHING
-			RETURNING *
-		)
-		INSERT INTO asset_to_network (asset_id, network_id)
-		VALUES(insert_asset.id, :network_id)
-		ON CONFLICT (asset_id, network_id) DO NOTHING
-	`, insert)
+		INSERT INTO asset (name, description, decimals, is_crypto, network_id, value_oracle, value_oracle_2, address) 
+		VALUES(:name, :description, :decimals, :is_crypto, :network_id, :value_oracle, :value_oracle_2, :address) RETURNING *`, insert)
 
 	if err != nil {
 		return m, libcommon.StringError(err)
@@ -59,6 +52,15 @@ func (a asset[T]) Create(ctx context.Context, insert model.Asset) (model.Asset, 
 func (a asset[T]) GetByName(ctx context.Context, name string) (model.Asset, error) {
 	m := model.Asset{}
 	err := a.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE name = $1", a.Table), name)
+	if err != nil && err == sql.ErrNoRows {
+		return m, serror.NOT_FOUND
+	}
+	return m, nil
+}
+
+func (a asset[T]) GetByKey(ctx context.Context, networkId string, address string) (model.Asset, error) {
+	m := model.Asset{}
+	err := a.Store.GetContext(ctx, &m, fmt.Sprintf("SELECT * FROM %s WHERE network_id = $1 AND address = $2", a.Table), networkId, address)
 	if err != nil && err == sql.ErrNoRows {
 		return m, serror.NOT_FOUND
 	}
