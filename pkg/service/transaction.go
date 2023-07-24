@@ -638,7 +638,7 @@ func (t transaction) testTransaction(executor Executor, request model.Transactio
 	tokenAddresses := []string{}
 	tokenAmounts := []big.Int{}
 	for _, action := range request.Actions {
-		if strings.ToLower(strings.ReplaceAll(action.CxFunc, " ", "")) == "approve(address,uint256)" {
+		if common.StringContainsAny(action.CxFunc, []string{"approve", "transfer"}) {
 			tokenAddresses = append(tokenAddresses, action.CxAddr)
 			// It should be safe at this point to w3.I without panic
 			tokenAmounts = append(tokenAmounts, *w3.I(action.CxParams[1]))
