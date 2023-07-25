@@ -65,8 +65,10 @@ type Asset struct {
 	Description  string         `json:"description" db:"description"`
 	Decimals     uint64         `json:"decimals" db:"decimals"`
 	IsCrypto     bool           `json:"isCrypto" db:"is_crypto"`
+	NetworkId    string         `json:"networkId" db:"network_id"`
 	ValueOracle  sql.NullString `json:"valueOracle" db:"value_oracle"`
 	ValueOracle2 sql.NullString `json:"valueOracle2" db:"value_oracle_2"`
+	Address      sql.NullString `json:"address" db:"address"`
 }
 
 type UserToPlatform struct {
