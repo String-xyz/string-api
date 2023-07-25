@@ -45,7 +45,7 @@ func TestIntegrationListAccounts(t *testing.T) {
 }
 
 func TestIntegrationCreateInquiry(t *testing.T) {
-	request := InquiryCreateRequest{InquiryCreate{Attributes: InquiryCreationAttributes{AccountId: "act_sx5fkrKCzoAaddKYBhWckcE6"}}}
+	request := InquiryCreateRequest{InquiryCreate{Attributes: InquiryCreationAttributes{AccountId: "act_ndJNqdhWNi44S4Twf4bqzod1", InquityTemplateId: "itmpl_z2so7W2bCFHELp2dhxqqQjGy"}}}
 	inquiry, err := client().CreateInquiry(request)
 	assert.NoError(t, err)
 	assert.NotNil(t, inquiry)

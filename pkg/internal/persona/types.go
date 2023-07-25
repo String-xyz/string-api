@@ -203,7 +203,7 @@ type InquiryCreationAttributes struct {
 	// for styling
 	ThemeId string `json:"themeId"`
 
-	Fields CommonFields `json:"fields"`
+	Fields *CommonFields `json:"fields"`
 }
 
 type InquiryAttributes struct {
