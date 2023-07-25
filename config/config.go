@@ -50,6 +50,7 @@ type vars struct {
 	RECEIPTS_EMAIL_ADDRESS   string `required:"true"`
 	WEBHOOK_SECRET_KEY       string `required:"true"`
 	SLACK_WEBHOOK_URL        string `required:"true"`
+	PERSONA_API_KEY          string `required:"true"`
 }
 
 var Var vars
