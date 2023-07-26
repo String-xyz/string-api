@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -81,4 +82,12 @@ func StringContainsAny(target string, substrs []string) bool {
 		}
 	}
 	return false
+}
+
+func StringifyBigIntArray(arr []*big.Int) string {
+	strArr := []string{}
+	for _, elem := range arr {
+		strArr = append(strArr, elem.String())
+	}
+	return strings.Join(strArr, ",")
 }
