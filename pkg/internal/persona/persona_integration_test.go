@@ -5,12 +5,10 @@ package persona
 
 import (
 	"fmt"
-	"testing"
-
 	env "github.com/String-xyz/go-lib/v2/config"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/String-xyz/string-api/config"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func init() {
