@@ -53,6 +53,8 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 
 	card := service.NewCard(repos)
 
+	kyc := service.NewKYC(repos)
+
 	return service.Services{
 		Auth:         auth,
 		Cost:         cost,
@@ -63,5 +65,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Verification: verification,
 		Device:       device,
 		Card:         card,
+		KYC:          kyc,
 	}
 }

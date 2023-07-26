@@ -78,7 +78,7 @@ type UserUpdates struct {
 }
 
 type IdentityUpdates struct {
-	Level            *string    `json:"level" db:"level"`
+	Level            *int       `json:"level" db:"level"`
 	AccountId        *string    `json:"accountId" db:"account_id"`
 	UserId           *string    `json:"userId" db:"user_id"`
 	EmailVerified    *time.Time `json:"emailVerified,omitempty" db:"email_verified"`

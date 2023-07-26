@@ -15,4 +15,5 @@ type Services struct {
 	Unit21       Unit21
 	Card         Card
 	Webhook      Webhook
+	KYC          KYC
 }

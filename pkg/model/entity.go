@@ -26,7 +26,7 @@ type User struct {
 
 type Identity struct {
 	Id               string     `json:"id,omitempty" db:"id"`
-	Level            string     `json:"level" db:"level"`
+	Level            int        `json:"level" db:"level"`
 	AccountId        string     `json:"accountId" db:"account_id"`
 	UserId           string     `json:"userId" db:"user_id"`
 	CreatedAt        time.Time  `json:"createdAt,omitempty" db:"created_at"`
