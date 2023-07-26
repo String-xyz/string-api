@@ -124,6 +124,9 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 		return resp, libcommon.StringError(err)
 	}
 
+	// Create a user identity for KYC
+	go u.repos.Identity.Create(ctx, model.Identity{UserId: user.Id})
+
 	if device.Fingerprint != "" {
 		// validate that device on user creation
 		now := time.Now()
