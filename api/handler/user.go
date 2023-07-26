@@ -21,6 +21,7 @@ type User interface {
 	PreviewEmail(c echo.Context) error
 	VerifyEmail(c echo.Context) error
 	PreValidateEmail(c echo.Context) error
+	GetPersonaAccountId(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 	RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
@@ -367,6 +368,30 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "validated"})
 }
 
+// @Summary Get user persona account id
+// @Description Get user persona account id
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} string
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /users/persona-account-id [get]
+func (u user) GetPersonaAccountId(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	userId := c.Get("userId")
+
+	identity, err := u.userService.GetPersonaAccountId(ctx, userId)
+	if err != nil {
+		return httperror.Internal500(c)
+	}
+	return c.JSON(http.StatusOK, identity.Data.Id)
+}
+
 // @Summary Get user email preview
 // @Description Get obscured user email
 // @Tags Users
@@ -428,6 +453,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.POST("/preview-email", u.PreviewEmail, ms[0])
 	g.POST("/verify-device", u.RequestDeviceVerification, ms[0])
 	g.POST("/device-status", u.GetDeviceStatus, ms[0])
+
 	// the rest of the endpoints use the JWT auth and do not require an API Key
 	// hence removing the first (API key) middleware
 	ms = ms[1:]

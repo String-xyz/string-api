@@ -24,6 +24,20 @@ type User struct {
 	Email      string     `json:"email"`
 }
 
+type Identity struct {
+	Id               string     `json:"id,omitempty" db:"id"`
+	Level            string     `json:"level" db:"level"`
+	AccountId        string     `json:"accountId" db:"account_id"`
+	UserId           string     `json:"userId" db:"user_id"`
+	CreatedAt        time.Time  `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt        time.Time  `json:"updatedAt,omitempty" db:"updated_at"`
+	DeletedAt        *time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	EmailVerified    *time.Time `json:"emailVerified,omitempty" db:"email_verified"`
+	PhoneVerified    *time.Time `json:"phoneVerified,omitempty" db:"phone_verified"`
+	SelfieVerified   *time.Time `json:"selfieVerified,omitempty" db:"selfie_verified"`
+	DocumentVerified *time.Time `json:"documentVerified,omitempty" db:"document_verified"`
+}
+
 type UserWithContact struct {
 	User
 	Email string `db:"email"`

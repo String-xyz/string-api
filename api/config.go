@@ -23,6 +23,7 @@ func NewRepos(config APIConfig) repository.Repositories {
 		TxLeg:       repository.NewTxLeg(config.DB),
 		Location:    repository.NewLocation(config.DB),
 		Platform:    repository.NewPlatform(config.DB),
+		Identity:    repository.NewIdentity(config.DB),
 	}
 }
 
@@ -49,6 +50,7 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 
 	transaction := service.NewTransaction(repos, config.Redis, unit21)
 	user := service.NewUser(repos, auth, fingerprint, device, unit21, verification)
+	identity := service.NewIdentity(repos)
 
 	card := service.NewCard(repos)
 
@@ -59,6 +61,7 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Geofencing:   geofencing,
 		Transaction:  transaction,
 		User:         user,
+		Identity:     identity,
 		Verification: verification,
 		Device:       device,
 		Card:         card,
