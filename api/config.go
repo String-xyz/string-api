@@ -50,7 +50,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 
 	transaction := service.NewTransaction(repos, config.Redis, unit21)
 	user := service.NewUser(repos, auth, fingerprint, device, unit21, verification)
-	identity := service.NewIdentity(repos)
 
 	card := service.NewCard(repos)
 
@@ -61,7 +60,6 @@ func NewServices(config APIConfig, repos repository.Repositories) service.Servic
 		Geofencing:   geofencing,
 		Transaction:  transaction,
 		User:         user,
-		Identity:     identity,
 		Verification: verification,
 		Device:       device,
 		Card:         card,

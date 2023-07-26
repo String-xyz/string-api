@@ -383,13 +383,16 @@ func (u user) PreValidateEmail(c echo.Context) error {
 func (u user) GetPersonaAccountId(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	userId := c.Get("userId")
+	userId, ok := c.Get("userId").(string)
+	if !ok {
+		return httperror.Internal500(c, "missing or invalid userId")
+	}
 
-	identity, err := u.userService.GetPersonaAccountId(ctx, userId)
+	accountId, err := u.userService.GetPersonaAccountId(ctx, userId)
 	if err != nil {
 		return httperror.Internal500(c)
 	}
-	return c.JSON(http.StatusOK, identity.Data.Id)
+	return c.JSON(http.StatusOK, accountId)
 }
 
 // @Summary Get user email preview

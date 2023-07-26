@@ -37,7 +37,7 @@ func (i identity[T]) Create(ctx context.Context, insert model.Identity) (identit
 		return identity, libcommon.StringError(err)
 	}
 
-	err = i.Store.QueryRowxContext(ctx, query, args...).StructScan(&m)
+	err = i.Store.QueryRowxContext(ctx, query, args...).StructScan(&identity)
 	if err != nil {
 		return identity, libcommon.StringError(err)
 	}
