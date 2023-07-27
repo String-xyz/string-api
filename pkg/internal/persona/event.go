@@ -11,11 +11,11 @@ import (
 type EventType string
 
 const (
-	EventTypeAccountCreate       = EventType("account.created")
-	EventTypeInquiryCreate       = EventType("inquiry.created")
+	EventTypeAccountCreated      = EventType("account.created")
+	EventTypeInquiryCreated      = EventType("inquiry.created")
 	EventTypeInquiryStarted      = EventType("inquiry.started")
 	EventTypeInquiryCompleted    = EventType("inquiry.completed")
-	EventyTypeVerificationCreate = EventType("verification.create")
+	EventTypeVerificationCreated = EventType("verification.created")
 	EventTypeVerificationPassed  = EventType("verification.passed")
 	EventTypeVerificationFailed  = EventType("verification.failed")
 )
@@ -47,21 +47,21 @@ func (a EventAttributes) GetType() EventType {
 
 func (a EventAttributes) GetPayloadData() (PayloadData, error) {
 	switch a.GetType() {
-	case EventTypeAccountCreate:
+	case EventTypeAccountCreated:
 		var data Account
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {
 			return nil, common.StringError(err)
 		}
 		return data, nil
-	case EventTypeInquiryCreate, EventTypeInquiryStarted, EventTypeInquiryCompleted:
+	case EventTypeInquiryCreated, EventTypeInquiryStarted, EventTypeInquiryCompleted:
 		var data Inquiry
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {
 			return nil, common.StringError(err)
 		}
 		return data, nil
-	case EventyTypeVerificationCreate, EventTypeVerificationPassed, EventTypeVerificationFailed:
+	case EventTypeVerificationCreated, EventTypeVerificationPassed, EventTypeVerificationFailed:
 		var data Verification
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {

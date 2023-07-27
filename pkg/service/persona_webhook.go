@@ -28,11 +28,11 @@ func (p personaWebhook) processEvent(ctx context.Context, event persona.Event) e
 		return common.StringError(errors.Newf("error getting payload data: %v", err))
 	}
 	switch event.Attributes.Name {
-	case persona.EventTypeAccountCreate:
+	case persona.EventTypeAccountCreated:
 		return p.account(ctx, payload, event.Attributes.Name)
-	case persona.EventTypeInquiryCreate, persona.EventTypeInquiryStarted, persona.EventTypeInquiryCompleted:
+	case persona.EventTypeInquiryCreated, persona.EventTypeInquiryStarted, persona.EventTypeInquiryCompleted:
 		return p.inquiry(ctx, payload, event.Attributes.Name)
-	case persona.EventyTypeVerificationCreate, persona.EventTypeVerificationPassed, persona.EventTypeVerificationFailed:
+	case persona.EventTypeVerificationCreated, persona.EventTypeVerificationPassed, persona.EventTypeVerificationFailed:
 		return p.verification(ctx, payload, event.Attributes.Name)
 	default:
 		return common.StringError(errors.Newf("unknown event type: %s", event.Attributes.Name))
