@@ -1,88 +1,91 @@
 package middleware
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/String-xyz/string-api/config"
 )
 
-func init() {
-	env.LoadEnv(&config.Var, "../../.env")
-}
-
 func TestVerifyWebhookPayload(t *testing.T) {
+	checkoutSecretKey := "checkout_secret_key"
+	personaSecretKey := "persona_secret_key"
+
+	// Define your test cases
 	tests := []struct {
-		name           string
-		body           string
-		secretKey      string
-		signatureKey   string
-		signatureValue string
-		wantErr        bool
-		errMessage     string
+		name          string
+		path          string
+		signatureKey  string
+		signatureName string
+		secretKey     string
+		expectCode    int
 	}{
 		{
-			name:         "valid signature",
-			body:         `{"message": "test"}`,
-			secretKey:    "test-key",
-			signatureKey: "Cko-Signature",
-			wantErr:      false,
+			name:          "Test unauthorized access due to invalid signature for Checkout",
+			path:          "webhooks/checkout",
+			signatureKey:  "invalid_signature",
+			signatureName: "Cko-Signature",
+			secretKey:     checkoutSecretKey,
+			expectCode:    http.StatusUnauthorized,
 		},
 		{
-			name:         "invalid signature",
-			body:         `{"message": "test"}`,
-			secretKey:    "wrong-key",
-			signatureKey: "Cko-Signature",
-			wantErr:      true,
-			errMessage:   "Failed to verify payload",
+			name:          "Test successful access for Checkout",
+			path:          "webhooks/checkout",
+			signatureKey:  computeHmacSha256("hello", checkoutSecretKey),
+			signatureName: "Cko-Signature",
+			secretKey:     checkoutSecretKey,
+			expectCode:    http.StatusOK,
 		},
-		// Add more test cases as needed.
+		{
+			name:          "Test unauthorized access due to invalid signature for Persona",
+			path:          "webhooks/persona",
+			signatureKey:  "t=1629478952,v1=invalid_signature",
+			signatureName: "Persona-Signature",
+			secretKey:     personaSecretKey,
+			expectCode:    http.StatusUnauthorized,
+		},
+		{
+			name:          "Test successful access for Persona",
+			path:          "webhooks/persona",
+			signatureKey:  fmt.Sprintf("t=1629478952,v1=%s", computeHmacSha256("1629478952.hello", personaSecretKey)),
+			signatureName: "Persona-Signature",
+			secretKey:     personaSecretKey,
+			expectCode:    http.StatusOK,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Setup Echo context with request and response
 			e := echo.New()
-
-			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte(tt.body)))
+			req := httptest.NewRequest(echo.POST, "/", strings.NewReader("hello"))
+			req.Header.Set(tt.signatureName, tt.signatureKey)
 			rec := httptest.NewRecorder()
-
-			// Calculate signature and add it to the headers
-			mac := hmac.New(sha256.New, []byte(tt.secretKey))
-			mac.Write([]byte(tt.body))
-			expectedMAC := mac.Sum(nil)
-			req.Header.Set(tt.signatureKey, hex.EncodeToString(expectedMAC))
-
 			c := e.NewContext(req, rec)
+			c.SetPath(tt.path)
 
-			middleware := VerifyWebhookPayload()
+			// Assert middleware function
+			middleware := VerifyWebhookPayload(personaSecretKey, checkoutSecretKey)
+			middleware(func(c echo.Context) error {
+				return c.String(http.StatusOK, "Test")
+			})(c)
 
-			if tt.wantErr {
-				err := middleware(func(c echo.Context) error {
-					return nil
-				})(c)
-				assert.EqualError(t, err, tt.errMessage)
-			} else {
-				err := middleware(func(c echo.Context) error {
-					return nil
-				})(c)
-				assert.NoError(t, err)
-			}
+			assert.Equal(t, tt.expectCode, rec.Code)
 		})
 	}
 }
 
-// Helper function to compute the MAC of a given body and secret
-func ComputeMAC(body []byte, secret string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(body)
-	return hex.EncodeToString(mac.Sum(nil))
+// Utility function to compute HMAC for testing
+func computeHmacSha256(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	return hex.EncodeToString(h.Sum(nil))
 }

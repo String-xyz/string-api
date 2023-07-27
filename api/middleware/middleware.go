@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
@@ -101,18 +102,22 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 	}
 }
 
-func VerifyWebhookPayload() echo.MiddlewareFunc {
+func VerifyWebhookPayload(pskey string, ckoskey string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			var signatureHeaderName string
 			var secretKey string
+			var validateFunc func([]byte, string, string) bool
+
 			switch c.Path() {
 			case "webhooks/checkout":
 				signatureHeaderName = "Cko-Signature"
-				secretKey = config.Var.CHECKOUT_WEBHOOK_SECRET_KEY
+				secretKey = ckoskey
+				validateFunc = validateSignatureCheckout
 			case "webhooks/persona":
 				signatureHeaderName = "Persona-Signature"
-				secretKey = config.Var.PERSONA_WEBHOOK_SECRET_KEY
+				secretKey = pskey
+				validateFunc = validateSignaturePersona
 			default:
 				return httperror.BadRequest400(c, "Invalid path")
 			}
@@ -125,7 +130,7 @@ func VerifyWebhookPayload() echo.MiddlewareFunc {
 
 			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
 
-			if !validateSignature(body, signatureHeader, secretKey) {
+			if !validateFunc(body, signatureHeader, secretKey) {
 				return httperror.Unauthorized401(c, "Failed to verify payload")
 			}
 
@@ -134,7 +139,7 @@ func VerifyWebhookPayload() echo.MiddlewareFunc {
 	}
 }
 
-func validateSignature(body []byte, signature string, secretKey string) bool {
+func validateSignatureCheckout(body []byte, signature string, secretKey string) bool {
 	mac := hmac.New(sha256.New, []byte(secretKey))
 	mac.Write(body)
 	expectedMAC := mac.Sum(nil)
@@ -145,4 +150,29 @@ func validateSignature(body []byte, signature string, secretKey string) bool {
 	}
 
 	return hmac.Equal(receivedMAC, expectedMAC)
+}
+
+func validateSignaturePersona(body []byte, signatureHeader string, secretKey string) bool {
+	parts := strings.Split(signatureHeader, ",")
+	var timestamp, signature string
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			timestamp = strings.TrimPrefix(part, "t=")
+		} else if strings.HasPrefix(part, "v1=") {
+			signature = strings.TrimPrefix(part, "v1=")
+		}
+	}
+
+	macData := timestamp + "." + string(body)
+
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(macData))
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(expectedMAC, receivedMAC)
 }
