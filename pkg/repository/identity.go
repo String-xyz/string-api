@@ -31,8 +31,8 @@ func NewIdentity(db database.Queryable) Identity {
 
 func (i identity[T]) Create(ctx context.Context, insert model.Identity) (identity model.Identity, err error) {
 	query, args, err := i.Named(`
-		INSERT INTO identity (userId)
-		VALUES(:userId) RETURNING *`, insert)
+		INSERT INTO identity (user_id)
+		VALUES(:user_id) RETURNING *`, insert)
 	if err != nil {
 		return identity, libcommon.StringError(err)
 	}
