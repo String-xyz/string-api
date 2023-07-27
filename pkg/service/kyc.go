@@ -60,19 +60,11 @@ func (k kyc) GetUserLevel(ctx context.Context, userId string) (level int, err er
 		return level, err
 	}
 
-	if err != nil {
-		return level, err
-	}
-
 	return level, nil
 }
 
 func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level int, err error) {
 	identity, err := k.repos.Identity.GetByUserId(ctx, userId)
-	if err != nil {
-		return level, err
-	}
-
 	if err != nil {
 		return level, err
 	}
@@ -91,14 +83,18 @@ func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level int, err
 		points++
 	}
 
-	if points < 1 && level >= 1 {
+	if points >= 4 {
+		if identity.Level != 2 {
+			identity.Level = 2
+			k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
+		}
+	} else if points >= 1 && identity.EmailVerified != nil {
+		if identity.Level != 1 {
+			identity.Level = 1
+			k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
+		}
+	} else if points <= 1 && identity.Level != 0 {
 		identity.Level = 0
-		k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
-	} else if points >= 4 && level < 2 {
-		identity.Level = 2
-		k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
-	} else if points >= 1 && level < 1 && identity.EmailVerified != nil {
-		identity.Level = 1
 		k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
 	}
 
