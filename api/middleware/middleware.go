@@ -110,11 +110,11 @@ func VerifyWebhookPayload(pskey string, ckoskey string) echo.MiddlewareFunc {
 			var validateFunc func([]byte, string, string) bool
 
 			switch c.Path() {
-			case "webhooks/checkout":
+			case "/webhooks/checkout":
 				signatureHeaderName = "Cko-Signature"
 				secretKey = ckoskey
 				validateFunc = validateSignatureCheckout
-			case "webhooks/persona":
+			case "/webhooks/persona":
 				signatureHeaderName = "Persona-Signature"
 				secretKey = pskey
 				validateFunc = validateSignaturePersona

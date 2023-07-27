@@ -28,7 +28,7 @@ func TestVerifyWebhookPayload(t *testing.T) {
 	}{
 		{
 			name:          "Test unauthorized access due to invalid signature for Checkout",
-			path:          "webhooks/checkout",
+			path:          "/webhooks/checkout",
 			signatureKey:  "invalid_signature",
 			signatureName: "Cko-Signature",
 			secretKey:     checkoutSecretKey,
@@ -36,7 +36,7 @@ func TestVerifyWebhookPayload(t *testing.T) {
 		},
 		{
 			name:          "Test successful access for Checkout",
-			path:          "webhooks/checkout",
+			path:          "/webhooks/checkout",
 			signatureKey:  computeHmacSha256("hello", checkoutSecretKey),
 			signatureName: "Cko-Signature",
 			secretKey:     checkoutSecretKey,
@@ -44,7 +44,7 @@ func TestVerifyWebhookPayload(t *testing.T) {
 		},
 		{
 			name:          "Test unauthorized access due to invalid signature for Persona",
-			path:          "webhooks/persona",
+			path:          "/webhooks/persona",
 			signatureKey:  "t=1629478952,v1=invalid_signature",
 			signatureName: "Persona-Signature",
 			secretKey:     personaSecretKey,
@@ -52,7 +52,7 @@ func TestVerifyWebhookPayload(t *testing.T) {
 		},
 		{
 			name:          "Test successful access for Persona",
-			path:          "webhooks/persona",
+			path:          "/webhooks/persona",
 			signatureKey:  fmt.Sprintf("t=1629478952,v1=%s", computeHmacSha256("1629478952.hello", personaSecretKey)),
 			signatureName: "Persona-Signature",
 			secretKey:     personaSecretKey,
