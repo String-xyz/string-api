@@ -390,6 +390,7 @@ func (u user) GetPersonaAccountId(c echo.Context) error {
 
 	accountId, err := u.userService.GetPersonaAccountId(ctx, userId)
 	if err != nil {
+		libcommon.LogStringError(c, err, "user: get persona account id")
 		return httperror.Internal500(c)
 	}
 	return c.JSON(http.StatusOK, accountId)
@@ -463,6 +464,7 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
+	g.GET("/persona-account-id", u.GetPersonaAccountId, ms...)
 	g.PATCH("/:id", u.Update, ms...)
 }
 
