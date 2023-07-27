@@ -8,9 +8,10 @@ import (
 )
 
 type KYC interface {
-	GetTransactionKYCLevel(assetType string, cost float64) int
-	GetUserKYCLevel(ctx context.Context, userId string) (level int, err error)
-	UpdateUserKYCLevel(ctx context.Context, userId string) (level int, err error)
+	MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error)
+	GetTransactionLevel(assetType string, cost float64) int
+	GetUserLevel(ctx context.Context, userId string) (level int, err error)
+	UpdateUserLevel(ctx context.Context, userId string) (level int, err error)
 }
 
 type kyc struct {
@@ -22,9 +23,9 @@ func NewKYC(repos repository.Repositories) KYC {
 }
 
 func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error) {
-	transactionLevel := k.GetTransactionKYCLevel(assetType, cost)
+	transactionLevel := k.GetTransactionLevel(assetType, cost)
 
-	userLevel, err := k.GetUserKYCLevel(ctx, userId)
+	userLevel, err := k.GetUserLevel(ctx, userId)
 	if err != nil {
 		return false, err
 	}
@@ -35,7 +36,7 @@ func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType str
 	}
 }
 
-func (k kyc) GetTransactionKYCLevel(assetType string, cost float64) int {
+func (k kyc) GetTransactionLevel(assetType string, cost float64) int {
 	if assetType == "NFT" {
 		if cost < 1000.00 {
 			return 1
@@ -53,8 +54,8 @@ func (k kyc) GetTransactionKYCLevel(assetType string, cost float64) int {
 	}
 }
 
-func (k kyc) GetUserKYCLevel(ctx context.Context, userId string) (level int, err error) {
-	level, err = k.UpdateUserKYCLevel(ctx, userId)
+func (k kyc) GetUserLevel(ctx context.Context, userId string) (level int, err error) {
+	level, err = k.UpdateUserLevel(ctx, userId)
 	if err != nil {
 		return level, err
 	}
@@ -66,7 +67,7 @@ func (k kyc) GetUserKYCLevel(ctx context.Context, userId string) (level int, err
 	return level, nil
 }
 
-func (k kyc) UpdateUserKYCLevel(ctx context.Context, userId string) (level int, err error) {
+func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level int, err error) {
 	identity, err := k.repos.Identity.GetByUserId(ctx, userId)
 	if err != nil {
 		return level, err
