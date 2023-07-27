@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
-	service "github.com/String-xyz/string-api/pkg/service"
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
 type Card interface {

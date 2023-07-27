@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/String-xyz/go-lib/v2/common"
-	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 	"github.com/String-xyz/string-api/pkg/model"
@@ -23,8 +22,8 @@ func SetJWTCookie(c echo.Context, jwt model.JWT) error {
 	cookie.HttpOnly = true
 	cookie.Expires = jwt.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
-	cookie.Path = "/"                       // Send cookie in every sub path request
-	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
+	cookie.Path = "/"                    // Send cookie in every sub path request
+	cookie.Secure = !common.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -37,8 +36,8 @@ func SetRefreshTokenCookie(c echo.Context, refresh model.RefreshTokenResponse) e
 	cookie.HttpOnly = true
 	cookie.Expires = refresh.ExpAt // we want the cookie to expire at the same time as the token
 	cookie.SameSite = getCookieSameSiteMode()
-	cookie.Path = "/login/"                 // Send cookie only in /login path request
-	cookie.Secure = !libcommon.IsLocalEnv() // in production allow https only
+	cookie.Path = "/login/"              // Send cookie only in /login path request
+	cookie.Secure = !common.IsLocalEnv() // in production allow https only
 	c.SetCookie(cookie)
 
 	return nil
@@ -67,7 +66,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/" // Send cookie in every sub path request
-	cookie.Secure = !libcommon.IsLocalEnv()
+	cookie.Secure = !common.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
@@ -77,7 +76,7 @@ func DeleteAuthCookies(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.SameSite = getCookieSameSiteMode()
 	cookie.Path = "/login/" // Send cookie only in refresh path request
-	cookie.Secure = !libcommon.IsLocalEnv()
+	cookie.Secure = !common.IsLocalEnv()
 	c.SetCookie(cookie)
 
 	return nil
@@ -90,7 +89,7 @@ func validAddress(addr string) bool {
 
 func getCookieSameSiteMode() http.SameSite {
 	sameSiteMode := http.SameSiteNoneMode // allow cors
-	if libcommon.IsLocalEnv() {
+	if common.IsLocalEnv() {
 		sameSiteMode = http.SameSiteLaxMode // because SameSiteNoneMode is not allowed in localhost we use lax mode
 	}
 	return sameSiteMode
