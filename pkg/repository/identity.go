@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -69,7 +70,7 @@ func (i identity[T]) Update(ctx context.Context, id string, updates any) (identi
 func (i identity[T]) GetByUserId(ctx context.Context, userId string) (identity model.Identity, err error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id=$1", i.Table)
 	err = i.Store.QueryRowxContext(ctx, query, userId).StructScan(&identity)
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
 		return identity, libcommon.StringError(err)
 	}
 	return identity, nil
@@ -78,7 +79,7 @@ func (i identity[T]) GetByUserId(ctx context.Context, userId string) (identity m
 func (i identity[T]) GetByAccountId(ctx context.Context, accountId string) (identity model.Identity, err error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE account_id=$1", i.Table)
 	err = i.Store.QueryRowxContext(ctx, query, accountId).StructScan(&identity)
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
 		return identity, libcommon.StringError(err)
 	}
 	return identity, nil
