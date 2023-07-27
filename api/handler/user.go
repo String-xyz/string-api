@@ -21,6 +21,7 @@ type User interface {
 	PreviewEmail(c echo.Context) error
 	VerifyEmail(c echo.Context) error
 	PreValidateEmail(c echo.Context) error
+	GetPersonaAccountId(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 	RegisterPrivateRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
@@ -113,7 +114,7 @@ func (u user) Create(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Success 200 {object} model.UserOnboardingStatus
 // @Failure 401 {object} error
@@ -140,7 +141,7 @@ func (u user) Status(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Param body body model.UpdateUserName true "Update User Name"
 // @Success 200 {object} model.User
@@ -186,7 +187,7 @@ func (u user) Update(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Param email query string true "Email to verify"
 // @Success 200 {object} ResultMessage
@@ -367,6 +368,33 @@ func (u user) PreValidateEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, ResultMessage{Status: "validated"})
 }
 
+// @Summary Get user persona account id
+// @Description Get user persona account id
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security JWT
+// @Success 200 {object} string
+// @Failure 400 {object} error
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /users/persona-account-id [get]
+func (u user) GetPersonaAccountId(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	userId, ok := c.Get("userId").(string)
+	if !ok {
+		return httperror.Internal500(c, "missing or invalid userId")
+	}
+
+	accountId, err := u.userService.GetPersonaAccountId(ctx, userId)
+	if err != nil {
+		libcommon.LogStringError(c, err, "user: get persona account id")
+		return httperror.Internal500(c)
+	}
+	return c.JSON(http.StatusOK, accountId)
+}
+
 // @Summary Get user email preview
 // @Description Get obscured user email
 // @Tags Users
@@ -428,12 +456,14 @@ func (u user) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
 	g.POST("/preview-email", u.PreviewEmail, ms[0])
 	g.POST("/verify-device", u.RequestDeviceVerification, ms[0])
 	g.POST("/device-status", u.GetDeviceStatus, ms[0])
+
 	// the rest of the endpoints use the JWT auth and do not require an API Key
 	// hence removing the first (API key) middleware
 	ms = ms[1:]
 
 	g.GET("/:id/status", u.Status, ms...)
 	g.GET("/:id/verify-email", u.VerifyEmail, ms...)
+	g.GET("/persona-account-id", u.GetPersonaAccountId, ms...)
 	g.PATCH("/:id", u.Update, ms...)
 }
 

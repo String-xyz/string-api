@@ -135,6 +135,9 @@ func (v verification) VerifyEmail(ctx context.Context, userId string, email stri
 	// 5. Create user in Checkout
 	go v.createCheckoutCustomer(ctx2, userId, platformId)
 
+	// 6. Update user identity
+	go v.updateIdentityEmail(ctx2, userId, now)
+
 	return nil
 }
 
@@ -192,4 +195,27 @@ func (v verification) createCheckoutCustomer(ctx context.Context, userId string,
 	}
 
 	return customerId
+}
+
+func (v verification) updateIdentityEmail(ctx context.Context, userId string, now time.Time) error {
+	identity, err := v.repos.Identity.GetByUserId(ctx, userId)
+	if err != nil {
+		if serror.Is(err, serror.NOT_FOUND) {
+			identity, err = v.repos.Identity.Create(ctx, model.Identity{UserId: userId})
+			if err != nil {
+				log.Err(err).Msg("Failed to create identity")
+				return libcommon.StringError(err)
+			}
+		} else {
+			log.Err(err).Msg("Failed to get identity by user id")
+			return libcommon.StringError(err)
+		}
+	}
+	identity, err = v.repos.Identity.Update(ctx, identity.Id, model.IdentityUpdates{EmailVerified: &now})
+	if err != nil {
+		log.Err(err).Msg("Failed to update identity")
+		return libcommon.StringError(err)
+	}
+
+	return nil
 }

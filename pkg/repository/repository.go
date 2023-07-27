@@ -14,4 +14,5 @@ type Repositories struct {
 	Transaction Transaction
 	TxLeg       TxLeg
 	Location    Location
+	Identity    Identity
 }
