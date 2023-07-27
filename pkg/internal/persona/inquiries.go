@@ -38,6 +38,10 @@ type Inquiry struct {
 	Relationships Relationships     `json:"relationships"`
 }
 
+func (i Inquiry) GetType() string {
+	return i.Type
+}
+
 type InquiryResponse struct {
 	Data     Inquiry    `json:"data"`
 	Included []Included `json:"included"`

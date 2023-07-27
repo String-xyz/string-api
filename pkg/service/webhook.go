@@ -4,23 +4,36 @@ import (
 	"encoding/json"
 
 	"github.com/String-xyz/go-lib/v2/common"
-	"github.com/String-xyz/string-api/pkg/internal/checkout"
 	"github.com/cockroachdb/errors"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/context"
+
+	"github.com/String-xyz/string-api/pkg/internal/checkout"
+)
+
+type WebhookType string
+
+const (
+	WebhookTypePersona  WebhookType = "persona"
+	WebhookTypeCheckout WebhookType = "checkout"
 )
 
 type Webhook interface {
-	Handle(ctx context.Context, data []byte) error
+	Handle(ctx context.Context, data []byte, webhook WebhookType) error
 }
 
-type webhook struct{}
+type webhook struct {
+	person personaWebhook
+}
 
 func NewWebhook() Webhook {
-	return &webhook{}
+	return &webhook{personaWebhook{}}
 }
 
-func (w webhook) Handle(ctx context.Context, data []byte) error {
+func (w webhook) Handle(ctx context.Context, data []byte, webhook WebhookType) error {
+	if webhook == WebhookTypePersona {
+		return w.person.Handle(ctx, data)
+	}
 	event := checkout.WebhookEvent{}
 	err := json.Unmarshal(data, &event)
 	if err != nil {

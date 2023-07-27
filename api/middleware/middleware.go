@@ -73,7 +73,6 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 
 			// TODO: Validate platformId
 			c.Set("platformId", platformId)
-
 			return true, nil
 		},
 	}
@@ -103,12 +102,22 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 }
 
 func VerifyWebhookPayload() echo.MiddlewareFunc {
-	secretKey := config.Var.WEBHOOK_SECRET_KEY
-
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			signatureHeader := c.Request().Header.Get("Cko-Signature")
+			var signatureHeaderName string
+			var secretKey string
+			switch c.Path() {
+			case "webhooks/checkout":
+				signatureHeaderName = "Cko-Signature"
+				secretKey = config.Var.CHECKOUT_WEBHOOK_SECRET_KEY
+			case "webhooks/persona":
+				signatureHeaderName = "Persona-Signature"
+				secretKey = config.Var.PERSONA_WEBHOOK_SECRET_KEY
+			default:
+				return httperror.BadRequest400(c, "Invalid path")
+			}
 
+			signatureHeader := c.Request().Header.Get(signatureHeaderName)
 			body, err := io.ReadAll(c.Request().Body)
 			if err != nil {
 				return httperror.BadRequest400(c, "Failed to read body")
@@ -116,20 +125,24 @@ func VerifyWebhookPayload() echo.MiddlewareFunc {
 
 			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
 
-			mac := hmac.New(sha256.New, []byte(secretKey))
-			mac.Write(body)
-			expectedMAC := mac.Sum(nil)
-
-			receivedMAC, err := hex.DecodeString(signatureHeader)
-			if err != nil {
-				return httperror.BadRequest400(c, "Failed to decode signature")
-			}
-
-			if !hmac.Equal(receivedMAC, expectedMAC) {
+			if !validateSignature(body, signatureHeader, secretKey) {
 				return httperror.Unauthorized401(c, "Failed to verify payload")
 			}
 
 			return next(c)
 		}
 	}
+}
+
+func validateSignature(body []byte, signature string, secretKey string) bool {
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write(body)
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(receivedMAC, expectedMAC)
 }

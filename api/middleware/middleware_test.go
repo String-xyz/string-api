@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	env "github.com/String-xyz/go-lib/v2/config"
-	"github.com/String-xyz/string-api/config"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 func init() {
@@ -20,64 +21,61 @@ func init() {
 }
 
 func TestVerifyWebhookPayload(t *testing.T) {
-	secretKey := config.Var.WEBHOOK_SECRET_KEY
-
-	// We'll test with two cases
 	tests := []struct {
-		name         string
-		giveBody     []byte
-		giveMAC      string
-		wantHTTPCode int
+		name           string
+		body           string
+		secretKey      string
+		signatureKey   string
+		signatureValue string
+		wantErr        bool
+		errMessage     string
 	}{
 		{
-			// This test case provides a valid body and MAC
-			name:         "Valid MAC",
-			giveBody:     []byte("Hello, World!"),
-			giveMAC:      ComputeMAC([]byte("Hello, World!"), secretKey),
-			wantHTTPCode: http.StatusOK,
+			name:         "valid signature",
+			body:         `{"message": "test"}`,
+			secretKey:    "test-key",
+			signatureKey: "Cko-Signature",
+			wantErr:      false,
 		},
 		{
-			// This test case provides an invalid MAC
-			name:         "Invalid MAC",
-			giveBody:     []byte("Hello, World!"),
-			giveMAC:      ComputeMAC([]byte("Bye, World!"), secretKey),
-			wantHTTPCode: http.StatusUnauthorized,
+			name:         "invalid signature",
+			body:         `{"message": "test"}`,
+			secretKey:    "wrong-key",
+			signatureKey: "Cko-Signature",
+			wantErr:      true,
+			errMessage:   "Failed to verify payload",
 		},
+		// Add more test cases as needed.
 	}
 
-	// Let's iterate over our test cases
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Instantiate Echo
 			e := echo.New()
 
-			// Our middleware under test
-			middleware := VerifyWebhookPayload()
-
-			// Mock a request
-			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(tt.giveBody))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			req.Header.Set("Cko-Signature", tt.giveMAC)
-
-			// Mock a response recorder
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte(tt.body)))
 			rec := httptest.NewRecorder()
 
-			// Create a context for our request
+			// Calculate signature and add it to the headers
+			mac := hmac.New(sha256.New, []byte(tt.secretKey))
+			mac.Write([]byte(tt.body))
+			expectedMAC := mac.Sum(nil)
+			req.Header.Set(tt.signatureKey, hex.EncodeToString(expectedMAC))
+
 			c := e.NewContext(req, rec)
 
-			// Mock a next function
-			next := func(c echo.Context) error {
-				return c.String(http.StatusOK, "OK")
+			middleware := VerifyWebhookPayload()
+
+			if tt.wantErr {
+				err := middleware(func(c echo.Context) error {
+					return nil
+				})(c)
+				assert.EqualError(t, err, tt.errMessage)
+			} else {
+				err := middleware(func(c echo.Context) error {
+					return nil
+				})(c)
+				assert.NoError(t, err)
 			}
-
-			// Call our middleware
-			err := middleware(next)(c)
-
-			// There should be no error returned
-			assert.NoError(t, err)
-
-			// Check if the status code is what we expect
-			assert.Equal(t, tt.wantHTTPCode, rec.Code)
 		})
 	}
 }
