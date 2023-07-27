@@ -217,3 +217,291 @@ var PaymentCapturedJSON = `{
     }
   }
 }`
+
+var PersonAccountJSON = `
+{
+  "type": "event",
+  "id": "evt_Ej9ZbvZGjn11CyudXiHqV7tN",
+  "attributes": {
+    "name": "account.created",
+    "created-at": "2023-07-25T19:59:14.691Z",
+    "redacted-at": null,
+    "payload": {
+      "data": {
+        "type": "account",
+        "id": "act_ze7eJgwEHbkx1iiUiu42G2ey",
+        "attributes": {
+          "reference-id": null,
+          "created-at": "2023-07-25T19:59:14.000Z",
+          "updated-at": "2023-07-25T19:59:14.000Z",
+          "redacted-at": null,
+          "fields": {
+            "name": {
+              "type": "hash",
+              "value": {
+                "first": {
+                  "type": "string",
+                  "value": "Mister"
+                },
+                "middle": {
+                  "type": "string",
+                  "value": null
+                },
+                "last": {
+                  "type": "string",
+                  "value": "Tester"
+                }
+              }
+            },
+            "address": {
+              "type": "hash",
+              "value": {
+                "street-1": {
+                  "type": "string",
+                  "value": null
+                },
+                "street-2": {
+                  "type": "string",
+                  "value": null
+                },
+                "subdivision": {
+                  "type": "string",
+                  "value": null
+                },
+                "city": {
+                  "type": "string",
+                  "value": null
+                },
+                "postal-code": {
+                  "type": "string",
+                  "value": null
+                },
+                "country-code": {
+                  "type": "string",
+                  "value": null
+                }
+              }
+            },
+            "identification-numbers": {
+              "type": "array",
+              "value": []
+            },
+            "birthdate": {
+              "type": "date",
+              "value": null
+            },
+            "phone-number": {
+              "type": "string",
+              "value": null
+            },
+            "email-address": {
+              "type": "string",
+              "value": null
+            },
+            "selfie-photo": {
+              "type": "file",
+              "value": null
+            }
+          },
+          "name-first": "Mister",
+          "name-middle": null,
+          "name-last": "Tester",
+          "phone-number": null,
+          "email-address": null,
+          "address-street-1": null,
+          "address-street-2": null,
+          "address-city": null,
+          "address-subdivision": null,
+          "address-postal-code": null,
+          "country-code": null,
+          "birthdate": null,
+          "social-security-number": null,
+          "tags": [],
+          "identification-numbers": {}
+        }
+      }
+    }
+  }
+}
+`
+var PersonInquiryJSON = `
+{
+  "type": "event",
+  "id": "evt_gEmTS7n2t3hHe4m2UYykLAym",
+  "attributes": {
+    "name": "inquiry.created",
+    "created-at": "2023-07-25T19:32:25.582Z",
+    "redacted-at": null,
+    "payload": {
+      "data": {
+        "type": "inquiry",
+        "id": "inq_bo5P7Ea1grrZc68Rg3mpFi2K",
+        "attributes": {
+          "status": "created",
+          "reference-id": null,
+          "note": null,
+          "behaviors": {
+            "request-spoof-attempts": null,
+            "user-agent-spoof-attempts": null,
+            "distraction-events": null,
+            "hesitation-baseline": null,
+            "hesitation-count": null,
+            "hesitation-time": null,
+            "shortcut-copies": null,
+            "shortcut-pastes": null,
+            "autofill-cancels": null,
+            "autofill-starts": null,
+            "devtools-open": null,
+            "completion-time": null,
+            "hesitation-percentage": null,
+            "behavior-threat-level": null
+          },
+          "tags": [],
+          "creator": "API",
+          "reviewer-comment": null,
+          "created-at": "2023-07-25T19:32:25.000Z",
+          "started-at": null,
+          "completed-at": null,
+          "failed-at": null,
+          "marked-for-review-at": null,
+          "decisioned-at": null,
+          "expired-at": null,
+          "redacted-at": null,
+          "previous-step-name": null,
+          "next-step-name": "start_biometric_80e902_start",
+          "name-first": null,
+          "name-middle": null,
+          "name-last": null,
+          "birthdate": null,
+          "address-street-1": null,
+          "address-street-2": null,
+          "address-city": null,
+          "address-subdivision": null,
+          "address-subdivision-abbr": null,
+          "address-postal-code": null,
+          "address-postal-code-abbr": null,
+          "social-security-number": null,
+          "identification-number": null,
+          "email-address": null,
+          "phone-number": null,
+          "fields": {
+            "phone-number": {
+              "type": "string",
+              "value": null
+            },
+            "selected-country-code": {
+              "type": "string",
+              "value": "US"
+            },
+            "current-government-id": {
+              "type": "government_id",
+              "value": null
+            },
+            "selected-id-class": {
+              "type": "string",
+              "value": null
+            },
+            "address-street-1": {
+              "type": "string",
+              "value": null
+            },
+            "address-street-2": {
+              "type": "string",
+              "value": null
+            },
+            "address-city": {
+              "type": "string",
+              "value": null
+            },
+            "address-subdivision": {
+              "type": "string",
+              "value": null
+            },
+            "address-postal-code": {
+              "type": "string",
+              "value": null
+            },
+            "address-country-code": {
+              "type": "string",
+              "value": null
+            },
+            "birthdate": {
+              "type": "date",
+              "value": null
+            },
+            "email-address": {
+              "type": "string",
+              "value": null
+            },
+            "identification-class": {
+              "type": "string",
+              "value": null
+            },
+            "identification-number": {
+              "type": "string",
+              "value": null
+            },
+            "name-first": {
+              "type": "string",
+              "value": null
+            },
+            "name-middle": {
+              "type": "string",
+              "value": null
+            },
+            "name-last": {
+              "type": "string",
+              "value": null
+            },
+            "current-selfie": {
+              "type": "selfie",
+              "value": null
+            }
+          }
+        },
+        "relationships": {
+          "account": {
+            "data": {
+              "type": "account",
+              "id": "act_ndJNqdhWNi44S4Twf4bqzod1"
+            }
+          },
+          "template": {
+            "data": null
+          },
+          "inquiry-template": {
+            "data": {
+              "type": "inquiry-template",
+              "id": "itmpl_z2so7W2bCFHELp2dhxqqQjGy"
+            }
+          },
+          "inquiry-template-version": {
+            "data": {
+              "type": "inquiry-template-version",
+              "id": "itmplv_CQbgqFNNgwrGe6jAB496VXpd"
+            }
+          },
+          "reviewer": {
+            "data": null
+          },
+          "reports": {
+            "data": []
+          },
+          "verifications": {
+            "data": []
+          },
+          "sessions": {
+            "data": []
+          },
+          "documents": {
+            "data": []
+          },
+          "selfies": {
+            "data": []
+          }
+        }
+      }
+    }
+  }
+}
+`

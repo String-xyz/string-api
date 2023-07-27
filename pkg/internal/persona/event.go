@@ -11,8 +11,8 @@ import (
 type EventType string
 
 const (
-	EventTypeAccountCreate       = EventType("account.create")
-	EventTypeInquiryCreate       = EventType("inquiry.create")
+	EventTypeAccountCreate       = EventType("account.created")
+	EventTypeInquiryCreate       = EventType("inquiry.created")
 	EventTypeInquiryStarted      = EventType("inquiry.started")
 	EventTypeInquiryCompleted    = EventType("inquiry.completed")
 	EventyTypeVerificationCreate = EventType("verification.create")
