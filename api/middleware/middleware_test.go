@@ -18,7 +18,6 @@ func TestVerifyWebhookPayload(t *testing.T) {
 	checkoutSecretKey := "checkout_secret_key"
 	personaSecretKey := "persona_secret_key"
 
-	// Define your test cases
 	tests := []struct {
 		name          string
 		path          string
@@ -63,7 +62,6 @@ func TestVerifyWebhookPayload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup Echo context with request and response
 			e := echo.New()
 			req := httptest.NewRequest(echo.POST, "/", strings.NewReader("hello"))
 			req.Header.Set(tt.signatureName, tt.signatureKey)
@@ -71,7 +69,6 @@ func TestVerifyWebhookPayload(t *testing.T) {
 			c := e.NewContext(req, rec)
 			c.SetPath(tt.path)
 
-			// Assert middleware function
 			middleware := VerifyWebhookPayload(personaSecretKey, checkoutSecretKey)
 			middleware(func(c echo.Context) error {
 				return c.String(http.StatusOK, "Test")
