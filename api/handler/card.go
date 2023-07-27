@@ -30,7 +30,7 @@ func NewCard(route *echo.Echo, service service.Card) Card {
 // @Tags Cards
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Success 200 {object} []checkout.CardInstrument
 // @Failure 400 {object} error
 // @Failure 401 {object} error

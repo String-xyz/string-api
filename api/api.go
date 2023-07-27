@@ -38,6 +38,10 @@ func heartbeat(c echo.Context) error {
 
 // @host string-api.xyz
 // @BasePath /
+
+// @SecurityDefinitions.api JWT
+// @Scheme bearer
+// @BearerFormat JWT
 func Start(config APIConfig) {
 	e := echo.New()
 	e.Validator = validator.New()

@@ -114,7 +114,7 @@ func (u user) Create(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Success 200 {object} model.UserOnboardingStatus
 // @Failure 401 {object} error
@@ -141,7 +141,7 @@ func (u user) Status(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Param body body model.UpdateUserName true "Update User Name"
 // @Success 200 {object} model.User
@@ -187,7 +187,7 @@ func (u user) Update(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param id path string true "User ID"
 // @Param email query string true "Email to verify"
 // @Success 200 {object} ResultMessage
@@ -373,8 +373,7 @@ func (u user) PreValidateEmail(c echo.Context) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
-// @Param id path string true "User ID"
+// @Security JWT
 // @Success 200 {object} string
 // @Failure 400 {object} error
 // @Failure 401 {object} error

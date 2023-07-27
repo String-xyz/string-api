@@ -30,7 +30,7 @@ func NewTransaction(route *echo.Echo, service service.Transaction) Transaction {
 // @Tags Transactions
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param saveCard query boolean false "do not save payment info"
 // @Param body body model.ExecutionRequest true "Execution Request"
 // @Success 200 {object} model.TransactionReceipt
