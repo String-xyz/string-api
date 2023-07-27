@@ -21,7 +21,7 @@ func NewKYC(repos repository.Repositories) KYC {
 	return &kyc{repos}
 }
 
-func (k kyc) UserMeetsKYCRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error) {
+func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error) {
 	transactionLevel := k.GetTransactionKYCLevel(assetType, cost)
 
 	userLevel, err := k.GetUserKYCLevel(ctx, userId)
