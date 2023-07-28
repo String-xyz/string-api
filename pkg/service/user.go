@@ -8,7 +8,9 @@ import (
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	serror "github.com/String-xyz/go-lib/v2/stringerror"
 
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
+	"github.com/String-xyz/string-api/pkg/internal/persona"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
 
@@ -42,6 +44,8 @@ type User interface {
 
 	// GetDeviceStatus checks the status of the device verification
 	GetDeviceStatus(ctx context.Context, request model.WalletSignaturePayloadSigned) (model.UserOnboardingStatus, error)
+
+	GetPersonaAccountId(ctx context.Context, userId string) (accountId string, err error)
 }
 
 type user struct {
@@ -51,10 +55,12 @@ type user struct {
 	device       Device
 	unit21       Unit21
 	verification Verification
+	persona      persona.PersonaClient
 }
 
 func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21, verificationSrv Verification) User {
-	return &user{repos, auth, fprint, device, unit21, verificationSrv}
+	persona := persona.New(config.Var.PERSONA_API_KEY)
+	return &user{repos, auth, fprint, device, unit21, verificationSrv, *persona}
 }
 
 func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error) {
@@ -117,6 +123,9 @@ func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSi
 	if err != nil && serror.Is(err, serror.NOT_FOUND) {
 		return resp, libcommon.StringError(err)
 	}
+
+	// Create a user identity for KYC
+	go u.repos.Identity.Create(ctx, model.Identity{UserId: user.Id})
 
 	if device.Fingerprint != "" {
 		// validate that device on user creation
@@ -352,4 +361,44 @@ func (u user) PreviewEmail(ctx context.Context, request model.WalletSignaturePay
 	email.Email = first_name_char + name_stars + "@" + obfs_domain
 
 	return email, nil
+}
+
+func (u user) GetPersonaAccountId(ctx context.Context, userId string) (accountId string, err error) {
+	_, finish := Span(ctx, "service.user.GetPersonaAccountId")
+	defer finish()
+
+	identity, err := u.repos.Identity.GetByUserId(ctx, userId)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+	if identity.AccountId != "" {
+		return identity.AccountId, nil
+	}
+
+	user, err := u.repos.User.GetById(ctx, userId)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	request := persona.AccountCreateRequest{
+		Data: persona.AccountCreate{
+			Attributes: persona.CommonFields{
+				EmailAddress: user.Email,
+				NameFirst:    user.FirstName,
+				NameLast:     user.LastName,
+				NameMiddle:   user.MiddleName,
+			},
+		},
+	}
+	account, err := u.persona.CreateAccount(request)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	identity, err = u.repos.Identity.Update(ctx, identity.Id, model.IdentityUpdates{AccountId: &account.Data.Id})
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	return account.Data.Id, nil
 }

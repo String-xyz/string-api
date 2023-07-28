@@ -77,6 +77,16 @@ type UserUpdates struct {
 	LastName   *string         `json:"lastName" db:"last_name"`
 }
 
+type IdentityUpdates struct {
+	Level            *int       `json:"level" db:"level"`
+	AccountId        *string    `json:"accountId" db:"account_id"`
+	UserId           *string    `json:"userId" db:"user_id"`
+	EmailVerified    *time.Time `json:"emailVerified,omitempty" db:"email_verified"`
+	PhoneVerified    *time.Time `json:"phoneVerified,omitempty" db:"phone_verified"`
+	SelfieVerified   *time.Time `json:"selfieVerified,omitempty" db:"selfie_verified"`
+	DocumentVerified *time.Time `json:"documentVerified,omitempty" db:"document_verified"`
+}
+
 type UserPKLogin struct {
 	PublicAddress string `json:"publicAddress"`
 	Signature     string `json:"signature"`

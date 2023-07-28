@@ -31,7 +31,7 @@ func NewQuote(route *echo.Echo, service service.Transaction) Quotes {
 // @Tags Transactions
 // @Accept json
 // @Produce json
-// @Security ApiKeyAuth
+// @Security JWT
 // @Param body body model.TransactionRequest true "Transaction Request"
 // @Success 200 {object} model.Quote
 // @Failure 400 {object} error
