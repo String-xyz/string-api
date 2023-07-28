@@ -75,6 +75,22 @@ locals {
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
         },
         {
+          name      = "CHECKOUT_WEBHOOK_SECRET"
+          valueFrom = data.aws_ssm_parameter.checkout_webhook_secret.arn
+        },
+        {
+          name      = "PERSONA_API_KEY"
+          valueFrom = data.aws_ssm_parameter.persona_api_key.arn 
+        },
+        {
+          name      = "PERSONA_WEBHOOK_SECRET"
+          valueFrom = data.aws_ssm_parameter.persona_webhook_secret.arn
+        },
+        {
+          name       = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
+        },
+        {
           name      = "OWLRACLE_API_KEY"
           valueFrom = data.aws_ssm_parameter.owlracle_api_key.arn
         },

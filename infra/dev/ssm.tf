@@ -30,12 +30,28 @@ data "aws_ssm_parameter" "unit21_api_key" {
   name = "unit21-api-key"
 }
 
+data "aws_ssm_parameter" "persona_api_key" { 
+  name = "persona-api-key"
+}
+
+data "aws_ssm_parameter" "persona_webhook_secret" { 
+  name = "persona-signature-key"
+}
+
 data "aws_ssm_parameter" "checkout_public_key" {
   name = "dev-checkout-public-key"
 }
 
 data "aws_ssm_parameter" "checkout_private_key" {
   name = "dev-checkout-private-key"
+}
+
+data "aws_ssm_parameter" "checkout_webhook_secret" {
+  name = "checkout-signature-key"
+}
+
+data "aws_ssm_parameter" "slack_webhook_url" {
+  name = "slack-webhook-url"
 }
 
 data "aws_ssm_parameter" "owlracle_api_key" {
