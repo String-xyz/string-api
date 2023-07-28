@@ -75,7 +75,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
         },
         {
-          name      = "CHECKOUT_WEBHOOK_SECRET"
+          name      = "CHECKOUT_WEBHOOK_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_webhook_secret.arn
         },
         {
@@ -83,7 +83,7 @@ locals {
           valueFrom = data.aws_ssm_parameter.persona_api_key.arn 
         },
         {
-          name      = "PERSONA_WEBHOOK_SECRET"
+          name      = "PERSONA_WEBHOOK_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.persona_webhook_secret.arn
         },
         {
