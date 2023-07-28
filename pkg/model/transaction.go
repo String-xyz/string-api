@@ -21,7 +21,7 @@ type Quote struct {
 	TransactionRequest TransactionRequest `json:"request" validate:"required"`
 	Estimate           Estimate[string]   `json:"estimate" validate:"required"`
 	Signature          string             `json:"signature" validate:"required,base64"`
-	PriviledgeLevel    int                `json:"priviledgeLevel" validate:"required"`
+	Level              int                `json:"level" validate:"required"`
 }
 
 type ExecutionRequest struct {

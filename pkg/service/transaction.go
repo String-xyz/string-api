@@ -121,14 +121,19 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	res.Estimate = common.EstimateToPrecise(estimateUSD)
 	executor.Close()
 
-	// Check if user has priviledge to execute this transaction and get the priviledge required
-	hasPriviledge, priviledgeLevel, err := UserHasPriviledge(ctx, estimateUSD.TotalUSD, highestType, d.UserAddress, t.repos)
+	userWallet, err := t.repos.Instrument.GetWalletByAddr(ctx, d.UserAddress)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
-	res.PriviledgeLevel = priviledgeLevel
-	if !hasPriviledge {
-		return res, libcommon.StringError(errors.New("insufficient priviledge"))
+	userId := userWallet.UserId
+	kyc := NewKYC(t.repos)
+	allowed, level, err := kyc.MeetsRequirements(ctx, userId, highestType, estimateUSD.TotalUSD)
+	if err != nil {
+		return res, libcommon.StringError(err)
+	}
+	res.Level = level
+	if !allowed {
+		return res, libcommon.StringError(errors.New("insufficient level"))
 	}
 
 	// Sign entire payload
@@ -897,17 +902,22 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	}
 	profit := p.floatEstimate.TotalUSD - presentValue.TotalUSD
 
-	// Check if priviledge matches the level assessed by the initial quote
-	priviledgeType := "NFT"
+	assetType := "NFT"
 	if len(tokenQuantities) > 0 {
-		priviledgeType = "TOKEN"
+		assetType = "TOKEN"
 	}
-	ok, level, err := UserHasPriviledge(ctx, presentValue.TotalUSD, priviledgeType, p.executionRequest.Quote.TransactionRequest.UserAddress, t.repos)
+	userWallet, err := t.repos.Instrument.GetWalletByAddr(ctx, p.executionRequest.Quote.TransactionRequest.UserAddress)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
-	if !ok || level > p.executionRequest.Quote.PriviledgeLevel {
-		MessageTeam("Transaction completed with insufficient priviledge: " + p.transactionModel.Id)
+	userId := userWallet.UserId
+	kyc := NewKYC(t.repos)
+	allowed, level, err := kyc.MeetsRequirements(ctx, userId, assetType, presentValue.TotalUSD)
+	if err != nil {
+		return 0, libcommon.StringError(err)
+	}
+	if !allowed || level > p.executionRequest.Quote.Level {
+		MessageTeam("Transaction completed with insufficient KYC: " + p.transactionModel.Id)
 	}
 
 	// Create Receive Tx leg
