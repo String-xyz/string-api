@@ -38,8 +38,16 @@ data "aws_ssm_parameter" "checkout_private_key" {
   name = "dev-checkout-private-key"
 }
 
-data "aws_ssm_parameter" "checkout_signature_key" {
+data "aws_ssm_parameter" "checkout_webhook_secret" {
   name = "checkout-signature-key"
+}
+
+data "aws_ssm_parameter" "persona_api_key" { 
+  name = "persona-api-key"
+}
+
+data "aws_ssm_parameter" "persona_webhook_secret" { 
+  name = "persona-signature-key"
 }
 
 data "aws_ssm_parameter" "owlracle_api_key" {
