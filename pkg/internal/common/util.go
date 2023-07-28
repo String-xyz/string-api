@@ -85,7 +85,7 @@ func StringContainsAny(target string, substrs []string) bool {
 }
 
 func StringifyBigIntArray(arr []*big.Int) string {
-	strArr := []string{}
+	strArr := make([]string, len(arr))
 	for _, elem := range arr {
 		strArr = append(strArr, elem.String())
 	}
