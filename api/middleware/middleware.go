@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"strings"
 
 	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/String-xyz/go-lib/v2/httperror"
@@ -73,7 +74,6 @@ func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
 
 			// TODO: Validate platformId
 			c.Set("platformId", platformId)
-
 			return true, nil
 		},
 	}
@@ -102,13 +102,27 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 	}
 }
 
-func VerifyWebhookPayload() echo.MiddlewareFunc {
-	secretKey := config.Var.WEBHOOK_SECRET_KEY
-
+func VerifyWebhookPayload(pskey string, ckoskey string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			signatureHeader := c.Request().Header.Get("Cko-Signature")
+			var signatureHeaderName string
+			var secretKey string
+			var validateFunc func([]byte, string, string) bool
 
+			switch c.Path() {
+			case "/webhooks/checkout":
+				signatureHeaderName = "Cko-Signature"
+				secretKey = ckoskey
+				validateFunc = validateSignatureCheckout
+			case "/webhooks/persona":
+				signatureHeaderName = "Persona-Signature"
+				secretKey = pskey
+				validateFunc = validateSignaturePersona
+			default:
+				return httperror.BadRequest400(c, "Invalid path")
+			}
+
+			signatureHeader := c.Request().Header.Get(signatureHeaderName)
 			body, err := io.ReadAll(c.Request().Body)
 			if err != nil {
 				return httperror.BadRequest400(c, "Failed to read body")
@@ -116,20 +130,49 @@ func VerifyWebhookPayload() echo.MiddlewareFunc {
 
 			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
 
-			mac := hmac.New(sha256.New, []byte(secretKey))
-			mac.Write(body)
-			expectedMAC := mac.Sum(nil)
-
-			receivedMAC, err := hex.DecodeString(signatureHeader)
-			if err != nil {
-				return httperror.BadRequest400(c, "Failed to decode signature")
-			}
-
-			if !hmac.Equal(receivedMAC, expectedMAC) {
+			if !validateFunc(body, signatureHeader, secretKey) {
 				return httperror.Unauthorized401(c, "Failed to verify payload")
 			}
 
 			return next(c)
 		}
 	}
+}
+
+func validateSignatureCheckout(body []byte, signature string, secretKey string) bool {
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write(body)
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(receivedMAC, expectedMAC)
+}
+
+func validateSignaturePersona(body []byte, signatureHeader string, secretKey string) bool {
+	parts := strings.Split(signatureHeader, ",")
+	var timestamp, signature string
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			timestamp = strings.TrimPrefix(part, "t=")
+		} else if strings.HasPrefix(part, "v1=") {
+			signature = strings.TrimPrefix(part, "v1=")
+		}
+	}
+
+	macData := timestamp + "." + string(body)
+
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(macData))
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(expectedMAC, receivedMAC)
 }

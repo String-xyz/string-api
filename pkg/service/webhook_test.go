@@ -13,25 +13,25 @@ import (
 
 func TestPaymentAuthorized(t *testing.T) {
 	json := data.AuhorizationApprovedJSON
-	err := NewWebhook().Handle(context.Background(), []byte(json))
+	err := NewWebhook().Handle(context.Background(), []byte(json), WebhookTypeCheckout)
 	assert.NoError(t, err)
 }
 
 func TestPaymentDeclined(t *testing.T) {
 	json := data.AuhorizationDeclinedJSON
-	err := NewWebhook().Handle(context.Background(), []byte(json))
+	err := NewWebhook().Handle(context.Background(), []byte(json), WebhookTypeCheckout)
 	assert.NoError(t, err)
 }
 
 func TestPaymentCaptured(t *testing.T) {
 	json := data.PaymentCapturedJSON
-	err := NewWebhook().Handle(context.Background(), []byte(json))
+	err := NewWebhook().Handle(context.Background(), []byte(json), WebhookTypeCheckout)
 	assert.NoError(t, err)
 }
 
 func TestPaymentApproved(t *testing.T) {
 	json := data.PaymentApprovedJSON
-	err := NewWebhook().Handle(context.Background(), []byte(json))
+	err := NewWebhook().Handle(context.Background(), []byte(json), WebhookTypeCheckout)
 	assert.NoError(t, err)
 }
 

@@ -17,6 +17,10 @@ type Account struct {
 	Attributes AccountAttributes `json:"attributes"`
 }
 
+func (a Account) GetType() string {
+	return a.Type
+}
+
 type AccountCreate struct {
 	Attributes CommonFields `json:"attributes"`
 }

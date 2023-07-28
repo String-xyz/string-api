@@ -1,6 +1,8 @@
 package persona
 
-import "time"
+import (
+	"time"
+)
 
 type IdValue struct {
 	Type string `json:"type"`

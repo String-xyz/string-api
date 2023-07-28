@@ -39,6 +39,10 @@ type Verification struct {
 	Relationships Relationships          `json:"relationships"`
 }
 
+func (v Verification) GetType() string {
+	return v.Type
+}
+
 type VerificationResponse struct {
 	Data Verification `json:"data"`
 }

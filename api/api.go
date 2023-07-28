@@ -9,6 +9,7 @@ import (
 
 	"github.com/String-xyz/string-api/api/handler"
 	"github.com/String-xyz/string-api/api/middleware"
+	"github.com/String-xyz/string-api/config"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -117,5 +118,5 @@ func cardRoute(services service.Services, e *echo.Echo) {
 
 func webhookRoute(services service.Services, e *echo.Echo) {
 	handler := handler.NewWebhook(e, services.Webhook)
-	handler.RegisterRoutes(e.Group("/webhooks"), middleware.VerifyWebhookPayload())
+	handler.RegisterRoutes(e.Group("/webhooks"), middleware.VerifyWebhookPayload(config.Var.PERSONA_WEBHOOK_SECRET_KEY, config.Var.CHECKOUT_WEBHOOK_SECRET_KEY))
 }
