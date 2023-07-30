@@ -8,11 +8,20 @@ import (
 )
 
 type KYC interface {
-	MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level int, err error)
-	GetTransactionLevel(assetType string, cost float64) int
-	GetUserLevel(ctx context.Context, userId string) (level int, err error)
-	UpdateUserLevel(ctx context.Context, userId string) (level int, err error)
+	MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level KYCLevel, err error)
+	GetTransactionLevel(assetType string, cost float64) KYCLevel
+	GetUserLevel(ctx context.Context, userId string) (level KYCLevel, err error)
+	UpdateUserLevel(ctx context.Context, userId string) (level KYCLevel, err error)
 }
+
+type KYCLevel int
+
+const (
+	Level0 KYCLevel = iota
+	Level1
+	Level2
+	Level3
+)
 
 type kyc struct {
 	repos repository.Repositories
@@ -22,7 +31,7 @@ func NewKYC(repos repository.Repositories) KYC {
 	return &kyc{repos}
 }
 
-func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level int, err error) {
+func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level KYCLevel, err error) {
 	transactionLevel := k.GetTransactionLevel(assetType, cost)
 
 	userLevel, err := k.GetUserLevel(ctx, userId)
@@ -31,30 +40,29 @@ func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType str
 	}
 	if userLevel >= transactionLevel {
 		return true, transactionLevel, nil
-	} else {
-		return false, transactionLevel, nil
 	}
+return false, transactionLevel, nil
 }
 
-func (k kyc) GetTransactionLevel(assetType string, cost float64) int {
+func (k kyc) GetTransactionLevel(assetType string, cost float64) KYCLevel {
 	if assetType == "NFT" {
 		if cost < 1000.00 {
-			return 1
+			return Level1
 		} else if cost < 5000.00 {
-			return 2
+			return Level2
 		} else {
-			return 3
+			return Level3
 		}
 	} else {
 		if cost < 5000.00 {
-			return 2
+			return Level2
 		} else {
-			return 3
+			return Level3
 		}
 	}
 }
 
-func (k kyc) GetUserLevel(ctx context.Context, userId string) (level int, err error) {
+func (k kyc) GetUserLevel(ctx context.Context, userId string) (level KYCLevel, err error) {
 	level, err = k.UpdateUserLevel(ctx, userId)
 	if err != nil {
 		return level, err
@@ -63,7 +71,7 @@ func (k kyc) GetUserLevel(ctx context.Context, userId string) (level int, err er
 	return level, nil
 }
 
-func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level int, err error) {
+func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level KYCLevel, err error) {
 	identity, err := k.repos.Identity.GetByUserId(ctx, userId)
 	if err != nil {
 		return level, err
@@ -84,19 +92,19 @@ func (k kyc) UpdateUserLevel(ctx context.Context, userId string) (level int, err
 	}
 
 	if points >= 4 {
-		if identity.Level != 2 {
-			identity.Level = 2
+		if identity.Level != int(Level2) {
+			identity.Level = int(Level2)
 			k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
 		}
 	} else if points >= 1 && identity.EmailVerified != nil {
-		if identity.Level != 1 {
-			identity.Level = 1
+		if identity.Level != int(Level1) {
+			identity.Level = int(Level1)
 			k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
 		}
-	} else if points <= 1 && identity.Level != 0 {
-		identity.Level = 0
+	} else if points <= 1 && identity.Level != int(Level0) {
+		identity.Level = int(Level0)
 		k.repos.Identity.Update(ctx, userId, model.IdentityUpdates{Level: &identity.Level})
 	}
 
-	return identity.Level, nil
+	return KYCLevel(identity.Level), nil
 }

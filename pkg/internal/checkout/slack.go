@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/String-xyz/string-api/config"
 	"github.com/rs/zerolog/log"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 type SlackMessage struct {

@@ -11,7 +11,8 @@ import (
 )
 
 type Webhook interface {
-	Handle(c echo.Context) error
+	HandleCheckout(c echo.Context) error
+	HandlePersona(c echo.Context) error
 	RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc)
 }
 
@@ -24,22 +25,38 @@ func NewWebhook(route *echo.Echo, service service.Webhook) Webhook {
 	return &webhook{service, nil}
 }
 
-func (w webhook) Handle(c echo.Context) error {
+func (w webhook) HandleCheckout(c echo.Context) error {
 	cxt := c.Request().Context()
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return httperror.BadRequest400(c, "Failed to read body")
 	}
 
-	err = w.service.Handle(cxt, body)
+	err = w.service.Handle(cxt, body, service.WebhookTypeCheckout)
 	if err != nil {
-		return httperror.Internal500(c, "Failed to handle webhook")
+		return httperror.Internal500(c, "Failed to handle checkout webhook")
+	}
+
+	return nil
+}
+
+func (w webhook) HandlePersona(c echo.Context) error {
+	cxt := c.Request().Context()
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return httperror.BadRequest400(c, "Failed to read body")
+	}
+
+	err = w.service.Handle(cxt, body, service.WebhookTypePersona)
+	if err != nil {
+		return httperror.Internal500(c, "Failed to handle persona webhook")
 	}
 
 	return nil
 }
 
 func (w webhook) RegisterRoutes(g *echo.Group, ms ...echo.MiddlewareFunc) {
-	g.POST("/checkout", w.Handle, ms...)
 	w.group = g
+	g.POST("/checkout", w.HandleCheckout, ms...)
+	g.POST("/persona", w.HandlePersona, ms...)
 }
