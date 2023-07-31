@@ -6,6 +6,7 @@ import (
 
 	"github.com/String-xyz/go-lib/v2/common"
 	"github.com/cockroachdb/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type EventType string
@@ -26,6 +27,10 @@ type PayloadData interface {
 
 type EventPayload struct {
 	Data json.RawMessage `json:"data"`
+}
+
+type EventPayloadData struct {
+	Data Event `json:"data"`
 }
 
 type Event struct {
@@ -51,6 +56,7 @@ func (a EventAttributes) GetPayloadData() (PayloadData, error) {
 		var data Account
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {
+			log.Error().Err(err).Msg("failed to unmarshal account")
 			return nil, common.StringError(err)
 		}
 		return data, nil
@@ -58,6 +64,7 @@ func (a EventAttributes) GetPayloadData() (PayloadData, error) {
 		var data Inquiry
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {
+			log.Error().Err(err).Msg("failed to unmarshal inquiry")
 			return nil, common.StringError(err)
 		}
 		return data, nil
@@ -65,10 +72,12 @@ func (a EventAttributes) GetPayloadData() (PayloadData, error) {
 		var data Verification
 		err := json.Unmarshal(a.Payload.Data, &data)
 		if err != nil {
+			log.Error().Err(err).Msg("failed to unmarshal verification")
 			return nil, common.StringError(err)
 		}
 		return data, nil
 	default:
+		log.Error().Msgf("unknown event type: %s", a.GetType())
 		return nil, common.StringError(errors.Newf("unknown event type: %s", a.GetType()))
 	}
 }
