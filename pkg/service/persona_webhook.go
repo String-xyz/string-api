@@ -14,17 +14,19 @@ import (
 type personaWebhook struct{}
 
 func (p personaWebhook) Handle(ctx context.Context, data []byte) error {
-	event := persona.Event{}
+	event := persona.EventPayloadData{}
 	err := json.Unmarshal(data, &event)
 	if err != nil {
+		log.Error().Err(err).Str("data", string(data)).Msg("error unmarshalling webhook event")
 		return common.StringError(errors.Newf("error unmarshalling webhook event: %v", err))
 	}
-	return p.processEvent(ctx, event)
+	return p.processEvent(ctx, event.Data)
 }
 
 func (p personaWebhook) processEvent(ctx context.Context, event persona.Event) error {
 	payload, err := event.Attributes.GetPayloadData()
 	if err != nil {
+		log.Error().Err(err).Interface("event", event).Msg("error getting payload data")
 		return common.StringError(errors.Newf("error getting payload data: %v", err))
 	}
 	switch event.Attributes.Name {
@@ -35,6 +37,7 @@ func (p personaWebhook) processEvent(ctx context.Context, event persona.Event) e
 	case persona.EventTypeVerificationCreated, persona.EventTypeVerificationPassed, persona.EventTypeVerificationFailed:
 		return p.verification(ctx, payload, event.Attributes.Name)
 	default:
+		log.Error().Interface("event", event).Msg("unknown event type")
 		return common.StringError(errors.Newf("unknown event type: %s", event.Attributes.Name))
 	}
 }
@@ -42,6 +45,7 @@ func (p personaWebhook) processEvent(ctx context.Context, event persona.Event) e
 func (p personaWebhook) account(ctx context.Context, payload persona.PayloadData, eventType persona.EventType) error {
 	account, ok := payload.(persona.Account)
 	if !ok {
+		log.Error().Interface("payload", payload).Msg("error casting payload to account")
 		return common.StringError(errors.New("error casting payload to account"))
 	}
 	log.Info().Interface("account", account).Msg("account event")
@@ -51,6 +55,7 @@ func (p personaWebhook) account(ctx context.Context, payload persona.PayloadData
 func (p personaWebhook) inquiry(ctx context.Context, payload persona.PayloadData, eventType persona.EventType) error {
 	inquiry, ok := payload.(persona.Inquiry)
 	if !ok {
+		log.Error().Interface("payload", payload).Msg("error casting payload to inquiry")
 		return common.StringError(errors.New("error casting payload to inquiry"))
 	}
 	log.Info().Interface("inquiry", inquiry).Msg("inquiry event")
@@ -60,6 +65,7 @@ func (p personaWebhook) inquiry(ctx context.Context, payload persona.PayloadData
 func (p personaWebhook) verification(ctx context.Context, payload persona.PayloadData, eventType persona.EventType) error {
 	verification, ok := payload.(persona.Verification)
 	if !ok {
+		log.Error().Interface("payload", payload).Msg("error casting payload to verification")
 		return common.StringError(errors.New("error casting payload to verification"))
 	}
 	log.Info().Interface("verification", verification).Msg("verification event")
