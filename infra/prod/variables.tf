@@ -1,10 +1,10 @@
 locals {
-  cluster_name       = "string-core"
+  cluster_name       = "core"
   env                = "prod"
-  service_name       = "string-api"
+  service_name       = "api"
   domain             = "api.string-api.xyz"
   container_port     = "3000"
-  origin_id          = "string-api"
+  origin_id          = "api"
   desired_task_count = "1"
   db_port            = "5432"
   redis_port         = "6379"
@@ -15,7 +15,7 @@ locals {
 
 variable "versioning" {
   type    = string
-  default = "v1.0.0-alpha"
+  default = "v1.0.0"
 }
 
 locals {
@@ -26,7 +26,11 @@ locals {
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
-        "com.datadoghq.ad.check_names" : "[\"${local.service_name}\"]",
+        "com.datadoghq.ad.logs" : "[{\"service\":\"${local.service_name}\"}]",
+        "com.datadoghq.ad.check_names" :local.service_name,
+        "com.datadoghq.tags.env": local.env,
+        "com.datadoghq.tags.service": local.service_name,
+        "com.datadoghq.tags.version": var.versioning
       },
       portMappings = [
         { containerPort = 3000 }
@@ -35,6 +39,10 @@ locals {
         {
           name      = "EVM_PRIVATE_KEY"
           valueFrom = data.aws_ssm_parameter.evm_private_key.arn
+        },
+        {
+          name      = "JWT_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.jwt_secret.arn
         },
         {
           name      = "STRING_ENCRYPTION_KEY"
@@ -53,16 +61,8 @@ locals {
           valueFrom = data.aws_ssm_parameter.string_bank_id.arn
         },
         {
-          name      = "STRING_PLACEHOLDER_PLATFORM_ID"
-          valueFrom = data.aws_ssm_parameter.string_platform_id.arn
-        },
-        {
           name      = "UNIT21_API_KEY"
           valueFrom = data.aws_ssm_parameter.unit21_api_key.arn
-        },
-        {
-          name      = "IPSTACK_API_KEY"
-          valueFrom = data.aws_ssm_parameter.ipstack_api_key.arn
         },
         {
           name      = "CHECKOUT_PUBLIC_KEY"
@@ -71,6 +71,10 @@ locals {
         {
           name      = "CHECKOUT_SECRET_KEY"
           valueFrom = data.aws_ssm_parameter.checkout_private_key.arn
+        },
+        {
+          name      = "WEBHOOK_SECRET_KEY"
+          valueFrom = data.aws_ssm_parameter.checkout_signature_key.arn
         },
         {
           name      = "OWLRACLE_API_KEY"
@@ -123,6 +127,14 @@ locals {
         {
           name      = "REDIS_PASSWORD",
           valuefrom = data.aws_ssm_parameter.redis_auth_token.arn
+        },
+        {
+          name      = "SLACK_WEBHOOK_URL"
+          valueFrom = data.aws_ssm_parameter.slack_webhook_url.arn
+        },
+        {
+          name      = "TEAM_PHONE_NUMBERS"
+          valuefrom = data.aws_ssm_parameter.team_phone_numbers.arn
         }
       ]
       environment = [
@@ -159,6 +171,10 @@ locals {
           value = "https://api.coingecko.com/api/v3/"
         },
         {
+          name  = "COINCAP_API_URL"
+          value = "https://api.coincap.io/v2/"
+        },
+        {
           name  = "FINGERPRINT_API_URL"
           value = "https://api.fpjs.io/"
         },
@@ -170,21 +186,25 @@ locals {
           name  = "UNIT21_ENV"
           value = "api.prod2"
         },
-         {
-          name = "CHECKOUT_ENV"
+        {
+          name = "AUTH_EMAIL_ADDRESS"
+          value = "auth@string.xyz"
+        },
+        {
+          name = "RECEIPTS_EMAIL_ADDRESS"
+          value = "receipts@stringxyz.com"
+        },
+        {
+          name = "UNIT21_RTR_URL"
+          value ="https://rtr.prod2.unit21.com/evaluate"
+        },
+        {
+          name  = "CHECKOUT_ENV"
           value = local.env
         },
         {
           name  = "UNIT21_ORG_NAME"
           value = "string"
-        },
-        {
-          name  = "DD_LOGS_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
-          value = "true"
         },
         {
           name  = "DD_SERVICE"
@@ -199,14 +219,6 @@ locals {
           value = local.env
         },
         {
-          name  = "DD_APM_ENABLED"
-          value = "true"
-        },
-        {
-          name  = "DD_SITE"
-          value = "datadoghq.com"
-        },
-        {
           name  = "ECS_FARGATE"
           value = "true"
         }
@@ -219,9 +231,9 @@ locals {
         }]
         options = {
           Name             = "datadog"
-          "dd_service"     = "${local.service_name}"
+          "dd_service"     = local.service_name
           "Host"           = "http-intake.logs.datadoghq.com"
-          "dd_source"      = "${local.service_name}"
+          "dd_source"      = local.service_name
           "dd_message_key" = "log"
           "dd_tags"        = "project:${local.service_name}"
           "TLS"            = "on"

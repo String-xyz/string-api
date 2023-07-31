@@ -1,179 +1,202 @@
 package unit21
 
 import (
+	"context"
 	"encoding/json"
-	"log"
-	"os"
+	"errors"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/rs/zerolog/log"
 )
 
 type Transaction interface {
-	Evaluate(transaction model.Transaction) (pass bool, err error)
-	Create(transaction model.Transaction) (unit21Id string, err error)
-	Update(transaction model.Transaction) (unit21Id string, err error)
+	Evaluate(ctx context.Context, transaction model.Transaction) (results []rule, err error)
+	Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
+	Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error)
 }
 
-type TransactionRepo struct {
-	TxLeg repository.TxLeg
-	User  repository.User
-	Asset repository.Asset
+type TransactionRepos struct {
+	User   repository.User
+	TxLeg  repository.TxLeg
+	Asset  repository.Asset
+	Device repository.Device
 }
 
 type transaction struct {
-	repo TransactionRepo
+	repos TransactionRepos
 }
 
-func NewTransaction(r TransactionRepo) Transaction {
-	return &transaction{repo: r}
+func NewTransaction(r TransactionRepos) Transaction {
+	return &transaction{repos: r}
 }
 
-func (t transaction) Evaluate(transaction model.Transaction) (pass bool, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Evaluate(ctx context.Context, transaction model.Transaction) (results []rule, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
-		return false, common.StringError(err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
+		return results, libcommon.StringError(err)
 	}
 
-	url := os.Getenv("UNIT21_RTR_URL")
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
+	if err != nil {
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return results, libcommon.StringError(err)
+	}
+
+	url := config.Var.UNIT21_RTR_URL
 	if url == "" {
 		url = "https://rtr.sandbox2.unit21.com/evaluate"
 	}
 
-	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 	if err != nil {
-		log.Printf("Unit21 Transaction evaluate failed: %s", err)
-		return false, common.StringError(err)
+		log.Err(err).Msg("Unit21 Transaction evaluate failed")
+		return results, libcommon.StringError(err)
 	}
 
 	// var u21Response *createEventResponse
 	var response evaluateEventResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
-		return false, common.StringError(err)
+		log.Err(err).Msg("Reading body failed")
+		return results, libcommon.StringError(err)
 	}
 
 	for _, rule := range *response.RuleExecutions {
-		if rule.Status != "PASS" {
-			return false, nil
+		if !common.SliceContains([]string{"PASS", "ERROR"}, rule.Status) {
+			results = append(results, rule)
+		}
+		if rule.Status == "ERROR" {
+			log.Err(errors.New("Unit21 Transaction evaluate failed for " + rule.RuleName)).Msg("Unit21 Transaction evaluate failed")
 		}
 	}
 
-	return true, nil
+	return results, nil
 }
 
-func (t transaction) Create(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
-
+func (t transaction) Create(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
+		return "", libcommon.StringError(err)
 	}
 
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
-	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
 	if err != nil {
-		log.Printf("Unit21 Transaction create failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return "", libcommon.StringError(err)
+	}
+
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/events/create"
+	body, err := u21Post(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
+	if err != nil {
+		log.Err(err).Msg("Unit21 Transaction create failed")
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Reading body failed")
+		return "", libcommon.StringError(err)
 	}
 
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
-
+	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) Update(transaction model.Transaction) (unit21Id string, err error) {
-	transactionData, err := t.getTransactionData(transaction)
+func (t transaction) Update(ctx context.Context, transaction model.Transaction) (unit21Id string, err error) {
+	transactionData, err := t.getTransactionData(ctx, transaction)
 	if err != nil {
-		log.Printf("Failed to gather Unit21 transaction source: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Failed to gather Unit21 transaction source")
+		return "", libcommon.StringError(err)
 	}
 
-	orgName := os.Getenv("UNIT21_ORG_NAME")
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/" + orgName + "/events/" + transaction.ID + "/update"
-	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData))
+	digitalData, err := t.getEventDigitalData(ctx, transaction)
+	if err != nil {
+		log.Err(err).Msg("Failed to gather Unit21 digital data")
+		return "", libcommon.StringError(err)
+	}
+
+	orgName := config.Var.UNIT21_ORG_NAME
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/" + orgName + "/events/" + transaction.Id + "/update"
+	body, err := u21Put(url, mapToUnit21TransactionEvent(transaction, transactionData, digitalData))
 
 	if err != nil {
-		log.Printf("Unit21 Transaction create failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Unit21 Transaction create failed:")
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *updateEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Reading body failed")
+		return "", libcommon.StringError(err)
 	}
-
-	log.Printf("Unit21Id: %s", u21Response.Unit21Id)
+	log.Info().Str("unit21Id", u21Response.Unit21Id).Send()
 	return u21Response.Unit21Id, nil
 }
 
-func (t transaction) getTransactionData(transaction model.Transaction) (txData transactionData, err error) {
-	senderData, err := t.repo.TxLeg.GetById(transaction.OriginTxLegID)
+func (t transaction) getTransactionData(ctx context.Context, transaction model.Transaction) (txData transactionData, err error) {
+	senderData, err := t.repos.TxLeg.GetById(ctx, transaction.OriginTxLegId)
 	if err != nil {
-		log.Printf("Failed go get origin transaction leg: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed go get origin transaction leg")
+		err = libcommon.StringError(err)
 		return
 	}
 
-	receiverData, err := t.repo.TxLeg.GetById(transaction.DestinationTxLegID)
+	receiverData, err := t.repos.TxLeg.GetById(ctx, transaction.DestinationTxLegId)
 	if err != nil {
-		log.Printf("Failed go get origin transaction leg: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed go get origin transaction leg")
+		err = libcommon.StringError(err)
 		return
 	}
 
-	senderAsset, err := t.repo.Asset.GetById(senderData.AssetID)
+	senderAsset, err := t.repos.Asset.GetById(ctx, senderData.AssetId)
 	if err != nil {
-		log.Printf("Failed go get transaction sender asset: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed go get transaction sender asset")
+		err = libcommon.StringError(err)
 		return
 	}
 
-	receiverAsset, err := t.repo.Asset.GetById(receiverData.AssetID)
+	receiverAsset, err := t.repos.Asset.GetById(ctx, receiverData.AssetId)
 	if err != nil {
-		log.Printf("Failed go get transaction receiver asset: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed go get transaction receiver asset")
+		err = libcommon.StringError(err)
 		return
 	}
 
 	amount, err := common.BigNumberToFloat(senderData.Value, 6)
 	if err != nil {
-		log.Printf("Failed to convert amount: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed to convert amount")
+		err = libcommon.StringError(err)
 		return
 	}
 
 	senderAmount, err := common.BigNumberToFloat(senderData.Amount, senderAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert senderAmount: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed to convert senderAmount")
+		err = libcommon.StringError(err)
 		return
 	}
 
 	receiverAmount, err := common.BigNumberToFloat(receiverData.Amount, receiverAsset.Decimals)
 	if err != nil {
-		log.Printf("Failed to convert receiverAmount: %s", err)
-		err = common.StringError(err)
+		log.Err(err).Msg("Failed to convert receiverAmount")
+		err = libcommon.StringError(err)
 		return
 	}
 	var stringFee float64
 	if transaction.StringFee != "" {
 		stringFee, err = common.BigNumberToFloat(transaction.StringFee, 6)
 		if err != nil {
-			log.Printf("Failed to convert stringFee: %s", err)
-			err = common.StringError(err)
+			log.Err(err).Msg("Failed to convert stringFee")
+			err = libcommon.StringError(err)
 			return
 		}
 	}
@@ -182,8 +205,8 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	if transaction.ProcessingFee != "" {
 		processingFee, err = common.BigNumberToFloat(transaction.ProcessingFee, 6)
 		if err != nil {
-			log.Printf("Failed to convert processingFee: %s", err)
-			err = common.StringError(err)
+			log.Err(err).Msg("Failed to convert processingFee")
+			err = libcommon.StringError(err)
 			return
 		}
 	}
@@ -197,14 +220,14 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 		Amount:               amount,
 		SentAmount:           senderAmount,
 		SentCurrency:         senderAsset.Name,
-		SenderEntityId:       senderData.UserID,
+		SenderEntityId:       senderData.UserId,
 		SenderEntityType:     "user",
-		SenderInstrumentId:   senderData.InstrumentID,
+		SenderInstrumentId:   senderData.InstrumentId,
 		ReceivedAmount:       receiverAmount,
 		ReceivedCurrency:     receiverAsset.Name,
-		ReceiverEntityId:     receiverData.UserID,
+		ReceiverEntityId:     receiverData.UserId,
 		ReceiverEntityType:   "user",
-		ReceiverInstrumentId: receiverData.InstrumentID,
+		ReceiverInstrumentId: receiverData.InstrumentId,
 		ExchangeRate:         exchangeRate,
 		TransactionHash:      transaction.TransactionHash,
 		USDConversionNotes:   "",
@@ -215,7 +238,26 @@ func (t transaction) getTransactionData(transaction model.Transaction) (txData t
 	return
 }
 
-func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData) *u21Event {
+func (t transaction) getEventDigitalData(ctx context.Context, transaction model.Transaction) (digitalData eventDigitalData, err error) {
+	if transaction.DeviceId == "" {
+		return
+	}
+
+	device, err := t.repos.Device.GetById(ctx, transaction.DeviceId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get transaction device")
+		err = libcommon.StringError(err)
+		return
+	}
+
+	digitalData = eventDigitalData{
+		IPAddress:         transaction.IPAddress,
+		ClientFingerprint: device.Fingerprint,
+	}
+	return
+}
+
+func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData transactionData, digitalData eventDigitalData) *u21Event {
 	var transactionTagArr []string
 	if transaction.Tags != nil {
 		for key, value := range transaction.Tags {
@@ -225,21 +267,19 @@ func mapToUnit21TransactionEvent(transaction model.Transaction, transactionData 
 
 	jsonBody := &u21Event{
 		GeneralData: &eventGeneral{
-			EventId:      transaction.ID,                    //required
+			EventId:      transaction.Id,                    //required
 			EventType:    "transaction",                     //required
 			EventTime:    int(transaction.CreatedAt.Unix()), //required
-			EventSubtype: "credit_card",                     //required for RTR
+			EventSubtype: "Fiat to Crypto",                  //required for RTR
 			Status:       transaction.Status,
 			Parents:      nil,
 			Tags:         transactionTagArr,
 		},
 		TransactionData: &transactionData,
 		ActionData:      nil,
-		DigitalData: &eventDigitalData{
-			IPAddress: transaction.IPAddress,
-		},
-		LocationData: nil,
-		CustomData:   nil,
+		DigitalData:     &digitalData,
+		LocationData:    nil,
+		CustomData:      nil,
 	}
 
 	return jsonBody

@@ -2,12 +2,13 @@ package unit21
 
 import (
 	"encoding/json"
-	"log"
-	"os"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
+
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/String-xyz/string-api/pkg/repository"
+	"github.com/rs/zerolog/log"
 )
 
 type Action interface {
@@ -17,18 +18,11 @@ type Action interface {
 		eventSubtype string) (unit21Id string, err error)
 }
 
-type ActionRepo struct {
-	User     repository.User
-	Device   repository.Device
-	Location repository.Location
-}
-
 type action struct {
-	repo ActionRepo
 }
 
-func NewAction(r ActionRepo) Action {
-	return &action{repo: r}
+func NewAction() Action {
+	return &action{}
 }
 
 func (a action) Create(
@@ -40,26 +34,26 @@ func (a action) Create(
 	actionData := actionData{
 		ActionType:    instrument.Type,
 		ActionDetails: actionDetails,
-		EntityId:      instrument.UserID,
+		EntityId:      instrument.UserId,
 		EntityType:    "user",
-		InstrumentId:  instrument.ID,
+		InstrumentId:  instrument.Id,
 	}
 
-	url := "https://" + os.Getenv("UNIT21_ENV") + ".unit21.com/v1/events/create"
+	url := "https://" + config.Var.UNIT21_ENV + ".unit21.com/v1/events/create"
 	body, err := u21Post(url, mapToUnit21ActionEvent(instrument, actionData, unit21InstrumentId, eventSubtype))
 	if err != nil {
-		log.Printf("Unit21 Action create failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Unit21 Action create failed")
+		return "", libcommon.StringError(err)
 	}
 
 	var u21Response *createEventResponse
 	err = json.Unmarshal(body, &u21Response)
 	if err != nil {
-		log.Printf("Reading body failed: %s", err)
-		return "", common.StringError(err)
+		log.Err(err).Msg("Reading body failed")
+		return "", libcommon.StringError(err)
 	}
 
-	log.Printf("Create Action Unit21Id: %s", u21Response.Unit21Id)
+	log.Info().Str("unit21Id", u21Response.Unit21Id).Msg("Create Action")
 
 	return u21Response.Unit21Id, nil
 }
@@ -90,10 +84,10 @@ func mapToUnit21ActionEvent(instrument model.Instrument, actionData actionData, 
 
 	actionBody, err := common.BetterStringify(jsonBody)
 	if err != nil {
-		log.Printf("\nError creating action body\n")
+		log.Err(err).Msg("Error creating action body")
 		return jsonBody
 	}
-	log.Printf("\nCreate Action action body: %+v\n", actionBody)
+	log.Info().Str("body", actionBody).Msg("Create Action action body")
 
 	return jsonBody
 }

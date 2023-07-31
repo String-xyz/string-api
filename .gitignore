@@ -4,4 +4,6 @@ tmp/
 .vscode/
 .terraform/
 bin/
+docs/
 
+.DS_Store

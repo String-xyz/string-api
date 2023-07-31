@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "ecs_task_policy" {
 }
 
 resource "aws_iam_role" "task_ecs_role" {
-  name               = "${local.service_name}-task-ecs-role"
+  name               = "${local.env}-${local.service_name}-task-ecs-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_policy.json
 }
 
@@ -36,15 +36,18 @@ data "aws_iam_policy_document" "task_policy" {
     resources = [
       data.aws_ssm_parameter.datadog.arn,
       data.aws_ssm_parameter.evm_private_key.arn,
+      data.aws_ssm_parameter.jwt_secret.arn,
       data.aws_ssm_parameter.string_encryption_secret.arn,
       data.aws_ssm_parameter.string_internal_id.arn,
       data.aws_ssm_parameter.string_wallet_id.arn,
       data.aws_ssm_parameter.string_bank_id.arn,
-      data.aws_ssm_parameter.string_platform_id.arn,
-      data.aws_ssm_parameter.ipstack_api_key.arn,
       data.aws_ssm_parameter.unit21_api_key.arn,
       data.aws_ssm_parameter.checkout_public_key.arn,
       data.aws_ssm_parameter.checkout_private_key.arn,
+      data.aws_ssm_parameter.checkout_webhook_secret.arn,
+      data.aws_ssm_parameter.persona_api_key.arn,
+      data.aws_ssm_parameter.persona_webhook_secret.arn,
+      data.aws_ssm_parameter.slack_webhook_url.arn,
       data.aws_ssm_parameter.owlracle_api_key.arn,
       data.aws_ssm_parameter.owlracle_api_secret.arn,
       data.aws_ssm_parameter.db_password.arn,

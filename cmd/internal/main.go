@@ -3,36 +3,37 @@ package main
 import (
 	"os"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	env "github.com/String-xyz/go-lib/v2/config"
 	"github.com/String-xyz/string-api/api"
-	"github.com/String-xyz/string-api/api/handler"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/store"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
-	// load .env file
-	godotenv.Load(".env") // removed the err since in cloud this wont be loaded
+	// load env vars
+	env.LoadEnv(&config.Var)
 
-	if !handler.IsLocalEnv() {
+	if !libcommon.IsLocalEnv() {
 		tracer.Start()
 		defer tracer.Stop()
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("no port!")
-	}
+	port := config.Var.PORT
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	db := store.MustNewPG()
 	lg := zerolog.New(os.Stdout)
+
+	redis := store.NewRedis()
+
 	// setup api
 	api.StartInternal(api.APIConfig{
 		DB:     db,
-		Redis:  store.NewRedisStore(),
+		Redis:  redis,
 		Port:   port,
 		Logger: &lg,
 	})

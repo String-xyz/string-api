@@ -10,18 +10,20 @@ import (
 func NewRepos(config APIConfig) repository.Repositories {
 	// TODO: Make sure all of the repos are initialized here
 	return repository.Repositories{
-		Auth:           repository.NewAuth(config.Redis, config.DB),
-		User:           repository.NewUser(config.DB),
-		Contact:        repository.NewContact(config.DB),
-		Instrument:     repository.NewInstrument(config.DB),
-		Device:         repository.NewDevice(config.DB),
-		UserToPlatform: repository.NewUserToPlatform(config.DB),
-		Asset:          repository.NewAsset(config.DB),
-		Network:        repository.NewNetwork(config.DB),
-		Platform:       repository.NewPlatform(config.DB),
-		Transaction:    repository.NewTransaction(config.DB),
-		TxLeg:          repository.NewTxLeg(config.DB),
-		Location:       repository.NewLocation(config.DB),
+		Auth:        repository.NewAuth(config.Redis, config.DB),
+		Apikey:      repository.NewApikey(config.DB),
+		User:        repository.NewUser(config.DB),
+		Contact:     repository.NewContact(config.DB),
+		Contract:    repository.NewContract(config.DB),
+		Instrument:  repository.NewInstrument(config.DB),
+		Device:      repository.NewDevice(config.DB),
+		Asset:       repository.NewAsset(config.DB),
+		Network:     repository.NewNetwork(config.DB),
+		Transaction: repository.NewTransaction(config.DB),
+		TxLeg:       repository.NewTxLeg(config.DB),
+		Location:    repository.NewLocation(config.DB),
+		Platform:    repository.NewPlatform(config.DB),
+		Identity:    repository.NewIdentity(config.DB),
 	}
 }
 
@@ -31,40 +33,38 @@ func NewRepos(config APIConfig) repository.Repositories {
  * Not every service needs access to all of the repos, so we can pass in only the ones it needs. This will make it easier to test
  */
 func NewServices(config APIConfig, repos repository.Repositories) service.Services {
+	unit21 := service.NewUnit21(repos)
 	httpClient := service.NewHTTPClient(service.HTTPConfig{Timeout: time.Duration(30) * time.Second})
 	client := service.NewFingerprintClient(httpClient)
 	fingerprint := service.NewFingerprint(client)
-	// we don't need to pass in the entire repos struct, just the ones we need
-	verificationRepos := repository.Repositories{Contact: repos.Contact, User: repos.User, Device: repos.Device}
-	verification := service.NewVerification(verificationRepos)
+	verification := service.NewVerification(repos, unit21)
 
 	// device service
 	deviceRepos := repository.Repositories{Device: repos.Device}
 	device := service.NewDevice(deviceRepos, fingerprint)
 
 	auth := service.NewAuth(repos, verification, device)
-	apiKey := service.NewAPIKeyStrategy(repos.Auth)
-	cost := service.NewCost(config.Redis)
+	cost := service.NewCost(config.Redis, repos)
 	executor := service.NewExecutor()
 	geofencing := service.NewGeofencing(config.Redis)
 
-	// we don't need to pass in the entire repos struct, just the ones we need
-	platformRepos := repository.Repositories{Auth: repos.Auth, Platform: repos.Platform}
-	platform := service.NewPlatform(platformRepos)
+	transaction := service.NewTransaction(repos, config.Redis, unit21)
+	user := service.NewUser(repos, auth, fingerprint, device, unit21, verification)
 
-	transaction := service.NewTransaction(repos, config.Redis)
-	user := service.NewUser(repos, auth, fingerprint)
+	card := service.NewCard(repos)
+
+	kyc := service.NewKYC(repos)
 
 	return service.Services{
 		Auth:         auth,
-		ApiKey:       apiKey,
 		Cost:         cost,
 		Executor:     executor,
 		Geofencing:   geofencing,
-		Platform:     platform,
 		Transaction:  transaction,
 		User:         user,
 		Verification: verification,
 		Device:       device,
+		Card:         card,
+		KYC:          kyc,
 	}
 }

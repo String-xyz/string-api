@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/String-xyz/string-api/api/validator"
+	"github.com/String-xyz/go-lib/v2/validator"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/test/stubs"
 	"github.com/labstack/echo/v4"
@@ -21,7 +21,7 @@ const (
 	testSignature     = "3a36eb06f09a1d8d4097101ecf656d11c64bac5bfcd66d0b2325ddabb20f38fdbd1a71e0a04365856c779f6517b4fc2fe8b90d7a93e0b9be9f5b27c3961c150c5f93"
 )
 
-func TestStatus200LoginNoncePayload(t *testing.T) {
+func TestStatus200LoginRequestToSign(t *testing.T) {
 	e := echo.New()
 
 	q := make(url.Values)
@@ -30,16 +30,16 @@ func TestStatus200LoginNoncePayload(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
-	handler.RegisterRoutes(e.Group("/login"))
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
+	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.NoncePayload(c)) {
+	if assert.NoError(t, handler.RequestToSign(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
-func TestStatus200LoginVerifySignature(t *testing.T) {
+func TestStatus200LoginLogin(t *testing.T) {
 	e := echo.New()
 	e.Validator = validator.New()
 	body := model.WalletSignaturePayloadSigned{
@@ -53,26 +53,26 @@ func TestStatus200LoginVerifySignature(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/sign", strings.NewReader(string(jsonBody)))
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
-	handler.RegisterRoutes(e.Group("/login"))
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
+	handler.RegisterRoutes(e.Group("/login"), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.VerifySignature(c)) {
+	if assert.NoError(t, handler.Login(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
-func TestStatus400MissingWalletLoginNoncePayload(t *testing.T) {
+func TestStatus400MissingWalletLoginRequestToSign(t *testing.T) {
 	e := echo.New()
 
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	handler := NewLogin(nil, stubs.Auth{})
+	handler := NewLogin(nil, stubs.Auth{}, stubs.Device{})
 	handler.RegisterRoutes(e.Group("/login"))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(request, rec)
-	if assert.NoError(t, handler.NoncePayload(c)) {
+	if assert.NoError(t, handler.RequestToSign(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	}
 }

@@ -1,141 +1,158 @@
 package service
 
 import (
-	"os"
+	"context"
+	"strings"
 	"time"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/internal/unit21"
+	"github.com/String-xyz/string-api/pkg/internal/persona"
 	"github.com/String-xyz/string-api/pkg/model"
 	"github.com/String-xyz/string-api/pkg/repository"
-	"github.com/lib/pq"
-	"github.com/pkg/errors"
+
 	"github.com/rs/zerolog/log"
 )
 
 type UserRequest = model.UserRequest
 type UserUpdates = model.UpdateUserName
 
-type UserCreateResponse struct {
-	JWT  JWT        `json:"authToken"`
-	User model.User `json:"user"`
-}
-
 type User interface {
-	//GetStatus returns the onboarding status of an user
-	GetStatus(userID string) (model.UserOnboardingStatus, error)
+	// GetStatus returns the onboarding status of a user
+	GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error)
 
 	// Create creates an user from a wallet signed payload
 	// It associates the wallet to the user and also sets its status as verified
 	// This payload usually comes from a previous requested one using (Auth.PayloadToSign) service
-	Create(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error)
+	Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (resp model.UserLoginResponse, err error)
 
-	//Update updates the user firstname lastname middlename.
+	// Update updates the user's name fields (firstname, lastname, middlename).
 	// It fetches the user using the walletAddress provided
-	Update(userID string, request UserUpdates) (model.User, error)
+	Update(ctx context.Context, userId string, platformId string, request UserUpdates) (model.User, error)
+
+	// GetUserByLoginPayload get the user without actually logging them in
+	GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error)
+
+	// PreviewEmail returns a partially obfuscated version of the user's email address
+	PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error)
+
+	// RequestDeviceVerification sends verify device email without needing user id
+	RequestDeviceVerification(ctx context.Context, request model.WalletSignaturePayloadSigned) (err error)
+
+	// GetDeviceStatus checks the status of the device verification
+	GetDeviceStatus(ctx context.Context, request model.WalletSignaturePayloadSigned) (model.UserOnboardingStatus, error)
+
+	GetPersonaAccountId(ctx context.Context, userId string) (accountId string, err error)
 }
 
 type user struct {
-	repos       repository.Repositories
-	auth        Auth
-	fingerprint Fingerprint
+	repos        repository.Repositories
+	auth         Auth
+	fingerprint  Fingerprint
+	device       Device
+	unit21       Unit21
+	verification Verification
+	persona      persona.PersonaClient
 }
 
-func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint) User {
-	return &user{repos, auth, fprint}
+func NewUser(repos repository.Repositories, auth Auth, fprint Fingerprint, device Device, unit21 Unit21, verificationSrv Verification) User {
+	persona := persona.New(config.Var.PERSONA_API_KEY)
+	return &user{repos, auth, fprint, device, unit21, verificationSrv, *persona}
 }
 
-func (u user) GetStatus(userID string) (model.UserOnboardingStatus, error) {
+func (u user) GetStatus(ctx context.Context, userId string) (model.UserOnboardingStatus, error) {
+	_, finish := Span(ctx, "service.user.GetStatus")
+	defer finish()
+
 	res := model.UserOnboardingStatus{Status: "not found"}
 
-	user, err := u.repos.User.GetById(userID)
+	user, err := u.repos.User.GetById(ctx, userId)
 	if err != nil {
-		return res, common.StringError(err)
+		return res, libcommon.StringError(err)
 	}
 
 	if user.Status != "" {
 		res.Status = user.Status
 		return res, nil
 	}
-	return res, common.StringError(errors.New("not found"))
+	return res, libcommon.StringError(serror.NOT_FOUND)
 }
 
-func (u user) Create(request model.WalletSignaturePayloadSigned) (UserCreateResponse, error) {
-	resp := UserCreateResponse{}
-	key := os.Getenv("STRING_ENCRYPTION_KEY")
-	payload, err := common.Decrypt[model.WalletSignaturePayload](request.Nonce[len(walletAuthenticationPrefix):], key)
+func (u user) Create(ctx context.Context, request model.WalletSignaturePayloadSigned, platformId string) (resp model.UserLoginResponse, err error) {
+	_, finish := Span(ctx, "service.user.Create", SpanTag{"platformId": platformId})
+	defer finish()
+
+	// Verify payload integrity
+	payload, err := verifyWalletAuthentication(request)
 	if err != nil {
-		return resp, common.StringError(err)
-	}
-
-	addr := payload.Address
-	if addr == "" {
-		return resp, common.StringError(errors.New("no wallet address provided"))
-	}
-
-	// Make sure wallet does not already exist
-	exists, err := u.repos.Instrument.WalletAlreadyExists(addr)
-	if err != nil {
-		return resp, common.StringError(err)
-	}
-
-	if exists {
-		return resp, common.StringError(errors.New("wallet already exists"))
+		return resp, libcommon.StringError(err)
 	}
 
 	// Make sure address is a wallet and not a smart contract
-	if !common.IsWallet(addr) {
-		return resp, common.StringError(errors.New("address provided is not a valid wallet"))
+	addr := payload.Address
+	if addr == "" || !common.IsWallet(addr) {
+		return resp, libcommon.StringError(serror.INVALID_DATA)
 	}
 
-	// Verify payload integrity
-	if err := verifyWalletAuthentication(request); err != nil {
-		return resp, common.StringError(err)
+	// Make sure wallet does not already exist
+	exists, err := u.repos.Instrument.WalletAlreadyExists(ctx, addr)
+	if err != nil {
+		return resp, libcommon.StringError(err)
 	}
 
-	user, err := u.createUserData(addr)
+	if exists {
+		return resp, libcommon.StringError(serror.ALREADY_IN_USE)
+	}
+
+	user, err := u.createUserData(ctx, addr)
 	if err != nil {
 		return resp, err
 	}
 
-	var device model.Device
+	// Associate user to platform
+	err = u.repos.Platform.AssociateUser(ctx, user.Id, platformId)
+	if err != nil {
+		return resp, libcommon.StringError(err)
+	}
 
 	// create device only if there is a visitor
-	visitorID := request.Fingerprint.VisitorID
-	requestID := request.Fingerprint.RequestID
-	if visitorID != "" && requestID != "" {
-		visitor, err := u.fingerprint.GetVisitor(visitorID, requestID)
-		if err == nil {
-			// if fingerprint successfully retrieved, create device, otherwise continue without device
-			now := time.Now()
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
+		return resp, libcommon.StringError(err)
+	}
 
-			device, err = u.repos.Device.Create(model.Device{
-				Fingerprint: visitorID,
-				UserID:      user.ID,
-				Type:        visitor.Type,
-				IpAddresses: pq.StringArray{visitor.IPAddress},
-				Description: visitor.UserAgent,
-				LastUsedAt:  now,
-				ValidatedAt: &now,
-			})
-			if err != nil {
-				return resp, common.StringError(err)
-			}
+	// Create a user identity for KYC
+	go u.repos.Identity.Create(ctx, model.Identity{UserId: user.Id})
+
+	if device.Fingerprint != "" {
+		// validate that device on user creation
+		now := time.Now()
+		err = u.repos.Device.Update(ctx, device.Id, model.DeviceUpdates{ValidatedAt: &now})
+		if err == nil {
+			log.Err(err).Msg("Failed to verify user device")
 		}
 	}
 
-	jwt, err := u.auth.GenerateJWT(user.ID, device)
+	jwt, err := u.auth.GenerateJWT(user.Id, platformId, device)
 	if err != nil {
-		return resp, common.StringError(err)
+		return resp, libcommon.StringError(err)
 	}
 
 	// deviceService.RegisterNewUserDevice()
-	go u.createUnit21Entity(user)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Entity.Create(ctx2, user)
 
-	return UserCreateResponse{JWT: jwt, User: user}, nil
+	return model.UserLoginResponse{JWT: jwt, User: user}, nil
 }
 
-func (u user) createUserData(addr string) (model.User, error) {
+func (u user) createUserData(ctx context.Context, addr string) (model.User, error) {
+	_, finish := Span(ctx, "service.user.createUserData")
+	defer finish()
+
 	tx := u.repos.User.MustBegin()
 	u.repos.Instrument.SetTx(tx)
 	u.repos.Device.SetTx(tx)
@@ -144,64 +161,244 @@ func (u user) createUserData(addr string) (model.User, error) {
 	// Initialize a new user
 	// Validated status pertains to specific instrument
 	user := model.User{Type: "string-user", Status: "unverified"}
-	user, err := u.repos.User.Create(user)
+	user, err := u.repos.User.Create(ctx, user)
 	if err != nil {
 		u.repos.User.Rollback()
-		return user, common.StringError(err)
+		return user, libcommon.StringError(err)
 	}
+
 	// Create a new wallet instrument and associate it with the new user
-	instrument := model.Instrument{Type: "Crypto Wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserID: user.ID}
-	instrument, err = u.repos.Instrument.Create(instrument)
+	instrument := model.Instrument{Type: "crypto wallet", Status: "verified", Network: "EVM", PublicKey: addr, UserId: user.Id}
+	instrument, err = u.repos.Instrument.Create(ctx, instrument)
 	if err != nil {
 		u.repos.Instrument.Rollback()
-		return user, common.StringError(err)
+		return user, libcommon.StringError(err)
 	}
-
 	if err := u.repos.User.Commit(); err != nil {
-		return user, common.StringError(errors.New("error commiting transaction"))
+		return user, libcommon.StringError(err)
 	}
+
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Instrument.Create(ctx2, instrument)
 
 	return user, nil
 }
 
-func (u user) Update(userID string, request UserUpdates) (model.User, error) {
+func (u user) Update(ctx context.Context, userId string, platformId string, request UserUpdates) (model.User, error) {
+	_, finish := Span(ctx, "service.user.Update")
+	defer finish()
+
 	updates := model.UpdateUserName{FirstName: request.FirstName, MiddleName: request.MiddleName, LastName: request.LastName}
-	user, err := u.repos.User.Update(userID, updates)
+	user, err := u.repos.User.Update(ctx, userId, updates)
 	if err != nil {
-		return user, common.StringError(err)
+		return user, libcommon.StringError(err)
 	}
-
-	go u.updateUnit21Entity(user)
+	backgroundCtx := context.Background()
+	// Create customer on checkout so we can use it when processing payments.
+	// We need to have their email and name
+	go u.createCheckoutCustomer(backgroundCtx, userId, platformId)
+	// Create a new context since this will run in background
+	ctx2 := context.Background()
+	go u.unit21.Entity.Update(ctx2, user)
 
 	return user, nil
 }
 
-func (u user) createUnit21Entity(user model.User) {
-	// Createing a User Entity in Unit21
-	u21Repo := unit21.EntityRepos{
-		Device:         u.repos.Device,
-		Contact:        u.repos.Contact,
-		UserToPlatform: u.repos.UserToPlatform,
+// createCustomer creates a customer on checkout so we can use it when processing payments
+// we are not returning error because we don't want to fail the user update and is also an async process
+func (u user) createCheckoutCustomer(ctx context.Context, userId string, platformId string) string {
+	_, finish := Span(ctx, "service.user.createCheckoutCustomer", SpanTag{"platformId": platformId})
+	defer finish()
+	user, err := u.repos.User.GetWithContact(ctx, userId)
+	if err != nil {
+		log.Err(err).Msg("Failed to get contact")
+		return ""
 	}
 
-	u21Entity := unit21.NewEntity(u21Repo) // TODO: Make it an injected dependency
-	_, err := u21Entity.Create(user)
+	customerId, err := createCustomer(user, platformId)
 	if err != nil {
-		log.Err(err).Msg("Error creating Entity in Unit21")
+		log.Err(err).Msg("Failed to create customer on user update")
+		return ""
 	}
+	_, err = u.repos.User.Update(ctx, userId, model.UserUpdates{CheckoutId: &customerId})
+	if err != nil {
+		log.Err(err).Msg("Failed to update user with checkout customer id")
+	}
+
+	return customerId
 }
 
-func (u user) updateUnit21Entity(user model.User) {
-	// Createing a User Entity in Unit21
-	u21Repo := unit21.EntityRepos{
-		Device:         u.repos.Device,
-		Contact:        u.repos.Contact,
-		UserToPlatform: u.repos.UserToPlatform,
+func (u user) GetUserByLoginPayload(ctx context.Context, request model.WalletSignaturePayloadSigned) (user model.User, err error) {
+	_, finish := Span(ctx, "service.device.GetUserByLoginPayload")
+	defer finish()
+
+	// Get wallet address from payload
+	payload, err := verifyWalletAuthentication(request)
+	if err != nil {
+		return user, libcommon.StringError(err)
 	}
 
-	u21Entity := unit21.NewEntity(u21Repo)
-	_, err := u21Entity.Update(user)
+	// Verify there is a user registered to this wallet address
+	instrument, err := u.repos.Instrument.GetWalletByAddr(ctx, payload.Address)
 	if err != nil {
-		log.Err(err).Msg("Error updating Entity in Unit21")
+		return user, libcommon.StringError(err)
 	}
+
+	user, err = u.repos.User.GetById(ctx, instrument.UserId)
+	if err != nil {
+		return user, libcommon.StringError(err)
+	}
+
+	return user, nil
+}
+
+func (u user) RequestDeviceVerification(ctx context.Context, request model.WalletSignaturePayloadSigned) error {
+	_, finish := Span(ctx, "service.user.RequestDeviceVerification")
+	defer finish()
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+
+	user.Email = getValidatedEmailOrEmpty(ctx, u.repos.Contact, user.Id)
+
+	if user.Email == "" {
+		return libcommon.StringError(serror.NOT_FOUND)
+	}
+
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return libcommon.StringError(err)
+	}
+
+	if !isDeviceValidated(device) {
+		u.verification.SendDeviceVerification(ctx, user.Id, user.Email, device.Id, device.Description)
+	}
+
+	return nil
+}
+
+func (u user) GetDeviceStatus(ctx context.Context, request model.WalletSignaturePayloadSigned) (model.UserOnboardingStatus, error) {
+	_, finish := Span(ctx, "service.user.GetDeviceStatus")
+	defer finish()
+
+	resp := model.UserOnboardingStatus{Status: "unverified"}
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
+	if err != nil {
+		return resp, libcommon.StringError(err)
+	}
+
+	device, err := u.device.CreateDeviceIfNeeded(ctx, user.Id, request.Fingerprint.VisitorId, request.Fingerprint.RequestId)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return resp, libcommon.StringError(err)
+	}
+
+	if !isDeviceValidated(device) {
+		return resp, nil
+	}
+
+	resp.Status = "verified"
+
+	return resp, nil
+}
+
+func (u user) PreviewEmail(ctx context.Context, request model.WalletSignaturePayloadSigned) (email model.EmailPreview, err error) {
+	_, finish := Span(ctx, "service.user.PreviewEmail")
+	defer finish()
+
+	user, err := u.GetUserByLoginPayload(ctx, request)
+	if err != nil {
+		return email, libcommon.StringError(err)
+	}
+
+	user.Email = getValidatedEmailOrEmpty(ctx, u.repos.Contact, user.Id)
+
+	if user.Email == "" {
+		return email, libcommon.StringError(serror.NOT_FOUND)
+	}
+
+	// Partially obfuscate email address
+	// Ex. an****@g***l.com
+	// This could possibly be done as a regex, but also readability is important
+	address := strings.Split(user.Email, "@")
+
+	// Allow for .co.uk, .co.jp, etc to be counted in the extension
+	domain := strings.SplitN(address[1], ".", 2)
+
+	ext := domain[1]
+
+	// Allow for single character addresses, if those exist
+	first_name_char := ""
+	if len(address[0]) >= 2 {
+		first_name_char = address[0][0:2]
+	} else if len(address[0]) == 1 {
+		first_name_char = address[0][0:1]
+	}
+
+	// If the name is 2 characters or less, add two stars minimum
+	num_name_stars := len(address[0]) - 2
+	if num_name_stars <= 0 {
+		num_name_stars = 2
+	}
+
+	name_stars := strings.Repeat("*", num_name_stars)
+
+	num_domain_stars := len(domain[0]) - 2
+	if num_domain_stars <= 0 {
+		num_domain_stars = 2
+	}
+
+	domain_stars := strings.Repeat("*", num_domain_stars)
+
+	first_domain_char := string(domain[0][0])
+	last_domain_char := string(domain[0][len(domain[0])-1])
+
+	obfs_domain := first_domain_char + domain_stars + last_domain_char + "." + ext
+
+	email.Email = first_name_char + name_stars + "@" + obfs_domain
+
+	return email, nil
+}
+
+func (u user) GetPersonaAccountId(ctx context.Context, userId string) (accountId string, err error) {
+	_, finish := Span(ctx, "service.user.GetPersonaAccountId")
+	defer finish()
+
+	identity, err := u.repos.Identity.GetByUserId(ctx, userId)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+	if identity.AccountId != "" {
+		return identity.AccountId, nil
+	}
+
+	user, err := u.repos.User.GetById(ctx, userId)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	request := persona.AccountCreateRequest{
+		Data: persona.AccountCreate{
+			Attributes: persona.CommonFields{
+				EmailAddress: user.Email,
+				NameFirst:    user.FirstName,
+				NameLast:     user.LastName,
+				NameMiddle:   user.MiddleName,
+			},
+		},
+	}
+	account, err := u.persona.CreateAccount(request)
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	identity, err = u.repos.Identity.Update(ctx, identity.Id, model.IdentityUpdates{AccountId: &account.Data.Id})
+	if err != nil {
+		return accountId, libcommon.StringError(err)
+	}
+
+	return account.Data.Id, nil
 }

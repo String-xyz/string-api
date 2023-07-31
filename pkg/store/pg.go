@@ -2,13 +2,14 @@ package store
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
 	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
+
+	"github.com/String-xyz/string-api/config"
 )
 
 var pgDB *sqlx.DB
@@ -16,16 +17,16 @@ var DBDriver = "postgres"
 
 func strConnection() string {
 	var (
-		DBUser     = os.Getenv("DB_USERNAME")
-		DBPassword = os.Getenv("DB_PASSWORD")
-		DBName     = os.Getenv("DB_NAME")
-		DBHost     = os.Getenv("DB_HOST")
-		DBPort     = os.Getenv("DB_PORT")
+		DBUser     = config.Var.DB_USERNAME
+		DBPassword = config.Var.DB_PASSWORD
+		DBName     = config.Var.DB_NAME
+		DBHost     = config.Var.DB_HOST
+		DBPort     = config.Var.DB_PORT
 	)
 
 	var SSLMode string
 
-	if common.IsLocalEnv() {
+	if libcommon.IsLocalEnv() {
 		SSLMode = "disable"
 	} else {
 		SSLMode = "require"
@@ -47,7 +48,7 @@ func MustNewPG() *sqlx.DB {
 	if pgDB != nil {
 		return pgDB
 	}
-	sqltrace.Register(DBDriver, &pq.Driver{}, sqltrace.WithServiceName("string-api"))
+	sqltrace.Register(DBDriver, &pq.Driver{}, sqltrace.WithServiceName("api"))
 	connection, err := sqlxtrace.Open(DBDriver, strConnection())
 	if err != nil {
 		panic(err)

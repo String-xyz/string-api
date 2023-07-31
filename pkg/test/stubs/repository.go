@@ -12,26 +12,26 @@ import (
 // }
 
 // var avax = model.Asset{
-// 	ID:          "1",
+// 	Id:          "1",
 // 	CreatedAt:   time.Now(),
 // 	UpdatedAt:   time.Now(),
 // 	Name:        "AVAX",
 // 	Description: "Avalanche",
 // 	Decimals:    18,
 // 	IsCrypto:    true,
-// 	NetworkID:   sql.NullString{},
+// 	NetworkId:   sql.NullString{},
 // 	ValueOracle: sql.NullString{String: "avalanche-2", Valid: true},
 // }
 
 // var usd = model.Asset{
-// 	ID:          "2",
+// 	Id:          "2",
 // 	CreatedAt:   time.Now(),
 // 	UpdatedAt:   time.Now(),
 // 	Name:        "USD",
 // 	Description: "United States Dollar",
 // 	Decimals:    6,
 // 	IsCrypto:    false,
-// 	NetworkID:   sql.NullString{},
+// 	NetworkId:   sql.NullString{},
 // 	ValueOracle: sql.NullString{},
 // }
 
@@ -59,7 +59,7 @@ import (
 // 	return model.Asset{}, nil
 // }
 
-// func (Asset) Update(ID string, updates any) error {
+// func (Asset) Update(Id string, updates any) error {
 // 	return nil
 // }
 
@@ -70,11 +70,11 @@ func (AuthStrategyRepo) Create(authType repository.AuthType, m model.AuthStrateg
 	return nil
 }
 
-func (AuthStrategyRepo) CreateAPIKey(entityID string, authType model.AuthType, apiKey string, persistOnly bool) error {
+func (AuthStrategyRepo) CreateAPIKey(entityId string, authType model.AuthType, apiKey string, persistOnly bool) error {
 	return nil
 }
 
-func (AuthStrategyRepo) CreateJWTRefresh(ID string, token string) error {
+func (AuthStrategyRepo) CreateJWTRefresh(id string, token string) error {
 	return nil
 }
 func (AuthStrategyRepo) Get(string) (model.AuthStrategy, error) {
@@ -95,6 +95,6 @@ func (AuthStrategyRepo) List(limit, offset int) ([]model.AuthStrategy, error) {
 func (AuthStrategyRepo) ListByStatus(limit, offset int, status string) ([]model.AuthStrategy, error) {
 	return []model.AuthStrategy{}, nil
 }
-func (AuthStrategyRepo) UpdateStatus(ID, status string) (model.AuthStrategy, error) {
+func (AuthStrategyRepo) UpdateStatus(id, status string) (model.AuthStrategy, error) {
 	return model.AuthStrategy{}, nil
 }

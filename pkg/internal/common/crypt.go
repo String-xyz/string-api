@@ -1,91 +1,31 @@
 package common
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
-	"io"
-	"os"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 )
 
-func Encrypt(object interface{}, secret string) (string, error) {
-	buffer, err := json.Marshal(object)
-	if err != nil {
-		return "", StringError(err)
-	}
-	return EncryptString(string(buffer), secret)
-}
-
-func Decrypt[T any](from string, secret string) (T, error) {
-	var result T
-	decrypted, err := DecryptString(from, secret)
-	if err != nil {
-		return result, StringError(err)
-	}
-	err = json.Unmarshal([]byte(decrypted), &result)
-	if err != nil {
-		return result, StringError(err)
-	}
-	return result, nil
-}
-
-func EncryptString(data string, secret string) (string, error) {
-	block, err := aes.NewCipher([]byte(secret))
-	if err != nil {
-		return "", StringError(err)
-	}
-	plainText := []byte(data)
-	cipherText := make([]byte, aes.BlockSize+len(plainText))
-	iv := cipherText[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", StringError(err)
-	}
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(cipherText[aes.BlockSize:], plainText)
-	return base64.StdEncoding.EncodeToString(cipherText), nil
-}
-
-func DecryptString(data string, secret string) (string, error) {
-	block, err := aes.NewCipher([]byte(secret))
-	if err != nil {
-		return "", StringError(err)
-	}
-	cipherText, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return "", StringError(err)
-	}
-	iv := cipherText[:aes.BlockSize]
-
-	cipherText = cipherText[aes.BlockSize:]
-
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	plainText := make([]byte, len(cipherText))
-	cfb.XORKeyStream(plainText, cipherText)
-	return string(plainText), nil
-}
-
 func EncryptBytesToKMS(data []byte) (string, error) {
-	region := os.Getenv("AWS_REGION")
+	region := config.Var.AWS_REGION
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	kmsService := kms.New(session)
-	keyId := os.Getenv("AWS_KMS_KEY_ID")
+	keyId := config.Var.AWS_KMS_KEY_ID
 	result, err := kmsService.Encrypt(&kms.EncryptInput{
 		KeyId:     aws.String(keyId),
 		Plaintext: data,
 	})
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	return base64.StdEncoding.EncodeToString(result.CiphertextBlob), nil
 }
@@ -93,7 +33,7 @@ func EncryptBytesToKMS(data []byte) (string, error) {
 func EncryptStringToKMS(data string) (string, error) {
 	res, err := EncryptBytesToKMS([]byte(data))
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	return res, nil
 }
@@ -101,18 +41,18 @@ func EncryptStringToKMS(data string) (string, error) {
 func DecryptBlobFromKMS(blob string) (string, error) {
 	bytes, err := base64.StdEncoding.DecodeString(blob)
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	session, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	kmsService := kms.New(session)
 	result, err := kmsService.Decrypt(&kms.DecryptInput{CiphertextBlob: bytes})
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	return string(result.Plaintext), nil
 }

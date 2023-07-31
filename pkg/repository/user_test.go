@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -26,13 +27,15 @@ func TestCreateUser(t *testing.T) {
 	defer db.Close()
 	mock.ExpectQuery(`INSERT INTO string_user`).WithArgs(m.FirstName, m.LastName, m.Type, m.Status)
 
-	NewUser(sqlxDB).Create(m)
+	ctx := context.Background()
+	NewUser(sqlxDB).Create(ctx, m)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, while inserting a new user", err)
 	}
 }
 
 func TestGetUser(t *testing.T) {
+	ctx := context.Background()
 	id := uuid.NewString()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
@@ -46,15 +49,16 @@ func TestGetUser(t *testing.T) {
 
 	mock.ExpectQuery("SELECT * FROM string_user WHERE id = $1 AND deactivated_at IS NULL").WillReturnRows(rows).WithArgs(id)
 
-	user, err := NewUser(sqlxDB).GetById(id)
+	user, err := NewUser(sqlxDB).GetById(ctx, id)
 	assert.NoError(t, err)
-	assert.Equal(t, id, user.ID)
+	assert.Equal(t, id, user.Id)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting user by id", err)
 	}
 }
 
 func TestListUser(t *testing.T) {
+	ctx := context.Background()
 	id1, id2 := uuid.NewString(), uuid.NewString()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
@@ -69,7 +73,7 @@ func TestListUser(t *testing.T) {
 
 	mock.ExpectQuery("SELECT * FROM string_user LIMIT $1 OFFSET $2").WillReturnRows(rows).WithArgs(10, 0)
 
-	NewUser(sqlxDB).List(10, 0)
+	NewUser(sqlxDB).List(ctx, 10, 0)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("error '%s' was not expected, getting the list of users", err)
 	}

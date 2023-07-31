@@ -1,42 +1,45 @@
 package repository
 
 import (
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	"context"
+
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	baserepo "github.com/String-xyz/go-lib/v2/repository"
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/jmoiron/sqlx"
 )
 
 type Transaction interface {
-	Transactable
-	Create(model.Transaction) (model.Transaction, error)
-	GetById(id string) (model.Transaction, error)
-	Update(ID string, updates any) error
+	database.Transactable
+	Create(ctx context.Context, m model.Transaction) (model.Transaction, error)
+	GetById(ctx context.Context, id string) (model.Transaction, error)
+	Update(ctx context.Context, id string, updates any) error
 }
 
 type transaction[T any] struct {
-	base[T]
+	baserepo.Base[T]
 }
 
-func NewTransaction(db *sqlx.DB) Transaction {
-	return &transaction[model.Transaction]{base[model.Transaction]{store: db, table: "transaction"}}
+func NewTransaction(db database.Queryable) Transaction {
+	return &transaction[model.Transaction]{baserepo.Base[model.Transaction]{Store: db, Table: "transaction"}}
 }
 
-func (t transaction[T]) Create(insert model.Transaction) (model.Transaction, error) {
+func (t transaction[T]) Create(ctx context.Context, insert model.Transaction) (model.Transaction, error) {
 	m := model.Transaction{}
-	// TODO: Add platform_id once it becomes available
-	rows, err := t.store.NamedQuery(`
-		INSERT INTO transaction (status, network_id, device_id, platform_id)
-		VALUES(:status, :network_id, :device_id, :platform_id) 	RETURNING id`, insert)
+
+	query, args, err := t.Named(`
+		INSERT INTO transaction (status, network_id, device_id, platform_id, ip_address) 
+		VALUES(:status, :network_id, :device_id, :platform_id, :ip_address) RETURNING id`, insert)
+
 	if err != nil {
-		return m, common.StringError(err)
-	}
-	for rows.Next() {
-		err = rows.Scan(&m.ID)
-		if err != nil {
-			return m, common.StringError(err)
-		}
+		return m, libcommon.StringError(err)
 	}
 
-	defer rows.Close()
+	// Use QueryRowxContext to execute the query with the provided context
+	err = t.Store.QueryRowxContext(ctx, query, args...).Scan(&m.Id)
+	if err != nil {
+		return m, libcommon.StringError(err)
+	}
+
 	return m, nil
 }

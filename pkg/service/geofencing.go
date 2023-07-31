@@ -2,12 +2,11 @@ package service
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
-	"os"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
-	"github.com/String-xyz/string-api/pkg/store"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
 	"github.com/pkg/errors"
 )
 
@@ -20,10 +19,10 @@ type Geofencing interface {
 }
 
 type geofencing struct {
-	redis store.RedisStore
+	redis database.RedisStore
 }
 
-func NewGeofencing(redis store.RedisStore) Geofencing {
+func NewGeofencing(redis database.RedisStore) Geofencing {
 	return &geofencing{redis}
 }
 
@@ -41,12 +40,12 @@ func (g geofencing) IsAllowed(ip string) (bool, error) {
 	// if err != nil {
 	// 	location, err = getLocationFromAPI(ip)
 	// 	if err != nil {
-	// 		return false, common.StringError(err)
+	// 		return false, libcommon.StringError(err)
 	// 	}
 
 	// 	err = g.setLocation(ip, location)
 	// 	if err != nil {
-	// 		return false, common.StringError(err)
+	// 		return false, libcommon.StringError(err)
 	// 	}
 	// }
 
@@ -57,12 +56,12 @@ func (g geofencing) IsAllowed(ip string) (bool, error) {
 func (c geofencing) setLocation(ip string, location GeoLocation) error {
 	locationStr, err := json.Marshal(location)
 	if err != nil {
-		return common.StringError(err)
+		return libcommon.StringError(err)
 	}
 
 	err = c.redis.Set("location-ip"+ip, locationStr, A_DAY_IN_NANOSEC)
 	if err != nil {
-		return common.StringError(err)
+		return libcommon.StringError(err)
 	}
 	return nil
 }
@@ -70,35 +69,35 @@ func (c geofencing) setLocation(ip string, location GeoLocation) error {
 func (g geofencing) getLocation(ip string) (GeoLocation, error) {
 	cachedData, err := g.redis.Get("location-ip" + ip)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, libcommon.StringError(err)
 	}
 
 	location := GeoLocation{}
 
 	if cachedData == nil {
-		return location, common.StringError(err)
+		return location, libcommon.StringError(err)
 	}
 	err = json.Unmarshal(cachedData, &location)
 	if err != nil {
-		return location, common.StringError(err)
+		return location, libcommon.StringError(err)
 	}
 
 	return location, nil
 }
 
 func getLocationFromAPI(ip string) (GeoLocation, error) {
-	url := "http://api.ipstack.com/" + ip + "?access_key=" + os.Getenv("IPSTACK_API_KEY")
+	url := "http://api.ipstack.com/" + ip + "?access_key="
 
 	res, err := http.Get(url)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, libcommon.StringError(err)
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, libcommon.StringError(err)
 	}
 
 	dataObj := GeoLocation{}
@@ -106,11 +105,11 @@ func getLocationFromAPI(ip string) (GeoLocation, error) {
 	// unmarshal the json into our struct
 	err = json.Unmarshal(body, &dataObj)
 	if err != nil {
-		return GeoLocation{}, common.StringError(err)
+		return GeoLocation{}, libcommon.StringError(err)
 	}
 
 	if dataObj.Ip != ip || dataObj.CountryCode == "" || dataObj.RegionCode == "" {
-		return GeoLocation{}, common.StringError(errors.New("The Data returned by the external location service is invalid"))
+		return GeoLocation{}, libcommon.StringError(errors.New("The Data returned by the external location service is invalid"))
 	}
 
 	return dataObj, nil

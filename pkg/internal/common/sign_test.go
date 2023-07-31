@@ -8,13 +8,10 @@ import (
 	b64 "encoding/base64"
 
 	"github.com/String-xyz/string-api/pkg/model"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSignAndValidateString(t *testing.T) {
-	err := godotenv.Load("../../../.env")
-	assert.NoError(t, err)
 
 	encodedMessage := "Your base64 encoded String Here"
 
@@ -32,9 +29,6 @@ func TestSignAndValidateString(t *testing.T) {
 }
 
 func TestSignAndValidateStruct(t *testing.T) {
-	err := godotenv.Load("../../../.env")
-	assert.NoError(t, err)
-
 	// Paste the JSON output properties from whatever struct here
 	obj1 := model.WalletSignaturePayload{
 		Address:   "0xPasteYourAddressHere",

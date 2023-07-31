@@ -1,116 +1,83 @@
 package middleware
 
 import (
-	"net/http"
-	"os"
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"strings"
 
-	"github.com/String-xyz/string-api/api/handler"
-	"github.com/String-xyz/string-api/pkg/service"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/httperror"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	echoDatadog "gopkg.in/DataDog/dd-trace-go.v1/contrib/labstack/echo.v4"
+
+	"github.com/String-xyz/string-api/config"
+	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/service"
 )
 
-func CORS() echo.MiddlewareFunc {
-	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
-		AllowCredentials: true, // allow cookie auth
-	})
-}
-
-func Recover() echo.MiddlewareFunc {
-	return echoMiddleware.Recover()
-}
-
-func Logger(logger *zerolog.Logger) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("logger", logger)
-			return next(c)
-		}
-	}
-}
-
-func LogRequest() echo.MiddlewareFunc {
-	return echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
-		LogURI:       true,
-		LogStatus:    true,
-		LogRequestID: true,
-		LogLatency:   true,
-		LogMethod:    true,
-		LogHost:      true,
-		LogError:     true,
-		LogValuesFunc: func(c echo.Context, v echoMiddleware.RequestLoggerValues) error {
-			env := os.Getenv("ENV")
-			logger := c.Get("logger").(*zerolog.Logger)
-			logger.Info().
-				Str("path", v.URI).
-				Str("method", v.Method).
-				Int("status_code", v.Status).
-				Str("request_id", v.RequestID).
-				Str("host", v.Host).
-				Dur("latency", v.Latency).
-				Str("env", env).
-				Err(v.Error).
-				Msg("request")
-
-			return nil
-		},
-	})
-}
-
-// RequestID generates a unique request ID
-func RequestID() echo.MiddlewareFunc {
-	return echoMiddleware.RequestID()
-}
-
-func BearerAuth() echo.MiddlewareFunc {
+func JWTAuth() echo.MiddlewareFunc {
 	config := echoMiddleware.JWTConfig{
 		TokenLookup: "header:Authorization,cookie:StringJWT",
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-			var claims = &service.JWTClaims{}
+			var claims = &model.JWTClaims{}
 			t, err := jwt.ParseWithClaims(auth, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+				return []byte(config.Var.JWT_SECRET_KEY), nil
 			})
 
 			c.Set("userId", claims.UserId)
 			c.Set("deviceId", claims.DeviceId)
+			c.Set("platformId", claims.PlatformId)
+
 			return t, err
 		},
-		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		SigningKey: []byte(config.Var.JWT_SECRET_KEY),
 		ErrorHandlerWithContext: func(err error, c echo.Context) error {
-			if strings.Contains(err.Error(), "token is expired") {
-				return handler.TokenExpired(c)
-			}
+			libcommon.LogStringError(c, err, "Error in JWTAuth middleware")
 
-			if strings.Contains(errors.Cause(err).Error(), "missing or malformed jwt") {
-				return handler.MissingToken(c)
-			}
-
-			return handler.Unauthorized(c)
+			return httperror.Unauthorized401(c)
 		},
 	}
 	return echoMiddleware.JWTWithConfig(config)
 }
 
-func APIKeyAuth(service service.Auth) echo.MiddlewareFunc {
+func APIKeyPublicAuth(service service.Auth) echo.MiddlewareFunc {
 	config := echoMiddleware.KeyAuthConfig{
 		KeyLookup: "header:X-Api-Key",
 		Validator: func(auth string, c echo.Context) (bool, error) {
-			valid := service.ValidateAPIKey(auth)
-			return valid, nil
+			platformId, err := service.ValidateAPIKeyPublic(c.Request().Context(), auth)
+			if err != nil {
+				libcommon.LogStringError(c, err, "Error in APIKeyPublicAuth middleware")
+				return false, err
+			}
+
+			c.Set("platformId", platformId)
+
+			return true, nil
 		},
 	}
 	return echoMiddleware.KeyAuthWithConfig(config)
 }
 
-func Tracer() echo.MiddlewareFunc {
-	return echoDatadog.Middleware()
+func APIKeySecretAuth(service service.Auth) echo.MiddlewareFunc {
+	config := echoMiddleware.KeyAuthConfig{
+		KeyLookup: "header:X-Api-Key",
+		Validator: func(auth string, c echo.Context) (bool, error) {
+			platformId, err := service.ValidateAPIKeySecret(c.Request().Context(), auth)
+			if err != nil {
+				libcommon.LogStringError(c, err, "Error in APIKeySecretAuth middleware")
+				return false, err
+			}
+
+			// TODO: Validate platformId
+			c.Set("platformId", platformId)
+			return true, nil
+		},
+	}
+	return echoMiddleware.KeyAuthWithConfig(config)
 }
 
 func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
@@ -125,13 +92,87 @@ func Georestrict(service service.Geofencing) echo.MiddlewareFunc {
 			// For now we are denying
 			if err != nil || !isAllowed {
 				if err != nil {
-					// TODO: Move the common.go file to the upper level
-					handler.LogStringError(c, err, "Error in georestrict middleware")
+					libcommon.LogStringError(c, err, "Error in georestrict middleware")
 				}
-				return c.JSON(http.StatusForbidden, "Error: Geo Location Forbidden")
+				return httperror.Forbidden403(c, "Error: Geo Location Forbidden")
 			}
 
 			return next(c)
 		}
 	}
+}
+
+func VerifyWebhookPayload(pskey string, ckoskey string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			var signatureHeaderName string
+			var secretKey string
+			var validateFunc func([]byte, string, string) bool
+
+			switch c.Path() {
+			case "/webhooks/checkout":
+				signatureHeaderName = "Cko-Signature"
+				secretKey = ckoskey
+				validateFunc = validateSignatureCheckout
+			case "/webhooks/persona":
+				signatureHeaderName = "Persona-Signature"
+				secretKey = pskey
+				validateFunc = validateSignaturePersona
+			default:
+				return httperror.BadRequest400(c, "Invalid path")
+			}
+
+			signatureHeader := c.Request().Header.Get(signatureHeaderName)
+			body, err := io.ReadAll(c.Request().Body)
+			if err != nil {
+				return httperror.BadRequest400(c, "Failed to read body")
+			}
+
+			c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
+
+			if !validateFunc(body, signatureHeader, secretKey) {
+				return httperror.Unauthorized401(c, "Failed to verify payload")
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func validateSignatureCheckout(body []byte, signature string, secretKey string) bool {
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write(body)
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(receivedMAC, expectedMAC)
+}
+
+func validateSignaturePersona(body []byte, signatureHeader string, secretKey string) bool {
+	parts := strings.Split(signatureHeader, ",")
+	var timestamp, signature string
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			timestamp = strings.TrimPrefix(part, "t=")
+		} else if strings.HasPrefix(part, "v1=") {
+			signature = strings.TrimPrefix(part, "v1=")
+		}
+	}
+
+	macData := timestamp + "." + string(body)
+
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(macData))
+	expectedMAC := mac.Sum(nil)
+
+	receivedMAC, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	return hmac.Equal(expectedMAC, receivedMAC)
 }

@@ -1,17 +1,17 @@
 package service
 
 import (
-	"os"
 	"strings"
 
-	"github.com/String-xyz/string-api/pkg/internal/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
 	"github.com/pkg/errors"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
 func SendSMS(message string, recipients []string) error {
-	var SMS_SID = os.Getenv("TWILIO_SMS_SID")
+	var SMS_SID = config.Var.TWILIO_SMS_SID
 	client := twilio.NewRestClient() // TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are loaded from env in constructor
 	params := &twilioApi.CreateMessageParams{}
 	params.SetBody(message)
@@ -30,17 +30,17 @@ func SendSMS(message string, recipients []string) error {
 		}
 	}
 	if errs != nil {
-		return common.StringError(errs)
+		return libcommon.StringError(errs)
 	}
 	return nil
 }
 
-func MessageStaff(message string) error {
-	var devNumbers = os.Getenv("DEV_PHONE_NUMBERS")
-	recipients := strings.Split(devNumbers, ",")
+func MessageTeam(message string) error {
+	var teamNumbers = config.Var.TEAM_PHONE_NUMBERS
+	recipients := strings.Split(teamNumbers, ",")
 	err := SendSMS(message, recipients)
 	if err != nil {
-		return common.StringError(err)
+		return libcommon.StringError(err)
 	}
 	return nil
 }

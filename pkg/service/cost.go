@@ -1,23 +1,32 @@
 package service
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+	"math"
 	"math/big"
-	"os"
+	"strconv"
 	"time"
 
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/go-lib/v2/database"
+	serror "github.com/String-xyz/go-lib/v2/stringerror"
+	"github.com/String-xyz/string-api/config"
 	"github.com/String-xyz/string-api/pkg/internal/common"
 	"github.com/String-xyz/string-api/pkg/model"
+	"github.com/String-xyz/string-api/pkg/repository"
 	"github.com/String-xyz/string-api/pkg/store"
 	"github.com/pkg/errors"
 )
 
 type EstimationParams struct {
-	ChainID    uint64  `json:"chainID"`
-	CostETH    big.Int `json:"costETH"`
-	UseBuffer  bool    `json:"useBuffer"`
-	GasUsedWei uint64  `json:"gasUsedWei"`
-	CostToken  big.Int `json:"costToken"`
-	TokenName  string  `json:"tokenName"`
+	ChainId    uint64    `json:"chainId"`
+	CostETH    big.Int   `json:"costETH"`
+	UseBuffer  bool      `json:"useBuffer"`
+	GasUsedWei uint64    `json:"gasUsedWei"`
+	CostTokens []big.Int `json:"costToken"`
+	TokenAddrs []string  `json:"tokenName"`
 }
 
 type OwlracleJSON struct {
@@ -35,72 +44,270 @@ type OwlracleJSON struct {
 	} `json:"speeds"`
 }
 
+type CoingeckoPlatform struct {
+	Id              string `json:"id"`
+	ChainIdentifier uint64 `json:"chain_identifier"`
+	Name            string `json:"name"`
+	ShortName       string `json:"shortname"`
+}
+
+type CoingeckoCoin struct {
+	ID        string            `json:"id"`
+	Symbol    string            `json:"symbol"`
+	Name      string            `json:"name"`
+	Platforms map[string]string `json:"platforms"`
+}
+
+type CoinKey struct {
+	ChainId uint64 `json:"chainId"`
+	Address string `json:"address"`
+}
+
+func (c CoinKey) String() string {
+	return fmt.Sprintf("%d:%s", c.ChainId, c.Address)
+}
+
+type CoingeckoMapCache struct {
+	Timestamp int64             `json:"timestamp"`
+	Value     map[string]string `json:"value"`
+}
+
 type CostCache struct {
 	Timestamp int64   `json:"timestamp"`
 	Value     float64 `json:"value"`
 }
 
 type Cost interface {
-	EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error)
-	LookupUSD(coin string, quantity float64) (float64, error)
+	EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error)
+	LookupUSD(quantity float64, coins ...string) (float64, error)
+	AddCoinToAssetTable(id string, networkId string, address string) error
 }
 
 type cost struct {
-	redis store.RedisStore // cached token and gas costs
+	redis              database.RedisStore // cached token and gas costs
+	repos              repository.Repositories
+	subnetTokenProxies map[CoinKey]CoinKey
 }
 
-func NewCost(redis store.RedisStore) Cost {
+func NewCost(redis database.RedisStore, repos repository.Repositories) Cost {
+	// Temporarily hard-coding this to reduce future cost-of-change with database
+	subnetTokenProxies := map[CoinKey]CoinKey{
+		// USDc DFK Subnet -> USDc Avalanche:
+		{ChainId: 53935, Address: "0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a"}: {ChainId: 43114, Address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"},
+		// String USDc Fuji Testnet -> USDc Avalanche
+		{ChainId: 43113, Address: "0x671E35F91Cc497385f9f7d0dFCB7192848b1015b"}: {ChainId: 43114, Address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"},
+	}
 	return &cost{
-		redis: redis,
+		redis:              redis,
+		repos:              repos,
+		subnetTokenProxies: subnetTokenProxies,
 	}
 }
 
-func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote, error) {
+// Get a huge list of data from coingecko to look up token names by address
+func GetCoingeckoPlatformMapping() (map[uint64]string, map[string]uint64, error) {
+	// get list of platform names from coingecko to create mapping to chainid
+	var platforms []CoingeckoPlatform
+	err := common.GetJsonGeneric("https://api.coingecko.com/api/v3/asset_platforms", &platforms)
+	if err != nil {
+		return map[uint64]string{}, map[string]uint64{}, libcommon.StringError(err)
+	}
+
+	idToPlatform := make(map[uint64]string)
+	platformToId := make(map[string]uint64)
+	for _, p := range platforms {
+		if p.ChainIdentifier != 0 {
+			idToPlatform[p.ChainIdentifier] = p.Id
+			platformToId[p.Id] = p.ChainIdentifier
+		}
+	}
+	return idToPlatform, platformToId, nil
+}
+
+func GetCoingeckoCoinData(id string) (CoingeckoCoin, error) {
+	var coin CoingeckoCoin
+	err := common.GetJsonGeneric("https://api.coingecko.com/api/v3/coins/"+id+"?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false", &coin)
+	if err != nil {
+		return coin, libcommon.StringError(err)
+	}
+	return coin, nil
+}
+
+func (c cost) AddCoinToAssetTable(id string, networkId string, address string) error {
+	coinData, err := GetCoingeckoCoinData(id)
+	if err != nil {
+		return libcommon.StringError(err)
+	}
+	_, err = c.repos.Asset.GetByKey(context.Background(), networkId, address)
+	if err != nil && err == serror.NOT_FOUND {
+		// add it to the asset table
+		_, err := c.repos.Asset.Create(context.Background(), model.Asset{
+			Name:        coinData.Symbol, // Name in our database is the Symbol
+			Description: coinData.Name,   // Description in our database is the Name, note: coingecko provides an actual description
+			Decimals:    18,              // TODO: Get this from coinData - it's listed per network.  Decimals only affects display.
+			IsCrypto:    true,
+			ValueOracle: sql.NullString{String: id, Valid: true},
+			NetworkId:   networkId,
+			Address:     sql.NullString{String: address, Valid: true},
+			// TODO: Get second oracle data using data from first oracle
+		})
+		if err != nil {
+			return libcommon.StringError(err)
+		}
+	} else if err != nil {
+		return libcommon.StringError(err)
+	}
+	// Check if we are on a new chain
+
+	return nil
+}
+
+func GetCoingeckoCoinMapping() (map[string]string, error) {
+	_, platformToId, err := GetCoingeckoPlatformMapping()
+	if err != nil {
+		return map[string]string{}, libcommon.StringError(err)
+	}
+
+	// get list of platform names from coingecko to create mapping to chainid
+	var coins []CoingeckoCoin
+	err = common.GetJsonGeneric("https://api.coingecko.com/api/v3/coins/list?include_platform=true", &coins)
+	if err != nil {
+		return map[string]string{}, libcommon.StringError(err)
+	}
+
+	coinKeyToId := make(map[string]string)
+	for _, coin := range coins {
+		for key, val := range coin.Platforms {
+			// There's some weird data floating around in here.  Ignore it.
+			if len(val) != 42 || val[:2] != "0x" {
+				continue
+			}
+			newKey := CoinKey{
+				ChainId: platformToId[key],
+				Address: common.SanitizeChecksum(val),
+			}.String()
+			coinKeyToId[newKey] = coin.ID
+		}
+	}
+
+	return coinKeyToId, nil
+}
+
+// TODO: This logic is being reused, abstract it by templating and refactor
+// i.e. LookupCache<T any>(cacheName string, rateLimit float, updateMethod func() (T, error)) (T, error)
+func (c cost) LookupCoingeckoMapping() (map[string]string, error) {
+	cacheName := "coingecko_mapping"
+	cacheObject, err := store.GetObjectFromCache[CoingeckoMapCache](c.redis, cacheName)
+	if err != nil {
+		return map[string]string{}, libcommon.StringError(err)
+	}
+	if len(cacheObject.Value) == 0 || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(0.004, 1) {
+		updatedObject := CoingeckoMapCache{}
+		updatedObject.Timestamp = time.Now().Unix()
+		updatedObject.Value, err = GetCoingeckoCoinMapping()
+		// If update fails, return the old object
+		if err != nil {
+			return cacheObject.Value, libcommon.StringError(err)
+		}
+		err = store.PutObjectInCache(c.redis, cacheName, updatedObject)
+		// If store fails, return the new object anyway
+		if err != nil {
+			return updatedObject.Value, libcommon.StringError(err)
+		}
+		cacheObject = updatedObject
+	}
+
+	// Return the old or new object
+	return cacheObject.Value, nil
+}
+
+func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (estimate model.Estimate[float64], err error) {
 	// Get Unix Timestamp and chain info
 	timestamp := time.Now().Unix()
 
 	// Query cost of native token in USD
-	nativeCost, err := c.LookupUSD(chain.CoingeckoName, 1)
+	nativeCost, err := c.LookupUSD(1, chain.CoingeckoName, chain.CoincapName)
 	if err != nil {
-		return model.Quote{}, common.StringError(err)
+		return estimate, libcommon.StringError(err)
 	}
 
 	// Use it to convert transactioncost and apply buffer
 	if p.UseBuffer {
-		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainID)
+		nativeCost *= 1.0 + common.NativeTokenBuffer(chain.ChainId)
 	}
 	costEth := common.WeiToEther(&p.CostETH)
 	// transactionCost is for native token transaction cost (tx_value)
 	transactionCost := costEth * nativeCost
 
-	// Query owlracle for gas
-	ethGasFee, err := c.lookupGas(chain.OwlracleName)
-	if err != nil {
-		return model.Quote{}, common.StringError(err)
+	ethGasFee := 0.0
+	if chain.OwlracleName == "internal" {
+		// Use the internal gas rate calculator
+		// Recommended gas rate with 10% boost and 10% tip respectively
+		gas, tip, err := GetGasRate(chain, 10, 10)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
+		gasWithTip := big.NewInt(0).Add(gas, tip)
+		ethGasFee = float64(gasWithTip.Int64()) / 1e9
+	} else {
+		// Query owlracle for gas
+		ethGasFee, err = c.lookupGas(chain.OwlracleName)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
 	}
 
 	// Convert it from gwei to eth to USD and apply buffer
 	gasInUSD := ethGasFee * float64(p.GasUsedWei) * nativeCost / float64(1e9)
 	if p.UseBuffer {
-		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainID)
+		gasInUSD *= 1.0 + common.GasBuffer(chain.ChainId)
 	}
 
-	// Query cost of token in USD if used and apply buffer
-	costToken := common.WeiToEther(&p.CostToken)
-	// tokenCost in contract call ERC-20 token costs
-	// Also for buying tokens directly
-	tokenCost, err := c.LookupUSD(p.TokenName, costToken)
-	if err != nil {
-		return model.Quote{}, common.StringError(err)
+	// // Query cost of token in USD if used and apply buffer
+	totalTokenCost := 0.0
+	coinMapping, err := c.LookupCoingeckoMapping()
+	// Coingecko is going down during testing.  Comment this out if needed.
+	if err != nil && len(coinMapping) == 0 {
+		return estimate, libcommon.StringError(err)
+	} else if err != nil {
+		// TODO: Log error and continue
+		fmt.Printf("LookupCoingeckoMapping failed: %s", err)
 	}
-	if p.UseBuffer {
-		tokenCost *= 1.0 + common.TokenBuffer(p.TokenName)
+	for i, costToken := range p.CostTokens {
+		// TODO: Get subnetTokenProxies from the database
+		coinKey := CoinKey{chain.ChainId, p.TokenAddrs[i]}
+		proxy := c.subnetTokenProxies[CoinKey{chain.ChainId, p.TokenAddrs[i]}]
+		if proxy.Address != "" {
+			coinKey = proxy
+		}
+
+		costTokenEth := common.WeiToEther(&costToken)
+
+		tokenName, ok := coinMapping[coinKey.String()]
+		if !ok {
+			return estimate, errors.New("CoinGecko does not list token " + p.TokenAddrs[i])
+		}
+
+		// Check if the token is in our database and add it if it's not in there
+		err = c.AddCoinToAssetTable(tokenName, chain.UUID, p.TokenAddrs[i])
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
+
+		tokenCost, err := c.LookupUSD(costTokenEth, tokenName)
+		if err != nil {
+			return estimate, libcommon.StringError(err)
+		}
+		if p.UseBuffer {
+			tokenCost *= 1.0 + common.TokenBuffer(tokenName)
+		}
+		totalTokenCost += tokenCost
 	}
 
 	// Compute service fee
 	upcharge := chain.StringFee
 	baseCheckoutFee := 0.3
-	serviceFee := (transactionCost+gasInUSD+tokenCost)*upcharge + baseCheckoutFee
+	serviceFee := (transactionCost+gasInUSD+totalTokenCost)*upcharge + baseCheckoutFee
 
 	// floor
 	if transactionCost < 0.01 {
@@ -110,41 +317,76 @@ func (c cost) EstimateTransaction(p EstimationParams, chain Chain) (model.Quote,
 		gasInUSD = 0.01
 	}
 
-	totalUSD := transactionCost + gasInUSD + tokenCost + serviceFee
+	// Round up to nearest cent
+	transactionCost = centCeiling(transactionCost)
+	gasInUSD = centCeiling(gasInUSD)
+	totalTokenCost = centCeiling(totalTokenCost)
+	serviceFee = centCeiling(serviceFee)
+
+	// sum total
+	totalUSD := transactionCost + gasInUSD + totalTokenCost + serviceFee
+
+	// Round that up as well to account for any floating imprecision
+	totalUSD = centCeiling(totalUSD)
 
 	// Fill out CostEstimate and return
-	return model.Quote{
+	return model.Estimate[float64]{
 		Timestamp:  timestamp,
 		BaseUSD:    transactionCost,
 		GasUSD:     gasInUSD,
-		TokenUSD:   tokenCost,
+		TokenUSD:   totalTokenCost,
 		ServiceUSD: serviceFee,
 		TotalUSD:   totalUSD,
 	}, nil
+}
+
+func centCeiling(value float64) float64 {
+	return math.Ceil(value*100) / 100
 }
 
 func (c cost) getExternalAPICallInterval(rateLimitPerMinute float64, uniqueEntries uint32) int64 {
 	return int64(float64(60*rateLimitPerMinute) / rateLimitPerMinute)
 }
 
-func (c cost) LookupUSD(coin string, quantity float64) (float64, error) {
-	cacheName := "usd_value_" + coin
+// TODO: Take in an object which contains a list of backup oracle API names
+func (c cost) LookupUSD(quantity float64, coins ...string) (float64, error) {
+	if len(coins) == 0 {
+		return 0.0, libcommon.StringError(errors.New("no coins provided"))
+	}
+
+	cacheName := "usd_value_" + coins[0]
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
-	if err != nil && errors.Cause(err).Error() != "redis: nil" {
-		return 0.0, common.StringError(err)
+	if err != nil && serror.Is(err, serror.NOT_FOUND) {
+		return 0.0, libcommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || (err == nil && time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(10, 6)) {
-		cacheObject.Timestamp = time.Now().Unix()
-		cacheObject.Value, err = c.coingeckoUSD(coin, 1)
-		if err != nil {
-			return 0, common.StringError(err)
+		// If coingecko is down, use coincap to get the price
+		var empty interface{}
+		err = common.GetJsonGeneric(config.Var.COINGECKO_API_URL+"ping", &empty)
+		if err == nil {
+			// Only update timestamp if we reacquire the value
+			cacheObject.Timestamp = time.Now().Unix()
+			cacheObject.Value, err = c.coingeckoUSD(coins[0])
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
+
+		} else if len(coins) > 1 && coins[1] != "" {
+			// Only update the timestamp if we reacquire the value
+			cacheObject.Timestamp = time.Now().Unix()
+			cacheObject.Value, err = c.coincapUSD(coins[1])
+
+			if err != nil {
+				return 0, libcommon.StringError(err)
+			}
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, libcommon.StringError(err)
 		}
 	}
 
+	// If both services are down, use the last value we had
 	return cacheObject.Value * quantity, nil
 }
 
@@ -152,29 +394,29 @@ func (c cost) lookupGas(network string) (float64, error) {
 	cacheName := "gas_price_" + network
 	cacheObject, err := store.GetObjectFromCache[CostCache](c.redis, cacheName)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, libcommon.StringError(err)
 	}
 	if cacheObject == (CostCache{}) || time.Now().Unix()-cacheObject.Timestamp > c.getExternalAPICallInterval(1.6, 6) {
 		cacheObject.Timestamp = time.Now().Unix()
 		cacheObject.Value, err = c.owlracle(network)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, libcommon.StringError(err)
 		}
 		err = store.PutObjectInCache(c.redis, cacheName, cacheObject)
 		if err != nil {
-			return 0, common.StringError(err)
+			return 0, libcommon.StringError(err)
 		}
 	}
 
 	return cacheObject.Value, nil
 }
 
-func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
-	requestURL := os.Getenv("COINGECKO_API_URL") + "simple/price?ids=" + coin + "&vs_currencies=usd"
+func (c cost) coingeckoUSD(coin string) (float64, error) {
+	requestURL := config.Var.COINGECKO_API_URL + "simple/price?ids=" + coin + "&vs_currencies=usd"
 	var res map[string]interface{}
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, libcommon.StringError(err)
 	}
 	prices, found := res[coin]
 	if found {
@@ -184,22 +426,41 @@ func (c cost) coingeckoUSD(coin string, quantity float64) (float64, error) {
 			return usd.(float64), nil
 		}
 	}
-	// return 0, common.StringError(errors.New("Price not found for " + coin))
+	// return 0, libcommon.StringError(errors.New("Price not found for " + coin))
 	// fmt.Printf("\n\nPRICE LOOKUP %+v", coin)
 	// TODO: this is getting hit somewhere, figure out why
 	return 0, nil
 }
 
+func (c cost) coincapUSD(coin string) (float64, error) {
+	requestURL := config.Var.COINCAP_API_URL + "assets?search=" + coin
+	body := make(map[string]interface{})
+	err := common.GetJsonGeneric(requestURL, &body)
+	if err != nil {
+		return 0, libcommon.StringError(err)
+	}
+	res, found := body["data"].([]interface{})
+	if found && len(res) > 0 {
+		price, found := res[0].(map[string]interface{})["priceUsd"]
+		if found {
+			usd, _ := strconv.ParseFloat(price.(string), 64)
+			return usd, nil
+		}
+	}
+
+	return 0, nil
+}
+
 func (c cost) owlracle(network string) (float64, error) {
-	requestURL := os.Getenv("OWLRACLE_API_URL") +
+	requestURL := config.Var.OWLRACLE_API_URL +
 		network +
 		"/gas?apikey=" +
-		os.Getenv("OWLRACLE_API_KEY") +
+		config.Var.OWLRACLE_API_KEY +
 		"&accept=100"
 	var res OwlracleJSON
 	err := common.GetJsonGeneric(requestURL, &res)
 	if err != nil {
-		return 0, common.StringError(err)
+		return 0, libcommon.StringError(err)
 	}
 	if len(res.Speeds) > 0 {
 		return res.Speeds[0].MaxFeePerGas, nil

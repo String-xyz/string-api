@@ -5,10 +5,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/String-xyz/string-api/config"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +54,7 @@ type FPVisitIpLocation struct {
 }
 
 type FPVisitorVisit struct {
-	RequestID      string                  `json:"requestId"`
+	RequestId      string                  `json:"requestId"`
 	Incognito      bool                    `json:"incognito"`
 	LinkedId       string                  `json:"linkedId"`
 	Time           string                  `json:"time"`
@@ -66,7 +66,7 @@ type FPVisitorVisit struct {
 }
 
 type FPVisitor struct {
-	ID     string           `json:"visitorId"`
+	Id     string           `json:"visitorId"`
 	Visits []FPVisitorVisit `json:"visits"`
 }
 
@@ -80,8 +80,8 @@ type HTTPConfig struct {
 
 type FPVisitorOpts struct {
 	Limit     int
-	RequestID string
-	LinkedID  string
+	RequestId string
+	LinkedId  string
 }
 
 func NewHTTPClient(config HTTPConfig) HTTPClient {
@@ -89,10 +89,10 @@ func NewHTTPClient(config HTTPConfig) HTTPClient {
 }
 
 type FingerprintClient interface {
-	// GetVisitorByID get the fingerprint visitor by its id
+	// GetVisitorById get the fingerprint visitor by its id
 	// it returns the most up to date information for the  visitor
 	// The limit should always be 1 so we can get the latest information
-	GetVisitorByID(VisitorID string, opts FPVisitorOpts) (FPVisitor, error)
+	GetVisitorById(VisitorId string, opts FPVisitorOpts) (FPVisitor, error)
 	Request(method, url string, body io.Reader) (*http.Request, error)
 }
 
@@ -103,14 +103,14 @@ type fingerprint struct {
 }
 
 func NewFingerprint(client HTTPClient) FingerprintClient {
-	apiKey := os.Getenv("FINGERPRINT_API_KEY")
-	baseURL := os.Getenv("FINGERPRINT_API_URL")
+	apiKey := config.Var.FINGERPRINT_API_KEY
+	baseURL := config.Var.FINGERPRINT_API_URL
 	return &fingerprint{client: client, apiKey: apiKey, baseURL: baseURL}
 }
 
-func (f fingerprint) GetVisitorByID(visitorID string, opts FPVisitorOpts) (FPVisitor, error) {
+func (f fingerprint) GetVisitorById(visitorId string, opts FPVisitorOpts) (FPVisitor, error) {
 	m := FPVisitor{}
-	r, err := f.Request(http.MethodGet, f.baseURL+"visitors/"+visitorID, nil)
+	r, err := f.Request(http.MethodGet, f.baseURL+"visitors/"+visitorId, nil)
 	if err != nil {
 		return m, err
 	}
@@ -152,11 +152,11 @@ func (f fingerprint) optionsToQuery(opts FPVisitorOpts) url.Values {
 	if opts.Limit != 0 {
 		q.Add("limit", strconv.Itoa(opts.Limit))
 	}
-	if opts.RequestID != "" {
-		q.Add("request_id", opts.RequestID)
+	if opts.RequestId != "" {
+		q.Add("request_id", opts.RequestId)
 	}
-	if opts.LinkedID != "" {
-		q.Add("linked_id", opts.LinkedID)
+	if opts.LinkedId != "" {
+		q.Add("linked_id", opts.LinkedId)
 	}
 	return q
 }

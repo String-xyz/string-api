@@ -3,26 +3,28 @@ package common
 import (
 	"crypto/ecdsa"
 	"errors"
-	"os"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
+	libcommon "github.com/String-xyz/go-lib/v2/common"
+	"github.com/String-xyz/string-api/config"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func EVMSign(buffer []byte, eip131 bool) (string, error) {
-	privateKey, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	privateKey, err := DecryptBlobFromKMS(config.Var.EVM_PRIVATE_KEY)
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	return EVMSignWithPrivateKey(buffer, privateKey, eip131)
 }
 
 func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (string, error) {
-	sk, err := crypto.ToECDSA(common.FromHex(privateKey))
+	sk, err := crypto.ToECDSA(ethcommon.FromHex(privateKey))
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 
 	if eip131 {
@@ -33,25 +35,25 @@ func EVMSignWithPrivateKey(buffer []byte, privateKey string, eip131 bool) (strin
 	hash := crypto.Keccak256Hash(buffer)
 	signature, err := crypto.Sign(hash.Bytes(), sk)
 	if err != nil {
-		return "", StringError(err)
+		return "", libcommon.StringError(err)
 	}
 	return hexutil.Encode(signature), nil
 }
 
 func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, error) {
 	// Get private key
-	skStr, err := DecryptBlobFromKMS(os.Getenv("EVM_PRIVATE_KEY"))
+	skStr, err := DecryptBlobFromKMS(config.Var.EVM_PRIVATE_KEY)
 	if err != nil {
-		return false, StringError(err)
+		return false, libcommon.StringError(err)
 	}
-	sk, err := crypto.ToECDSA(common.FromHex(skStr))
+	sk, err := crypto.ToECDSA(ethcommon.FromHex(skStr))
 	if err != nil {
-		return false, StringError(err)
+		return false, libcommon.StringError(err)
 	}
 	pk := sk.Public()
 	pkECDSA, ok := pk.(*ecdsa.PublicKey)
 	if !ok {
-		return false, StringError(errors.New("ValidateSignature: Failed to cast pk to ECDSA"))
+		return false, libcommon.StringError(errors.New("ValidateSignature: Failed to cast pk to ECDSA"))
 	}
 	pkBytes := crypto.FromECDSAPub(pkECDSA)
 
@@ -65,7 +67,7 @@ func ValidateEVMSignature(signature string, buffer []byte, eip131 bool) (bool, e
 
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
-		return false, StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
 	// Handle cases where EIP-155 is not implemented, as with most wallets
@@ -88,7 +90,7 @@ func ValidateExternalEVMSignature(signature string, address string, buffer []byt
 
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
-		return false, StringError(err)
+		return false, libcommon.StringError(err)
 	}
 
 	// Handle cases where EIP-155 is not implemented, as with most wallets
@@ -98,7 +100,7 @@ func ValidateExternalEVMSignature(signature string, address string, buffer []byt
 
 	sigPKECDSA, err := crypto.SigToPub(hash.Bytes(), sigBytes)
 	if err != nil {
-		return false, StringError(err)
+		return false, libcommon.StringError(err)
 	}
 	sigPKBytes := crypto.FromECDSAPub(sigPKECDSA)
 
