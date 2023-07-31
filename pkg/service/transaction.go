@@ -131,7 +131,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
-	res.Level = level
+	res.Level = int(level)
 	if !allowed {
 		return res, libcommon.StringError(errors.New("insufficient level"))
 	}
@@ -916,7 +916,7 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
-	if !allowed || level > p.executionRequest.Quote.Level {
+	if !allowed || int(level) > p.executionRequest.Quote.Level {
 		MessageTeam("Transaction completed with insufficient KYC: " + p.transactionModel.Id)
 	}
 
