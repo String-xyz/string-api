@@ -71,7 +71,7 @@ func (q quote) Quote(c echo.Context) error {
 
 	res, err := q.Service.Quote(ctx, body, platformId)
 
-	if errors.Cause(err).Error() == "insufficient level" { // TODO: use a custom error
+	if err != nil && errors.Cause(err).Error() == "insufficient level" { // TODO: use a custom error
 		return c.JSON(http.StatusForbidden, res)
 	}
 
