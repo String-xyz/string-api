@@ -1101,7 +1101,7 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 			return false, highestType, libcommon.StringError(err)
 		}
 
-		if contract.Type == "TOKEN" {
+		if contract.Type == "TOKEN"  || contract.Type == "NFT_AND_TOKEN" {
 			highestType = "TOKEN"
 		}
 
