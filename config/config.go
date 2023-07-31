@@ -8,8 +8,6 @@ type vars struct {
 	SERVICE_NAME                string `required:"false"`
 	STRING_HOTWALLET_ADDRESS    string `required:"false"`
 	CARD_FAIL_PROBABILITY       string `required:"false"`
-	CHECKOUT_WEBHOOK_SECRET_KEY string `required:"false"`
-	PERSONA_WEBHOOK_SECRET_KEY  string `required:"false"`
 	BASE_URL                    string `required:"true"`
 	ENV                         string `required:"true"`
 	PORT                        string `required:"true"`
@@ -21,6 +19,7 @@ type vars struct {
 	AWS_REGION                  string `required:"true"`
 	AWS_KMS_KEY_ID              string `required:"true"`
 	CHECKOUT_PUBLIC_KEY         string `required:"true"`
+	CHECKOUT_WEBHOOK_SECRET_KEY string `required:"true"`
 	CHECKOUT_SECRET_KEY         string `required:"true"`
 	CHECKOUT_ENV                string `required:"true"`
 	EVM_PRIVATE_KEY             string `required:"true"`
@@ -52,6 +51,7 @@ type vars struct {
 	RECEIPTS_EMAIL_ADDRESS      string `required:"true"`
 	SLACK_WEBHOOK_URL           string `required:"true"`
 	PERSONA_API_KEY             string `required:"true"`
+	PERSONA_WEBHOOK_SECRET_KEY  string `required:"true"`
 }
 
 var Var vars
