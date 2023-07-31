@@ -8,7 +8,7 @@ import (
 )
 
 type KYC interface {
-	MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error)
+	MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level KYCLevel, err error)
 	GetTransactionLevel(assetType string, cost float64) KYCLevel
 	GetUserLevel(ctx context.Context, userId string) (level KYCLevel, err error)
 	UpdateUserLevel(ctx context.Context, userId string) (level KYCLevel, err error)
@@ -31,18 +31,17 @@ func NewKYC(repos repository.Repositories) KYC {
 	return &kyc{repos}
 }
 
-func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, err error) {
+func (k kyc) MeetsRequirements(ctx context.Context, userId string, assetType string, cost float64) (met bool, level KYCLevel, err error) {
 	transactionLevel := k.GetTransactionLevel(assetType, cost)
 
 	userLevel, err := k.GetUserLevel(ctx, userId)
 	if err != nil {
-		return false, err
+		return false, transactionLevel, err
 	}
 	if userLevel >= transactionLevel {
-		return true, nil
-	} else {
-		return false, nil
+		return true, transactionLevel, nil
 	}
+return false, transactionLevel, nil
 }
 
 func (k kyc) GetTransactionLevel(assetType string, cost float64) KYCLevel {

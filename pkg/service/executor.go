@@ -43,8 +43,8 @@ type Executor interface {
 	Close() error
 	GetByChainId() (uint64, error)
 	GetBalance() (float64, error)
-	GetTokenIds(txIds []string) ([]string, error)
-	GetTokenQuantities(txIds []string) ([]string, error)
+	GetTokenIds(txIds []string) ([]string, []string, error)
+	GetTokenQuantities(txIds []string) ([]string, []*big.Int, error)
 	GetEventData(txIds []string, eventSignature string) ([]types.Log, error)
 	ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error)
 	ForwardTokens(txIds []string, recipient string) ([]string, []string, []string, error)
@@ -377,33 +377,39 @@ func FilterEventData(logs []types.Log, indexes []int, hexValues []string) []type
 	return matches
 }
 
-func (e executor) GetTokenIds(txIds []string) ([]string, error) {
+func (e executor) GetTokenIds(txIds []string) ([]string, []string, error) {
 	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
-		return []string{}, libcommon.StringError(err)
+		return []string{}, []string{}, libcommon.StringError(err)
 	}
 	tokenIds := []string{}
+	addresses := []string{}
 	for _, log := range logs {
 		if len(log.Topics) != 4 {
 			continue
 		}
+		address := log.Address.String()
+		addresses = append(addresses, address)
 		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes())
 		tokenIds = append(tokenIds, tokenId.String())
 	}
-	return tokenIds, nil
+	return tokenIds, addresses, nil
 }
 
-func (e executor) GetTokenQuantities(txIds []string) ([]string, error) {
+func (e executor) GetTokenQuantities(txIds []string) ([]string, []*big.Int, error) {
 	logs, err := e.GetEventData(txIds, "Transfer(address,address,uint256)")
 	if err != nil {
-		return []string{}, libcommon.StringError(err)
+		return []string{}, []*big.Int{}, libcommon.StringError(err)
 	}
-	quantities := []string{}
+	quantities := []*big.Int{}
+	addresses := []string{}
 	for _, log := range logs {
+		address := log.Address.String()
+		addresses = append(addresses, address)
 		quantity := new(big.Int).SetBytes(log.Data)
-		quantities = append(quantities, quantity.String())
+		quantities = append(quantities, quantity)
 	}
-	return quantities, nil
+	return addresses, quantities, nil
 }
 
 func (e executor) ForwardNonFungibleTokens(txIds []string, recipient string) ([]string, []string, error) {

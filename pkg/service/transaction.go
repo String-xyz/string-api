@@ -64,27 +64,29 @@ func NewTransaction(repos repository.Repositories, redis database.RedisStore, un
 }
 
 type transactionProcessingData struct {
-	userId             *string
-	user               *model.User
-	deviceId           *string
-	ip                 *string
-	platformId         *string
-	executor           *Executor
-	processingFeeAsset *model.Asset
-	transactionModel   *model.Transaction
-	chain              *Chain
-	executionRequest   *model.ExecutionRequest
-	floatEstimate      *model.Estimate[float64]
-	cardAuthorization  *AuthorizedCharge
-	PaymentStatus      checkout.PaymentStatus
-	PaymentId          string
-	recipientWalletId  *string
-	txIds              []string
-	forwardTxIds       []string
-	cumulativeValue    *big.Int
-	trueGas            uint64
-	tokenIds           string
-	tokenQuantities    string
+	userId                     *string
+	user                       *model.User
+	deviceId                   *string
+	ip                         *string
+	platformId                 *string
+	executor                   *Executor
+	processingFeeAsset         *model.Asset
+	transactionModel           *model.Transaction
+	chain                      *Chain
+	executionRequest           *model.ExecutionRequest
+	floatEstimate              *model.Estimate[float64]
+	cardAuthorization          *AuthorizedCharge
+	PaymentStatus              checkout.PaymentStatus
+	PaymentId                  string
+	recipientWalletId          *string
+	txIds                      []string
+	forwardTxIds               []string
+	cumulativeValue            *big.Int
+	trueGas                    uint64
+	tokenIds                   string
+	tokenQuantities            string
+	transferredTokens          []string
+	transferredTokenQuantities []*big.Int
 }
 
 func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, platformId string) (res model.Quote, err error) {
@@ -98,7 +100,7 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 		return res, libcommon.StringError(err)
 	}
 
-	allowed, err := t.isContractAllowed(ctx, platformId, chain.UUID, d)
+	allowed, highestType, err := t.isContractAllowed(ctx, platformId, chain.UUID, d)
 	if err != nil {
 		return res, libcommon.StringError(err)
 	}
@@ -118,6 +120,21 @@ func (t transaction) Quote(ctx context.Context, d model.TransactionRequest, plat
 	}
 	res.Estimate = common.EstimateToPrecise(estimateUSD)
 	executor.Close()
+
+	userWallet, err := t.repos.Instrument.GetWalletByAddr(ctx, d.UserAddress)
+	if err != nil {
+		return res, libcommon.StringError(err)
+	}
+	userId := userWallet.UserId
+	kyc := NewKYC(t.repos)
+	allowed, level, err := kyc.MeetsRequirements(ctx, userId, highestType, estimateUSD.TotalUSD)
+	if err != nil {
+		return res, libcommon.StringError(err)
+	}
+	res.Level = int(level)
+	if !allowed {
+		return res, libcommon.StringError(errors.New("insufficient level"))
+	}
 
 	// Sign entire payload
 	bytes, err := json.Marshal(res)
@@ -445,7 +462,7 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// Get the Token IDs which were transferred
-	tokenIds, err := executor.GetTokenIds(p.txIds)
+	_ /*nftAddresses*/, tokenIds, err := executor.GetTokenIds(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token ids")
 		// TODO: Handle error instead of returning it
@@ -464,14 +481,14 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 	}
 
 	// Get the Token quantities which were transferred
-	tokenQuantities, err := executor.GetTokenQuantities(p.txIds)
+	p.transferredTokens, p.transferredTokenQuantities, err = executor.GetTokenQuantities(p.txIds)
 	if err != nil {
 		log.Err(err).Msg("Failed to get token quantities")
 		// TODO: Handle error instead of returning it
 	}
-	p.tokenQuantities = strings.Join(tokenQuantities, ",")
+	p.tokenQuantities = common.StringifyBigIntArray(p.transferredTokenQuantities)
 
-	if len(tokenQuantities) > 0 {
+	if len(p.transferredTokenQuantities) > 0 {
 		forwardTxIds /*forwardTokenAddresses*/, _ /*tokenQuantities*/, _, err := executor.ForwardTokens(p.txIds, p.executionRequest.Quote.TransactionRequest.UserAddress)
 		if err != nil {
 			log.Err(err).Msg("Failed to forward tokens")
@@ -495,6 +512,8 @@ func (t transaction) postProcess(ctx context.Context, p transactionProcessingDat
 
 	// We can close the executor because we aren't using it after this
 	executor.Close()
+
+	// Check true cost against quote
 
 	// Cache the gas associated with this transaction
 	qc := NewQuoteCache(t.redis)
@@ -863,11 +882,43 @@ func (t transaction) tenderTransaction(ctx context.Context, p transactionProcess
 	cost := NewCost(t.redis, t.repos)
 	trueWei := big.NewInt(0).Add(p.cumulativeValue, big.NewInt(int64(p.trueGas)))
 	trueEth := common.WeiToEther(trueWei)
-	trueUSD, err := cost.LookupUSD(trueEth, p.chain.CoingeckoName, p.chain.CoincapName)
+
+	// include true token cost in USD
+	tokenQuantities := []big.Int{}
+	for _, quantity := range p.transferredTokenQuantities {
+		tokenQuantities = append(tokenQuantities, *quantity)
+	}
+	trueEstimation := EstimationParams{
+		ChainId:    p.chain.ChainId,
+		CostETH:    *p.cumulativeValue,
+		UseBuffer:  false,
+		GasUsedWei: p.trueGas,
+		CostTokens: tokenQuantities,
+		TokenAddrs: p.transferredTokens,
+	}
+	presentValue, err := cost.EstimateTransaction(trueEstimation, *p.chain)
 	if err != nil {
 		return 0, libcommon.StringError(err)
 	}
-	profit := p.floatEstimate.TotalUSD - trueUSD
+	profit := p.floatEstimate.TotalUSD - presentValue.TotalUSD
+
+	assetType := "NFT"
+	if len(tokenQuantities) > 0 {
+		assetType = "TOKEN"
+	}
+	userWallet, err := t.repos.Instrument.GetWalletByAddr(ctx, p.executionRequest.Quote.TransactionRequest.UserAddress)
+	if err != nil {
+		return 0, libcommon.StringError(err)
+	}
+	userId := userWallet.UserId
+	kyc := NewKYC(t.repos)
+	allowed, level, err := kyc.MeetsRequirements(ctx, userId, assetType, presentValue.TotalUSD)
+	if err != nil {
+		return 0, libcommon.StringError(err)
+	}
+	if !allowed || int(level) > p.executionRequest.Quote.Level {
+		MessageTeam("Transaction completed with insufficient KYC: " + p.transactionModel.Id)
+	}
 
 	// Create Receive Tx leg
 	asset, err := t.repos.Asset.GetById(ctx, p.chain.GasTokenId)
@@ -1037,17 +1088,21 @@ func (t *transaction) getStringInstrumentsAndUserId() {
 	t.ids = GetStringIdsFromEnv()
 }
 
-func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, err error) {
+func (t transaction) isContractAllowed(ctx context.Context, platformId string, networkId string, request model.TransactionRequest) (isAllowed bool, highestType string, err error) {
 	_, finish := Span(ctx, "service.transaction.isContractAllowed", SpanTag{"platformId": platformId})
 	defer finish()
-
+	highestType = "NFT"
 	for _, action := range request.Actions {
 		cxAddr := action.CxAddr
 		contract, err := t.repos.Contract.GetForValidation(ctx, cxAddr, networkId, platformId)
 		if err != nil && err == serror.NOT_FOUND {
-			return false, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
+			return false, highestType, libcommon.StringError(serror.CONTRACT_NOT_ALLOWED)
 		} else if err != nil {
-			return false, libcommon.StringError(err)
+			return false, highestType, libcommon.StringError(err)
+		}
+
+		if contract.Type == "TOKEN"  || contract.Type == "NFT_AND_TOKEN" {
+			highestType = "TOKEN"
 		}
 
 		if len(contract.Functions) == 0 {
@@ -1061,5 +1116,5 @@ func (t transaction) isContractAllowed(ctx context.Context, platformId string, n
 		}
 	}
 
-	return true, nil
+	return true, highestType, nil
 }
