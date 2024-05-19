@@ -330,7 +330,7 @@ func (u user) GetDeviceStatus(c echo.Context) error {
 // @Produce json
 // @Security ApiKeyAuth
 // @Param id path string true "User ID"
-// @Param body body model.PreValidateEmail true "Pre Validate Email"
+// @Param email query string true "Pre Validated Email"
 // @Success 200 {object} ResultMessage
 // @Failure 400 {object} error
 // @Failure 401 {object} error
@@ -340,24 +340,17 @@ func (u user) GetDeviceStatus(c echo.Context) error {
 func (u user) PreValidateEmail(c echo.Context) error {
 	ctx := c.Request().Context()
 	userId := c.Param("id")
+	email := c.QueryParam("email")
 	platformId, ok := c.Get("platformId").(string)
 	if !ok {
 		return httperror.Internal500(c, "missing or invalid platformId")
 	}
 
-	// Get email from body
-	var body model.PreValidateEmail
-	err := c.Bind(&body)
-	if err != nil {
-		libcommon.LogStringError(c, err, "user: pre validate email bind")
-		return httperror.BadRequest400(c)
-	}
-
-	if !validator.ValidEmail(body.Email) {
+	if !validator.ValidEmail(email) {
 		return httperror.BadRequest400(c, "Invalid email")
 	}
 
-	err = u.verification.PreValidateEmail(ctx, platformId, userId, body.Email)
+	err := u.verification.PreValidateEmail(ctx, platformId, userId, email)
 	if err != nil {
 		// ?
 		libcommon.LogStringError(c, err, "user: pre validate email")
